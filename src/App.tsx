@@ -63,7 +63,7 @@ import TeacherProfile from "./pages/teacher/TeacherProfile";
 import TeacherCalendar from "./pages/teacher/TeacherCalendar";
 import TeacherAttendance from "./pages/teacher/TeacherAttendance";
 import UserGuide from "./pages/UserGuide";
-import FAQ from "./pages/FAQ";
+
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import EventsPage from "./pages/EventsPage";
