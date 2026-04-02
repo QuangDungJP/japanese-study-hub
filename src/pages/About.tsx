@@ -4,11 +4,45 @@ import SkillsSection from "@/components/SkillsSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Sparkles, Users, BookOpen, Trophy, Target, ArrowRight, GraduationCap, Heart, Star, Zap, Globe } from "lucide-react";
+import { Sparkles, Users, BookOpen, Trophy, Target, ArrowRight, GraduationCap, Heart, Star, Zap, Globe, HelpCircle, Search } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import ThreeCValues from "@/components/about/ThreeCValues";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  order_index: number;
+}
 
 const About = () => {
+  const [faqSearch, setFaqSearch] = useState('');
+
+  const { data: faqs = [] } = useQuery({
+    queryKey: ['faqs-public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faqs')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      return data as FAQ[];
+    },
+  });
+
+  const filteredFaqs = faqSearch
+    ? faqs.filter(faq =>
+        faq.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
+        faq.answer.toLowerCase().includes(faqSearch.toLowerCase())
+      )
+    : faqs;
+
   return (
     <main className="min-h-screen">
       <Navbar />
@@ -82,29 +116,16 @@ const About = () => {
                   Câu chuyện của <span className="text-primary">TNQDO</span>
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed text-base md:text-lg">
-                  <p>
-                    TNQDO được thành lập với mong muốn mang đến cho người Việt Nam phương pháp học tiếng Nhật hiệu quả, 
-                    khoa học và phù hợp nhất.
-                  </p>
-                  <p>
-                    Với đội ngũ giáo viên bản ngữ có chứng chỉ giảng dạy quốc tế cùng hệ thống công nghệ AI tiên tiến, 
-                    chúng tôi đã giúp hơn 50,000 học viên chinh phục thành công các kỳ thi JLPT.
-                  </p>
-                  <p>
-                    Mỗi khóa học được thiết kế riêng cho người Việt, tập trung vào những điểm khó thường gặp và 
-                    phát triển toàn diện 4 kỹ năng: Đọc - Nói - Viết - Nghe.
-                  </p>
+                  <p>TNQDO được thành lập với mong muốn mang đến cho người Việt Nam phương pháp học tiếng Nhật hiệu quả, khoa học và phù hợp nhất.</p>
+                  <p>Với đội ngũ giáo viên bản ngữ có chứng chỉ giảng dạy quốc tế cùng hệ thống công nghệ AI tiên tiến, chúng tôi đã giúp hơn 50,000 học viên chinh phục thành công các kỳ thi JLPT.</p>
+                  <p>Mỗi khóa học được thiết kế riêng cho người Việt, tập trung vào những điểm khó thường gặp và phát triển toàn diện 4 kỹ năng: Đọc - Nói - Viết - Nghe.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 mt-8">
                   <Button className="rounded-2xl h-12 px-8" asChild>
-                    <Link to="/khoa-hoc">
-                      Xem khóa học <ArrowRight className="w-4 h-4 ml-2" />
-                    </Link>
+                    <Link to="/khoa-hoc">Xem khóa học <ArrowRight className="w-4 h-4 ml-2" /></Link>
                   </Button>
                   <Button variant="outline" className="rounded-2xl h-12 px-8" asChild>
-                    <Link to="/giao-vien">
-                      Đội ngũ giảng viên
-                    </Link>
+                    <Link to="/giao-vien">Đội ngũ giảng viên</Link>
                   </Button>
                 </div>
               </div>
@@ -147,9 +168,7 @@ const About = () => {
               <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-5">
                 Tại sao chọn <span className="text-primary">TNQDO</span>?
               </h2>
-              <p className="text-lg text-muted-foreground">
-                Chúng tôi cam kết mang đến trải nghiệm học tập tốt nhất
-              </p>
+              <p className="text-lg text-muted-foreground">Chúng tôi cam kết mang đến trải nghiệm học tập tốt nhất</p>
             </div>
           </ScrollReveal>
 
@@ -179,6 +198,81 @@ const About = () => {
       <ThreeCValues />
       <SkillsSection />
       <FeaturesSection />
+
+      {/* ── FAQ Section ── */}
+      <section className="py-20 md:py-28 bg-muted/30 relative overflow-hidden">
+        {/* decorative sakura blobs */}
+        <div className="absolute top-10 left-10 w-64 h-64 bg-sakura/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-80 h-80 bg-japanese/5 rounded-full blur-3xl" />
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto">
+            <ScrollReveal>
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-sakura/10 text-sakura text-sm font-semibold mb-4 border border-sakura/20">
+                  <HelpCircle className="w-4 h-4" />
+                  よくある質問
+                </div>
+                <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+                  Câu hỏi <span className="text-sakura">thường gặp</span>
+                </h2>
+                <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+                  Tìm câu trả lời cho những thắc mắc phổ biến về NihonGo!
+                </p>
+
+                {/* search */}
+                <div className="relative max-w-lg mx-auto mt-8">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Tìm kiếm câu hỏi..."
+                    value={faqSearch}
+                    onChange={(e) => setFaqSearch(e.target.value)}
+                    className="pl-12 h-12 rounded-2xl border-border/50 focus:border-sakura bg-background/60 backdrop-blur-sm"
+                  />
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {filteredFaqs.length > 0 ? (
+              <Accordion type="single" collapsible className="space-y-3">
+                {filteredFaqs.map((faq, i) => (
+                  <ScrollReveal key={faq.id} delay={i * 60} direction="up">
+                    <AccordionItem value={faq.id} className="border-0">
+                      <AccordionTrigger className="hover:no-underline px-6 py-4 rounded-2xl bg-gradient-to-r from-sakura/90 to-pink-500/90 text-white font-bold text-base md:text-lg data-[state=open]:rounded-b-none [&>svg]:text-white shadow-md shadow-sakura/20">
+                        <span className="flex items-center gap-3 text-left">
+                          <span className="text-lg">🌸</span>
+                          {faq.question}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="bg-card border border-t-0 border-border/50 rounded-b-2xl px-6 py-5 text-foreground leading-relaxed whitespace-pre-wrap shadow-sm">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </ScrollReveal>
+                ))}
+              </Accordion>
+            ) : faqs.length > 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <HelpCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Không tìm thấy kết quả. Hãy thử từ khóa khác.</p>
+              </div>
+            ) : null}
+
+            {/* Contact CTA */}
+            <ScrollReveal delay={200}>
+              <div className="mt-12 bg-card rounded-3xl p-8 md:p-10 border border-border text-center shadow-lg">
+                <div className="text-4xl mb-4">💬</div>
+                <h3 className="text-xl font-bold text-foreground mb-2">Vẫn cần hỗ trợ?</h3>
+                <p className="text-muted-foreground mb-6">Đội ngũ hỗ trợ luôn sẵn sàng giúp đỡ bạn</p>
+                <Button className="rounded-2xl h-12 px-8 bg-gradient-to-r from-sakura to-pink-500 hover:from-sakura/90 hover:to-pink-500/90 text-white shadow-lg shadow-sakura/20" asChild>
+                  <Link to="/lien-he">Liên hệ hỗ trợ</Link>
+                </Button>
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
 
       {/* CTA */}
       <ScrollReveal>
