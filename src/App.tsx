@@ -94,7 +94,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/huong-dan" element={<UserGuide />} />
-              <Route path="/faq" element={<FAQ />} />
+              <Route path="/faq" element={<About />} />
               <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />
               <Route path="/dieu-khoan" element={<Terms />} />
               <Route path="/blog" element={<Blog />} />
