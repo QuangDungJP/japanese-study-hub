@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -1221,22 +1221,129 @@ export type Database = {
           },
         ]
       }
+      teacher_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_date: string | null
+          id: string
+          image_url: string | null
+          location: string | null
+          max_participants: number | null
+          teacher_id: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          max_participants?: number | null
+          teacher_id?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          max_participants?: number | null
+          teacher_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_events_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_events_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_public_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_portfolios: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          media_url: string | null
+          teacher_id: string | null
+          title: string | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          media_url?: string | null
+          teacher_id?: string | null
+          title?: string | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          media_url?: string | null
+          teacher_id?: string | null
+          title?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_portfolios_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_portfolios_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_public_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_profiles: {
         Row: {
           bio: string | null
           bio_vi: string | null
           certifications: Json | null
+          cover_image_url: string | null
           created_at: string
           display_name: string | null
           experience_years: number | null
+          extra_data: Json | null
+          headline: string | null
           hourly_rate: number | null
           id: string
           image_url: string | null
+          intro_video_url: string | null
           is_available: boolean | null
           is_featured: boolean | null
+          languages: Json | null
+          location: string | null
           rating: number | null
+          slug: string | null
+          social_links: Json | null
           specializations: Json | null
+          total_hours: number | null
+          total_lessons: number | null
           total_reviews: number | null
+          total_students: number | null
           updated_at: string
           user_id: string
         }
@@ -1244,17 +1351,28 @@ export type Database = {
           bio?: string | null
           bio_vi?: string | null
           certifications?: Json | null
+          cover_image_url?: string | null
           created_at?: string
           display_name?: string | null
           experience_years?: number | null
+          extra_data?: Json | null
+          headline?: string | null
           hourly_rate?: number | null
           id?: string
           image_url?: string | null
+          intro_video_url?: string | null
           is_available?: boolean | null
           is_featured?: boolean | null
+          languages?: Json | null
+          location?: string | null
           rating?: number | null
+          slug?: string | null
+          social_links?: Json | null
           specializations?: Json | null
+          total_hours?: number | null
+          total_lessons?: number | null
           total_reviews?: number | null
+          total_students?: number | null
           updated_at?: string
           user_id: string
         }
@@ -1262,21 +1380,74 @@ export type Database = {
           bio?: string | null
           bio_vi?: string | null
           certifications?: Json | null
+          cover_image_url?: string | null
           created_at?: string
           display_name?: string | null
           experience_years?: number | null
+          extra_data?: Json | null
+          headline?: string | null
           hourly_rate?: number | null
           id?: string
           image_url?: string | null
+          intro_video_url?: string | null
           is_available?: boolean | null
           is_featured?: boolean | null
+          languages?: Json | null
+          location?: string | null
           rating?: number | null
+          slug?: string | null
+          social_links?: Json | null
           specializations?: Json | null
+          total_hours?: number | null
+          total_lessons?: number | null
           total_reviews?: number | null
+          total_students?: number | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      teacher_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number | null
+          student_id: string | null
+          teacher_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          student_id?: string | null
+          teacher_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          student_id?: string | null
+          teacher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_reviews_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_reviews_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_public_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_courses: {
         Row: {
@@ -1481,7 +1652,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      teacher_public_view: {
+        Row: {
+          bio: string | null
+          cover_image_url: string | null
+          experience_years: number | null
+          full_name: string | null
+          headline: string | null
+          id: string | null
+          image_url: string | null
+          rating: number | null
+          slug: string | null
+          total_reviews: number | null
+          total_students: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
