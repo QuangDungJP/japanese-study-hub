@@ -1,0 +1,9 @@
+
+INSERT INTO public.website_content (section_key, title_vi, subtitle_vi, description_vi, is_active, order_index, content)
+VALUES 
+  ('about_hero', 'Nền tảng học Tiếng Nhật hàng đầu', 'Về TNQDO', 'Sứ mệnh giúp người Việt chinh phục tiếng Nhật hiệu quả nhất với phương pháp khoa học và công nghệ AI tiên tiến', true, 100, '{}'),
+  ('about_story', 'Câu chuyện của TNQDO', 'Câu chuyện', NULL, true, 101, '{}'),
+  ('about_values', 'Tại sao chọn TNQDO?', 'Giá trị cốt lõi', 'Chúng tôi cam kết mang đến trải nghiệm học tập tốt nhất', true, 102, '{}'),
+  ('about_3c_values', 'Giá trị cốt lõi 3C tại TNQDO', NULL, NULL, true, 103, '{"title_display":"Giá trị cốt lõi 3C tại TNQDO","values":[{"letter":"C","word":"hallenging","color":"text-amber-500","bgGradient":"from-amber-50 to-orange-50","description":"Luôn tạo thử thách cho học viên, có tinh thần học tập không ngừng nghỉ. GV luôn đặt thử thách đầu giờ cho HV trước khi vào bài.","quote":"Mẹo làm bài kĩ ông hát bà khen hay","quoteAuthor":"Phương pháp TNQDO"},{"letter":"C","word":"ultural-Based","color":"text-green-600","bgGradient":"from-green-50 to-emerald-50","description":"Giá trị văn hóa: Văn hóa doanh nghiệp, lối sống thường ngày của người Nhật luôn là Key quan trọng trong bài học.","quote":"Bài học nói về văn hóa Ông hát bà khen hay khi đàm thoại","quoteAuthor":"Văn hóa Nhật Bản"},{"letter":"C","word":"o-learning","color":"text-blue-600","bgGradient":"from-blue-50 to-sky-50","description":"Luôn tạo cảm giác giáo viên học cùng học viên. Không phải chỉ đơn giản là cái máy nhắc bài chạy bằng cơm.","quote":"GV bắt HV đi tìm chủ ngữ, vị ngữ để cùng giải mã bài tập","quoteAuthor":"Phương pháp tương tác"}]}'),
+  ('about_cta', 'Sẵn sàng chinh phục Tiếng Nhật?', 'Bắt đầu ngay hôm nay', 'Đăng ký miễn phí và bắt đầu hành trình với hơn 50,000 học viên đang học cùng TNQDO', true, 104, '{}')
+ON CONFLICT DO NOTHING;
