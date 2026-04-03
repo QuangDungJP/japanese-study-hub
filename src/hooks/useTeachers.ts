@@ -28,7 +28,7 @@ export const useTeacherProfiles = (options: UseTeacherProfilesOptions = {}) => {
       if (activeOnly) query = query.eq("is_available", true);
       if (featuredOnly) query = query.eq("is_featured", true);
 
-      const { data: teachers, error: teachersError } = await query.order("created_at", { ascending: true });
+      const { data: teachers, error: teachersError } = await query.order("order_index", { ascending: true }).order("created_at", { ascending: true });
 
       if (teachersError) throw teachersError;
 
