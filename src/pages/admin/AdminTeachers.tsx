@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen,
+  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
@@ -51,49 +51,27 @@ interface FormData {
 }
 
 const emptyForm: FormData = {
-  display_name: "",
-  headline: "",
-  bio: "",
-  bio_vi: "",
-  image_url: "",
-  cover_image_url: "",
-  intro_video_url: "",
-  experience_years: 0,
-  rating: 0,
-  total_reviews: 0,
-  total_students: 0,
-  total_lessons: 0,
-  total_hours: 0,
-  hourly_rate: 0,
-  location: "",
-  slug: "",
-  is_available: true,
-  is_featured: false,
-  specializations: [],
-  certifications: [],
-  languages: [],
-  social_links: {},
-  extra_fields: [],
+  display_name: "", headline: "", bio: "", bio_vi: "",
+  image_url: "", cover_image_url: "", intro_video_url: "",
+  experience_years: 0, rating: 0, total_reviews: 0, total_students: 0,
+  total_lessons: 0, total_hours: 0, hourly_rate: 0,
+  location: "", slug: "",
+  is_available: true, is_featured: false,
+  specializations: [], certifications: [], languages: [],
+  social_links: {}, extra_fields: [],
 };
 
 function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder: string }) {
   const [input, setInput] = useState("");
   const add = () => {
     const trimmed = input.trim();
-    if (trimmed && !value.includes(trimmed)) {
-      onChange([...value, trimmed]);
-      setInput("");
-    }
+    if (trimmed && !value.includes(trimmed)) { onChange([...value, trimmed]); setInput(""); }
   };
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={placeholder}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
-        />
+        <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder={placeholder}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
         <Button type="button" variant="secondary" size="sm" onClick={add}>Thêm</Button>
       </div>
       {value.length > 0 && (
@@ -101,9 +79,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
           {value.map((tag, i) => (
             <Badge key={i} variant="secondary" className="gap-1 pr-1">
               {tag}
-              <button onClick={() => onChange(value.filter((_, j) => j !== i))} className="ml-1 hover:text-destructive">
-                <X className="w-3 h-3" />
-              </button>
+              <button onClick={() => onChange(value.filter((_, j) => j !== i))} className="ml-1 hover:text-destructive"><X className="w-3 h-3" /></button>
             </Badge>
           ))}
         </div>
@@ -121,17 +97,23 @@ export default function AdminTeachers() {
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  // Drag state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+
   const fetchTeachers = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("teacher_profiles")
       .select("*")
+      .order("order_index", { ascending: true })
       .order("created_at", { ascending: false });
-    if (error) {
-      toast({ title: "Không tải được giảng viên", variant: "destructive" });
-    }
+    if (error) toast({ title: "Không tải được giảng viên", variant: "destructive" });
     setTeachers(data || []);
     setLoading(false);
+    setOrderChanged(false);
   };
 
   useEffect(() => { fetchTeachers(); }, []);
@@ -143,10 +125,7 @@ export default function AdminTeachers() {
 
   const parseExtraData = (val: unknown): { key: string; value: string }[] => {
     if (val && typeof val === "object" && !Array.isArray(val)) {
-      return Object.entries(val as Record<string, unknown>).map(([key, value]) => ({
-        key,
-        value: String(value ?? ""),
-      }));
+      return Object.entries(val as Record<string, unknown>).map(([key, value]) => ({ key, value: String(value ?? "") }));
     }
     return [];
   };
@@ -154,19 +133,43 @@ export default function AdminTeachers() {
   const parseSocialLinks = (val: unknown): Record<string, string> => {
     if (val && typeof val === "object" && !Array.isArray(val)) {
       const result: Record<string, string> = {};
-      Object.entries(val as Record<string, unknown>).forEach(([k, v]) => {
-        result[k] = String(v ?? "");
-      });
+      Object.entries(val as Record<string, unknown>).forEach(([k, v]) => { result[k] = String(v ?? ""); });
       return result;
     }
     return {};
   };
 
-  const openNew = () => {
-    setEditingTeacher(null);
-    setFormData(emptyForm);
-    setDialogOpen(true);
+  // Drag & Drop
+  const handleDragStart = (index: number) => { setDragIndex(index); };
+  const handleDragOver = (e: React.DragEvent, index: number) => { e.preventDefault(); setOverIndex(index); };
+  const handleDragEnd = () => {
+    if (dragIndex !== null && overIndex !== null && dragIndex !== overIndex) {
+      const updated = [...teachers];
+      const [moved] = updated.splice(dragIndex, 1);
+      updated.splice(overIndex, 0, moved);
+      setTeachers(updated);
+      setOrderChanged(true);
+    }
+    setDragIndex(null);
+    setOverIndex(null);
   };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      const updates = teachers.map((t, i) =>
+        supabase.from("teacher_profiles").update({ order_index: i } as any).eq("id", t.id)
+      );
+      await Promise.all(updates);
+      toast({ title: "Đã lưu thứ tự giảng viên ✓" });
+      setOrderChanged(false);
+    } catch {
+      toast({ title: "Lỗi khi lưu thứ tự", variant: "destructive" });
+    }
+    setSavingOrder(false);
+  };
+
+  const openNew = () => { setEditingTeacher(null); setFormData(emptyForm); setDialogOpen(true); };
 
   const openEdit = (teacher: TeacherRow) => {
     setEditingTeacher(teacher);
@@ -203,10 +206,7 @@ export default function AdminTeachers() {
 
   const handleToggleVisibility = async (teacher: TeacherRow, field: "is_available" | "is_featured") => {
     const newVal = !(teacher[field] ?? false);
-    const { error } = await supabase
-      .from("teacher_profiles")
-      .update({ [field]: newVal })
-      .eq("id", teacher.id);
+    const { error } = await supabase.from("teacher_profiles").update({ [field]: newVal }).eq("id", teacher.id);
     if (!error) {
       setTeachers((prev) => prev.map((t) => (t.id === teacher.id ? { ...t, [field]: newVal } : t)));
       toast({ title: field === "is_available" ? (newVal ? "Đã hiện giảng viên" : "Đã ẩn giảng viên") : (newVal ? "Đã ghim trang chủ" : "Đã bỏ ghim trang chủ") });
@@ -221,9 +221,7 @@ export default function AdminTeachers() {
     setSaving(true);
 
     const extraData: Record<string, string> = {};
-    formData.extra_fields.forEach((f) => {
-      if (f.key.trim()) extraData[f.key.trim()] = f.value;
-    });
+    formData.extra_fields.forEach((f) => { if (f.key.trim()) extraData[f.key.trim()] = f.value; });
 
     const payload: any = {
       display_name: formData.display_name,
@@ -253,23 +251,18 @@ export default function AdminTeachers() {
 
     try {
       if (editingTeacher) {
-        const { error } = await supabase
-          .from("teacher_profiles")
-          .update(payload)
-          .eq("id", editingTeacher.id);
+        const { error } = await supabase.from("teacher_profiles").update(payload).eq("id", editingTeacher.id);
         if (error) throw error;
         toast({ title: "Đã cập nhật giảng viên ✓" });
       } else {
-        const { error } = await supabase
-          .from("teacher_profiles")
-          .insert(payload);
+        payload.order_index = teachers.length;
+        const { error } = await supabase.from("teacher_profiles").insert(payload);
         if (error) throw error;
         toast({ title: "Đã tạo giảng viên mới ✓" });
       }
       setDialogOpen(false);
       fetchTeachers();
     } catch (err: any) {
-      console.error(err);
       toast({ title: "Lỗi: " + (err.message || "Không lưu được"), variant: "destructive" });
     }
     setSaving(false);
@@ -278,10 +271,7 @@ export default function AdminTeachers() {
   const handleDelete = async (id: string) => {
     if (!confirm("Xóa giảng viên này?")) return;
     const { error } = await supabase.from("teacher_profiles").delete().eq("id", id);
-    if (!error) {
-      toast({ title: "Đã xóa giảng viên" });
-      fetchTeachers();
-    }
+    if (!error) { toast({ title: "Đã xóa giảng viên" }); fetchTeachers(); }
   };
 
   const getDisplayName = (t: TeacherRow) => t.display_name || "Chưa đặt tên";
@@ -292,11 +282,19 @@ export default function AdminTeachers() {
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Quản lý giảng viên</h1>
-          <p className="text-muted-foreground text-sm">Thêm, chỉnh sửa và quản lý hiển thị giảng viên trên website</p>
+          <p className="text-muted-foreground text-sm">Kéo thả để sắp xếp thứ tự • Toggle để hiện/ẩn</p>
         </div>
-        <Button onClick={openNew} className="self-start">
-          <Plus className="w-4 h-4 mr-2" /> Thêm giảng viên
-        </Button>
+        <div className="flex gap-2 self-start">
+          {orderChanged && (
+            <Button onClick={saveOrder} disabled={savingOrder} variant="default" className="bg-green-600 hover:bg-green-700">
+              {savingOrder ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+              Lưu thứ tự
+            </Button>
+          )}
+          <Button onClick={openNew}>
+            <Plus className="w-4 h-4 mr-2" /> Thêm giảng viên
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -309,9 +307,7 @@ export default function AdminTeachers() {
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <s.icon className="w-5 h-5 text-primary" />
-              </div>
+              <div className="p-2 rounded-lg bg-primary/10"><s.icon className="w-5 h-5 text-primary" /></div>
               <div>
                 <p className="text-2xl font-bold">{s.value}</p>
                 <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -325,9 +321,7 @@ export default function AdminTeachers() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin w-6 h-6" />
-            </div>
+            <div className="flex justify-center py-20"><Loader2 className="animate-spin w-6 h-6" /></div>
           ) : teachers.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -338,6 +332,7 @@ export default function AdminTeachers() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>Giảng viên</TableHead>
                   <TableHead className="hidden md:table-cell">Chuyên môn</TableHead>
                   <TableHead className="text-center">Website</TableHead>
@@ -346,8 +341,18 @@ export default function AdminTeachers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {teachers.map((teacher) => (
-                  <TableRow key={teacher.id} className={!teacher.is_available ? "opacity-50" : ""}>
+                {teachers.map((teacher, index) => (
+                  <TableRow
+                    key={teacher.id}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`${!teacher.is_available ? "opacity-50" : ""} ${dragIndex === index ? "opacity-30" : ""} ${overIndex === index && dragIndex !== index ? "border-t-2 border-primary" : ""} cursor-grab active:cursor-grabbing`}
+                  >
+                    <TableCell className="w-10 px-2">
+                      <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-3 items-center">
                         {teacher.image_url ? (
@@ -357,16 +362,10 @@ export default function AdminTeachers() {
                         )}
                         <div className="min-w-0">
                           <div className="font-medium truncate">{getDisplayName(teacher)}</div>
-                          {teacher.headline && (
-                            <div className="text-xs text-muted-foreground truncate">{teacher.headline}</div>
-                          )}
+                          {teacher.headline && <div className="text-xs text-muted-foreground truncate">{teacher.headline}</div>}
                           <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                            {teacher.experience_years ? (
-                              <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" />{teacher.experience_years} năm</span>
-                            ) : null}
-                            {Number(teacher.rating) > 0 && (
-                              <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-500" />{Number(teacher.rating).toFixed(1)}</span>
-                            )}
+                            {teacher.experience_years ? <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" />{teacher.experience_years} năm</span> : null}
+                            {Number(teacher.rating) > 0 && <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-500" />{Number(teacher.rating).toFixed(1)}</span>}
                           </div>
                         </div>
                       </div>
@@ -379,25 +378,15 @@ export default function AdminTeachers() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Switch
-                        checked={teacher.is_available ?? false}
-                        onCheckedChange={() => handleToggleVisibility(teacher, "is_available")}
-                      />
+                      <Switch checked={teacher.is_available ?? false} onCheckedChange={() => handleToggleVisibility(teacher, "is_available")} />
                     </TableCell>
                     <TableCell className="text-center">
-                      <Switch
-                        checked={teacher.is_featured ?? false}
-                        onCheckedChange={() => handleToggleVisibility(teacher, "is_featured")}
-                      />
+                      <Switch checked={teacher.is_featured ?? false} onCheckedChange={() => handleToggleVisibility(teacher, "is_featured")} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(teacher)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(teacher.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(teacher)}><Pencil className="w-4 h-4" /></Button>
+                        <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(teacher.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -412,11 +401,8 @@ export default function AdminTeachers() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] p-0">
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-xl">
-              {editingTeacher ? "Chỉnh sửa giảng viên" : "Thêm giảng viên mới"}
-            </DialogTitle>
+            <DialogTitle className="text-xl">{editingTeacher ? "Chỉnh sửa giảng viên" : "Thêm giảng viên mới"}</DialogTitle>
           </DialogHeader>
-
           <ScrollArea className="max-h-[calc(90vh-140px)]">
             <div className="p-6 pt-4">
               <Tabs defaultValue="basic" className="w-full">
@@ -427,7 +413,6 @@ export default function AdminTeachers() {
                   <TabsTrigger value="extra">Tùy chỉnh</TabsTrigger>
                 </TabsList>
 
-                {/* Tab: Basic */}
                 <TabsContent value="basic" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -441,11 +426,11 @@ export default function AdminTeachers() {
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Việt)</Label>
-                    <Textarea value={formData.bio_vi} onChange={(e) => set("bio_vi", e.target.value)} rows={3} placeholder="Mô tả ngắn về giảng viên bằng tiếng Việt..." />
+                    <Textarea value={formData.bio_vi} onChange={(e) => set("bio_vi", e.target.value)} rows={3} placeholder="Mô tả ngắn về giảng viên..." />
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Nhật / English)</Label>
-                    <Textarea value={formData.bio} onChange={(e) => set("bio", e.target.value)} rows={3} placeholder="Bio in Japanese or English..." />
+                    <Textarea value={formData.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -466,7 +451,7 @@ export default function AdminTeachers() {
                       <Switch checked={formData.is_available} onCheckedChange={(v) => set("is_available", v)} />
                       <div>
                         <Label className="flex items-center gap-1.5"><Eye className="w-4 h-4" />Hiện trên website</Label>
-                        <p className="text-xs text-muted-foreground">Hiển thị ở trang giảng viên</p>
+                        <p className="text-xs text-muted-foreground">Trang giảng viên</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-lg border">
@@ -479,7 +464,6 @@ export default function AdminTeachers() {
                   </div>
                 </TabsContent>
 
-                {/* Tab: Details */}
                 <TabsContent value="details" className="space-y-5">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[
@@ -498,19 +482,18 @@ export default function AdminTeachers() {
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1"><Award className="w-3.5 h-3.5" />Chuyên môn</Label>
-                    <TagInput value={formData.specializations} onChange={(v) => set("specializations", v)} placeholder="VD: JLPT N1, Kaiwa, Business Japanese..." />
+                    <TagInput value={formData.specializations} onChange={(v) => set("specializations", v)} placeholder="VD: JLPT N1, Kaiwa..." />
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1"><Award className="w-3.5 h-3.5" />Chứng chỉ</Label>
-                    <TagInput value={formData.certifications} onChange={(v) => set("certifications", v)} placeholder="VD: TESOL, 日本語教育能力検定..." />
+                    <TagInput value={formData.certifications} onChange={(v) => set("certifications", v)} placeholder="VD: TESOL..." />
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" />Ngôn ngữ</Label>
-                    <TagInput value={formData.languages} onChange={(v) => set("languages", v)} placeholder="VD: 日本語, Tiếng Việt, English..." />
+                    <TagInput value={formData.languages} onChange={(v) => set("languages", v)} placeholder="VD: 日本語, Tiếng Việt..." />
                   </div>
                 </TabsContent>
 
-                {/* Tab: Media */}
                 <TabsContent value="media" className="space-y-5">
                   <div className="space-y-2">
                     <Label>Ảnh đại diện</Label>
@@ -526,35 +509,18 @@ export default function AdminTeachers() {
                   </div>
                 </TabsContent>
 
-                {/* Tab: Custom */}
                 <TabsContent value="extra" className="space-y-5">
                   <div className="space-y-2">
                     <Label>Trường tùy chỉnh</Label>
-                    <p className="text-xs text-muted-foreground">Thêm thông tin bổ sung tùy ý (sở thích, motto, kinh nghiệm đặc biệt...)</p>
+                    <p className="text-xs text-muted-foreground">Thêm thông tin bổ sung tùy ý</p>
                   </div>
                   <div className="space-y-3">
                     {formData.extra_fields.map((field, index) => (
                       <div key={index} className="flex gap-2 items-start">
-                        <Input
-                          placeholder="Tên trường"
-                          value={field.key}
-                          onChange={(e) => {
-                            const updated = [...formData.extra_fields];
-                            updated[index] = { ...updated[index], key: e.target.value };
-                            set("extra_fields", updated);
-                          }}
-                          className="w-1/3"
-                        />
-                        <Input
-                          placeholder="Giá trị"
-                          value={field.value}
-                          onChange={(e) => {
-                            const updated = [...formData.extra_fields];
-                            updated[index] = { ...updated[index], value: e.target.value };
-                            set("extra_fields", updated);
-                          }}
-                          className="flex-1"
-                        />
+                        <Input placeholder="Tên trường" value={field.key} className="w-1/3"
+                          onChange={(e) => { const u = [...formData.extra_fields]; u[index] = { ...u[index], key: e.target.value }; set("extra_fields", u); }} />
+                        <Input placeholder="Giá trị" value={field.value} className="flex-1"
+                          onChange={(e) => { const u = [...formData.extra_fields]; u[index] = { ...u[index], value: e.target.value }; set("extra_fields", u); }} />
                         <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => set("extra_fields", formData.extra_fields.filter((_, i) => i !== index))}>
                           <X className="w-4 h-4" />
                         </Button>
@@ -564,17 +530,14 @@ export default function AdminTeachers() {
                       <Plus className="w-4 h-4 mr-1" /> Thêm trường
                     </Button>
                   </div>
-
                   <div className="border-t pt-5 space-y-3">
                     <Label>Mạng xã hội</Label>
                     {["facebook", "instagram", "youtube", "linkedin", "twitter"].map((platform) => (
                       <div key={platform} className="flex gap-2 items-center">
                         <Label className="w-24 capitalize text-sm text-muted-foreground">{platform}</Label>
-                        <Input
-                          value={formData.social_links[platform] || ""}
+                        <Input value={formData.social_links[platform] || ""}
                           onChange={(e) => set("social_links", { ...formData.social_links, [platform]: e.target.value })}
-                          placeholder={`https://${platform}.com/...`}
-                        />
+                          placeholder={`https://${platform}.com/...`} />
                       </div>
                     ))}
                   </div>
@@ -582,8 +545,7 @@ export default function AdminTeachers() {
               </Tabs>
             </div>
           </ScrollArea>
-
-          <DialogFooter className="p-6 pt-0 border-t mt-0">
+          <DialogFooter className="p-6 pt-0 border-t">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Hủy</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="animate-spin w-4 h-4 mr-2" />}
