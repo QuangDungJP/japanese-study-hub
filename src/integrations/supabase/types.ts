@@ -1345,7 +1345,7 @@ export type Database = {
           total_reviews: number | null
           total_students: number | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           bio?: string | null
@@ -1374,7 +1374,7 @@ export type Database = {
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           bio?: string | null
@@ -1403,7 +1403,7 @@ export type Database = {
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
