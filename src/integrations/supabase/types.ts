@@ -1336,6 +1336,7 @@ export type Database = {
           is_featured: boolean | null
           languages: Json | null
           location: string | null
+          order_index: number | null
           rating: number | null
           slug: string | null
           social_links: Json | null
@@ -1365,6 +1366,7 @@ export type Database = {
           is_featured?: boolean | null
           languages?: Json | null
           location?: string | null
+          order_index?: number | null
           rating?: number | null
           slug?: string | null
           social_links?: Json | null
@@ -1394,6 +1396,7 @@ export type Database = {
           is_featured?: boolean | null
           languages?: Json | null
           location?: string | null
+          order_index?: number | null
           rating?: number | null
           slug?: string | null
           social_links?: Json | null
