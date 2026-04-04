@@ -140,7 +140,7 @@ const MediaUploader = ({
     <div className={cn('space-y-2', className)}>
       {value ? (
         <div className={cn(
-          'relative rounded-xl border border-border overflow-hidden bg-muted/50',
+          'relative border border-border overflow-hidden bg-muted/50',
           aspectRatioClass[aspectRatio]
         )}>
           {isVideo ? (
@@ -153,7 +153,7 @@ const MediaUploader = ({
             <img
               src={value}
               alt="Uploaded media"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
