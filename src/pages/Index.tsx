@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
 import ScrollReveal from "@/components/ScrollReveal";
+import { useHomepageSections } from "@/hooks/useHomepageSections";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
