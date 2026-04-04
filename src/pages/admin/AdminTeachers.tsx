@@ -416,12 +416,12 @@ export default function AdminTeachers() {
                 <TabsContent value="basic" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="flex items-center gap-1">Tên giảng viên <span className="text-destructive">*</span></Label>
-                      <Input value={formData.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="VD: Tanaka Yuki" />
-                    </div>
-                    <div className="space-y-2">
                       <Label>Headline / Chức danh</Label>
                       <Input value={formData.headline} onChange={(e) => set("headline", e.target.value)} placeholder="VD: Giảng viên JLPT N1" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">Tên giảng viên <span className="text-destructive">*</span></Label>
+                      <Input value={formData.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="VD: Tanaka Yuki" />
                     </div>
                   </div>
                   <div className="space-y-2">
