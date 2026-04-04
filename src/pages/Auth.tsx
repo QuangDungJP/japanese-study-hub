@@ -1,282 +1,153 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
-
-const loginSchema = z.object({
-  email: z.string().email('Email không hợp lệ'),
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
-});
-
-const signupSchema = loginSchema.extend({
-  fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự'),
-});
-
-/* ── floating sakura petal ── */
-const Petal = ({ style }: { style: React.CSSProperties }) => (
-  <div
-    className="absolute pointer-events-none select-none text-sakura/60"
-    style={style}
-  >
-    🌸
-  </div>
-);
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const navigate = useNavigate();
-  const { signIn, signUp, user } = useAuth();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (user) navigate('/learn');
-  }, [user, navigate]);
-
-  const validateForm = () => {
-    try {
-      if (isLogin) loginSchema.parse({ email, password });
-      else signupSchema.parse({ email, password, fullName });
-      setErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) newErrors[err.path[0] as string] = err.message;
-        });
-        setErrors(newErrors);
-      }
-      return false;
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setLoading(true);
-    try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast({
-            title: 'Lỗi đăng nhập',
-            description: error.message.includes('Invalid login credentials')
-              ? 'Email hoặc mật khẩu không đúng'
-              : error.message,
-            variant: 'destructive',
-          });
-        } else {
-          toast({ title: 'Đăng nhập thành công!', description: 'おかえりなさい！' });
-          navigate('/learn');
-        }
-      } else {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          toast({
-            title: 'Lỗi đăng ký',
-            description: error.message.includes('already registered')
-              ? 'Email này đã được sử dụng'
-              : error.message,
-            variant: 'destructive',
-          });
-        } else {
-          toast({ title: 'Đăng ký thành công!', description: 'ようこそ！Chào mừng bạn!' });
-          navigate('/learn');
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* generate random petals */
-  const petals = Array.from({ length: 18 }, (_, i) => ({
-    fontSize: `${Math.random() * 16 + 12}px`,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    opacity: Math.random() * 0.5 + 0.2,
-    animation: `float ${6 + Math.random() * 8}s ease-in-out infinite`,
-    animationDelay: `${i * 0.4}s`,
-    transform: `rotate(${Math.random() * 360}deg)`,
-  }));
+  const fields = [
+    { label: "Họ tên", show: !isLogin },
+    { label: "E-mail", type: "email", show: true },
+    { label: "SĐT", show: !isLogin },
+    { label: "Mật khẩu", type: "password", show: true },
+    { label: "Nhập lại mật khẩu", type: "password", show: !isLogin },
+  ];
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-indigo-50 dark:from-background dark:via-background dark:to-background">
-      {/* floating petals background */}
-      {petals.map((s, i) => (
-        <Petal key={i} style={s} />
-      ))}
+    <div className="min-h-screen bg-[#FEF9E7] flex flex-col text-[#1A1A1A]">
 
-      {/* ── Left panel ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* sakura gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-sakura/80 via-pink-400/70 to-indigo-500/80" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2080%2080%22%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2240%22%20r%3D%222%22%20fill%3D%22rgba(255%2C255%2C255%2C0.08)%22/%3E%3C/svg%3E')] bg-repeat" />
+      {/* HEADER */}
+      <header className="w-full max-w-7xl mx-auto px-4 md:px-8 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <h2 className="text-sm md:text-base lg:text-lg italic text-gray-700 text-center md:text-left max-w-xl">
+          Chào mừng bạn đến với mạng lưới đào tạo Nhật ngữ trực tuyến hàng đầu Việt Nam
+        </h2>
 
-        <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-white">
-          {/* large torii gate icon */}
-          <div className="text-7xl mb-6 drop-shadow-lg">⛩️</div>
-          <h1 className="text-5xl font-extrabold mb-3 tracking-tight text-center drop-shadow">
-            NihonGo!
-          </h1>
-          <p className="text-lg opacity-90 text-center max-w-md leading-relaxed font-medium">
-            日本語を学ぼう — Hành trình chinh phục tiếng Nhật bắt đầu từ đây
-          </p>
+        <button className="bg-[#FFB039] hover:bg-[#ff9f10] text-white px-6 py-2 rounded-md font-bold shadow transition">
+          Đăng xuất
+        </button>
+      </header>
 
-          {/* decorative stats */}
-          <div className="mt-14 grid grid-cols-3 gap-8">
-            {[
-              { value: 'N5→N1', label: 'Lộ trình JLPT' },
-              { value: '10K+', label: 'Từ vựng' },
-              { value: '95%', label: 'Tỷ lệ đỗ' },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="text-3xl font-extrabold drop-shadow">{s.value}</div>
-                <div className="text-sm opacity-80 mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
+      {/* MAIN */}
+      <main className="flex-1 flex items-center justify-center px-4 md:px-8 py-10">
+        <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
 
-          {/* bottom wave */}
-          <div className="absolute bottom-0 left-0 right-0">
-            <svg viewBox="0 0 1440 120" className="w-full text-rose-50 dark:text-background">
-              <path
-                fill="currentColor"
-                d="M0,64L60,69.3C120,75,240,85,360,80C480,75,600,53,720,48C840,43,960,53,1080,58.7C1200,64,1320,64,1380,64L1440,64L1440,120L0,120Z"
-              />
-            </svg>
-          </div>
-        </div>
-      </div>
+          {/* LEFT - FORM */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-7 space-y-6"
+          >
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-center lg:text-left">
+              {isLogin ? "Đăng nhập" : "Đăng ký"}
+            </h1>
 
-      {/* ── Right panel — Form ── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 relative z-10">
-        <div className="w-full max-w-md">
-          {/* Mobile header */}
-          <div className="lg:hidden flex flex-col items-center mb-8">
-            <span className="text-5xl mb-3">⛩️</span>
-            <h1 className="text-2xl font-extrabold text-foreground">NihonGo!</h1>
-          </div>
+            <form className="space-y-4">
 
-          {/* Glass card */}
-          <div className="bg-white/70 dark:bg-card/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 dark:border-border p-8 sm:p-10">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-foreground">
-                {isLogin ? 'おかえり！' : 'はじめまして！'}
-              </h2>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {isLogin ? 'Đăng nhập để tiếp tục học' : 'Tạo tài khoản mới để bắt đầu'}
-              </p>
-            </div>
+              {fields
+                .filter((f) => f.show)
+                .map((field, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4"
+                  >
+                    <label className="md:w-40 text-base md:text-lg font-bold shrink-0">
+                      {field.label}
+                    </label>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      type="text"
-                      placeholder="Họ và tên"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pl-10 h-12 rounded-xl bg-white/60 dark:bg-muted/40 border-border/50 focus:border-sakura focus:ring-sakura/30"
+                      type={field.type || "text"}
+                      placeholder={`Nhập ${field.label.toLowerCase()}`}
+                      className="flex-1 h-12 bg-white shadow-inner border-none focus-visible:ring-2 focus-visible:ring-blue-600"
                     />
                   </div>
-                  {errors.fullName && <p className="text-sm text-destructive mt-1">{errors.fullName}</p>}
+                ))}
+
+              {/* ACTION */}
+              <div className="md:pl-40 pt-4 space-y-4 text-center md:text-left">
+
+                <div className="text-sm md:text-base space-y-2">
+                  <p>
+                    {isLogin
+                      ? "Bạn chưa có tài khoản? "
+                      : "Bạn đã có tài khoản? "}
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin(!isLogin)}
+                      className="text-blue-700 font-bold hover:underline"
+                    >
+                      {isLogin ? "Đăng ký" : "Đăng nhập"}
+                    </button>
+                  </p>
+
+                  {isLogin && (
+                    <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                      <Link to="#" className="text-blue-700 font-bold hover:underline">
+                        Quên mật khẩu?
+                      </Link>
+                      <Link to="#" className="text-blue-700 font-bold hover:underline">
+                        Đăng nhập giáo viên
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              <div>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 rounded-xl bg-white/60 dark:bg-muted/40 border-border/50 focus:border-sakura focus:ring-sakura/30"
-                  />
-                </div>
-                {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
-              </div>
-
-              <div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Mật khẩu"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 rounded-xl bg-white/60 dark:bg-muted/40 border-border/50 focus:border-sakura focus:ring-sakura/30"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-sakura to-pink-500 hover:from-sakura/90 hover:to-pink-500/90 text-white font-bold shadow-lg shadow-sakura/25 transition-all duration-300"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Đang xử lý...
-                  </>
-                ) : (
-                  isLogin ? '🌸 Đăng nhập' : '🌸 Đăng ký'
-                )}
-              </Button>
-            </form>
-
-            {isLogin && (
-              <div className="mt-4 text-center">
-                <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-sakura transition-colors">
-                  Quên mật khẩu?
-                </Link>
-              </div>
-            )}
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
-                <button
-                  onClick={() => { setIsLogin(!isLogin); setErrors({}); }}
-                  className="ml-2 text-sakura font-semibold hover:underline"
+                <Button
+                  className="bg-blue-700 hover:bg-blue-800 text-white text-lg md:text-xl font-bold px-8 py-3 rounded-md shadow-lg transition active:scale-95 w-full sm:w-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLoading(true);
+                    setTimeout(() => setLoading(false), 1500);
+                  }}
                 >
-                  {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
-                </button>
+                  {loading ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    "Xác nhận"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+
+          {/* RIGHT - IMAGE */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-5 relative flex flex-col items-center"
+          >
+            {/* BACKGROUND CIRCLE */}
+            <div className="absolute w-64 md:w-80 lg:w-[420px] aspect-square border-[12px] md:border-[20px] border-[#E5E1D1] rounded-full -z-10" />
+
+            <div className="relative flex justify-center">
+              <img
+                src="/teachers/trieu.png"
+                alt="teacher"
+                className="w-3/4 md:w-2/3 lg:w-full object-contain drop-shadow-2xl hover:scale-105 transition"
+              />
+
+              {/* VERTICAL TEXT */}
+              <div className="hidden md:flex absolute -right-10 top-0 h-full items-center">
+                <span className="[writing-mode:vertical-rl] text-[#2D3E50] font-black text-xl lg:text-3xl uppercase whitespace-nowrap">
+                  Tiếng Nhật Quang Dũng Online
+                </span>
+              </div>
+            </div>
+
+            {/* QUOTE */}
+            <div className="mt-6 max-w-md px-4">
+              <p className="text-[#1A3350] text-base md:text-lg font-bold italic text-center lg:text-right">
+                “Bạn đã có những ngày tháng làm việc mệt mỏi... năm 50, 60 bạn sẽ rơi vào vòng lặp hối tiếc”
               </p>
             </div>
-          </div>
-
-          {/* Footer */}
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            Bằng việc tiếp tục, bạn đồng ý với{' '}
-            <Link to="/dieu-khoan" className="underline hover:text-sakura">Điều khoản</Link> và{' '}
-            <Link to="/chinh-sach-bao-mat" className="underline hover:text-sakura">Chính sách bảo mật</Link>
-          </p>
+          </motion.div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
