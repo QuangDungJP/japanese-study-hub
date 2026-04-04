@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,11 @@ import {
 } from "lucide-react";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
 import ScrollReveal from "@/components/ScrollReveal";
+import { useHomepageSections } from "@/hooks/useHomepageSections";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
+  const { data: sectionOrder } = useHomepageSections();
   const heroContent = null;
   const statsContent = {
     students: "50K+",
@@ -25,8 +27,8 @@ const Index = () => {
   const featuredTeachers = (teachers || []).filter((t) => t.is_featured).slice(0, 4);
   const teacherList = (featuredTeachers.length ? featuredTeachers : teachers || []).map((t) => ({
     id: t.id,
-    name: t.profile?.full_name || "Giảng viên",
-    role: "Giảng viên",
+    name: t.display_name || t.profile?.full_name || "Giảng viên",
+    headline: t.headline || "Giảng viên",
     avatar_url: t.image_url || t.profile?.avatar_url || "",
     rating: t.rating || 0,
   }));
@@ -39,13 +41,13 @@ const Index = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const visibleSections = useMemo(() => {
+    if (!sectionOrder) return ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
+    return sectionOrder.filter(s => s.visible).map(s => s.id);
+  }, [sectionOrder]);
 
-  return (
-    <main className="min-h-screen">
-      <Navbar />
-
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative min-h-[90vh] pt-20 overflow-hidden">
+  const heroSection = (
+      <section key="hero" className="relative min-h-[90vh] pt-20 overflow-hidden">
         {/* Parallax animated background */}
         <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5">
           <div
@@ -162,9 +164,10 @@ const Index = () => {
           </div>
         </div>
       </section>
+  );
 
-      {/* ===== SKILLS PREVIEW ===== */}
-      <section className="py-24 bg-background relative">
+  const skillsSection = (
+      <section key="skills" className="py-24 bg-background relative">
         <div className="container mx-auto px-4">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
@@ -213,9 +216,10 @@ const Index = () => {
           </ScrollReveal>
         </div>
       </section>
+  );
 
-      {/* ===== COURSES PREVIEW ===== */}
-      <section className="py-24 bg-muted/30 relative overflow-hidden">
+  const coursesSection = (
+      <section key="courses" className="py-24 bg-muted/30 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-0 right-0 w-96 h-96 bg-japanese/5 rounded-full blur-3xl" />
         </div>
@@ -264,9 +268,10 @@ const Index = () => {
           </ScrollReveal>
         </div>
       </section>
+  );
 
-      {/* ===== FEATURES HIGHLIGHT ===== */}
-      <section className="py-24 bg-background">
+  const featuresSection = (
+      <section key="features" className="py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <ScrollReveal direction="left">
@@ -307,48 +312,50 @@ const Index = () => {
           </div>
         </div>
       </section>
+  );
 
-      {/* ===== ZOOM PREVIEW ===== */}
-      <ScrollReveal>
-        <section className="py-24 bg-muted/30 relative overflow-hidden">
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="bg-gradient-to-br from-primary to-primary/90 rounded-3xl p-12 md:p-16 text-center relative overflow-hidden">
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl" />
+  const zoomSection = (
+    <ScrollReveal key="zoom">
+      <section className="py-24 bg-muted/30 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="bg-gradient-to-br from-primary to-primary/90 rounded-3xl p-12 md:p-16 text-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
+              <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl" />
+            </div>
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 text-white mb-8 border border-white/20">
+                <Video className="w-4 h-4" />
+                <span className="text-sm font-semibold">Học Online qua Zoom</span>
               </div>
-              <div className="relative z-10 max-w-3xl mx-auto">
-                <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 text-white mb-8 border border-white/20">
-                  <Video className="w-4 h-4" />
-                  <span className="text-sm font-semibold">Học Online qua Zoom</span>
-                </div>
-                <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-                  Kết nối trực tiếp với giáo viên bản ngữ
-                </h2>
-                <p className="text-lg text-white/80 mb-10">
-                  Lớp học trực tuyến chất lượng cao, tương tác 1-1 hoặc nhóm nhỏ tối đa 6 học viên
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" className="h-14 px-8 bg-white text-primary hover:bg-white/90 rounded-2xl text-base" asChild>
-                    <Link to="/zoom">
-                      <Video className="w-5 h-5 mr-2" />
-                      Đăng ký học thử
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="lg" className="h-14 px-8 rounded-2xl text-base border-white/30 text-white hover:bg-white/10" asChild>
-                    <Link to="/giao-vien">
-                      Xem giáo viên <ArrowRight className="w-5 h-5 ml-2" />
-                    </Link>
-                  </Button>
-                </div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+                Kết nối trực tiếp với giáo viên bản ngữ
+              </h2>
+              <p className="text-lg text-white/80 mb-10">
+                Lớp học trực tuyến chất lượng cao, tương tác 1-1 hoặc nhóm nhỏ tối đa 6 học viên
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" className="h-14 px-8 bg-white text-primary hover:bg-white/90 rounded-2xl text-base" asChild>
+                  <Link to="/zoom">
+                    <Video className="w-5 h-5 mr-2" />
+                    Đăng ký học thử
+                  </Link>
+                </Button>
+                <Button variant="outline" size="lg" className="h-14 px-8 rounded-2xl text-base border-white/30 text-white hover:bg-white/10" asChild>
+                  <Link to="/giao-vien">
+                    Xem giáo viên <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
-        </section>
-      </ScrollReveal>
+        </div>
+      </section>
+    </ScrollReveal>
+  );
 
-      {/* ===== TEACHERS PREVIEW ===== */}
-      <section className="py-24 bg-background">
+  const teachersSection = (
+      <section key="teachers" className="py-24 bg-background">
         <div className="container mx-auto px-4">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
@@ -384,9 +391,9 @@ const Index = () => {
                       )}
                     </div>
                     <div className="p-5">
+                      <p className="text-xs text-japanese font-medium mb-0.5">{t.headline}</p>
                       <h3 className="font-bold text-foreground">{t.name}</h3>
-                      <p className="text-sm text-japanese mb-2">{t.role}</p>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mt-1">
                         <Star className="w-4 h-4 text-accent fill-accent" />
                         <span className="text-sm font-semibold">{t.rating}</span>
                       </div>
@@ -408,44 +415,60 @@ const Index = () => {
           </ScrollReveal>
         </div>
       </section>
+  );
 
-      {/* ===== CTA SECTION ===== */}
-      <ScrollReveal>
-        <section className="py-24 bg-gradient-to-br from-primary via-primary to-primary/90 relative overflow-hidden">
-          <div className="absolute inset-0">
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-          </div>
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white mb-8 border border-white/20">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-semibold">Ưu đãi đặc biệt - Giảm 50% khoá học đầu tiên</span>
-              </div>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-                Bắt đầu hành trình chinh phục Tiếng Nhật ngay hôm nay
-              </h2>
-              <p className="text-lg text-white/80 mb-10">
-                Tham gia cùng hơn 50,000 học viên đã thành công. Đăng ký miễn phí và nhận 7 ngày Premium!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="h-14 px-10 bg-white text-primary hover:bg-white/90 rounded-2xl text-base shadow-lg" asChild>
-                  <Link to="/auth">
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Đăng ký miễn phí ngay
-                  </Link>
-                </Button>
-                <Button variant="outline" size="lg" className="h-14 px-10 rounded-2xl text-base border-white/30 text-white hover:bg-white/10" asChild>
-                  <Link to="/lien-he">
-                    Liên hệ tư vấn <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-              </div>
+  const ctaSection = (
+    <ScrollReveal key="cta">
+      <section className="py-24 bg-gradient-to-br from-primary via-primary to-primary/90 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        </div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white mb-8 border border-white/20">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-sm font-semibold">Ưu đãi đặc biệt - Giảm 50% khoá học đầu tiên</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+              Bắt đầu hành trình chinh phục Tiếng Nhật ngay hôm nay
+            </h2>
+            <p className="text-lg text-white/80 mb-10">
+              Tham gia cùng hơn 50,000 học viên đã thành công. Đăng ký miễn phí và nhận 7 ngày Premium!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="h-14 px-10 bg-white text-primary hover:bg-white/90 rounded-2xl text-base shadow-lg" asChild>
+                <Link to="/auth">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Đăng ký miễn phí ngay
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="h-14 px-10 rounded-2xl text-base border-white/30 text-white hover:bg-white/10" asChild>
+                <Link to="/lien-he">
+                  Liên hệ tư vấn <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+              </Button>
             </div>
           </div>
-        </section>
-      </ScrollReveal>
+        </div>
+      </section>
+    </ScrollReveal>
+  );
 
+  const sectionMap: Record<string, React.ReactNode> = {
+    hero: heroSection,
+    skills: skillsSection,
+    courses: coursesSection,
+    features: featuresSection,
+    zoom: zoomSection,
+    teachers: teachersSection,
+    cta: ctaSection,
+  };
+
+  return (
+    <main className="min-h-screen">
+      <Navbar />
+      {visibleSections.map(id => sectionMap[id] || null)}
       <Footer />
     </main>
   );

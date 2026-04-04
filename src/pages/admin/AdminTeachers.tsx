@@ -416,12 +416,12 @@ export default function AdminTeachers() {
                 <TabsContent value="basic" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="flex items-center gap-1">Tên giảng viên <span className="text-destructive">*</span></Label>
-                      <Input value={formData.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="VD: Tanaka Yuki" />
-                    </div>
-                    <div className="space-y-2">
                       <Label>Headline / Chức danh</Label>
                       <Input value={formData.headline} onChange={(e) => set("headline", e.target.value)} placeholder="VD: Giảng viên JLPT N1" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">Tên giảng viên <span className="text-destructive">*</span></Label>
+                      <Input value={formData.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="VD: Tanaka Yuki" />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -497,11 +497,13 @@ export default function AdminTeachers() {
                 <TabsContent value="media" className="space-y-5">
                   <div className="space-y-2">
                     <Label>Ảnh đại diện</Label>
-                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" />
+                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" aspectRatio="square" />
+                    <Input value={formData.image_url} onChange={(e) => set("image_url", e.target.value)} placeholder="Hoặc dán URL ảnh..." className="text-xs" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Ảnh bìa</Label>
-                    <MediaUploader value={formData.cover_image_url} onChange={(url) => set("cover_image_url", url)} folder="teachers" />
+                    <Label>Ảnh bìa (Cover)</Label>
+                    <MediaUploader value={formData.cover_image_url} onChange={(url) => set("cover_image_url", url)} folder="teachers" aspectRatio="banner" />
+                    <Input value={formData.cover_image_url} onChange={(e) => set("cover_image_url", e.target.value)} placeholder="Hoặc dán URL ảnh bìa..." className="text-xs" />
                   </div>
                   <div className="space-y-2">
                     <Label>Video giới thiệu (URL)</Label>
