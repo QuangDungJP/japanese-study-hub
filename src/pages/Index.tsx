@@ -391,7 +391,7 @@ const Index = () => {
                     </div>
                     <div className="p-5">
                       <h3 className="font-bold text-foreground">{t.name}</h3>
-                      <p className="text-sm text-japanese mb-2">{t.role}</p>
+                      <p className="text-sm text-japanese mb-2">{t.headline}</p>
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-accent fill-accent" />
                         <span className="text-sm font-semibold">{t.rating}</span>
