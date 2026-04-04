@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor } from 'lucide-react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home } from 'lucide-react';
+import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
