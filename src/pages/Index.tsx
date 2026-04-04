@@ -14,6 +14,7 @@ import { useHomepageSections } from "@/hooks/useHomepageSections";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
+  const { data: sectionOrder } = useHomepageSections();
   const heroContent = null;
   const statsContent = {
     students: "50K+",
@@ -26,8 +27,8 @@ const Index = () => {
   const featuredTeachers = (teachers || []).filter((t) => t.is_featured).slice(0, 4);
   const teacherList = (featuredTeachers.length ? featuredTeachers : teachers || []).map((t) => ({
     id: t.id,
-    name: t.profile?.full_name || "Giảng viên",
-    role: "Giảng viên",
+    name: t.display_name || t.profile?.full_name || "Giảng viên",
+    headline: t.headline || "Giảng viên",
     avatar_url: t.image_url || t.profile?.avatar_url || "",
     rating: t.rating || 0,
   }));
@@ -40,6 +41,10 @@ const Index = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const visibleSections = useMemo(() => {
+    if (!sectionOrder) return ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
+    return sectionOrder.filter(s => s.visible).map(s => s.id);
+  }, [sectionOrder]);
 
   return (
     <main className="min-h-screen">
