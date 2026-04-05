@@ -15,10 +15,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save,
+  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
+import ImageCropModal from "@/components/shared/ImageCropModal";
 import { Database } from "@/integrations/supabase/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -102,6 +103,42 @@ export default function AdminTeachers() {
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [orderChanged, setOrderChanged] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
+
+  // Crop modal state
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState('');
+  const [cropTarget, setCropTarget] = useState<'image_url' | 'cover_image_url'>('image_url');
+  const cropInputRef = useRef<HTMLInputElement>(null);
+
+  const openCropForFile = (target: 'image_url' | 'cover_image_url') => {
+    setCropTarget(target);
+    cropInputRef.current?.click();
+  };
+
+  const handleCropFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+    const ext = 'jpg';
+    const fileName = `teachers/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('website-assets').upload(fileName, blob, { contentType: 'image/jpeg' });
+    if (uploadError) {
+      toast({ title: 'Lỗi upload ảnh đã cắt', variant: 'destructive' });
+      return;
+    }
+    const { data: { publicUrl } } = supabase.storage.from('website-assets').getPublicUrl(fileName);
+    set(cropTarget, publicUrl);
+    toast({ title: 'Đã cắt và upload ảnh ✓' });
+  };
 
   const fetchTeachers = async () => {
     setLoading(true);
@@ -495,14 +532,25 @@ export default function AdminTeachers() {
                 </TabsContent>
 
                 <TabsContent value="media" className="space-y-5">
+                  <input ref={cropInputRef} type="file" accept="image/*" className="hidden" onChange={handleCropFileSelect} />
                   <div className="space-y-2">
-                    <Label>Ảnh đại diện</Label>
-                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" aspectRatio="square" />
+                    <div className="flex items-center justify-between">
+                      <Label>Ảnh đại diện</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('image_url'); openCropForFile('image_url'); }}>
+                        <Crop className="w-3.5 h-3.5 mr-1" /> Chọn & Cắt ảnh
+                      </Button>
+                    </div>
+                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" aspectRatio="square" accept="image" />
                     <Input value={formData.image_url} onChange={(e) => set("image_url", e.target.value)} placeholder="Hoặc dán URL ảnh..." className="text-xs" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Ảnh bìa (Cover)</Label>
-                    <MediaUploader value={formData.cover_image_url} onChange={(url) => set("cover_image_url", url)} folder="teachers" aspectRatio="banner" />
+                    <div className="flex items-center justify-between">
+                      <Label>Ảnh bìa (Cover)</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('cover_image_url'); openCropForFile('cover_image_url'); }}>
+                        <Crop className="w-3.5 h-3.5 mr-1" /> Chọn & Cắt ảnh
+                      </Button>
+                    </div>
+                    <MediaUploader value={formData.cover_image_url} onChange={(url) => set("cover_image_url", url)} folder="teachers" aspectRatio="banner" accept="image" />
                     <Input value={formData.cover_image_url} onChange={(e) => set("cover_image_url", e.target.value)} placeholder="Hoặc dán URL ảnh bìa..." className="text-xs" />
                   </div>
                   <div className="space-y-2">
@@ -556,6 +604,15 @@ export default function AdminTeachers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImageCropModal
+        open={cropModalOpen}
+        onClose={() => setCropModalOpen(false)}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCropComplete}
+        aspect={cropTarget === 'image_url' ? 1 : 3}
+        title={cropTarget === 'image_url' ? 'Cắt ảnh đại diện' : 'Cắt ảnh bìa'}
+      />
     </div>
   );
 }
