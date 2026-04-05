@@ -532,14 +532,25 @@ export default function AdminTeachers() {
                 </TabsContent>
 
                 <TabsContent value="media" className="space-y-5">
+                  <input ref={cropInputRef} type="file" accept="image/*" className="hidden" onChange={handleCropFileSelect} />
                   <div className="space-y-2">
-                    <Label>Ảnh đại diện</Label>
-                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" aspectRatio="square" />
+                    <div className="flex items-center justify-between">
+                      <Label>Ảnh đại diện</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('image_url'); openCropForFile('image_url'); }}>
+                        <Crop className="w-3.5 h-3.5 mr-1" /> Chọn & Cắt ảnh
+                      </Button>
+                    </div>
+                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" aspectRatio="square" accept="image" />
                     <Input value={formData.image_url} onChange={(e) => set("image_url", e.target.value)} placeholder="Hoặc dán URL ảnh..." className="text-xs" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Ảnh bìa (Cover)</Label>
-                    <MediaUploader value={formData.cover_image_url} onChange={(url) => set("cover_image_url", url)} folder="teachers" aspectRatio="banner" />
+                    <div className="flex items-center justify-between">
+                      <Label>Ảnh bìa (Cover)</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('cover_image_url'); openCropForFile('cover_image_url'); }}>
+                        <Crop className="w-3.5 h-3.5 mr-1" /> Chọn & Cắt ảnh
+                      </Button>
+                    </div>
+                    <MediaUploader value={formData.cover_image_url} onChange={(url) => set("cover_image_url", url)} folder="teachers" aspectRatio="banner" accept="image" />
                     <Input value={formData.cover_image_url} onChange={(e) => set("cover_image_url", e.target.value)} placeholder="Hoặc dán URL ảnh bìa..." className="text-xs" />
                   </div>
                   <div className="space-y-2">
