@@ -604,6 +604,15 @@ export default function AdminTeachers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImageCropModal
+        open={cropModalOpen}
+        onClose={() => setCropModalOpen(false)}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCropComplete}
+        aspect={cropTarget === 'image_url' ? 1 : 3}
+        title={cropTarget === 'image_url' ? 'Cắt ảnh đại diện' : 'Cắt ảnh bìa'}
+      />
     </div>
   );
 }
