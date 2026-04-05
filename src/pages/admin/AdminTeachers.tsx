@@ -104,6 +104,42 @@ export default function AdminTeachers() {
   const [orderChanged, setOrderChanged] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
 
+  // Crop modal state
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState('');
+  const [cropTarget, setCropTarget] = useState<'image_url' | 'cover_image_url'>('image_url');
+  const cropInputRef = useRef<HTMLInputElement>(null);
+
+  const openCropForFile = (target: 'image_url' | 'cover_image_url') => {
+    setCropTarget(target);
+    cropInputRef.current?.click();
+  };
+
+  const handleCropFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+    const ext = 'jpg';
+    const fileName = `teachers/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('website-assets').upload(fileName, blob, { contentType: 'image/jpeg' });
+    if (uploadError) {
+      toast({ title: 'Lỗi upload ảnh đã cắt', variant: 'destructive' });
+      return;
+    }
+    const { data: { publicUrl } } = supabase.storage.from('website-assets').getPublicUrl(fileName);
+    set(cropTarget, publicUrl);
+    toast({ title: 'Đã cắt và upload ảnh ✓' });
+  };
+
   const fetchTeachers = async () => {
     setLoading(true);
     const { data, error } = await supabase
