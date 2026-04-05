@@ -15,10 +15,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save,
+  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
+import ImageCropModal from "@/components/shared/ImageCropModal";
 import { Database } from "@/integrations/supabase/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
