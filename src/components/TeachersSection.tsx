@@ -37,7 +37,7 @@ const TeachersSection = () => {
 
     return {
       id: t.id,
-      name: t.profile?.full_name || "Giảng viên",
+      name: t.display_name || t.profile?.full_name || "Giảng viên",
       role: "Giảng viên",
       avatar_url: t.image_url || t.profile?.avatar_url || "",
       video_url: undefined,

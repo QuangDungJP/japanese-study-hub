@@ -1336,6 +1336,7 @@ export type Database = {
           is_featured: boolean | null
           languages: Json | null
           location: string | null
+          order_index: number | null
           rating: number | null
           slug: string | null
           social_links: Json | null
@@ -1345,7 +1346,7 @@ export type Database = {
           total_reviews: number | null
           total_students: number | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           bio?: string | null
@@ -1365,6 +1366,7 @@ export type Database = {
           is_featured?: boolean | null
           languages?: Json | null
           location?: string | null
+          order_index?: number | null
           rating?: number | null
           slug?: string | null
           social_links?: Json | null
@@ -1374,7 +1376,7 @@ export type Database = {
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           bio?: string | null
@@ -1394,6 +1396,7 @@ export type Database = {
           is_featured?: boolean | null
           languages?: Json | null
           location?: string | null
+          order_index?: number | null
           rating?: number | null
           slug?: string | null
           social_links?: Json | null
@@ -1403,7 +1406,7 @@ export type Database = {
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
