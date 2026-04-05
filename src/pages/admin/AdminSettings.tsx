@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor } from 'lucide-react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home } from 'lucide-react';
+import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -122,8 +123,11 @@ const AdminSettings = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="pages" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="homepage" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="homepage" className="flex items-center gap-2">
+            <Home className="w-4 h-4" />Trang chủ
+          </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />Quản lý trang
           </TabsTrigger>
@@ -137,6 +141,10 @@ const AdminSettings = () => {
             <Settings2 className="w-4 h-4" />Chung
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="homepage" className="space-y-4">
+          <HomepageSectionOrder />
+        </TabsContent>
 
         <TabsContent value="pages" className="space-y-4">
           {/* Public pages */}
