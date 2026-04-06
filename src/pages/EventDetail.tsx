@@ -98,10 +98,11 @@ const EventDetailPage = () => {
   }, [event]);
 
   const fetchEvent = async () => {
-    const [{ data: eventData }, { data: fieldsData }, { count }] = await Promise.all([
-      supabase.from('events').select('*').eq('id', id).single(),
-      supabase.from('event_form_fields').select('*').eq('event_id', id).eq('is_active', true).order('order_index'),
-      supabase.from('event_registrations').select('*', { count: 'exact', head: true }).eq('event_id', id).neq('status', 'cancelled'),
+    const { data: eventData } = await supabase.from('events').select('*').eq('slug', slug).single();
+    const eventId = eventData?.id;
+    const [{ data: fieldsData }, { count }] = await Promise.all([
+      supabase.from('event_form_fields').select('*').eq('event_id', eventId).eq('is_active', true).order('order_index'),
+      supabase.from('event_registrations').select('*', { count: 'exact', head: true }).eq('event_id', eventId).neq('status', 'cancelled'),
     ]);
     setEvent(eventData as any);
     setFields((fieldsData as any[])?.map(f => ({ ...f, options: Array.isArray(f.options) ? f.options : [] })) || []);
