@@ -39,18 +39,18 @@ const formatPrice = (price: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
 
 const CourseDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [lessonCount, setLessonCount] = useState(0);
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
     const fetchCourse = async () => {
       const { data } = await supabase
         .from("courses")
         .select("*")
-        .eq("id", id)
+        .eq("slug", slug)
         .eq("is_published", true)
         .single();
       setCourse(data);
