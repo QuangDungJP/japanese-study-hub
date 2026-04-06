@@ -489,6 +489,7 @@ export type Database = {
           level: string
           original_price: number | null
           price: number
+          slug: string | null
           thumbnail_url: string | null
           title: string
           title_vi: string
@@ -506,6 +507,7 @@ export type Database = {
           level?: string
           original_price?: number | null
           price?: number
+          slug?: string | null
           thumbnail_url?: string | null
           title: string
           title_vi: string
@@ -523,6 +525,7 @@ export type Database = {
           level?: string
           original_price?: number | null
           price?: number
+          slug?: string | null
           thumbnail_url?: string | null
           title?: string
           title_vi?: string
@@ -643,6 +646,7 @@ export type Database = {
           location_vi: string | null
           max_participants: number | null
           meet_link: string | null
+          slug: string | null
           start_time: string
           thumbnail_url: string | null
           title: string
@@ -668,6 +672,7 @@ export type Database = {
           location_vi?: string | null
           max_participants?: number | null
           meet_link?: string | null
+          slug?: string | null
           start_time: string
           thumbnail_url?: string | null
           title: string
@@ -693,6 +698,7 @@ export type Database = {
           location_vi?: string | null
           max_participants?: number | null
           meet_link?: string | null
+          slug?: string | null
           start_time?: string
           thumbnail_url?: string | null
           title?: string
@@ -1673,6 +1679,7 @@ export type Database = {
       }
     }
     Functions: {
+      generate_slug: { Args: { input_text: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
