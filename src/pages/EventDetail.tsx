@@ -65,8 +65,8 @@ const EventDetailPage = () => {
   const [regCount, setRegCount] = useState(0);
 
   useEffect(() => {
-    if (id) fetchEvent();
-  }, [id]);
+    if (slug) fetchEvent();
+  }, [slug]);
 
   useEffect(() => {
     if (!event) return;
