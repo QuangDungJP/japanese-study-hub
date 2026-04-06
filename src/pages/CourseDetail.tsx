@@ -67,7 +67,7 @@ const CourseDetail = () => {
       setLoading(false);
     };
     fetchCourse();
-  }, [id]);
+  }, [slug]);
 
   const config = course ? levelConfig[course.level] || levelConfig.N5 : levelConfig.N5;
   const features = Array.isArray(course?.features) ? (course.features as string[]) : [];
