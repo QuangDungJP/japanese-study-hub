@@ -25,7 +25,7 @@ const EventsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('id, title_vi, description_vi, thumbnail_url, event_date, start_time, end_time, location_vi, is_online, max_participants, layout_style')
+        .select('id, title_vi, description_vi, thumbnail_url, event_date, start_time, end_time, location_vi, is_online, max_participants, layout_style, slug')
         .eq('is_published', true)
         .order('event_date', { ascending: false });
       if (error) throw error;
