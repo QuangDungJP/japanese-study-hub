@@ -32,11 +32,11 @@ const TeacherDetail = () => {
   const [filterSpec, setFilterSpec] = useState("all");
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
     const fetchData = async () => {
       setLoading(true);
       const [{ data: tp }, { data: all }] = await Promise.all([
-        supabase.from("teacher_profiles").select("*").eq("id", id).single(),
+        supabase.from("teacher_profiles").select("*").eq("slug", slug).single(),
         supabase.from("teacher_profiles").select("*").eq("is_available", true).order("order_index", { ascending: true }),
       ]);
       setTeacher(tp);
@@ -45,7 +45,7 @@ const TeacherDetail = () => {
     };
     fetchData();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [slug]);
 
   const parseArr = (val: unknown): string[] => {
     if (Array.isArray(val)) return val.filter((v) => typeof v === "string");
