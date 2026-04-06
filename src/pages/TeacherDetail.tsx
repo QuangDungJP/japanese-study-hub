@@ -21,7 +21,7 @@ import { Database } from "@/integrations/supabase/types";
 type TeacherRow = Database["public"]["Tables"]["teacher_profiles"]["Row"];
 
 const TeacherDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [teacher, setTeacher] = useState<TeacherRow | null>(null);
   const [allTeachers, setAllTeachers] = useState<TeacherRow[]>([]);
   const [loading, setLoading] = useState(true);
