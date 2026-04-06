@@ -21,7 +21,7 @@ import { Database } from "@/integrations/supabase/types";
 type TeacherRow = Database["public"]["Tables"]["teacher_profiles"]["Row"];
 
 const TeacherDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [teacher, setTeacher] = useState<TeacherRow | null>(null);
   const [allTeachers, setAllTeachers] = useState<TeacherRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,11 +32,11 @@ const TeacherDetail = () => {
   const [filterSpec, setFilterSpec] = useState("all");
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
     const fetchData = async () => {
       setLoading(true);
       const [{ data: tp }, { data: all }] = await Promise.all([
-        supabase.from("teacher_profiles").select("*").eq("id", id).single(),
+        supabase.from("teacher_profiles").select("*").eq("slug", slug).single(),
         supabase.from("teacher_profiles").select("*").eq("is_available", true).order("order_index", { ascending: true }),
       ]);
       setTeacher(tp);
@@ -45,7 +45,7 @@ const TeacherDetail = () => {
     };
     fetchData();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [slug]);
 
   const parseArr = (val: unknown): string[] => {
     if (Array.isArray(val)) return val.filter((v) => typeof v === "string");
@@ -73,7 +73,7 @@ const TeacherDetail = () => {
   // Filtered other teachers
   const otherTeachers = useMemo(() => {
     return allTeachers
-      .filter((t) => t.id !== id)
+      .filter((t) => t.slug !== slug)
       .filter((t) => {
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
@@ -86,7 +86,7 @@ const TeacherDetail = () => {
         }
         return true;
       });
-  }, [allTeachers, id, searchQuery, filterSpec]);
+  }, [allTeachers, slug, searchQuery, filterSpec]);
 
   if (loading) {
     return (
@@ -381,7 +381,7 @@ const TeacherDetail = () => {
               {otherTeachers.map((t) => (
                 <Link
                   key={t.id}
-                  to={`/teachers/${t.id}`}
+                  to={`/giao-vien/${t.slug || t.id}`}
                   className="group bg-card rounded-2xl border border-border shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:-translate-y-1"
                 >
                   <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/20 overflow-hidden">

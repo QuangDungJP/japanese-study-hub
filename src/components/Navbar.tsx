@@ -12,7 +12,7 @@ const allNavLinks = [
   { name: "Giáo viên", href: "/giao-vien", key: "teachers" },
   { name: "Zoom", href: "/zoom", key: "zoom" },
   { name: "Blog", href: "/blog", key: "blog" },
-  { name: "Hỏi đáp", href: "/gioi-thieu#faq", key: "faq" },
+  
   { name: "Sự kiện", href: "/su-kien", key: "events" },
   { name: "Liên hệ", href: "/lien-he", key: "contact" },
 ];

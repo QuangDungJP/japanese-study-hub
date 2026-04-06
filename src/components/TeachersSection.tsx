@@ -107,7 +107,7 @@ const TeachersSection = () => {
             {teacherList.map((teacher) => (
               <Link
                 key={teacher.id}
-                to={`/teachers/${teacher.id}`}
+                to={`/giao-vien/${(teachers || []).find(t => t.id === teacher.id)?.slug || teacher.id}`}
                 className="group bg-card rounded-2xl border border-border shadow-soft hover:shadow-card-hover transition-all duration-300 overflow-hidden hover:-translate-y-1 block"
               >
               {/* Avatar / Photo */}

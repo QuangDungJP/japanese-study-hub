@@ -25,7 +25,7 @@ const EventsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('id, title_vi, description_vi, thumbnail_url, event_date, start_time, end_time, location_vi, is_online, max_participants, layout_style')
+        .select('id, title_vi, description_vi, thumbnail_url, event_date, start_time, end_time, location_vi, is_online, max_participants, layout_style, slug')
         .eq('is_published', true)
         .order('event_date', { ascending: false });
       if (error) throw error;
@@ -133,7 +133,7 @@ const EventsPage = () => {
         <section className="pb-8">
           <div className="container mx-auto px-4">
             <ScrollReveal>
-              <Link to={`/su-kien/${nextUpcoming.id}`}>
+              <Link to={`/su-kien/${nextUpcoming.slug || nextUpcoming.id}`}>
                 <div className="group relative rounded-3xl overflow-hidden bg-card border border-primary/20 hover:shadow-2xl transition-all duration-500">
                   <div className="grid grid-cols-1 lg:grid-cols-2">
                     <div className="relative aspect-video lg:aspect-auto lg:min-h-[340px] overflow-hidden bg-muted">
@@ -223,7 +223,7 @@ const EventsPage = () => {
                   const eventPast = isPast(new Date(event.event_date));
                   return (
                     <ScrollReveal key={event.id} delay={i * 80} direction="up">
-                      <Link to={`/su-kien/${event.id}`} className="block h-full">
+                      <Link to={`/su-kien/${event.slug || event.id}`} className="block h-full">
                         <Card className="group overflow-hidden hover:shadow-xl transition-all duration-500 border-border hover:border-primary/20 h-full rounded-2xl hover:-translate-y-1">
                           <div className="relative aspect-video overflow-hidden bg-muted">
                             {event.thumbnail_url ? (
