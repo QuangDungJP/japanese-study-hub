@@ -88,8 +88,8 @@ const App = () => (
               <Route path="/giao-vien" element={<TeachersPage />} />
               <Route path="/zoom" element={<ZoomPage />} />
               <Route path="/lien-he" element={<Contact />} />
-              <Route path="/courses/:id" element={<CourseDetail />} />
-              <Route path="/teachers/:id" element={<TeacherDetail />} />
+              <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
+              <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
