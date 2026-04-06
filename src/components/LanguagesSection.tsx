@@ -30,13 +30,13 @@ const iconMap: Record<string, any> = {
 
 const LanguagesSection = () => {
   const { data: content, isLoading } = useAllWebsiteContent();
-  const [dbCourses, setDbCourses] = useState<Array<{ id: string; level: string }>>([]);
+  const [dbCourses, setDbCourses] = useState<Array<{ id: string; level: string; slug: string | null }>>([]);
 
   useEffect(() => {
     const fetchCourses = async () => {
       const { data } = await supabase
         .from("courses")
-        .select("id, level")
+        .select("id, level, slug")
         .eq("is_published", true);
       setDbCourses(data || []);
     };
@@ -45,7 +45,7 @@ const LanguagesSection = () => {
 
   const getCourseLink = (level: string) => {
     const match = dbCourses.find(c => c.level === level.split(" ")[0]);
-    return match ? `/courses/${match.id}` : "/auth";
+    return match ? `/khoa-hoc/${match.slug || match.id}` : "/auth";
   };
 
   const langContent = content?.languages;

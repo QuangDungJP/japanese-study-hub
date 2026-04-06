@@ -88,19 +88,18 @@ const App = () => (
               <Route path="/giao-vien" element={<TeachersPage />} />
               <Route path="/zoom" element={<ZoomPage />} />
               <Route path="/lien-he" element={<Contact />} />
-              <Route path="/courses/:id" element={<CourseDetail />} />
-              <Route path="/teachers/:id" element={<TeacherDetail />} />
+              <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
+              <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/huong-dan" element={<UserGuide />} />
-              <Route path="/faq" element={<About />} />
               <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />
               <Route path="/dieu-khoan" element={<Terms />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogDetail />} />
               <Route path="/su-kien" element={<EventsPage />} />
-              <Route path="/su-kien/:id" element={<EventDetailPage />} />
+              <Route path="/su-kien/:slug" element={<EventDetailPage />} />
               <Route path="/learn" element={<LearningLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="reading" element={<Reading />} />

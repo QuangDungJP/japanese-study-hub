@@ -39,18 +39,18 @@ const formatPrice = (price: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
 
 const CourseDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [lessonCount, setLessonCount] = useState(0);
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
     const fetchCourse = async () => {
       const { data } = await supabase
         .from("courses")
         .select("*")
-        .eq("id", id)
+        .eq("slug", slug)
         .eq("is_published", true)
         .single();
       setCourse(data);
@@ -67,7 +67,7 @@ const CourseDetail = () => {
       setLoading(false);
     };
     fetchCourse();
-  }, [id]);
+  }, [slug]);
 
   const config = course ? levelConfig[course.level] || levelConfig.N5 : levelConfig.N5;
   const features = Array.isArray(course?.features) ? (course.features as string[]) : [];
@@ -93,7 +93,7 @@ const CourseDetail = () => {
         <Navbar />
         <div className="container mx-auto px-4 pt-28 pb-16 text-center">
           <h1 className="text-3xl font-bold text-foreground mb-4">Khóa học không tìm thấy</h1>
-          <Button asChild><Link to="/#languages">Quay lại</Link></Button>
+          <Button asChild><Link to="/khoa-hoc">Quay lại</Link></Button>
         </div>
         <Footer />
       </main>
@@ -110,7 +110,7 @@ const CourseDetail = () => {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-japanese/5 blur-3xl" />
 
         <div className="container mx-auto px-4 relative z-10">
-          <Link to="/#languages" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8 group">
+          <Link to="/khoa-hoc" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8 group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Tất cả khóa học</span>
           </Link>

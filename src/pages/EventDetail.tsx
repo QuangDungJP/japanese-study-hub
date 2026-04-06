@@ -53,7 +53,7 @@ interface FormField {
 }
 
 const EventDetailPage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [event, setEvent] = useState<EventDetail | null>(null);
@@ -65,8 +65,8 @@ const EventDetailPage = () => {
   const [regCount, setRegCount] = useState(0);
 
   useEffect(() => {
-    if (id) fetchEvent();
-  }, [id]);
+    if (slug) fetchEvent();
+  }, [slug]);
 
   useEffect(() => {
     if (!event) return;
@@ -98,10 +98,11 @@ const EventDetailPage = () => {
   }, [event]);
 
   const fetchEvent = async () => {
-    const [{ data: eventData }, { data: fieldsData }, { count }] = await Promise.all([
-      supabase.from('events').select('*').eq('id', id).single(),
-      supabase.from('event_form_fields').select('*').eq('event_id', id).eq('is_active', true).order('order_index'),
-      supabase.from('event_registrations').select('*', { count: 'exact', head: true }).eq('event_id', id).neq('status', 'cancelled'),
+    const { data: eventData } = await supabase.from('events').select('*').eq('slug', slug).single();
+    const eventId = eventData?.id;
+    const [{ data: fieldsData }, { count }] = await Promise.all([
+      supabase.from('event_form_fields').select('*').eq('event_id', eventId).eq('is_active', true).order('order_index'),
+      supabase.from('event_registrations').select('*', { count: 'exact', head: true }).eq('event_id', eventId).neq('status', 'cancelled'),
     ]);
     setEvent(eventData as any);
     setFields((fieldsData as any[])?.map(f => ({ ...f, options: Array.isArray(f.options) ? f.options : [] })) || []);
@@ -124,7 +125,7 @@ const EventDetailPage = () => {
     setSubmitting(true);
     try {
       const { error } = await supabase.from('event_registrations').insert({
-        event_id: id, user_id: user?.id || null, data: formData, status: 'registered',
+        event_id: event?.id, user_id: user?.id || null, data: formData, status: 'registered',
       } as any);
       if (error) throw error;
       setSubmitted(true);
