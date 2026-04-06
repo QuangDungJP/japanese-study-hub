@@ -381,7 +381,7 @@ const TeacherDetail = () => {
               {otherTeachers.map((t) => (
                 <Link
                   key={t.id}
-                  to={`/teachers/${t.id}`}
+                  to={`/giao-vien/${t.slug || t.id}`}
                   className="group bg-card rounded-2xl border border-border shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:-translate-y-1"
                 >
                   <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/20 overflow-hidden">
