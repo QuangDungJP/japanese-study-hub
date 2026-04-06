@@ -30,7 +30,7 @@ const iconMap: Record<string, any> = {
 
 const LanguagesSection = () => {
   const { data: content, isLoading } = useAllWebsiteContent();
-  const [dbCourses, setDbCourses] = useState<Array<{ id: string; level: string }>>([]);
+  const [dbCourses, setDbCourses] = useState<Array<{ id: string; level: string; slug: string | null }>>([]);
 
   useEffect(() => {
     const fetchCourses = async () => {
