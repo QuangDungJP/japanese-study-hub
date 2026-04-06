@@ -100,7 +100,7 @@ const App = () => (
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogDetail />} />
               <Route path="/su-kien" element={<EventsPage />} />
-              <Route path="/su-kien/:id" element={<EventDetailPage />} />
+              <Route path="/su-kien/:slug" element={<EventDetailPage />} />
               <Route path="/learn" element={<LearningLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="reading" element={<Reading />} />
