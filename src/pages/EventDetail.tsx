@@ -53,7 +53,7 @@ interface FormField {
 }
 
 const EventDetailPage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [event, setEvent] = useState<EventDetail | null>(null);
