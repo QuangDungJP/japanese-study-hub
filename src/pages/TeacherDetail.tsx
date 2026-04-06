@@ -73,7 +73,7 @@ const TeacherDetail = () => {
   // Filtered other teachers
   const otherTeachers = useMemo(() => {
     return allTeachers
-      .filter((t) => t.id !== id)
+      .filter((t) => t.slug !== slug)
       .filter((t) => {
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
@@ -86,7 +86,7 @@ const TeacherDetail = () => {
         }
         return true;
       });
-  }, [allTeachers, id, searchQuery, filterSpec]);
+  }, [allTeachers, slug, searchQuery, filterSpec]);
 
   if (loading) {
     return (
