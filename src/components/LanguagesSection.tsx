@@ -45,7 +45,7 @@ const LanguagesSection = () => {
 
   const getCourseLink = (level: string) => {
     const match = dbCourses.find(c => c.level === level.split(" ")[0]);
-    return match ? `/courses/${match.id}` : "/auth";
+    return match ? `/khoa-hoc/${match.slug || match.id}` : "/auth";
   };
 
   const langContent = content?.languages;

@@ -223,7 +223,7 @@ const EventsPage = () => {
                   const eventPast = isPast(new Date(event.event_date));
                   return (
                     <ScrollReveal key={event.id} delay={i * 80} direction="up">
-                      <Link to={`/su-kien/${event.id}`} className="block h-full">
+                      <Link to={`/su-kien/${event.slug || event.id}`} className="block h-full">
                         <Card className="group overflow-hidden hover:shadow-xl transition-all duration-500 border-border hover:border-primary/20 h-full rounded-2xl hover:-translate-y-1">
                           <div className="relative aspect-video overflow-hidden bg-muted">
                             {event.thumbnail_url ? (
