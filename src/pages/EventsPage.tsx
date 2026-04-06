@@ -133,7 +133,7 @@ const EventsPage = () => {
         <section className="pb-8">
           <div className="container mx-auto px-4">
             <ScrollReveal>
-              <Link to={`/su-kien/${nextUpcoming.id}`}>
+              <Link to={`/su-kien/${nextUpcoming.slug || nextUpcoming.id}`}>
                 <div className="group relative rounded-3xl overflow-hidden bg-card border border-primary/20 hover:shadow-2xl transition-all duration-500">
                   <div className="grid grid-cols-1 lg:grid-cols-2">
                     <div className="relative aspect-video lg:aspect-auto lg:min-h-[340px] overflow-hidden bg-muted">
