@@ -93,7 +93,7 @@ const CourseDetail = () => {
         <Navbar />
         <div className="container mx-auto px-4 pt-28 pb-16 text-center">
           <h1 className="text-3xl font-bold text-foreground mb-4">Khóa học không tìm thấy</h1>
-          <Button asChild><Link to="/#languages">Quay lại</Link></Button>
+          <Button asChild><Link to="/khoa-hoc">Quay lại</Link></Button>
         </div>
         <Footer />
       </main>
