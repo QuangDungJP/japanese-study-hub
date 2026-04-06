@@ -1,14 +1,16 @@
-import { useState } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock } from 'lucide-react';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { usePageVisibility, PageVisibilitySettings } from '@/hooks/usePageVisibility';
+import { supabase } from '@/integrations/supabase/client';
 
 const supportedLanguages = [
   { code: 'english', name: 'English', flag: '🇬🇧', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] },
@@ -58,14 +60,34 @@ const sidebarItemLabels: Record<string, string> = {
   settings: 'Cài đặt',
 };
 
+interface AuthCmsSettings {
+  welcome_text: string;
+  login_title: string;
+  signup_title: string;
+  quote: string;
+  vertical_text: string;
+  image_url: string;
+}
+
+const defaultAuthCms: AuthCmsSettings = {
+  welcome_text: 'Chào mừng bạn đến với mạng lưới đào tạo Nhật ngữ trực tuyến hàng đầu Việt Nam',
+  login_title: 'Đăng nhập',
+  signup_title: 'Đăng ký',
+  quote: '"Bạn đã có những ngày tháng làm việc mệt mỏi...\nnăm 50, 60 bạn sẽ rơi vào vòng lặp hối tiếc"',
+  vertical_text: 'Tiếng Nhật Quang Dũng Online',
+  image_url: '/teachers/quang-dung.png',
+};
+
 const AdminSettings = () => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const { settings: pageVisibility, saveSettings: savePageVisibility } = usePageVisibility();
   const [localVisibility, setLocalVisibility] = useState<PageVisibilitySettings | null>(null);
+  const [authCms, setAuthCms] = useState<AuthCmsSettings>(defaultAuthCms);
+  const [authCmsId, setAuthCmsId] = useState<string | null>(null);
 
   const visibility = localVisibility || pageVisibility;
-  
+
   const [settings, setSettings] = useState({
     enabledLanguages: ['english', 'chinese', 'korean', 'japanese'],
     enabledExerciseTypes: exerciseTypes.map(t => t.id),
@@ -74,6 +96,30 @@ const AdminSettings = () => {
     xpPerLesson: 25,
     streakBonus: 5,
   });
+
+  useEffect(() => {
+    supabase
+      .from('website_content')
+      .select('id, content, image_url')
+      .eq('section_key', 'auth_settings')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setAuthCmsId(data.id);
+          if (data.content && typeof data.content === 'object') {
+            const c = data.content as Record<string, string>;
+            setAuthCms({
+              welcome_text: c.welcome_text || defaultAuthCms.welcome_text,
+              login_title: c.login_title || defaultAuthCms.login_title,
+              signup_title: c.signup_title || defaultAuthCms.signup_title,
+              quote: c.quote || defaultAuthCms.quote,
+              vertical_text: c.vertical_text || defaultAuthCms.vertical_text,
+              image_url: data.image_url || c.image_url || defaultAuthCms.image_url,
+            });
+          }
+        }
+      });
+  }, []);
 
   const toggleLanguage = (code: string) => {
     setSettings(prev => ({
@@ -97,12 +143,36 @@ const AdminSettings = () => {
     });
   };
 
+  const saveAuthCms = async () => {
+    const payload = {
+      section_key: 'auth_settings',
+      content: {
+        welcome_text: authCms.welcome_text,
+        login_title: authCms.login_title,
+        signup_title: authCms.signup_title,
+        quote: authCms.quote,
+        vertical_text: authCms.vertical_text,
+        image_url: authCms.image_url,
+      },
+      image_url: authCms.image_url,
+      is_active: true,
+    };
+
+    if (authCmsId) {
+      await supabase.from('website_content').update(payload).eq('id', authCmsId);
+    } else {
+      const { data } = await supabase.from('website_content').insert(payload).select('id').single();
+      if (data) setAuthCmsId(data.id);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
       if (localVisibility) {
         await savePageVisibility(localVisibility);
       }
+      await saveAuthCms();
       toast({ title: 'Thành công', description: 'Đã lưu cài đặt' });
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể lưu cài đặt', variant: 'destructive' });
@@ -124,9 +194,12 @@ const AdminSettings = () => {
       </div>
 
       <Tabs defaultValue="homepage" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="homepage" className="flex items-center gap-2">
             <Home className="w-4 h-4" />Trang chủ
+          </TabsTrigger>
+          <TabsTrigger value="auth" className="flex items-center gap-2">
+            <Lock className="w-4 h-4" />Trang Auth
           </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />Quản lý trang
@@ -144,6 +217,70 @@ const AdminSettings = () => {
 
         <TabsContent value="homepage" className="space-y-4">
           <HomepageSectionOrder />
+        </TabsContent>
+
+        <TabsContent value="auth" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Nội dung trang Đăng nhập / Đăng ký</CardTitle>
+              <CardDescription>Tùy chỉnh tiêu đề, câu trích dẫn, hình ảnh và văn bản trên trang Auth</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Dòng chào mừng (header)</label>
+                <Input
+                  value={authCms.welcome_text}
+                  onChange={(e) => setAuthCms(prev => ({ ...prev, welcome_text: e.target.value }))}
+                  placeholder="Chào mừng bạn đến với..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Tiêu đề Đăng nhập</label>
+                  <Input
+                    value={authCms.login_title}
+                    onChange={(e) => setAuthCms(prev => ({ ...prev, login_title: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Tiêu đề Đăng ký</label>
+                  <Input
+                    value={authCms.signup_title}
+                    onChange={(e) => setAuthCms(prev => ({ ...prev, signup_title: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Câu trích dẫn (quote)</label>
+                <Textarea
+                  value={authCms.quote}
+                  onChange={(e) => setAuthCms(prev => ({ ...prev, quote: e.target.value }))}
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Dùng xuống dòng (Enter) để chia thành nhiều hàng</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Chữ dọc bên phải ảnh</label>
+                <Input
+                  value={authCms.vertical_text}
+                  onChange={(e) => setAuthCms(prev => ({ ...prev, vertical_text: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">URL hình ảnh giáo viên</label>
+                <Input
+                  value={authCms.image_url}
+                  onChange={(e) => setAuthCms(prev => ({ ...prev, image_url: e.target.value }))}
+                  placeholder="/teachers/quang-dung.png"
+                />
+                {authCms.image_url && (
+                  <div className="mt-2">
+                    <img src={authCms.image_url} alt="Preview" className="w-32 h-32 object-contain rounded-lg border" />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="pages" className="space-y-4">

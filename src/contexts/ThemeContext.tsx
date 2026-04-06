@@ -56,7 +56,7 @@ const getSaved = <T extends string>(key: string, valid: T[], fallback: T): T => 
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [themeColor, setThemeColorState] = useState<ThemeColor>(() => getSaved('theme-color', validColors, 'blue'));
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => getSaved('theme-mode', validModes, 'system'));
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => getSaved('theme-mode', validModes, 'light'));
   const [themeFont, setThemeFontState] = useState<ThemeFont>(() => getSaved('theme-font', validFonts, 'system'));
   const [themeScale, setThemeScaleState] = useState<ThemeScale>(() => getSaved('theme-scale', validScales, 'medium'));
   const [resolvedMode, setResolvedMode] = useState<'light' | 'dark'>('light');
