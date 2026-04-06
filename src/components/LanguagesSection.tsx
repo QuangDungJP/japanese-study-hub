@@ -36,7 +36,7 @@ const LanguagesSection = () => {
     const fetchCourses = async () => {
       const { data } = await supabase
         .from("courses")
-        .select("id, level")
+        .select("id, level, slug")
         .eq("is_published", true);
       setDbCourses(data || []);
     };
