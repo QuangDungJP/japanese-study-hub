@@ -110,7 +110,7 @@ const CourseDetail = () => {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-japanese/5 blur-3xl" />
 
         <div className="container mx-auto px-4 relative z-10">
-          <Link to="/#languages" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8 group">
+          <Link to="/khoa-hoc" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8 group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Tất cả khóa học</span>
           </Link>
