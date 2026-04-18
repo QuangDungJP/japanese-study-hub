@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthLogic } from '@/hooks/useAuthLogic';
 import PasswordInput from './PasswordInput';
+import Navbar from "@/components/Navbar";
 
+<Navbar />
 interface SignUpFormProps {
   onSwitchToLogin: () => void;
 }

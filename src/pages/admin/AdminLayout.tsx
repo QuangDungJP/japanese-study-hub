@@ -13,6 +13,7 @@ import { useState } from 'react';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import DarkModeToggle from '@/components/theme/DarkModeToggle';
 
 const navSections = [
   {
@@ -168,6 +169,10 @@ const AdminLayout = () => {
 
       {/* Footer links */}
       <div className="p-2 border-t border-border space-y-0.5">
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Chế độ hiển thị</span>
+          <DarkModeToggle variant="compact" />
+        </div>
         <Link to="/teacher" onClick={onNavigate} className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
           <GraduationCap className="w-4 h-4" />Teacher Panel
         </Link>
@@ -205,6 +210,9 @@ const AdminLayout = () => {
             <img src="/logo.jpg" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
           </div>
           <span className="text-sm font-bold text-foreground">TNQDO Admin</span>
+        </div>
+        <div className="ml-auto">
+          <DarkModeToggle variant="compact" />
         </div>
       </header>
 

@@ -12,6 +12,7 @@ import { usePageVisibility } from '@/hooks/usePageVisibility';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import DarkModeToggle from '@/components/theme/DarkModeToggle';
 
 const skillItems = [
   { name: 'Đọc hiểu', href: '/learn/reading', icon: BookOpen },
@@ -111,7 +112,11 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
         })}
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">Chế độ hiển thị</span>
+          <DarkModeToggle variant="compact" />
+        </div>
         <div className="p-4 rounded-xl bg-gradient-primary text-primary-foreground">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm opacity-90">Mục tiêu hôm nay</span>

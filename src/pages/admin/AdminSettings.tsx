@@ -73,7 +73,7 @@ const defaultAuthCms: AuthCmsSettings = {
   welcome_text: 'Chào mừng bạn đến với mạng lưới đào tạo Nhật ngữ trực tuyến hàng đầu Việt Nam',
   login_title: 'Đăng nhập',
   signup_title: 'Đăng ký',
-  quote: '"Bạn đã có những ngày tháng làm việc mệt mỏi...\nnăm 50, 60 bạn sẽ rơi vào vòng lặp hối tiếc"',
+  quote: '“Bạn đã có những ngày tháng làm việc mệt mỏi, bạn đã sợ rằng ngoài 30, 40 tuổi thì không theo kịp nữa, nhưng hãy nhớ rằng nếu hôm nay bạn không đầu tư cho bản thân, năm 50, 60 bạn sẽ rơi vào vòng lặp hối tiếc”',
   vertical_text: 'Tiếng Nhật Quang Dũng Online',
   image_url: '/teachers/quang-dung.png',
 };

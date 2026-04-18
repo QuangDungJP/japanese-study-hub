@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import { usePageVisibility } from "@/hooks/usePageVisibility";
+import DarkModeToggle from "@/components/theme/DarkModeToggle";
 
 const allNavLinks = [
   { name: "Giới thiệu", href: "/gioi-thieu", key: "about" },
@@ -48,6 +49,7 @@ const Navbar = () => {
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
+            <DarkModeToggle />
             <Button variant="ghost" asChild><Link to="/auth">Đăng nhập</Link></Button>
             <Button asChild><Link to="/auth">Bắt đầu miễn phí</Link></Button>
           </div>
@@ -76,6 +78,10 @@ const Navbar = () => {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-sm font-medium text-muted-foreground">Chế độ hiển thị</span>
+                  <DarkModeToggle variant="compact" />
+                </div>
                 <Button variant="ghost" className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Đăng nhập</Link></Button>
                 <Button className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Bắt đầu miễn phí</Link></Button>
               </div>
