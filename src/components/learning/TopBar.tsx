@@ -2,6 +2,7 @@ import { Search, Flame, Zap } from 'lucide-react';
 import { useLearning } from '@/contexts/LearningContext';
 import NotificationDropdown from './NotificationDropdown';
 import UserDropdown from './UserDropdown';
+import DarkModeToggle from '@/components/theme/DarkModeToggle';
 
 const TopBar = () => {
   const { userProgress, currentLanguage, setCurrentLanguage } = useLearning();
@@ -21,6 +22,9 @@ const TopBar = () => {
 
         {/* Right side */}
         <div className="flex items-center gap-4">
+          {/* Dark Mode Toggle */}
+          <DarkModeToggle />
+          
           {/* Japanese Badge */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-japanese/10 border border-japanese/20">
             <span className="text-xl">🇯🇵</span>

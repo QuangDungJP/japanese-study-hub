@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import Navbar from "@/components/Navbar";
 
+<Navbar />
 interface AuthCmsData {
   image_url?: string;
   quote?: string;
@@ -10,7 +12,7 @@ interface AuthCmsData {
 
 const defaults: AuthCmsData = {
   image_url: '/teachers/quang-dung.png',
-  quote: '"Bạn đã có những ngày tháng làm việc mệt mỏi...\nnăm 50, 60 bạn sẽ rơi vào vòng lặp hối tiếc"',
+  quote: '“Bạn đã có những ngày tháng làm việc mệt mỏi, bạn đã sợ rằng ngoài 30, 40 tuổi thì không theo kịp nữa, nhưng hãy nhớ rằng nếu hôm nay bạn không đầu tư cho bản thân, năm 50, 60 bạn sẽ rơi vào vòng lặp hối tiếc”',
   vertical_text: 'Tiếng Nhật Quang Dũng Online',
 };
 

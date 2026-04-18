@@ -5,7 +5,7 @@ import TeacherBranding from "@/components/auth/TeacherBranding";
 import LoginForm from "@/components/auth/LoginForm";
 import SignUpForm from "@/components/auth/SignUpForm";
 import { supabase } from "@/integrations/supabase/client";
-
+import Navbar from "@/components/Navbar";
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [titles, setTitles] = useState({ login: 'Đăng nhập', signup: 'Đăng ký' });
@@ -29,7 +29,9 @@ const Auth = () => {
   }, []);
 
   return (
+    
     <div className="min-h-screen bg-[#FEF9E7] flex flex-col text-[#1A1A1A]">
+      <Navbar />
       <AuthHeader />
       <main className="flex-1 flex items-center justify-center px-4 md:px-8 py-10">
         <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">

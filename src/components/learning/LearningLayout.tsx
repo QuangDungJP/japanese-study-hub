@@ -5,6 +5,7 @@ import TopBar from './TopBar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
+import DarkModeToggle from '@/components/theme/DarkModeToggle';
 
 const LearningLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -33,6 +34,9 @@ const LearningLayout = () => {
             <img src="/logo.jpg" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
           </div>
           <span className="text-sm font-bold text-foreground">TNQDO Learn</span>
+        </div>
+        <div className="ml-auto">
+          <DarkModeToggle variant="compact" />
         </div>
       </header>
 
