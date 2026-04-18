@@ -6,6 +6,7 @@ import LoginForm from "@/components/auth/LoginForm";
 import SignUpForm from "@/components/auth/SignUpForm";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import { useTheme } from "@/contexts/ThemeContext";
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [titles, setTitles] = useState({ login: 'Đăng nhập', signup: 'Đăng ký' });
@@ -29,28 +30,37 @@ const Auth = () => {
   }, []);
 
   return (
-    
-    <div className="min-h-screen bg-[#FEF9E7] flex flex-col text-[#1A1A1A]">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex flex-col transition-colors duration-300">
       <Navbar />
       <AuthHeader />
-      <main className="flex-1 flex items-center justify-center px-4 md:px-8 py-10">
-        <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="lg:col-span-7 space-y-6"
-          >
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-center lg:text-left">
-              {isLogin ? titles.login : titles.signup}
-            </h1>
-            {isLogin ? (
-              <LoginForm onSwitchToSignUp={() => setIsLogin(false)} />
-            ) : (
-              <SignUpForm onSwitchToLogin={() => setIsLogin(true)} />
-            )}
-          </motion.div>
-          <TeacherBranding />
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="w-full max-w-7xl">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="xl:col-span-7 space-y-6 lg:space-y-8"
+            >
+              <div className="text-center xl:text-left">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent mb-4">
+                  {isLogin ? titles.login : titles.signup}
+                </h1>
+                <p className="text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto xl:mx-0">
+                  {isLogin 
+                    ? "Chào mừng trở lại! Đăng nhập để tiếp tục hành trình học tiếng Nhật của bạn."
+                    : "Bắt đầu hành trình chinh phục tiếng Nhật ngay hôm nay!"
+                  }
+                </p>
+              </div>
+              {isLogin ? (
+                <LoginForm onSwitchToSignUp={() => setIsLogin(false)} />
+              ) : (
+                <SignUpForm onSwitchToLogin={() => setIsLogin(true)} />
+              )}
+            </motion.div>
+            <TeacherBranding />
+          </div>
         </div>
       </main>
     </div>
