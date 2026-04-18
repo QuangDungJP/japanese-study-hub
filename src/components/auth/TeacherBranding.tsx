@@ -1,9 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import Navbar from "@/components/Navbar";
-
-<Navbar />
+import { cn } from '@/lib/utils';
 interface AuthCmsData {
   image_url?: string;
   quote?: string;
@@ -42,25 +40,44 @@ const TeacherBranding = () => {
     <motion.div
       initial={{ opacity: 0, x: 40 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5 }}
-      className="lg:col-span-5 relative flex flex-col items-center"
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="xl:col-span-5 relative flex flex-col items-center justify-center"
     >
-      <div className="relative flex justify-center">
-        <img
-          src={cms.image_url}
-          alt="teacher"
-          className="w-3/4 md:w-2/3 lg:w-full max-w-[420px] object-contain drop-shadow-2xl hover:scale-105 transition"
-        />
-        <div className="hidden md:flex absolute -right-10 top-0 h-full items-center">
-          <span className="[writing-mode:vertical-rl] text-[#2D3E50] font-black text-xl lg:text-3xl uppercase whitespace-nowrap">
+      <div className="relative">
+        {/* Main image with enhanced styling */}
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-600 dark:to-orange-600 rounded-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
+          <img
+            src={cms.image_url}
+            alt="teacher"
+            className="relative w-64 sm:w-72 lg:w-80 xl:w-96 object-cover rounded-2xl shadow-2xl transition-all duration-300 group-hover:scale-105 group-hover:shadow-3xl"
+          />
+        </div>
+        
+        {/* Vertical text for desktop */}
+        <div className="hidden lg:flex absolute -right-16 xl:-right-20 top-0 h-full items-center">
+          <span className="[writing-mode:vertical-rl] text-amber-800 dark:text-amber-200 font-black text-lg xl:text-2xl uppercase tracking-wider whitespace-nowrap opacity-90">
             {cms.vertical_text}
           </span>
         </div>
       </div>
-      <div className="mt-6 max-w-lg px-4">
-        <p className="text-[#1A3350] text-base md:text-lg font-bold italic text-center lg:text-right whitespace-pre-line">
-          {cms.quote}
-        </p>
+      
+      {/* Quote section with enhanced styling */}
+      <div className="mt-8 lg:mt-12 max-w-md mx-auto px-4">
+        <div className="relative">
+          <div className="absolute -left-4 top-0 text-4xl text-amber-400 dark:text-amber-600 opacity-50">"</div>
+          <blockquote className="relative text-amber-900 dark:text-amber-100 text-base lg:text-lg font-medium italic text-center leading-relaxed pl-6">
+            {cms.quote}
+          </blockquote>
+          <div className="absolute -right-4 bottom-0 text-4xl text-amber-400 dark:text-amber-600 opacity-50 rotate-180">"</div>
+        </div>
+      </div>
+      
+      {/* Decorative elements */}
+      <div className="mt-8 flex justify-center gap-2">
+        <div className="w-2 h-2 bg-amber-400 dark:bg-amber-600 rounded-full animate-pulse"></div>
+        <div className="w-2 h-2 bg-orange-400 dark:bg-orange-600 rounded-full animate-pulse delay-75"></div>
+        <div className="w-2 h-2 bg-amber-400 dark:bg-amber-600 rounded-full animate-pulse delay-150"></div>
       </div>
     </motion.div>
   );

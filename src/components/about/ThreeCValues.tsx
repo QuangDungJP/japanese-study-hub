@@ -19,7 +19,7 @@ const defaultValues: ValueItem[] = [
     color: "text-amber-500",
     bgGradient: "from-amber-50 to-orange-50",
     description: "Luôn tạo thử thách cho học viên, có tinh thần học tập không ngừng nghỉ. GV luôn đặt thử thách đầu giờ cho HV trước khi vào bài.",
-    quote: "Mẹo làm bài kĩ ông hát bà khen hay",
+    quote: "GV luôn đặt thử thách đầu giờ cho HV trước khi vào bài ",
     quoteAuthor: "Phương pháp TNQDO",
   },
   {
