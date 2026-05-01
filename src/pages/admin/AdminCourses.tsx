@@ -118,10 +118,11 @@ const AdminCourses = () => {
       features: '',
       thumbnail_url: '',
     });
+    setSelectedTeacherIds([]);
     setEditingCourse(null);
   };
 
-  const openEditDialog = (course: Course) => {
+  const openEditDialog = async (course: Course) => {
     setEditingCourse(course);
     setFormData({
       title: course.title,
@@ -137,7 +138,28 @@ const AdminCourses = () => {
       features: Array.isArray(course.features) ? (course.features as string[]).join('\n') : '',
       thumbnail_url: course.thumbnail_url || '',
     });
+    const { data: ct } = await (supabase as any)
+      .from('course_teachers')
+      .select('teacher_id')
+      .eq('course_id', course.id);
+    setSelectedTeacherIds((ct || []).map((c: any) => c.teacher_id));
     setIsDialogOpen(true);
+  };
+
+  const toggleTeacher = (id: string) => {
+    setSelectedTeacherIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const saveCourseTeachers = async (courseId: string) => {
+    await (supabase as any).from('course_teachers').delete().eq('course_id', courseId);
+    if (selectedTeacherIds.length > 0) {
+      const rows = selectedTeacherIds.map((teacher_id, idx) => ({
+        course_id: courseId,
+        teacher_id,
+        order_index: idx,
+      }));
+      await (supabase as any).from('course_teachers').insert(rows);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
