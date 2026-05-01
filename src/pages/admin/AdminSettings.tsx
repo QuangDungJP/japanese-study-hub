@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock } from 'lucide-react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit } from 'lucide-react';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,6 +85,7 @@ const AdminSettings = () => {
   const [localVisibility, setLocalVisibility] = useState<PageVisibilitySettings | null>(null);
   const [authCms, setAuthCms] = useState<AuthCmsSettings>(defaultAuthCms);
   const [authCmsId, setAuthCmsId] = useState<string | null>(null);
+  const [pageSettingsList, setPageSettingsList] = useState<any[]>([]);
 
   const visibility = localVisibility || pageVisibility;
 
@@ -119,7 +120,35 @@ const AdminSettings = () => {
           }
         }
       });
+
+    (supabase as any)
+      .from('page_settings')
+      .select('*')
+      .order('order_index', { ascending: true })
+      .then(({ data }: { data: any[] | null }) => {
+        if (data) setPageSettingsList(data);
+      });
   }, []);
+
+  const updatePageSetting = (id: string, field: string, value: string) => {
+    setPageSettingsList(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
+
+  const savePageSettings = async () => {
+    for (const p of pageSettingsList) {
+      await (supabase as any)
+        .from('page_settings')
+        .update({
+          display_name: p.display_name,
+          display_name_vi: p.display_name_vi,
+          nav_label: p.nav_label,
+          nav_label_vi: p.nav_label_vi,
+          hero_title_vi: p.hero_title_vi,
+          hero_subtitle_vi: p.hero_subtitle_vi,
+        })
+        .eq('id', p.id);
+    }
+  };
 
   const toggleLanguage = (code: string) => {
     setSettings(prev => ({
@@ -173,6 +202,7 @@ const AdminSettings = () => {
         await savePageVisibility(localVisibility);
       }
       await saveAuthCms();
+      await savePageSettings();
       toast({ title: 'Thành công', description: 'Đã lưu cài đặt' });
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể lưu cài đặt', variant: 'destructive' });
@@ -194,12 +224,15 @@ const AdminSettings = () => {
       </div>
 
       <Tabs defaultValue="homepage" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="homepage" className="flex items-center gap-2">
             <Home className="w-4 h-4" />Trang chủ
           </TabsTrigger>
           <TabsTrigger value="auth" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />Trang Auth
+          </TabsTrigger>
+          <TabsTrigger value="page-names" className="flex items-center gap-2">
+            <FileEdit className="w-4 h-4" />Tên trang
           </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />Quản lý trang
@@ -279,6 +312,78 @@ const AdminSettings = () => {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="page-names" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tên hiển thị các trang</CardTitle>
+              <CardDescription>
+                Đổi tên hiển thị (Tiếng Việt / English) cho từng trang. Tên này được dùng trong navbar và tiêu đề trang.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pageSettingsList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Đang tải...</p>
+              ) : (
+                pageSettingsList.map((p) => (
+                  <div key={p.id} className="border rounded-lg p-4 space-y-3 hover:border-primary/50 transition-colors">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="outline">{p.page_key}</Badge>
+                      <span>{p.route_path}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Tên hiển thị (VI)</label>
+                        <Input
+                          value={p.display_name_vi || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'display_name_vi', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Tên hiển thị (EN)</label>
+                        <Input
+                          value={p.display_name || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'display_name', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Nhãn Navbar (VI)</label>
+                        <Input
+                          value={p.nav_label_vi || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'nav_label_vi', e.target.value)}
+                          placeholder="Mặc định: dùng tên hiển thị"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Nhãn Navbar (EN)</label>
+                        <Input
+                          value={p.nav_label || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'nav_label', e.target.value)}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-xs font-medium text-muted-foreground">Tiêu đề Hero (VI)</label>
+                        <Input
+                          value={p.hero_title_vi || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'hero_title_vi', e.target.value)}
+                          placeholder="Để trống dùng mặc định"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-xs font-medium text-muted-foreground">Phụ đề Hero (VI)</label>
+                        <Textarea
+                          value={p.hero_subtitle_vi || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'hero_subtitle_vi', e.target.value)}
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>

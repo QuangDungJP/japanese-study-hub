@@ -43,6 +43,7 @@ const CourseDetail = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [lessonCount, setLessonCount] = useState(0);
+  const [teachers, setTeachers] = useState<Array<{ id: string; display_name: string | null; image_url: string | null; bio_vi: string | null; slug: string | null; experience_years: number | null }>>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -55,7 +56,6 @@ const CourseDetail = () => {
         .single();
       setCourse(data);
 
-      // Count lessons for this course level
       if (data) {
         const { count } = await supabase
           .from("lessons")
@@ -63,6 +63,19 @@ const CourseDetail = () => {
           .eq("level", data.level)
           .eq("is_published", true);
         setLessonCount(count || 0);
+
+        const { data: ct } = await (supabase as any)
+          .from("course_teachers")
+          .select("teacher_id")
+          .eq("course_id", data.id);
+        const teacherIds = (ct || []).map((c: any) => c.teacher_id as string);
+        if (teacherIds.length > 0) {
+          const { data: tData } = await supabase
+            .from("teacher_profiles")
+            .select("id, display_name, image_url, bio_vi, slug, experience_years")
+            .in("id", teacherIds);
+          setTeachers(tData || []);
+        }
       }
       setLoading(false);
     };
@@ -269,6 +282,46 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
+
+      {/* TEACHERS */}
+      {teachers.length > 0 && (
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-foreground mb-3 flex items-center justify-center gap-3">
+                <GraduationCap className="w-7 h-7 text-japanese" /> Giảng viên phụ trách
+              </h2>
+              <p className="text-muted-foreground">Đội ngũ giảng viên đồng hành cùng bạn trong khóa học này</p>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {teachers.map((t) => (
+                <Link
+                  key={t.id}
+                  to={`/giao-vien/${t.slug || t.id}`}
+                  className="bg-card rounded-2xl border border-border p-6 hover:shadow-card-hover hover:-translate-y-1 transition-all group"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-full bg-muted overflow-hidden ring-2 ring-japanese/20 group-hover:ring-japanese/50 transition-all">
+                      {t.image_url ? (
+                        <img src={t.image_url} alt={t.display_name || ""} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">👩‍🏫</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-foreground truncate">{t.display_name || "Giảng viên"}</h3>
+                      {t.experience_years ? (
+                        <p className="text-xs text-muted-foreground">{t.experience_years} năm kinh nghiệm</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {t.bio_vi && <p className="text-sm text-muted-foreground line-clamp-3">{t.bio_vi}</p>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="py-20">

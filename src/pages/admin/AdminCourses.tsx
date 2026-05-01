@@ -38,12 +38,20 @@ const jlptLevels = [
   { value: 'N1', label: 'JLPT N1 - Thành thạo' },
 ];
 
+interface TeacherOption {
+  id: string;
+  display_name: string | null;
+  image_url: string | null;
+}
+
 const AdminCourses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [saving, setSaving] = useState(false);
+  const [allTeachers, setAllTeachers] = useState<TeacherOption[]>([]);
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -63,7 +71,16 @@ const AdminCourses = () => {
 
   useEffect(() => {
     fetchCourses();
+    fetchTeachers();
   }, []);
+
+  const fetchTeachers = async () => {
+    const { data } = await supabase
+      .from('teacher_profiles')
+      .select('id, display_name, image_url')
+      .order('order_index', { ascending: true });
+    setAllTeachers(data || []);
+  };
 
   const fetchCourses = async () => {
     try {
@@ -101,10 +118,11 @@ const AdminCourses = () => {
       features: '',
       thumbnail_url: '',
     });
+    setSelectedTeacherIds([]);
     setEditingCourse(null);
   };
 
-  const openEditDialog = (course: Course) => {
+  const openEditDialog = async (course: Course) => {
     setEditingCourse(course);
     setFormData({
       title: course.title,
@@ -120,7 +138,28 @@ const AdminCourses = () => {
       features: Array.isArray(course.features) ? (course.features as string[]).join('\n') : '',
       thumbnail_url: course.thumbnail_url || '',
     });
+    const { data: ct } = await (supabase as any)
+      .from('course_teachers')
+      .select('teacher_id')
+      .eq('course_id', course.id);
+    setSelectedTeacherIds((ct || []).map((c: any) => c.teacher_id));
     setIsDialogOpen(true);
+  };
+
+  const toggleTeacher = (id: string) => {
+    setSelectedTeacherIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const saveCourseTeachers = async (courseId: string) => {
+    await (supabase as any).from('course_teachers').delete().eq('course_id', courseId);
+    if (selectedTeacherIds.length > 0) {
+      const rows = selectedTeacherIds.map((teacher_id, idx) => ({
+        course_id: courseId,
+        teacher_id,
+        order_index: idx,
+      }));
+      await (supabase as any).from('course_teachers').insert(rows);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,6 +187,7 @@ const AdminCourses = () => {
         thumbnail_url: formData.thumbnail_url || null,
       };
 
+      let courseId: string | null = null;
       if (editingCourse) {
         const { error } = await supabase
           .from('courses')
@@ -155,21 +195,27 @@ const AdminCourses = () => {
           .eq('id', editingCourse.id);
 
         if (error) throw error;
+        courseId = editingCourse.id;
         toast({
           title: 'Thành công',
           description: 'Đã cập nhật khóa học',
         });
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('courses')
-          .insert([courseData]);
+          .insert([courseData])
+          .select('id')
+          .single();
 
         if (error) throw error;
+        courseId = inserted?.id || null;
         toast({
           title: 'Thành công',
           description: 'Đã tạo khóa học mới',
         });
       }
+
+      if (courseId) await saveCourseTeachers(courseId);
 
       setIsDialogOpen(false);
       resetForm();
@@ -402,6 +448,32 @@ const AdminCourses = () => {
                   placeholder="Video bài giảng&#10;Flashcards từ vựng&#10;Bài tập thực hành&#10;Hỗ trợ 1-1"
                   rows={4}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Giảng viên phụ trách ({selectedTeacherIds.length} đã chọn)</Label>
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                  {allTeachers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Chưa có giảng viên nào. Vào Giảng viên để thêm trước.</p>
+                  ) : (
+                    allTeachers.map(t => (
+                      <label key={t.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedTeacherIds.includes(t.id)}
+                          onChange={() => toggleTeacher(t.id)}
+                          className="w-4 h-4"
+                        />
+                        {t.image_url ? (
+                          <img src={t.image_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs">👩‍🏫</div>
+                        )}
+                        <span className="text-sm font-medium">{t.display_name || 'Giảng viên'}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center space-x-2">
