@@ -78,13 +78,15 @@ const CoursesPage = () => {
           .select("course_id, teacher_id, order_index, role_vi")
           .in("course_id", courseIds);
 
-        const teacherIds = Array.from(new Set((ctData || []).map((ct: any) => ct.teacher_id)));
+        const teacherIds = Array.from(
+          new Set((ctData || []).map((ct: any) => ct.teacher_id as string))
+        );
         let teacherMap: Record<string, any> = {};
         if (teacherIds.length > 0) {
           const { data: teachers } = await supabase
             .from("teacher_profiles")
             .select("id, display_name, image_url, slug")
-            .in("id", teacherIds);
+            .in("id", teacherIds as string[]);
           (teachers || []).forEach((t) => { teacherMap[t.id] = t; });
         }
 
