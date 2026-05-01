@@ -450,6 +450,32 @@ const AdminCourses = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Giảng viên phụ trách ({selectedTeacherIds.length} đã chọn)</Label>
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                  {allTeachers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Chưa có giảng viên nào. Vào Giảng viên để thêm trước.</p>
+                  ) : (
+                    allTeachers.map(t => (
+                      <label key={t.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedTeacherIds.includes(t.id)}
+                          onChange={() => toggleTeacher(t.id)}
+                          className="w-4 h-4"
+                        />
+                        {t.image_url ? (
+                          <img src={t.image_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs">👩‍🏫</div>
+                        )}
+                        <span className="text-sm font-medium">{t.display_name || 'Giảng viên'}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="is_published"
