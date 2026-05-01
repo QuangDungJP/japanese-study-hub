@@ -476,6 +476,36 @@ export type Database = {
         }
         Relationships: []
       }
+      course_teachers: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          order_index: number | null
+          role: string | null
+          role_vi: string | null
+          teacher_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          role?: string | null
+          role_vi?: string | null
+          teacher_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          role?: string | null
+          role_vi?: string | null
+          teacher_id?: string
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           created_at: string
@@ -1137,6 +1167,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_settings: {
+        Row: {
+          created_at: string
+          display_name: string
+          display_name_vi: string
+          hero_subtitle: string | null
+          hero_subtitle_vi: string | null
+          hero_title: string | null
+          hero_title_vi: string | null
+          id: string
+          is_active: boolean | null
+          nav_label: string | null
+          nav_label_vi: string | null
+          order_index: number | null
+          page_key: string
+          route_path: string
+          show_in_nav: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          display_name_vi: string
+          hero_subtitle?: string | null
+          hero_subtitle_vi?: string | null
+          hero_title?: string | null
+          hero_title_vi?: string | null
+          id?: string
+          is_active?: boolean | null
+          nav_label?: string | null
+          nav_label_vi?: string | null
+          order_index?: number | null
+          page_key: string
+          route_path: string
+          show_in_nav?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          display_name_vi?: string
+          hero_subtitle?: string | null
+          hero_subtitle_vi?: string | null
+          hero_title?: string | null
+          hero_title_vi?: string | null
+          id?: string
+          is_active?: boolean | null
+          nav_label?: string | null
+          nav_label_vi?: string | null
+          order_index?: number | null
+          page_key?: string
+          route_path?: string
+          show_in_nav?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
