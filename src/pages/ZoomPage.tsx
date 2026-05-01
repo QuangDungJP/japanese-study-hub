@@ -3,8 +3,14 @@ import Footer from "@/components/Footer";
 import ZoomSection from "@/components/ZoomSection";
 import { Video } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import { usePageSetting } from "@/hooks/usePageSettings";
 
 const ZoomPage = () => {
+  const { data: page } = usePageSetting("zoom");
+  const displayName = page?.display_name_vi || "Google Meet";
+  const heroTitle = page?.hero_title_vi || `Học qua ${displayName} với giáo viên bản ngữ`;
+  const heroSubtitle = page?.hero_subtitle_vi || "Lớp học trực tuyến chất lượng cao, tương tác trực tiếp 1-1 hoặc nhóm nhỏ tối đa 6 học viên";
+
   return (
     <main className="min-h-screen">
       <Navbar />
@@ -21,10 +27,10 @@ const ZoomPage = () => {
               <Video className="w-4 h-4" /> Học trực tuyến
             </span>
             <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-6 leading-tight">
-              Học qua <span className="text-primary">Zoom</span> với giáo viên bản ngữ
+              {heroTitle}
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Lớp học trực tuyến chất lượng cao, tương tác trực tiếp 1-1 hoặc nhóm nhỏ tối đa 6 học viên
+              {heroSubtitle}
             </p>
           </div>
         </div>
