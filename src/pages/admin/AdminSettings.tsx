@@ -85,6 +85,7 @@ const AdminSettings = () => {
   const [localVisibility, setLocalVisibility] = useState<PageVisibilitySettings | null>(null);
   const [authCms, setAuthCms] = useState<AuthCmsSettings>(defaultAuthCms);
   const [authCmsId, setAuthCmsId] = useState<string | null>(null);
+  const [pageSettingsList, setPageSettingsList] = useState<any[]>([]);
 
   const visibility = localVisibility || pageVisibility;
 
