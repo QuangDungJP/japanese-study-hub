@@ -224,12 +224,15 @@ const AdminSettings = () => {
       </div>
 
       <Tabs defaultValue="homepage" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="homepage" className="flex items-center gap-2">
             <Home className="w-4 h-4" />Trang chủ
           </TabsTrigger>
           <TabsTrigger value="auth" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />Trang Auth
+          </TabsTrigger>
+          <TabsTrigger value="page-names" className="flex items-center gap-2">
+            <FileEdit className="w-4 h-4" />Tên trang
           </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />Quản lý trang
