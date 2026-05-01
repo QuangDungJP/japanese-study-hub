@@ -49,7 +49,7 @@ const navSections = [
     items: [
       { name: 'Tài chính', href: '/admin/finance', icon: DollarSign, roles: ['admin'] },
       { name: 'Đơn hàng', href: '/admin/orders', icon: ShoppingCart, roles: ['admin'] },
-      { name: 'Đặt lịch Zoom', href: '/admin/bookings', icon: CalendarDays, roles: ['admin', 'moderator'] },
+      { name: 'Đặt lịch Google Meet', href: '/admin/bookings', icon: CalendarDays, roles: ['admin', 'moderator'] },
     ],
   },
   {
