@@ -187,6 +187,7 @@ const AdminCourses = () => {
         thumbnail_url: formData.thumbnail_url || null,
       };
 
+      let courseId: string | null = null;
       if (editingCourse) {
         const { error } = await supabase
           .from('courses')
@@ -194,21 +195,27 @@ const AdminCourses = () => {
           .eq('id', editingCourse.id);
 
         if (error) throw error;
+        courseId = editingCourse.id;
         toast({
           title: 'Thành công',
           description: 'Đã cập nhật khóa học',
         });
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('courses')
-          .insert([courseData]);
+          .insert([courseData])
+          .select('id')
+          .single();
 
         if (error) throw error;
+        courseId = inserted?.id || null;
         toast({
           title: 'Thành công',
           description: 'Đã tạo khóa học mới',
         });
       }
+
+      if (courseId) await saveCourseTeachers(courseId);
 
       setIsDialogOpen(false);
       resetForm();
