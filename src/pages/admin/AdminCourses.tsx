@@ -38,12 +38,20 @@ const jlptLevels = [
   { value: 'N1', label: 'JLPT N1 - Thành thạo' },
 ];
 
+interface TeacherOption {
+  id: string;
+  display_name: string | null;
+  image_url: string | null;
+}
+
 const AdminCourses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [saving, setSaving] = useState(false);
+  const [allTeachers, setAllTeachers] = useState<TeacherOption[]>([]);
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -63,7 +71,16 @@ const AdminCourses = () => {
 
   useEffect(() => {
     fetchCourses();
+    fetchTeachers();
   }, []);
+
+  const fetchTeachers = async () => {
+    const { data } = await supabase
+      .from('teacher_profiles')
+      .select('id, display_name, image_url')
+      .order('order_index', { ascending: true });
+    setAllTeachers(data || []);
+  };
 
   const fetchCourses = async () => {
     try {
