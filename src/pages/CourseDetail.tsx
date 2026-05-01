@@ -43,6 +43,7 @@ const CourseDetail = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [lessonCount, setLessonCount] = useState(0);
+  const [teachers, setTeachers] = useState<Array<{ id: string; display_name: string | null; image_url: string | null; bio_vi: string | null; slug: string | null; experience_years: number | null }>>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -55,7 +56,6 @@ const CourseDetail = () => {
         .single();
       setCourse(data);
 
-      // Count lessons for this course level
       if (data) {
         const { count } = await supabase
           .from("lessons")
@@ -63,6 +63,19 @@ const CourseDetail = () => {
           .eq("level", data.level)
           .eq("is_published", true);
         setLessonCount(count || 0);
+
+        const { data: ct } = await (supabase as any)
+          .from("course_teachers")
+          .select("teacher_id")
+          .eq("course_id", data.id);
+        const teacherIds = (ct || []).map((c: any) => c.teacher_id as string);
+        if (teacherIds.length > 0) {
+          const { data: tData } = await supabase
+            .from("teacher_profiles")
+            .select("id, display_name, image_url, bio_vi, slug, experience_years")
+            .in("id", teacherIds);
+          setTeachers(tData || []);
+        }
       }
       setLoading(false);
     };
