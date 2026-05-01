@@ -5,15 +5,15 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import { usePageVisibility } from "@/hooks/usePageVisibility";
+import { usePageSettings } from "@/hooks/usePageSettings";
 import DarkModeToggle from "@/components/theme/DarkModeToggle";
 
-const allNavLinks = [
+const defaultNavLinks = [
   { name: "Giới thiệu", href: "/gioi-thieu", key: "about" },
   { name: "Khóa học", href: "/khoa-hoc", key: "courses" },
   { name: "Giáo viên", href: "/giao-vien", key: "teachers" },
-  { name: "Zoom", href: "/zoom", key: "zoom" },
+  { name: "Google Meet", href: "/zoom", key: "zoom" },
   { name: "Blog", href: "/blog", key: "blog" },
-  
   { name: "Sự kiện", href: "/su-kien", key: "events" },
   { name: "Liên hệ", href: "/lien-he", key: "contact" },
 ];
@@ -22,8 +22,14 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { settings } = usePageVisibility();
+  const { data: pageSettings } = usePageSettings();
 
-  const navLinks = allNavLinks.filter(link => settings.navbar_items[link.key] !== false);
+  const navLinks = defaultNavLinks
+    .filter(link => settings.navbar_items[link.key] !== false)
+    .map(link => {
+      const ps = pageSettings?.[link.key];
+      return { ...link, name: ps?.nav_label_vi || ps?.display_name_vi || link.name };
+    });
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-green-200 via-teal-200 to-blue-200 shadow-md">
