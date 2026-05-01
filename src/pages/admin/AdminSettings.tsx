@@ -120,7 +120,35 @@ const AdminSettings = () => {
           }
         }
       });
+
+    (supabase as any)
+      .from('page_settings')
+      .select('*')
+      .order('order_index', { ascending: true })
+      .then(({ data }: { data: any[] | null }) => {
+        if (data) setPageSettingsList(data);
+      });
   }, []);
+
+  const updatePageSetting = (id: string, field: string, value: string) => {
+    setPageSettingsList(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
+
+  const savePageSettings = async () => {
+    for (const p of pageSettingsList) {
+      await (supabase as any)
+        .from('page_settings')
+        .update({
+          display_name: p.display_name,
+          display_name_vi: p.display_name_vi,
+          nav_label: p.nav_label,
+          nav_label_vi: p.nav_label_vi,
+          hero_title_vi: p.hero_title_vi,
+          hero_subtitle_vi: p.hero_subtitle_vi,
+        })
+        .eq('id', p.id);
+    }
+  };
 
   const toggleLanguage = (code: string) => {
     setSettings(prev => ({
