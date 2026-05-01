@@ -202,6 +202,7 @@ const AdminSettings = () => {
         await savePageVisibility(localVisibility);
       }
       await saveAuthCms();
+      await savePageSettings();
       toast({ title: 'Thành công', description: 'Đã lưu cài đặt' });
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể lưu cài đặt', variant: 'destructive' });
