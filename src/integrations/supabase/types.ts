@@ -508,55 +508,124 @@ export type Database = {
       }
       courses: {
         Row: {
+          certificate_image_url: string | null
           created_at: string
+          custom_fields: Json
           description: string | null
           description_vi: string | null
           duration_weeks: number | null
+          enrolled_count: number
+          enrollment_capacity: number | null
+          enrollment_status: string
+          faq: Json
           features: Json | null
+          gallery_urls: Json
+          highlights: Json
           id: string
+          intro_video_url: string | null
           is_published: boolean | null
           language: string
           level: string
+          location: string | null
+          location_vi: string | null
+          long_description: string | null
+          long_description_vi: string | null
           original_price: number | null
+          outcomes: Json
           price: number
+          requirements: Json
+          schedule_text: string | null
+          schedule_text_vi: string | null
+          section_visibility: Json
           slug: string | null
+          start_date: string | null
+          subtitle: string | null
+          subtitle_vi: string | null
+          testimonials: Json
           thumbnail_url: string | null
+          timeline: Json
           title: string
           title_vi: string
           updated_at: string
         }
         Insert: {
+          certificate_image_url?: string | null
           created_at?: string
+          custom_fields?: Json
           description?: string | null
           description_vi?: string | null
           duration_weeks?: number | null
+          enrolled_count?: number
+          enrollment_capacity?: number | null
+          enrollment_status?: string
+          faq?: Json
           features?: Json | null
+          gallery_urls?: Json
+          highlights?: Json
           id?: string
+          intro_video_url?: string | null
           is_published?: boolean | null
           language?: string
           level?: string
+          location?: string | null
+          location_vi?: string | null
+          long_description?: string | null
+          long_description_vi?: string | null
           original_price?: number | null
+          outcomes?: Json
           price?: number
+          requirements?: Json
+          schedule_text?: string | null
+          schedule_text_vi?: string | null
+          section_visibility?: Json
           slug?: string | null
+          start_date?: string | null
+          subtitle?: string | null
+          subtitle_vi?: string | null
+          testimonials?: Json
           thumbnail_url?: string | null
+          timeline?: Json
           title: string
           title_vi: string
           updated_at?: string
         }
         Update: {
+          certificate_image_url?: string | null
           created_at?: string
+          custom_fields?: Json
           description?: string | null
           description_vi?: string | null
           duration_weeks?: number | null
+          enrolled_count?: number
+          enrollment_capacity?: number | null
+          enrollment_status?: string
+          faq?: Json
           features?: Json | null
+          gallery_urls?: Json
+          highlights?: Json
           id?: string
+          intro_video_url?: string | null
           is_published?: boolean | null
           language?: string
           level?: string
+          location?: string | null
+          location_vi?: string | null
+          long_description?: string | null
+          long_description_vi?: string | null
           original_price?: number | null
+          outcomes?: Json
           price?: number
+          requirements?: Json
+          schedule_text?: string | null
+          schedule_text_vi?: string | null
+          section_visibility?: Json
           slug?: string | null
+          start_date?: string | null
+          subtitle?: string | null
+          subtitle_vi?: string | null
+          testimonials?: Json
           thumbnail_url?: string | null
+          timeline?: Json
           title?: string
           title_vi?: string
           updated_at?: string
