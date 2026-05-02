@@ -186,15 +186,19 @@ const CoursesPage = () => {
               <div className="max-w-6xl mx-auto bg-gradient-to-br from-card via-card to-japanese/5 rounded-3xl border border-border shadow-card-hover overflow-hidden">
                 <div className="grid lg:grid-cols-2 gap-0">
                   <div className="relative aspect-video lg:aspect-auto bg-gradient-to-br from-japanese/20 to-primary/20">
-                    {featured.thumbnail_url ? (
-                      <img src={featured.thumbnail_url} alt={featured.title_vi} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className={`text-[180px] font-bold bg-gradient-to-br ${(levelConfig[featured.level] || levelConfig.N5).gradient} bg-clip-text text-transparent`}>
-                          {(levelConfig[featured.level] || levelConfig.N5).kanji}
-                        </span>
-                      </div>
-                    )}
+                    <img
+                      src={featured.thumbnail_url || courseDefaultImg}
+                      alt={featured.title_vi}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      width={1280}
+                      height={720}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <span className={`text-7xl font-bold bg-gradient-to-br ${(levelConfig[featured.level] || levelConfig.N5).gradient} bg-clip-text text-transparent drop-shadow-lg`}>
+                        {(levelConfig[featured.level] || levelConfig.N5).kanji}
+                      </span>
+                    </div>
                     <Badge className="absolute top-4 left-4 bg-orange-500 text-white border-0">
                       <Flame className="w-3 h-3 mr-1" /> Hot
                     </Badge>
@@ -285,19 +289,18 @@ const CoursesPage = () => {
                     >
                       {/* Thumbnail */}
                       <div className={`relative aspect-video ${cfg.bg} overflow-hidden`}>
-                        {course.thumbnail_url ? (
-                          <img
-                            src={course.thumbnail_url}
-                            alt={course.title_vi}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className={`text-[120px] font-bold bg-gradient-to-br ${cfg.gradient} bg-clip-text text-transparent`}>
-                              {cfg.kanji}
-                            </span>
-                          </div>
-                        )}
+                        <img
+                          src={course.thumbnail_url || courseDefaultImg}
+                          alt={course.title_vi}
+                          loading="lazy"
+                          width={1280}
+                          height={720}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                        <span className={`absolute bottom-2 right-3 text-5xl font-bold bg-gradient-to-br ${cfg.gradient} bg-clip-text text-transparent drop-shadow`}>
+                          {cfg.kanji}
+                        </span>
                         <Badge className={`absolute top-3 left-3 bg-gradient-to-r ${cfg.gradient} text-white border-0`}>
                           JLPT {course.level}
                         </Badge>
