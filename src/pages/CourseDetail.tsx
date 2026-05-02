@@ -8,8 +8,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
   BookOpen, Clock, Users, Star, CheckCircle2, ArrowLeft,
-  Trophy, Target, Zap, GraduationCap, Play, Calendar
+  Trophy, Target, Zap, GraduationCap, Play, Calendar, ArrowRight, Sparkles
 } from "lucide-react";
+import courseDefaultImg from "@/assets/course-default-jp.jpg";
 
 interface Course {
   id: string;
@@ -25,6 +26,7 @@ interface Course {
   is_published: boolean | null;
   features: any;
   thumbnail_url: string | null;
+  slug: string | null;
 }
 
 const levelConfig: Record<string, { color: string; gradient: string; label: string; kanji: string }> = {
@@ -44,16 +46,18 @@ const CourseDetail = () => {
   const [loading, setLoading] = useState(true);
   const [lessonCount, setLessonCount] = useState(0);
   const [teachers, setTeachers] = useState<Array<{ id: string; display_name: string | null; image_url: string | null; bio_vi: string | null; slug: string | null; experience_years: number | null }>>([]);
+  const [related, setRelated] = useState<Course[]>([]);
 
   useEffect(() => {
     if (!slug) return;
+    setLoading(true);
     const fetchCourse = async () => {
-      const { data } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("slug", slug)
-        .eq("is_published", true)
-        .single();
+      // Detect if param is UUID or slug
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+      const query = supabase.from("courses").select("*").eq("is_published", true);
+      const { data } = isUuid
+        ? await query.eq("id", slug).maybeSingle()
+        : await query.eq("slug", slug).maybeSingle();
       setCourse(data);
 
       if (data) {
@@ -75,7 +79,19 @@ const CourseDetail = () => {
             .select("id, display_name, image_url, bio_vi, slug, experience_years")
             .in("id", teacherIds);
           setTeachers(tData || []);
+        } else {
+          setTeachers([]);
         }
+
+        // Related: same language, exclude current
+        const { data: relData } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("is_published", true)
+          .eq("language", data.language)
+          .neq("id", data.id)
+          .limit(3);
+        setRelated(relData || []);
       }
       setLoading(false);
     };
@@ -175,11 +191,16 @@ const CourseDetail = () => {
             {/* Right - Pricing Card */}
             <div className="lg:col-span-2">
               <div className="bg-card rounded-3xl border border-border shadow-card-hover p-8 sticky top-28">
-                {course.thumbnail_url && (
-                  <div className="aspect-video rounded-2xl overflow-hidden mb-6 bg-muted">
-                    <img src={course.thumbnail_url} alt={course.title_vi} className="w-full h-full object-cover" />
-                  </div>
-                )}
+                <div className="aspect-video rounded-2xl overflow-hidden mb-6 bg-muted relative">
+                  <img
+                    src={course.thumbnail_url || courseDefaultImg}
+                    alt={course.title_vi}
+                    className="w-full h-full object-cover"
+                    width={1280}
+                    height={720}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                </div>
 
                 <div className="space-y-4">
                   <div className="flex items-end gap-3">
@@ -318,6 +339,60 @@ const CourseDetail = () => {
                   {t.bio_vi && <p className="text-sm text-muted-foreground line-clamp-3">{t.bio_vi}</p>}
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* RELATED COURSES */}
+      {related.length > 0 && (
+        <section className="py-20 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-japanese/10 text-japanese text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5" /> Có thể bạn cũng thích
+              </span>
+              <h2 className="text-3xl font-bold text-foreground">Khóa học liên quan</h2>
+              <p className="text-muted-foreground mt-2">Tiếp tục nâng trình với các khóa học khác</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {related.map((rc) => {
+                const rcCfg = levelConfig[rc.level] || levelConfig.N5;
+                return (
+                  <Link
+                    key={rc.id}
+                    to={`/khoa-hoc/${(rc as any).slug || rc.id}`}
+                    className="group bg-card rounded-2xl border border-border overflow-hidden shadow-soft hover:shadow-card-hover hover:-translate-y-1 transition-all"
+                  >
+                    <div className="relative aspect-video overflow-hidden">
+                      <img
+                        src={rc.thumbnail_url || courseDefaultImg}
+                        alt={rc.title_vi}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <Badge className={`absolute top-3 left-3 bg-gradient-to-r ${rcCfg.gradient} text-white border-0`}>
+                        JLPT {rc.level}
+                      </Badge>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-bold text-foreground line-clamp-2 mb-2 group-hover:text-japanese transition-colors">
+                        {rc.title_vi}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                        {rc.description_vi || rc.description || rcCfg.label}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-foreground">{formatPrice(rc.price)}</span>
+                        <span className={`inline-flex items-center gap-1 text-sm font-semibold ${rcCfg.color} group-hover:gap-2 transition-all`}>
+                          Xem <ArrowRight className="w-4 h-4" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
