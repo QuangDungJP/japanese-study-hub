@@ -8,8 +8,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
   BookOpen, Clock, Users, Star, CheckCircle2, ArrowLeft,
-  Trophy, Target, Zap, GraduationCap, Play, Calendar
+  Trophy, Target, Zap, GraduationCap, Play, Calendar, ArrowRight, Sparkles
 } from "lucide-react";
+import courseDefaultImg from "@/assets/course-default-jp.jpg";
 
 interface Course {
   id: string;
@@ -44,16 +45,18 @@ const CourseDetail = () => {
   const [loading, setLoading] = useState(true);
   const [lessonCount, setLessonCount] = useState(0);
   const [teachers, setTeachers] = useState<Array<{ id: string; display_name: string | null; image_url: string | null; bio_vi: string | null; slug: string | null; experience_years: number | null }>>([]);
+  const [related, setRelated] = useState<Course[]>([]);
 
   useEffect(() => {
     if (!slug) return;
+    setLoading(true);
     const fetchCourse = async () => {
-      const { data } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("slug", slug)
-        .eq("is_published", true)
-        .single();
+      // Detect if param is UUID or slug
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+      const query = supabase.from("courses").select("*").eq("is_published", true);
+      const { data } = isUuid
+        ? await query.eq("id", slug).maybeSingle()
+        : await query.eq("slug", slug).maybeSingle();
       setCourse(data);
 
       if (data) {
@@ -75,7 +78,19 @@ const CourseDetail = () => {
             .select("id, display_name, image_url, bio_vi, slug, experience_years")
             .in("id", teacherIds);
           setTeachers(tData || []);
+        } else {
+          setTeachers([]);
         }
+
+        // Related: same language, exclude current
+        const { data: relData } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("is_published", true)
+          .eq("language", data.language)
+          .neq("id", data.id)
+          .limit(3);
+        setRelated(relData || []);
       }
       setLoading(false);
     };
