@@ -343,6 +343,60 @@ const CourseDetail = () => {
         </section>
       )}
 
+      {/* RELATED COURSES */}
+      {related.length > 0 && (
+        <section className="py-20 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-japanese/10 text-japanese text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5" /> Có thể bạn cũng thích
+              </span>
+              <h2 className="text-3xl font-bold text-foreground">Khóa học liên quan</h2>
+              <p className="text-muted-foreground mt-2">Tiếp tục nâng trình với các khóa học khác</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {related.map((rc) => {
+                const rcCfg = levelConfig[rc.level] || levelConfig.N5;
+                return (
+                  <Link
+                    key={rc.id}
+                    to={`/khoa-hoc/${(rc as any).slug || rc.id}`}
+                    className="group bg-card rounded-2xl border border-border overflow-hidden shadow-soft hover:shadow-card-hover hover:-translate-y-1 transition-all"
+                  >
+                    <div className="relative aspect-video overflow-hidden">
+                      <img
+                        src={rc.thumbnail_url || courseDefaultImg}
+                        alt={rc.title_vi}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <Badge className={`absolute top-3 left-3 bg-gradient-to-r ${rcCfg.gradient} text-white border-0`}>
+                        JLPT {rc.level}
+                      </Badge>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-bold text-foreground line-clamp-2 mb-2 group-hover:text-japanese transition-colors">
+                        {rc.title_vi}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                        {rc.description_vi || rc.description || rcCfg.label}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-foreground">{formatPrice(rc.price)}</span>
+                        <span className={`inline-flex items-center gap-1 text-sm font-semibold ${rcCfg.color} group-hover:gap-2 transition-all`}>
+                          Xem <ArrowRight className="w-4 h-4" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* CTA */}
       <section className="py-20">
         <div className="container mx-auto px-4 text-center">
