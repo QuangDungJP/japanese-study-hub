@@ -13,6 +13,7 @@ import {
   Sparkles, BookOpen, Clock, Users, Star, ArrowRight,
   GraduationCap, Trophy, Target, Zap, CheckCircle2, Flame, Filter
 } from "lucide-react";
+import courseDefaultImg from "@/assets/course-default-jp.jpg";
 
 interface Course {
   id: string;
