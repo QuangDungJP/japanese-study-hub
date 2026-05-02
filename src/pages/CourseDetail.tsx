@@ -26,6 +26,7 @@ interface Course {
   is_published: boolean | null;
   features: any;
   thumbnail_url: string | null;
+  slug: string | null;
 }
 
 const levelConfig: Record<string, { color: string; gradient: string; label: string; kanji: string }> = {
