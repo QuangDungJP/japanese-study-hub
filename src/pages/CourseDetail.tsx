@@ -190,11 +190,16 @@ const CourseDetail = () => {
             {/* Right - Pricing Card */}
             <div className="lg:col-span-2">
               <div className="bg-card rounded-3xl border border-border shadow-card-hover p-8 sticky top-28">
-                {course.thumbnail_url && (
-                  <div className="aspect-video rounded-2xl overflow-hidden mb-6 bg-muted">
-                    <img src={course.thumbnail_url} alt={course.title_vi} className="w-full h-full object-cover" />
-                  </div>
-                )}
+                <div className="aspect-video rounded-2xl overflow-hidden mb-6 bg-muted relative">
+                  <img
+                    src={course.thumbnail_url || courseDefaultImg}
+                    alt={course.title_vi}
+                    className="w-full h-full object-cover"
+                    width={1280}
+                    height={720}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                </div>
 
                 <div className="space-y-4">
                   <div className="flex items-end gap-3">
