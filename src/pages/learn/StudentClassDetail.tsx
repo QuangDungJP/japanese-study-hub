@@ -267,9 +267,15 @@ const StudentClassDetail = () => {
                           </div>
                         )}
                       </div>
-                      <Button size="sm" variant={sub ? 'outline' : 'default'} onClick={() => openSubmit(a)}>
-                        <Upload className="w-4 h-4 mr-1" />{sub ? 'Cập nhật' : 'Nộp bài'}
-                      </Button>
+                      {(() => {
+                        const gate = canSubmit(a);
+                        const disabled = !gate.ok;
+                        return (
+                          <Button size="sm" variant={sub ? 'outline' : 'default'} disabled={disabled && !sub} onClick={() => openSubmit(a)} title={gate.reason}>
+                            <Upload className="w-4 h-4 mr-1" />{sub ? (disabled ? 'Đã đóng' : 'Cập nhật') : (disabled ? (a.start_at && new Date(a.start_at) > now ? 'Chưa mở' : 'Quá hạn') : 'Nộp bài')}
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
