@@ -33,11 +33,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const teachers = [
-  { id: "sarah", name: "Ms. Sarah Johnson", specialty: "IELTS & Business English" },
-  { id: "david", name: "Mr. David Chen", specialty: "Conversation & Pronunciation" },
-  { id: "emily", name: "Ms. Emily Watson", specialty: "TOEFL & Academic English" },
-];
+interface TeacherOption {
+  id: string;
+  user_id: string | null;
+  name: string;
+  specialty: string;
+}
 
 const timeSlots = [
   "08:00", "09:00", "10:00", "11:00",
