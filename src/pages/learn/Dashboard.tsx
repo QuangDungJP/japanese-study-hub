@@ -263,9 +263,13 @@ const Dashboard = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-card rounded-xl border border-border">
-            <p className="text-muted-foreground">Chưa có bài học nào. Admin hãy thêm bài học trong trang quản trị.</p>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title="Chưa có bài học nào"
+            description="Quay lại sau khi giảng viên xuất bản bài học mới, hoặc khám phá các khóa học hiện có."
+            actionLabel="Khám phá khóa học"
+            actionHref="/courses"
+          />
         )}
       </div>
     </div>
