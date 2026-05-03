@@ -164,7 +164,15 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn giáo viên..." />
+                    <SelectValue
+                      placeholder={
+                        loadingTeachers
+                          ? "Đang tải giảng viên..."
+                          : teachers.length === 0
+                          ? "Chưa có giảng viên khả dụng"
+                          : "Chọn giáo viên..."
+                      }
+                    />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
