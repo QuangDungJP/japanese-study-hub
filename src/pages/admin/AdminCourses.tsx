@@ -695,6 +695,40 @@ const AdminCourses = () => {
           ))}
         </div>
       )}
+
+      {/* Manage JLPT Levels Dialog */}
+      <Dialog open={levelsDialogOpen} onOpenChange={setLevelsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Quản lý cấp độ JLPT</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {jlptLevels.map(l => (
+                <div key={l.id} className="flex items-center gap-2 p-2 border rounded-md">
+                  <Badge variant="secondary">{l.value}</Badge>
+                  <div className="flex-1 text-sm">
+                    <div className="font-medium">{l.label_vi}</div>
+                    <div className="text-xs text-muted-foreground">{l.label}</div>
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteLevel(l.id)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-3 space-y-2">
+              <Label className="text-sm">Thêm cấp độ mới</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Input placeholder="Mã (vd N0)" value={newLevel.value} onChange={e => setNewLevel({ ...newLevel, value: e.target.value })} />
+                <Input placeholder="Tên VI" value={newLevel.label_vi} onChange={e => setNewLevel({ ...newLevel, label_vi: e.target.value })} />
+                <Input placeholder="Tên EN" value={newLevel.label} onChange={e => setNewLevel({ ...newLevel, label: e.target.value })} />
+              </div>
+              <Button type="button" size="sm" onClick={addLevel} className="w-full">
+                <Plus className="w-3.5 h-3.5 mr-1" /> Thêm cấp độ
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
