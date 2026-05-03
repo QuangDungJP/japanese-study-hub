@@ -319,14 +319,23 @@ const TeacherClasses = () => {
   };
 
   const handleSubmit = async () => {
+    if (!formData.name_vi.trim()) {
+      toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập tên lớp', variant: 'destructive' });
+      return;
+    }
     try {
-      const classData = {
-        ...formData,
+      const classData: any = {
+        name: formData.name || formData.name_vi,
+        name_vi: formData.name_vi,
+        description: formData.description,
+        description_vi: formData.description_vi,
+        max_students: formData.max_students,
+        custom_fields: formData.custom_fields as any,
         teacher_id: user?.id,
         course_id: formData.course_id || null,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        is_active: true
+        is_active: true,
       };
 
       if (editingClass) {
@@ -340,20 +349,20 @@ const TeacherClasses = () => {
       } else {
         const { error } = await supabase
           .from('classes')
-          .insert(classData);
+          .insert({ ...classData, approval_status: 'pending' });
 
         if (error) throw error;
-        toast({ title: 'Thành công', description: 'Đã tạo lớp học mới' });
+        toast({ title: 'Đã gửi duyệt', description: 'Lớp học sẽ hoạt động sau khi admin duyệt' });
       }
 
       setIsDialogOpen(false);
       resetForm();
       fetchClasses();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving class:', error);
       toast({ 
         title: 'Lỗi', 
-        description: 'Không thể lưu lớp học', 
+        description: error?.message || 'Không thể lưu lớp học', 
         variant: 'destructive' 
       });
     }
