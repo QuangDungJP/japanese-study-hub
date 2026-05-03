@@ -167,8 +167,7 @@ const TeacherClasses = () => {
       const { data } = await supabase
         .from('courses')
         .select('id, title_vi')
-        .eq('is_published', true)
-        .eq('language', 'japanese');
+        .eq('is_published', true);
 
       setCourses(data || []);
     } catch (error) {
