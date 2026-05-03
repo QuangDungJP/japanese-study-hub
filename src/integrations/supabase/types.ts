@@ -293,6 +293,7 @@ export type Database = {
           id: string
           lesson_id: string | null
           link_url: string | null
+          start_at: string | null
           title: string
           updated_at: string
         }
@@ -307,6 +308,7 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           link_url?: string | null
+          start_at?: string | null
           title: string
           updated_at?: string
         }
@@ -321,6 +323,7 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           link_url?: string | null
+          start_at?: string | null
           title?: string
           updated_at?: string
         }
@@ -376,6 +379,7 @@ export type Database = {
           name_vi: string
           rejection_reason: string | null
           schedule: Json | null
+          slug: string | null
           start_date: string | null
           teacher_id: string
           updated_at: string
@@ -397,6 +401,7 @@ export type Database = {
           name_vi: string
           rejection_reason?: string | null
           schedule?: Json | null
+          slug?: string | null
           start_date?: string | null
           teacher_id: string
           updated_at?: string
@@ -418,6 +423,7 @@ export type Database = {
           name_vi?: string
           rejection_reason?: string | null
           schedule?: Json | null
+          slug?: string | null
           start_date?: string | null
           teacher_id?: string
           updated_at?: string
@@ -951,6 +957,7 @@ export type Database = {
           description: string | null
           description_vi: string | null
           duration_minutes: number
+          end_time: string | null
           exam_date: string
           exam_type: string
           id: string
@@ -971,6 +978,7 @@ export type Database = {
           description?: string | null
           description_vi?: string | null
           duration_minutes?: number
+          end_time?: string | null
           exam_date: string
           exam_type?: string
           id?: string
@@ -991,6 +999,7 @@ export type Database = {
           description?: string | null
           description_vi?: string | null
           duration_minutes?: number
+          end_time?: string | null
           exam_date?: string
           exam_type?: string
           id?: string
@@ -1161,12 +1170,14 @@ export type Database = {
           description: string | null
           description_vi: string | null
           duration_minutes: number | null
+          end_at: string | null
           id: string
           is_published: boolean | null
           language: string
           level: string
           order_index: number | null
           skill: string
+          start_at: string | null
           teacher_id: string | null
           thumbnail_url: string | null
           title: string
@@ -1183,12 +1194,14 @@ export type Database = {
           description?: string | null
           description_vi?: string | null
           duration_minutes?: number | null
+          end_at?: string | null
           id?: string
           is_published?: boolean | null
           language: string
           level: string
           order_index?: number | null
           skill: string
+          start_at?: string | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -1205,12 +1218,14 @@ export type Database = {
           description?: string | null
           description_vi?: string | null
           duration_minutes?: number | null
+          end_at?: string | null
           id?: string
           is_published?: boolean | null
           language?: string
           level?: string
           order_index?: number | null
           skill?: string
+          start_at?: string | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title?: string

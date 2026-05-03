@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Trash2, Upload, Link2, ExternalLink, Star, Flame } from 'lucide-react';
+import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Trash2, Upload, Link2, ExternalLink, Star, Flame, CalendarClock, GraduationCap } from 'lucide-react';
 import { format } from 'date-fns';
 
 const TeacherClassDetail = () => {
@@ -25,11 +25,12 @@ const TeacherClassDetail = () => {
   const [vocab, setVocab] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Assignment dialog
   const [aOpen, setAOpen] = useState(false);
-  const [aForm, setAForm] = useState({ title: '', description: '', link_url: '', file_url: '', due_date: '', lesson_id: '' });
+  const [aForm, setAForm] = useState({ title: '', description: '', link_url: '', file_url: '', start_at: '', due_date: '', lesson_id: '' });
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (id) fetchAll(); }, [id]);
@@ -37,17 +38,19 @@ const TeacherClassDetail = () => {
   const fetchAll = async () => {
     setLoading(true);
     const sb: any = supabase;
-    const [{ data: c }, { data: s }, { data: l }, { data: v }, { data: a }] = await Promise.all([
+    const [{ data: c }, { data: s }, { data: l }, { data: v }, { data: a }, { data: ex }] = await Promise.all([
       sb.from('classes').select('*').eq('id', id!).maybeSingle(),
       sb.from('class_students').select('*').eq('class_id', id!),
-      sb.from('lessons').select('*').eq('class_id', id!).order('order_index'),
+      sb.from('lessons').select('*').eq('class_id', id!).order('start_at', { ascending: true, nullsFirst: false }),
       sb.from('vocabulary').select('*').eq('class_id', id!).order('created_at', { ascending: false }),
-      sb.from('class_assignments').select('*').eq('class_id', id!).order('created_at', { ascending: false }),
+      sb.from('class_assignments').select('*').eq('class_id', id!).order('start_at', { ascending: true, nullsFirst: false }),
+      sb.from('exams').select('*').eq('class_id', id!).order('exam_date', { ascending: true }),
     ]);
     setCls(c);
     setAssignments(a || []);
     setLessons(l || []);
     setVocab(v || []);
+    setExams(ex || []);
 
     // student profiles + progress
     const studentIds = (s || []).map((x: any) => x.student_id);
@@ -112,6 +115,7 @@ const TeacherClassDetail = () => {
       description: aForm.description || null,
       link_url: aForm.link_url || null,
       file_url: aForm.file_url || null,
+      start_at: aForm.start_at || null,
       due_date: aForm.due_date || null,
       lesson_id: aForm.lesson_id || null,
       created_by: user?.id,
@@ -120,7 +124,7 @@ const TeacherClassDetail = () => {
     if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     toast({ title: 'Đã tạo bài tập' });
     setAOpen(false);
-    setAForm({ title: '', description: '', link_url: '', file_url: '', due_date: '', lesson_id: '' });
+    setAForm({ title: '', description: '', link_url: '', file_url: '', start_at: '', due_date: '', lesson_id: '' });
     fetchAll();
   };
 
@@ -140,7 +144,10 @@ const TeacherClassDetail = () => {
         <Button variant="ghost" size="icon" asChild><Link to="/teacher/classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{cls.name_vi}</h1>
-          <p className="text-sm text-muted-foreground">{cls.description_vi || cls.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {cls.slug && <span className="font-mono text-xs mr-2">/{cls.slug}</span>}
+            {cls.description_vi || cls.name}
+          </p>
         </div>
         <Badge className={
           cls.approval_status === 'approved' ? 'bg-green-500/10 text-green-600' :
@@ -164,6 +171,7 @@ const TeacherClassDetail = () => {
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
           <TabsTrigger value="vocab"><BookText className="w-4 h-4 mr-1" />Từ vựng</TabsTrigger>
           <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
+          <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Bài nộp</TabsTrigger>
         </TabsList>
 
@@ -199,12 +207,15 @@ const TeacherClassDetail = () => {
           </div>
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead>Tiêu đề</TableHead><TableHead>Cấp độ</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Tiêu đề</TableHead><TableHead>Lịch học</TableHead><TableHead>Cấp độ</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
               <TableBody>
-                {lessons.length === 0 ? <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Chưa có bài học. Vào "Quản lý bài học" và gán class_id.</TableCell></TableRow> :
+                {lessons.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Chưa có bài học. Vào "Quản lý bài học" và gán class_id.</TableCell></TableRow> :
                   lessons.map(l => (
                     <TableRow key={l.id}>
                       <TableCell className="font-medium">{l.title_vi}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {l.start_at ? <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />{format(new Date(l.start_at), 'dd/MM HH:mm')}{l.end_at && ` → ${format(new Date(l.end_at), 'HH:mm')}`}</span> : '—'}
+                      </TableCell>
                       <TableCell>{l.level}</TableCell>
                       <TableCell>{l.is_published ? <Badge className="bg-green-500/10 text-green-600">Đã đăng</Badge> : <Badge variant="outline">Nháp</Badge>}</TableCell>
                     </TableRow>
@@ -245,6 +256,7 @@ const TeacherClassDetail = () => {
                   <h3 className="font-semibold">{a.title}</h3>
                   {a.description && <p className="text-sm text-muted-foreground mt-1">{a.description}</p>}
                   <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+                    {a.start_at && <span className="text-muted-foreground flex items-center gap-1"><CalendarClock className="w-3 h-3" />Bắt đầu: {format(new Date(a.start_at), 'dd/MM/yyyy HH:mm')}</span>}
                     {a.due_date && <span className="text-muted-foreground">Hạn: {format(new Date(a.due_date), 'dd/MM/yyyy HH:mm')}</span>}
                     {a.file_url && <a href={a.file_url} target="_blank" rel="noreferrer" className="text-primary flex items-center gap-1"><ExternalLink className="w-3 h-3" />File đính kèm</a>}
                     {a.link_url && <a href={a.link_url} target="_blank" rel="noreferrer" className="text-primary flex items-center gap-1"><Link2 className="w-3 h-3" />Liên kết</a>}
@@ -254,6 +266,29 @@ const TeacherClassDetail = () => {
               </CardContent>
             </Card>
           ))}
+        </TabsContent>
+
+        <TabsContent value="exams" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button asChild size="sm"><Link to="/teacher/calendar"><Plus className="w-4 h-4 mr-1" />Tạo bài kiểm tra</Link></Button>
+          </div>
+          <Card><CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow><TableHead>Tiêu đề</TableHead><TableHead>Loại</TableHead><TableHead>Ngày & Giờ</TableHead><TableHead>Thời lượng</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {exams.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Chưa có bài kiểm tra nào cho lớp này.</TableCell></TableRow> :
+                  exams.map(e => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">{e.title_vi || e.title}</TableCell>
+                      <TableCell><Badge variant="outline">{e.exam_type}</Badge></TableCell>
+                      <TableCell className="text-sm">{format(new Date(e.exam_date), 'dd/MM/yyyy')} • {e.start_time}{e.end_time && ` → ${e.end_time}`}</TableCell>
+                      <TableCell>{e.duration_minutes} phút</TableCell>
+                      <TableCell>{e.is_published ? <Badge className="bg-green-500/10 text-green-600">Đã đăng</Badge> : <Badge variant="outline">Nháp</Badge>}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </CardContent></Card>
         </TabsContent>
 
         <TabsContent value="submissions" className="mt-4">
@@ -304,7 +339,10 @@ const TeacherClassDetail = () => {
               <Input type="file" disabled={uploading} onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0])} />
               {aForm.file_url && <p className="text-xs text-muted-foreground truncate">Đã tải: {aForm.file_url}</p>}
             </div>
-            <div className="space-y-1"><Label>Hạn nộp</Label><Input type="datetime-local" value={aForm.due_date} onChange={e => setAForm({ ...aForm, due_date: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label>Bắt đầu</Label><Input type="datetime-local" value={aForm.start_at} onChange={e => setAForm({ ...aForm, start_at: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Hạn nộp</Label><Input type="datetime-local" value={aForm.due_date} onChange={e => setAForm({ ...aForm, due_date: e.target.value })} /></div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAOpen(false)}>Hủy</Button>
