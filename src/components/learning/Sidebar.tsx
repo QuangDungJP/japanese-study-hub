@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   BookOpen, Mic, PenTool, Headphones, LayoutDashboard,
   BookText, Trophy, Video, GraduationCap, Calendar,
-  ChevronDown, ChevronRight, Dumbbell, Settings, User
+  ChevronDown, ChevronRight, Dumbbell, Settings, User, Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
