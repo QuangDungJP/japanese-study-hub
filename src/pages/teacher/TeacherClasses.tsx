@@ -59,7 +59,7 @@ interface ClassData {
   created_at: string;
   approval_status?: string;
   rejection_reason?: string | null;
-  custom_fields?: CustomField[];
+  custom_fields?: any;
   student_count?: number;
   courses?: { title_vi: string };
 }
