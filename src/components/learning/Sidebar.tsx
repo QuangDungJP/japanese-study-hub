@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   BookOpen, Mic, PenTool, Headphones, LayoutDashboard,
   BookText, Trophy, Video, GraduationCap, Calendar,
-  ChevronDown, ChevronRight, Dumbbell, Settings, User
+  ChevronDown, ChevronRight, Dumbbell, Settings, User, Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
@@ -24,6 +24,7 @@ const skillItems = [
 
 const allNavigation = [
   { name: 'Dashboard', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
+  { name: 'Lớp học của tôi', href: '/learn/classes', icon: Users, key: 'classes' },
   { name: 'Bài học', icon: GraduationCap, isDropdown: true, children: skillItems, key: 'lessons' },
   { name: 'Bài tập', href: '/learn/exercises', icon: Dumbbell, key: 'exercises' },
   { name: 'Zoom Class', href: '/learn/zoom', icon: Video, key: 'zoom' },

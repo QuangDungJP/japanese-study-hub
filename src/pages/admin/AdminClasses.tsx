@@ -16,8 +16,16 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Check, X, Eye, Trash2, Users } from 'lucide-react';
+import { Check, X, Eye, Trash2, Users, UserPlus, Search } from 'lucide-react';
 import { format } from 'date-fns';
+
+interface ClassStudent {
+  id: string;
+  student_id: string;
+  enrolled_at: string;
+  status: string;
+  full_name?: string;
+}
 
 interface ClassRow {
   id: string;
@@ -45,6 +53,10 @@ const AdminClasses = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectOpen, setRejectOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [studentsOpen, setStudentsOpen] = useState(false);
+  const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{ user_id: string; full_name: string | null }[]>([]);
+  const [userSearch, setUserSearch] = useState('');
   const { toast } = useToast();
 
   useEffect(() => { fetchAll(); }, []);
@@ -104,6 +116,49 @@ const AdminClasses = () => {
     fetchAll();
   };
 
+  const openStudents = async (cls: ClassRow) => {
+    setSelected(cls);
+    setStudentsOpen(true);
+    await loadClassStudents(cls.id);
+    await loadAvailableUsers(cls.id);
+  };
+
+  const loadClassStudents = async (classId: string) => {
+    const { data } = await supabase.from('class_students').select('*').eq('class_id', classId).order('enrolled_at', { ascending: false });
+    const ids = (data || []).map((s: any) => s.student_id);
+    const { data: profs } = ids.length ? await supabase.from('profiles').select('user_id, full_name').in('user_id', ids) : { data: [] as any[] };
+    setClassStudents((data || []).map((s: any) => ({ ...s, full_name: profs?.find((p: any) => p.user_id === s.student_id)?.full_name || '—' })));
+  };
+
+  const loadAvailableUsers = async (classId: string) => {
+    const { data: existing } = await supabase.from('class_students').select('student_id').eq('class_id', classId);
+    const exIds = new Set((existing || []).map((e: any) => e.student_id));
+    const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'user');
+    const ids = (roles || []).map((r: any) => r.user_id).filter((id: string) => !exIds.has(id));
+    if (!ids.length) return setAvailableUsers([]);
+    const { data: profs } = await supabase.from('profiles').select('user_id, full_name').in('user_id', ids).limit(200);
+    setAvailableUsers(profs || []);
+  };
+
+  const addStudent = async (uid: string) => {
+    if (!selected) return;
+    const { error } = await supabase.from('class_students').insert({ class_id: selected.id, student_id: uid, status: 'active' });
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    toast({ title: 'Đã thêm học viên' });
+    await loadClassStudents(selected.id);
+    await loadAvailableUsers(selected.id);
+    fetchAll();
+  };
+
+  const removeStudent = async (sid: string) => {
+    if (!selected || !confirm('Xóa học viên khỏi lớp?')) return;
+    const { error } = await supabase.from('class_students').delete().eq('class_id', selected.id).eq('student_id', sid);
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    await loadClassStudents(selected.id);
+    await loadAvailableUsers(selected.id);
+    fetchAll();
+  };
+
   const filtered = classes.filter(c =>
     tab === 'all' ? true : c.approval_status === tab
   );
@@ -148,6 +203,9 @@ const AdminClasses = () => {
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => { setSelected(c); setDetailOpen(true); }}>
                       <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-blue-600" onClick={() => openStudents(c)}>
+                      <Users className="w-4 h-4" />
                     </Button>
                     {c.approval_status !== 'approved' && (
                       <Button variant="ghost" size="icon" className="text-green-600" onClick={() => approve(c)}>
@@ -243,6 +301,58 @@ const AdminClasses = () => {
           )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDetailOpen(false)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Students dialog */}
+      <Dialog open={studentsOpen} onOpenChange={setStudentsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Học viên - {selected?.name_vi}</DialogTitle></DialogHeader>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <div className="font-medium mb-2 text-sm">Đã thêm ({classStudents.length})</div>
+              <div className="border rounded max-h-[400px] overflow-y-auto">
+                {classStudents.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6 text-sm">Chưa có học viên</div>
+                ) : classStudents.map(s => (
+                  <div key={s.id} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0">
+                    <div>
+                      <div className="font-medium text-sm">{s.full_name}</div>
+                      <div className="text-xs text-muted-foreground">Tham gia: {format(new Date(s.enrolled_at), 'dd/MM/yyyy')}</div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeStudent(s.student_id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="font-medium mb-2 text-sm">Thêm học viên</div>
+              <div className="relative mb-2">
+                <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
+                <Input className="pl-8" placeholder="Tìm tên học viên..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
+              </div>
+              <div className="border rounded max-h-[360px] overflow-y-auto">
+                {availableUsers.filter(u => !userSearch || u.full_name?.toLowerCase().includes(userSearch.toLowerCase())).length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6 text-sm">Không có học viên khả dụng</div>
+                ) : availableUsers
+                  .filter(u => !userSearch || u.full_name?.toLowerCase().includes(userSearch.toLowerCase()))
+                  .slice(0, 50)
+                  .map(u => (
+                    <div key={u.user_id} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0">
+                      <div className="text-sm">{u.full_name || '—'}</div>
+                      <Button variant="ghost" size="icon" className="text-green-600" onClick={() => addStudent(u.user_id)}>
+                        <UserPlus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setStudentsOpen(false)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
