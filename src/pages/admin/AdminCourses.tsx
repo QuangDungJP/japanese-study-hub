@@ -451,12 +451,12 @@ const AdminCourses = () => {
                 {/* === CONTENT === */}
                 <TabsContent value="content" className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Mô tả dài / Giới thiệu chi tiết (VI)</Label>
-                    <Textarea rows={6} value={form.long_description_vi} onChange={e => setForm({ ...form, long_description_vi: e.target.value })} placeholder="Giới thiệu chi tiết về khóa học, phương pháp giảng dạy..." />
+                    <Label>Nội dung chi tiết khóa học (VI) — chèn ảnh, video, định dạng tự do</Label>
+                    <RichTextEditor value={form.long_description_vi} onChange={v => setForm({ ...form, long_description_vi: v })} placeholder="Viết bài giới thiệu chi tiết, chèn ảnh và video..." minHeight="320px" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Mô tả dài (EN)</Label>
-                    <Textarea rows={4} value={form.long_description} onChange={e => setForm({ ...form, long_description: e.target.value })} />
+                    <Label>Detailed content (EN)</Label>
+                    <RichTextEditor value={form.long_description} onChange={v => setForm({ ...form, long_description: v })} minHeight="240px" />
                   </div>
                   <div className="space-y-2">
                     <Label>Tính năng / Module (mỗi dòng một mục)</Label>
