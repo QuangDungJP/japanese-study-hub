@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import { usePageVisibility } from "@/hooks/usePageVisibility";
 import { usePageSettings } from "@/hooks/usePageSettings";
 import DarkModeToggle from "@/components/theme/DarkModeToggle";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const defaultNavLinks = [
   { name: "Giới thiệu", href: "/gioi-thieu", key: "about" },
@@ -21,8 +30,10 @@ const defaultNavLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { settings } = usePageVisibility();
   const { data: pageSettings } = usePageSettings();
+  const { user, signOut, isModeratorOrAdmin, isAdmin, isTeacherOrAbove } = useAuth();
 
   const navLinks = defaultNavLinks
     .filter(link => settings.navbar_items[link.key] !== false)
@@ -30,6 +41,14 @@ const Navbar = () => {
       const ps = pageSettings?.[link.key];
       return { ...link, name: ps?.nav_label_vi || ps?.display_name_vi || link.name };
     });
+
+  const initial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase();
+  const displayName = user?.user_metadata?.full_name || user?.email || '';
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-green-200 via-teal-200 to-blue-200 shadow-md">
@@ -56,8 +75,49 @@ const Navbar = () => {
 
           <div className="hidden lg:flex items-center gap-3">
             <DarkModeToggle />
-            <Button variant="ghost" asChild><Link to="/auth">Đăng nhập</Link></Button>
-            <Button asChild><Link to="/auth">Bắt đầu miễn phí</Link></Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/40 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold shadow-md">
+                      {initial}
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="p-3 border-b border-border">
+                    <p className="font-medium text-foreground truncate">{displayName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                  <DropdownMenuItem onClick={() => navigate('/learn/profile')}>
+                    <UserIcon className="w-4 h-4 mr-2" /> Hồ sơ của tôi
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/learn')}>
+                    <LayoutDashboard className="w-4 h-4 mr-2" /> Vào trang học
+                  </DropdownMenuItem>
+                  {isTeacherOrAbove && (
+                    <DropdownMenuItem onClick={() => navigate('/teacher')}>
+                      <Settings className="w-4 h-4 mr-2" /> Khu giáo viên
+                    </DropdownMenuItem>
+                  )}
+                  {isModeratorOrAdmin && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <Settings className="w-4 h-4 mr-2" />
+                      {isAdmin ? 'Quản trị viên' : 'Quản lý nội dung'}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" /> Đăng xuất
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" asChild><Link to="/auth">Đăng nhập</Link></Button>
+                <Button asChild><Link to="/auth">Bắt đầu miễn phí</Link></Button>
+              </>
+            )}
           </div>
 
           <button className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setIsOpen(!isOpen)}>
