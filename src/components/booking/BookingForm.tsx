@@ -69,6 +69,34 @@ interface BookingFormProps {
 export const BookingForm = ({ onSuccess }: BookingFormProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(true);
+
+  useEffect(() => {
+    const loadTeachers = async () => {
+      const { data } = await supabase
+        .from("teacher_profiles")
+        .select("id, user_id, display_name, headline, specializations")
+        .eq("is_available", true)
+        .order("is_featured", { ascending: false })
+        .order("rating", { ascending: false });
+
+      if (data) {
+        const opts: TeacherOption[] = data.map((t: any) => {
+          const specs = Array.isArray(t.specializations) ? t.specializations : [];
+          return {
+            id: t.id,
+            user_id: t.user_id,
+            name: t.display_name || "Giảng viên",
+            specialty: t.headline || specs.slice(0, 2).join(", ") || "Giảng viên",
+          };
+        });
+        setTeachers(opts);
+      }
+      setLoadingTeachers(false);
+    };
+    loadTeachers();
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
