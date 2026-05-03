@@ -23,7 +23,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const success = await handleLogin(email, password);
-    if (success) navigate('/learn');
+    if (success) navigate('/');
   };
 
   const handleGoogleLogin = async () => {
@@ -31,7 +31,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/learn` },
+        options: { redirectTo: `${window.location.origin}/` },
       });
       if (error) toast.error(error.message);
     } catch {
