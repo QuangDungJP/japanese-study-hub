@@ -90,6 +90,10 @@ const StudentClassDetail = () => {
 
   const submitAssignment = async () => {
     if (!user || !subAssignment) return;
+    const gate = canSubmit(subAssignment);
+    if (!gate.ok) {
+      return toast({ title: 'Không thể nộp', description: gate.reason, variant: 'destructive' });
+    }
     if (!subForm.content && !subForm.link_url && !subForm.file_url) {
       return toast({ title: 'Vui lòng nhập nội dung, liên kết hoặc tệp', variant: 'destructive' });
     }
