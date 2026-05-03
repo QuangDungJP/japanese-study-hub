@@ -16,8 +16,16 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Check, X, Eye, Trash2, Users } from 'lucide-react';
+import { Check, X, Eye, Trash2, Users, UserPlus, Search } from 'lucide-react';
 import { format } from 'date-fns';
+
+interface ClassStudent {
+  id: string;
+  student_id: string;
+  enrolled_at: string;
+  status: string;
+  full_name?: string;
+}
 
 interface ClassRow {
   id: string;
