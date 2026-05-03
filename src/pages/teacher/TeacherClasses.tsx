@@ -604,6 +604,64 @@ const TeacherClasses = () => {
                 />
               </div>
             </div>
+
+            {/* Custom fields */}
+            <div className="space-y-2 border-t pt-4">
+              <div className="flex justify-between items-center">
+                <Label>Trường tùy chỉnh</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      custom_fields: [...formData.custom_fields, { key: '', label: '', value: '' }],
+                    })
+                  }
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Thêm trường
+                </Button>
+              </div>
+              {formData.custom_fields.length === 0 && (
+                <p className="text-xs text-muted-foreground">Tạo các trường thông tin riêng cho lớp (ví dụ: Phòng học, Học phí, Link tài liệu...)</p>
+              )}
+              {formData.custom_fields.map((cf, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_2fr_auto] gap-2 items-center">
+                  <Input
+                    placeholder="Tên trường"
+                    value={cf.label}
+                    onChange={(e) => {
+                      const next = [...formData.custom_fields];
+                      next[idx] = { ...next[idx], label: e.target.value, key: e.target.value };
+                      setFormData({ ...formData, custom_fields: next });
+                    }}
+                  />
+                  <Input
+                    placeholder="Giá trị"
+                    value={cf.value}
+                    onChange={(e) => {
+                      const next = [...formData.custom_fields];
+                      next[idx] = { ...next[idx], value: e.target.value };
+                      setFormData({ ...formData, custom_fields: next });
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        custom_fields: formData.custom_fields.filter((_, i) => i !== idx),
+                      })
+                    }
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <DialogFooter>
