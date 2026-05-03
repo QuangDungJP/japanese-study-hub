@@ -148,8 +148,39 @@ const Navbar = () => {
                   <span className="text-sm font-medium text-muted-foreground">Chế độ hiển thị</span>
                   <DarkModeToggle variant="compact" />
                 </div>
-                <Button variant="ghost" className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Đăng nhập</Link></Button>
-                <Button className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Bắt đầu miễn phí</Link></Button>
+                {user ? (
+                  <>
+                    <div className="px-1 pb-1">
+                      <p className="text-sm font-medium truncate">{displayName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                    <Button variant="ghost" className="w-full justify-start" asChild>
+                      <Link to="/learn/profile" onClick={() => setIsOpen(false)}>
+                        <UserIcon className="w-4 h-4 mr-2" /> Hồ sơ của tôi
+                      </Link>
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start" asChild>
+                      <Link to="/learn" onClick={() => setIsOpen(false)}>
+                        <LayoutDashboard className="w-4 h-4 mr-2" /> Vào trang học
+                      </Link>
+                    </Button>
+                    {isModeratorOrAdmin && (
+                      <Button variant="ghost" className="w-full justify-start" asChild>
+                        <Link to="/admin" onClick={() => setIsOpen(false)}>
+                          <Settings className="w-4 h-4 mr-2" /> {isAdmin ? 'Quản trị viên' : 'Quản lý'}
+                        </Link>
+                      </Button>
+                    )}
+                    <Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => { setIsOpen(false); handleSignOut(); }}>
+                      <LogOut className="w-4 h-4 mr-2" /> Đăng xuất
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Đăng nhập</Link></Button>
+                    <Button className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Bắt đầu miễn phí</Link></Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
