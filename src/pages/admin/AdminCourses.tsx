@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, BookOpen, Loader2, Clock, DollarSign, X, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, Loader2, Clock, DollarSign, X, Users, Settings2 } from 'lucide-react';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 
 interface TimelineItem { week: string; title: string; description: string }
 interface FaqItem { q: string; a: string }
