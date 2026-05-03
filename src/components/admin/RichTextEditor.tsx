@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bold, Italic, Underline, Type, Palette, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link, Image, Minus } from 'lucide-react';
+import { Bold, Italic, Underline, Type, Palette, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link, Image as ImageIcon, Minus, Video, Quote, Code, Upload } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface RichTextEditorProps {
   value: string;
