@@ -425,11 +425,15 @@ const AdminWebsiteCMS = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="sections" className="space-y-4">
+      <Tabs defaultValue="order" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="order" className="gap-2">
+            <Home className="w-4 h-4" />
+            Sắp xếp trang chủ
+          </TabsTrigger>
           <TabsTrigger value="sections" className="gap-2">
             <Layout className="w-4 h-4" />
-            Sections
+            Nội dung Sections
           </TabsTrigger>
           <TabsTrigger value="pricing" className="gap-2">
             <DollarSign className="w-4 h-4" />
@@ -440,6 +444,11 @@ const AdminWebsiteCMS = () => {
             Media
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="order" className="space-y-4">
+          <HomepageSectionOrder />
+        </TabsContent>
+
 
         {/* Sections Tab */}
         <TabsContent value="sections" className="space-y-4">
