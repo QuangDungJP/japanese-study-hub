@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, BookOpen, Loader2, Clock, DollarSign, X, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, Loader2, Clock, DollarSign, X, Users, Settings2 } from 'lucide-react';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 
 interface TimelineItem { week: string; title: string; description: string }
 interface FaqItem { q: string; a: string }
@@ -54,12 +55,13 @@ interface Course {
   created_at: string;
 }
 
-const jlptLevels = [
-  { value: 'N5', label: 'JLPT N5 - Cơ bản' },
-  { value: 'N4', label: 'JLPT N4 - Sơ cấp' },
-  { value: 'N3', label: 'JLPT N3 - Trung cấp' },
-  { value: 'N2', label: 'JLPT N2 - Cao cấp' },
-  { value: 'N1', label: 'JLPT N1 - Thành thạo' },
+interface JlptLevel { id: string; value: string; label: string; label_vi: string; order_index: number; is_active: boolean }
+const defaultJlptLevels: JlptLevel[] = [
+  { id: '1', value: 'N5', label: 'JLPT N5 - Beginner', label_vi: 'JLPT N5 - Cơ bản', order_index: 1, is_active: true },
+  { id: '2', value: 'N4', label: 'JLPT N4 - Elementary', label_vi: 'JLPT N4 - Sơ cấp', order_index: 2, is_active: true },
+  { id: '3', value: 'N3', label: 'JLPT N3 - Intermediate', label_vi: 'JLPT N3 - Trung cấp', order_index: 3, is_active: true },
+  { id: '4', value: 'N2', label: 'JLPT N2 - Upper Intermediate', label_vi: 'JLPT N2 - Cao cấp', order_index: 4, is_active: true },
+  { id: '5', value: 'N1', label: 'JLPT N1 - Advanced', label_vi: 'JLPT N1 - Thành thạo', order_index: 5, is_active: true },
 ];
 
 const enrollmentStatuses = [
@@ -83,6 +85,9 @@ const AdminCourses = () => {
   const [saving, setSaving] = useState(false);
   const [allTeachers, setAllTeachers] = useState<TeacherOption[]>([]);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
+  const [jlptLevels, setJlptLevels] = useState<JlptLevel[]>(defaultJlptLevels);
+  const [levelsDialogOpen, setLevelsDialogOpen] = useState(false);
+  const [newLevel, setNewLevel] = useState({ value: '', label: '', label_vi: '' });
   const { toast } = useToast();
 
   const [form, setForm] = useState({
@@ -113,7 +118,34 @@ const AdminCourses = () => {
     section_visibility: { ...defaultVisibility },
   });
 
-  useEffect(() => { fetchCourses(); fetchTeachers(); }, []);
+  useEffect(() => { fetchCourses(); fetchTeachers(); fetchLevels(); }, []);
+
+  const fetchLevels = async () => {
+    const { data } = await (supabase as any).from('course_levels').select('*').order('order_index');
+    if (data && data.length) setJlptLevels(data);
+  };
+
+  const addLevel = async () => {
+    if (!newLevel.value || !newLevel.label_vi) {
+      toast({ title: 'Thiếu thông tin', description: 'Cần mã và tên cấp độ', variant: 'destructive' });
+      return;
+    }
+    const { error } = await (supabase as any).from('course_levels').insert({
+      value: newLevel.value.trim(),
+      label: newLevel.label.trim() || newLevel.label_vi.trim(),
+      label_vi: newLevel.label_vi.trim(),
+      order_index: jlptLevels.length + 1,
+    });
+    if (error) { toast({ title: 'Lỗi', description: error.message, variant: 'destructive' }); return; }
+    setNewLevel({ value: '', label: '', label_vi: '' });
+    fetchLevels();
+    toast({ title: 'Đã thêm cấp độ' });
+  };
+
+  const deleteLevel = async (id: string) => {
+    await (supabase as any).from('course_levels').delete().eq('id', id);
+    fetchLevels();
+  };
 
   const fetchTeachers = async () => {
     const { data } = await supabase
@@ -389,10 +421,15 @@ const AdminCourses = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Cấp độ JLPT</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Cấp độ JLPT</Label>
+                        <Button type="button" variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => setLevelsDialogOpen(true)}>
+                          <Settings2 className="w-3 h-3" /> Quản lý
+                        </Button>
+                      </div>
                       <Select value={form.level} onValueChange={v => setForm({ ...form, level: v })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{jlptLevels.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
+                        <SelectContent>{jlptLevels.map(l => <SelectItem key={l.value} value={l.value}>{l.label_vi || l.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
@@ -414,12 +451,12 @@ const AdminCourses = () => {
                 {/* === CONTENT === */}
                 <TabsContent value="content" className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Mô tả dài / Giới thiệu chi tiết (VI)</Label>
-                    <Textarea rows={6} value={form.long_description_vi} onChange={e => setForm({ ...form, long_description_vi: e.target.value })} placeholder="Giới thiệu chi tiết về khóa học, phương pháp giảng dạy..." />
+                    <Label>Nội dung chi tiết khóa học (VI) — chèn ảnh, video, định dạng tự do</Label>
+                    <RichTextEditor value={form.long_description_vi} onChange={v => setForm({ ...form, long_description_vi: v })} placeholder="Viết bài giới thiệu chi tiết, chèn ảnh và video..." minHeight="320px" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Mô tả dài (EN)</Label>
-                    <Textarea rows={4} value={form.long_description} onChange={e => setForm({ ...form, long_description: e.target.value })} />
+                    <Label>Detailed content (EN)</Label>
+                    <RichTextEditor value={form.long_description} onChange={v => setForm({ ...form, long_description: v })} minHeight="240px" />
                   </div>
                   <div className="space-y-2">
                     <Label>Tính năng / Module (mỗi dòng một mục)</Label>
@@ -658,6 +695,40 @@ const AdminCourses = () => {
           ))}
         </div>
       )}
+
+      {/* Manage JLPT Levels Dialog */}
+      <Dialog open={levelsDialogOpen} onOpenChange={setLevelsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Quản lý cấp độ JLPT</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {jlptLevels.map(l => (
+                <div key={l.id} className="flex items-center gap-2 p-2 border rounded-md">
+                  <Badge variant="secondary">{l.value}</Badge>
+                  <div className="flex-1 text-sm">
+                    <div className="font-medium">{l.label_vi}</div>
+                    <div className="text-xs text-muted-foreground">{l.label}</div>
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteLevel(l.id)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-3 space-y-2">
+              <Label className="text-sm">Thêm cấp độ mới</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Input placeholder="Mã (vd N0)" value={newLevel.value} onChange={e => setNewLevel({ ...newLevel, value: e.target.value })} />
+                <Input placeholder="Tên VI" value={newLevel.label_vi} onChange={e => setNewLevel({ ...newLevel, label_vi: e.target.value })} />
+                <Input placeholder="Tên EN" value={newLevel.label} onChange={e => setNewLevel({ ...newLevel, label: e.target.value })} />
+              </div>
+              <Button type="button" size="sm" onClick={addLevel} className="w-full">
+                <Plus className="w-3.5 h-3.5 mr-1" /> Thêm cấp độ
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

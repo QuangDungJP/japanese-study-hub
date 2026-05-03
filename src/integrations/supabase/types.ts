@@ -476,6 +476,48 @@ export type Database = {
         }
         Relationships: []
       }
+      course_levels: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          description_vi: string | null
+          id: string
+          is_active: boolean
+          label: string
+          label_vi: string
+          order_index: number
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          description_vi?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          label_vi: string
+          order_index?: number
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          description_vi?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          label_vi?: string
+          order_index?: number
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       course_teachers: {
         Row: {
           course_id: string

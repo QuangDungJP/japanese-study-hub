@@ -291,9 +291,10 @@ const CourseDetail = () => {
         <section className="py-16">
           <div className="container mx-auto px-4 max-w-4xl">
             <h2 className="text-3xl font-bold text-foreground mb-6">Giới thiệu khóa học</h2>
-            <div className="prose prose-lg max-w-none text-foreground whitespace-pre-line leading-relaxed">
-              {course.long_description_vi}
-            </div>
+            <div
+              className="prose prose-lg max-w-none text-foreground leading-relaxed [&_img]:rounded-xl [&_img]:my-4 [&_iframe]:w-full [&_iframe]:rounded-xl [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_a]:text-primary [&_a]:underline"
+              dangerouslySetInnerHTML={{ __html: course.long_description_vi }}
+            />
           </div>
         </section>
       )}

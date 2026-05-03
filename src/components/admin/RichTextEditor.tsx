@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bold, Italic, Underline, Type, Palette, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link, Image, Minus } from 'lucide-react';
+import { Bold, Italic, Underline, Type, Palette, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link, Image as ImageIcon, Minus, Video, Quote, Code, Upload } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface RichTextEditorProps {
   value: string;
@@ -22,7 +24,12 @@ const colors = [
 
 const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px' }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [linkUrl, setLinkUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   const exec = useCallback((command: string, val?: string) => {
     document.execCommand(command, false, val);
@@ -30,6 +37,12 @@ const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px'
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
+  }, [onChange]);
+
+  const insertHTML = useCallback((html: string) => {
+    editorRef.current?.focus();
+    document.execCommand('insertHTML', false, html);
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
   }, [onChange]);
 
   const handleInput = () => {
@@ -43,6 +56,45 @@ const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px'
       exec('createLink', linkUrl);
       setLinkUrl('');
     }
+  };
+
+  const insertImageByUrl = () => {
+    if (!imageUrl) return;
+    insertHTML(`<img src="${imageUrl}" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;" />`);
+    setImageUrl('');
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `editor/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('lesson-assets').upload(path, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from('lesson-assets').getPublicUrl(path);
+      insertHTML(`<img src="${data.publicUrl}" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;" />`);
+    } catch (e: any) {
+      toast({ title: 'Upload thất bại', description: e.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const insertVideo = () => {
+    if (!videoUrl) return;
+    let html = '';
+    const yt = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+    const vimeo = videoUrl.match(/vimeo\.com\/(\d+)/);
+    if (yt) {
+      html = `<div style="position:relative;padding-bottom:56.25%;height:0;margin:12px 0;border-radius:12px;overflow:hidden;"><iframe src="https://www.youtube.com/embed/${yt[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`;
+    } else if (vimeo) {
+      html = `<div style="position:relative;padding-bottom:56.25%;height:0;margin:12px 0;border-radius:12px;overflow:hidden;"><iframe src="https://player.vimeo.com/video/${vimeo[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`;
+    } else {
+      html = `<video src="${videoUrl}" controls style="max-width:100%;border-radius:12px;margin:12px 0;"></video>`;
+    }
+    insertHTML(html);
+    setVideoUrl('');
   };
 
   return (
@@ -163,6 +215,49 @@ const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px'
           </PopoverContent>
         </Popover>
 
+        {/* Image */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" title="Chèn ảnh">
+              <ImageIcon className="w-3.5 h-3.5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-2 space-y-2">
+            <div className="flex gap-1">
+              <Input className="h-7 text-xs" placeholder="URL ảnh https://..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+              <Button type="button" size="sm" className="h-7 text-xs" onClick={insertImageByUrl}>Chèn</Button>
+            </div>
+            <div className="text-xs text-muted-foreground text-center">hoặc</div>
+            <Button type="button" variant="outline" size="sm" className="w-full h-8 text-xs" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-3 h-3 mr-1" /> {uploading ? 'Đang tải...' : 'Tải ảnh từ máy'}
+            </Button>
+            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
+          </PopoverContent>
+        </Popover>
+
+        {/* Video */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" title="Chèn video">
+              <Video className="w-3.5 h-3.5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-2">
+            <div className="flex gap-1">
+              <Input className="h-7 text-xs" placeholder="YouTube/Vimeo/MP4 URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
+              <Button type="button" size="sm" className="h-7 text-xs" onClick={insertVideo}>Chèn</Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Quote / Code */}
+        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => exec('formatBlock', 'blockquote')} title="Trích dẫn">
+          <Quote className="w-3.5 h-3.5" />
+        </Button>
+        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => exec('formatBlock', 'pre')} title="Code">
+          <Code className="w-3.5 h-3.5" />
+        </Button>
+
         {/* Horizontal rule */}
         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => exec('insertHorizontalRule')} title="Đường kẻ ngang">
           <Minus className="w-3.5 h-3.5" />
@@ -173,7 +268,7 @@ const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px'
       <div
         ref={editorRef}
         contentEditable
-        className="p-3 outline-none prose prose-sm max-w-none text-foreground overflow-y-auto"
+        className="p-3 outline-none prose prose-sm max-w-none text-foreground overflow-y-auto [&_img]:rounded-lg [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded"
         style={{ minHeight }}
         onInput={handleInput}
         dangerouslySetInnerHTML={{ __html: value }}
