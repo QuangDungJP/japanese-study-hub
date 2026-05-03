@@ -1817,17 +1817,6 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard_view: {
-        Row: {
-          display_name: string | null
-          initial: string | null
-          lessons_completed: number | null
-          rank: number | null
-          streak: number | null
-          total_xp: number | null
-        }
-        Relationships: []
-      }
       teacher_public_view: {
         Row: {
           bio: string | null
