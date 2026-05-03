@@ -256,6 +256,7 @@ const TeacherClassDetail = () => {
                   <h3 className="font-semibold">{a.title}</h3>
                   {a.description && <p className="text-sm text-muted-foreground mt-1">{a.description}</p>}
                   <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+                    {a.start_at && <span className="text-muted-foreground flex items-center gap-1"><CalendarClock className="w-3 h-3" />Bắt đầu: {format(new Date(a.start_at), 'dd/MM/yyyy HH:mm')}</span>}
                     {a.due_date && <span className="text-muted-foreground">Hạn: {format(new Date(a.due_date), 'dd/MM/yyyy HH:mm')}</span>}
                     {a.file_url && <a href={a.file_url} target="_blank" rel="noreferrer" className="text-primary flex items-center gap-1"><ExternalLink className="w-3 h-3" />File đính kèm</a>}
                     {a.link_url && <a href={a.link_url} target="_blank" rel="noreferrer" className="text-primary flex items-center gap-1"><Link2 className="w-3 h-3" />Liên kết</a>}
