@@ -85,6 +85,9 @@ const AdminCourses = () => {
   const [saving, setSaving] = useState(false);
   const [allTeachers, setAllTeachers] = useState<TeacherOption[]>([]);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
+  const [jlptLevels, setJlptLevels] = useState<JlptLevel[]>(defaultJlptLevels);
+  const [levelsDialogOpen, setLevelsDialogOpen] = useState(false);
+  const [newLevel, setNewLevel] = useState({ value: '', label: '', label_vi: '' });
   const { toast } = useToast();
 
   const [form, setForm] = useState({
