@@ -115,6 +115,7 @@ const TeacherClassDetail = () => {
       description: aForm.description || null,
       link_url: aForm.link_url || null,
       file_url: aForm.file_url || null,
+      start_at: aForm.start_at || null,
       due_date: aForm.due_date || null,
       lesson_id: aForm.lesson_id || null,
       created_by: user?.id,
@@ -123,7 +124,7 @@ const TeacherClassDetail = () => {
     if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     toast({ title: 'Đã tạo bài tập' });
     setAOpen(false);
-    setAForm({ title: '', description: '', link_url: '', file_url: '', due_date: '', lesson_id: '' });
+    setAForm({ title: '', description: '', link_url: '', file_url: '', start_at: '', due_date: '', lesson_id: '' });
     fetchAll();
   };
 
