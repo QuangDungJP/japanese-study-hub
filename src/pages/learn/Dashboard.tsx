@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useLearning } from '@/contexts/LearningContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import EmptyState from '@/components/shared/EmptyState';
 
 interface Lesson {
   id: string;
