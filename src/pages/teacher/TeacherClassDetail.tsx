@@ -268,6 +268,29 @@ const TeacherClassDetail = () => {
           ))}
         </TabsContent>
 
+        <TabsContent value="exams" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button asChild size="sm"><Link to="/teacher/calendar"><Plus className="w-4 h-4 mr-1" />Tạo bài kiểm tra</Link></Button>
+          </div>
+          <Card><CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow><TableHead>Tiêu đề</TableHead><TableHead>Loại</TableHead><TableHead>Ngày & Giờ</TableHead><TableHead>Thời lượng</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {exams.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Chưa có bài kiểm tra nào cho lớp này.</TableCell></TableRow> :
+                  exams.map(e => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">{e.title_vi || e.title}</TableCell>
+                      <TableCell><Badge variant="outline">{e.exam_type}</Badge></TableCell>
+                      <TableCell className="text-sm">{format(new Date(e.exam_date), 'dd/MM/yyyy')} • {e.start_time}{e.end_time && ` → ${e.end_time}`}</TableCell>
+                      <TableCell>{e.duration_minutes} phút</TableCell>
+                      <TableCell>{e.is_published ? <Badge className="bg-green-500/10 text-green-600">Đã đăng</Badge> : <Badge variant="outline">Nháp</Badge>}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </CardContent></Card>
+        </TabsContent>
+
         <TabsContent value="submissions" className="mt-4">
           <Card><CardContent className="p-0">
             <Table>
