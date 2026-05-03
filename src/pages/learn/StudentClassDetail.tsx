@@ -17,32 +17,95 @@ import { format } from 'date-fns';
 const StudentClassDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [cls, setCls] = useState<any>(null);
   const [lessons, setLessons] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [exams, setExams] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const [subOpen, setSubOpen] = useState(false);
+  const [subAssignment, setSubAssignment] = useState<any>(null);
+  const [subForm, setSubForm] = useState({ content: '', link_url: '', file_url: '' });
+  const [uploading, setUploading] = useState(false);
+
+  const fetchAll = async () => {
     if (!id || !user) return;
-    (async () => {
-      const sb: any = supabase;
-      const [{ data: c }, { data: l }, { data: a }, { data: e }] = await Promise.all([
-        sb.from('classes').select('*').eq('id', id).maybeSingle(),
-        sb.from('lessons').select('*').eq('class_id', id).eq('is_published', true).order('start_at', { ascending: true, nullsFirst: false }),
-        sb.from('class_assignments').select('*').eq('class_id', id).order('start_at', { ascending: true, nullsFirst: false }),
-        sb.from('exams').select('*').eq('class_id', id).eq('is_published', true).order('exam_date', { ascending: true }),
-      ]);
-      setCls(c); setLessons(l || []); setAssignments(a || []); setExams(e || []);
-      setLoading(false);
-    })();
-  }, [id, user]);
+    const sb: any = supabase;
+    const [{ data: c }, { data: l }, { data: a }, { data: e }, { data: s }] = await Promise.all([
+      sb.from('classes').select('*').eq('id', id).maybeSingle(),
+      sb.from('lessons').select('*').eq('class_id', id).eq('is_published', true).order('start_at', { ascending: true, nullsFirst: false }),
+      sb.from('class_assignments').select('*').eq('class_id', id).order('start_at', { ascending: true, nullsFirst: false }),
+      sb.from('exams').select('*').eq('class_id', id).eq('is_published', true).order('exam_date', { ascending: true }),
+      sb.from('class_assignment_submissions').select('*').eq('student_id', user.id),
+    ]);
+    setCls(c); setLessons(l || []); setAssignments(a || []); setExams(e || []); setSubmissions(s || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAll(); }, [id, user]);
 
   const now = new Date();
   const isAvailable = (start?: string | null, end?: string | null) => {
     if (start && new Date(start) > now) return 'upcoming';
     if (end && new Date(end) < now) return 'ended';
     return 'open';
+  };
+
+  const submissionFor = (aid: string) => submissions.find(s => s.assignment_id === aid);
+
+  const openSubmit = (a: any) => {
+    const ex = submissionFor(a.id);
+    setSubAssignment(a);
+    setSubForm({ content: ex?.content || '', link_url: ex?.link_url || '', file_url: ex?.file_url || '' });
+    setSubOpen(true);
+  };
+
+  const handleUpload = async (file: File) => {
+    if (!user || !subAssignment) return;
+    setUploading(true);
+    try {
+      const path = `submissions/${user.id}/${subAssignment.id}_${Date.now()}_${file.name}`;
+      const { error } = await supabase.storage.from('class-assignments').upload(path, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from('class-assignments').getPublicUrl(path);
+      setSubForm(f => ({ ...f, file_url: data.publicUrl }));
+      toast({ title: 'Đã tải file lên' });
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
+    } finally { setUploading(false); }
+  };
+
+  const submitAssignment = async () => {
+    if (!user || !subAssignment) return;
+    if (!subForm.content && !subForm.link_url && !subForm.file_url) {
+      return toast({ title: 'Vui lòng nhập nội dung, liên kết hoặc tệp', variant: 'destructive' });
+    }
+    const sb: any = supabase;
+    const payload = {
+      assignment_id: subAssignment.id,
+      student_id: user.id,
+      content: subForm.content || null,
+      link_url: subForm.link_url || null,
+      file_url: subForm.file_url || null,
+      status: 'submitted',
+      submitted_at: new Date().toISOString(),
+    };
+    const { error } = await sb.from('class_assignment_submissions').upsert(payload, { onConflict: 'assignment_id,student_id' });
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    toast({ title: 'Đã nộp bài' });
+    setSubOpen(false);
+    fetchAll();
+  };
+
+  const statusBadge = (sub: any, a: any) => {
+    if (!sub) {
+      if (a.due_date && new Date(a.due_date) < now) return <Badge className="bg-red-500/10 text-red-600">Quá hạn</Badge>;
+      return <Badge variant="outline">Chưa nộp</Badge>;
+    }
+    if (sub.status === 'graded') return <Badge className="bg-green-500/10 text-green-600">Đã chấm{sub.score != null ? ` • ${sub.score}` : ''}</Badge>;
+    return <Badge className="bg-blue-500/10 text-blue-600">Chờ duyệt</Badge>;
   };
 
   if (loading) return <div className="text-center py-12 text-muted-foreground">Đang tải...</div>;
