@@ -24,6 +24,7 @@ const skillItems = [
 
 const allNavigation = [
   { name: 'Dashboard', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
+  { name: 'Lớp học của tôi', href: '/learn/classes', icon: Users, key: 'classes' },
   { name: 'Bài học', icon: GraduationCap, isDropdown: true, children: skillItems, key: 'lessons' },
   { name: 'Bài tập', href: '/learn/exercises', icon: Dumbbell, key: 'exercises' },
   { name: 'Zoom Class', href: '/learn/zoom', icon: Video, key: 'zoom' },
