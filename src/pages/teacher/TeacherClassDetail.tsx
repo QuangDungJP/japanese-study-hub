@@ -25,11 +25,12 @@ const TeacherClassDetail = () => {
   const [vocab, setVocab] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Assignment dialog
   const [aOpen, setAOpen] = useState(false);
-  const [aForm, setAForm] = useState({ title: '', description: '', link_url: '', file_url: '', due_date: '', lesson_id: '' });
+  const [aForm, setAForm] = useState({ title: '', description: '', link_url: '', file_url: '', start_at: '', due_date: '', lesson_id: '' });
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (id) fetchAll(); }, [id]);
