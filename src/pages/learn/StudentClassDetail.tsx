@@ -55,7 +55,18 @@ const StudentClassDetail = () => {
 
   const submissionFor = (aid: string) => submissions.find(s => s.assignment_id === aid);
 
+  const canSubmit = (a: any): { ok: boolean; reason?: string } => {
+    if (a.start_at && new Date(a.start_at) > now) return { ok: false, reason: 'Bài tập chưa mở để nộp' };
+    if (a.due_date && new Date(a.due_date) < now) return { ok: false, reason: 'Bài tập đã quá hạn nộp' };
+    return { ok: true };
+  };
+
   const openSubmit = (a: any) => {
+    const gate = canSubmit(a);
+    if (!gate.ok) {
+      toast({ title: 'Không thể nộp', description: gate.reason, variant: 'destructive' });
+      return;
+    }
     const ex = submissionFor(a.id);
     setSubAssignment(a);
     setSubForm({ content: ex?.content || '', link_url: ex?.link_url || '', file_url: ex?.file_url || '' });
@@ -79,6 +90,10 @@ const StudentClassDetail = () => {
 
   const submitAssignment = async () => {
     if (!user || !subAssignment) return;
+    const gate = canSubmit(subAssignment);
+    if (!gate.ok) {
+      return toast({ title: 'Không thể nộp', description: gate.reason, variant: 'destructive' });
+    }
     if (!subForm.content && !subForm.link_url && !subForm.file_url) {
       return toast({ title: 'Vui lòng nhập nội dung, liên kết hoặc tệp', variant: 'destructive' });
     }
@@ -181,11 +196,23 @@ const StudentClassDetail = () => {
                           {a.link_url && <a href={a.link_url} target="_blank" rel="noreferrer" className="text-primary flex items-center gap-1"><Link2 className="w-3 h-3" />Liên kết</a>}
                         </div>
                       </div>
-                      {st !== 'upcoming' && (
-                        <Button size="sm" variant={sub ? 'outline' : 'default'} disabled={!sub && overdue} onClick={() => openSubmit(a)}>
-                          <Upload className="w-4 h-4 mr-1" />{sub ? 'Cập nhật' : 'Nộp bài'}
-                        </Button>
-                      )}
+                      {(() => {
+                        const gate = canSubmit(a);
+                        if (st === 'upcoming' || (a.start_at && new Date(a.start_at) > now)) {
+                          return <Badge variant="outline">Chưa mở</Badge>;
+                        }
+                        if (!gate.ok && !sub) {
+                          return <Badge variant="outline" className="text-red-600">Đã đóng</Badge>;
+                        }
+                        if (!gate.ok && sub) {
+                          return <Button size="sm" variant="outline" disabled><Upload className="w-4 h-4 mr-1" />Đã đóng</Button>;
+                        }
+                        return (
+                          <Button size="sm" variant={sub ? 'outline' : 'default'} onClick={() => openSubmit(a)}>
+                            <Upload className="w-4 h-4 mr-1" />{sub ? 'Cập nhật' : 'Nộp bài'}
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -240,9 +267,15 @@ const StudentClassDetail = () => {
                           </div>
                         )}
                       </div>
-                      <Button size="sm" variant={sub ? 'outline' : 'default'} onClick={() => openSubmit(a)}>
-                        <Upload className="w-4 h-4 mr-1" />{sub ? 'Cập nhật' : 'Nộp bài'}
-                      </Button>
+                      {(() => {
+                        const gate = canSubmit(a);
+                        const disabled = !gate.ok;
+                        return (
+                          <Button size="sm" variant={sub ? 'outline' : 'default'} disabled={disabled && !sub} onClick={() => openSubmit(a)} title={gate.reason}>
+                            <Upload className="w-4 h-4 mr-1" />{sub ? (disabled ? 'Đã đóng' : 'Cập nhật') : (disabled ? (a.start_at && new Date(a.start_at) > now ? 'Chưa mở' : 'Quá hạn') : 'Nộp bài')}
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
