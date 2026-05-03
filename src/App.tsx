@@ -56,6 +56,7 @@ import TeacherLayout from "./pages/teacher/TeacherLayout";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherLessons from "./pages/teacher/TeacherLessons";
 import TeacherClasses from "./pages/teacher/TeacherClasses";
+import TeacherClassDetail from "./pages/teacher/TeacherClassDetail";
 import TeacherSubmissions from "./pages/teacher/TeacherSubmissions";
 import TeacherZoom from "./pages/teacher/TeacherZoom";
 import TeacherNotifications from "./pages/teacher/TeacherNotifications";
@@ -140,6 +141,7 @@ const App = () => (
                 <Route index element={<TeacherDashboard />} />
                 <Route path="lessons" element={<TeacherLessons />} />
                 <Route path="classes" element={<TeacherClasses />} />
+                <Route path="classes/:id" element={<TeacherClassDetail />} />
                 <Route path="submissions" element={<TeacherSubmissions />} />
                 <Route path="zoom" element={<TeacherZoom />} />
                 <Route path="calendar" element={<TeacherCalendar />} />
