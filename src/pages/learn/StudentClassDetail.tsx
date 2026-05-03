@@ -55,7 +55,18 @@ const StudentClassDetail = () => {
 
   const submissionFor = (aid: string) => submissions.find(s => s.assignment_id === aid);
 
+  const canSubmit = (a: any): { ok: boolean; reason?: string } => {
+    if (a.start_at && new Date(a.start_at) > now) return { ok: false, reason: 'Bài tập chưa mở để nộp' };
+    if (a.due_date && new Date(a.due_date) < now) return { ok: false, reason: 'Bài tập đã quá hạn nộp' };
+    return { ok: true };
+  };
+
   const openSubmit = (a: any) => {
+    const gate = canSubmit(a);
+    if (!gate.ok) {
+      toast({ title: 'Không thể nộp', description: gate.reason, variant: 'destructive' });
+      return;
+    }
     const ex = submissionFor(a.id);
     setSubAssignment(a);
     setSubForm({ content: ex?.content || '', link_url: ex?.link_url || '', file_url: ex?.file_url || '' });
