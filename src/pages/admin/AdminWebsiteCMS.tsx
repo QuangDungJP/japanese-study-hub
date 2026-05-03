@@ -17,8 +17,9 @@ import SectionEditorFields from '@/components/admin/SectionEditorFields';
 import { 
   Layout, Image, Video, Eye, EyeOff, Save, Upload, Trash2, 
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
-  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal
+  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, Home
 } from 'lucide-react';
+import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 
 interface WebsiteContent {
   id: string;
