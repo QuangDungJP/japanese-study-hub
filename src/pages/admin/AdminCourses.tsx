@@ -55,12 +55,13 @@ interface Course {
   created_at: string;
 }
 
-const jlptLevels = [
-  { value: 'N5', label: 'JLPT N5 - Cơ bản' },
-  { value: 'N4', label: 'JLPT N4 - Sơ cấp' },
-  { value: 'N3', label: 'JLPT N3 - Trung cấp' },
-  { value: 'N2', label: 'JLPT N2 - Cao cấp' },
-  { value: 'N1', label: 'JLPT N1 - Thành thạo' },
+interface JlptLevel { id: string; value: string; label: string; label_vi: string; order_index: number; is_active: boolean }
+const defaultJlptLevels: JlptLevel[] = [
+  { id: '1', value: 'N5', label: 'JLPT N5 - Beginner', label_vi: 'JLPT N5 - Cơ bản', order_index: 1, is_active: true },
+  { id: '2', value: 'N4', label: 'JLPT N4 - Elementary', label_vi: 'JLPT N4 - Sơ cấp', order_index: 2, is_active: true },
+  { id: '3', value: 'N3', label: 'JLPT N3 - Intermediate', label_vi: 'JLPT N3 - Trung cấp', order_index: 3, is_active: true },
+  { id: '4', value: 'N2', label: 'JLPT N2 - Upper Intermediate', label_vi: 'JLPT N2 - Cao cấp', order_index: 4, is_active: true },
+  { id: '5', value: 'N1', label: 'JLPT N1 - Advanced', label_vi: 'JLPT N1 - Thành thạo', order_index: 5, is_active: true },
 ];
 
 const enrollmentStatuses = [
