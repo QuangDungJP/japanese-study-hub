@@ -24,7 +24,12 @@ const colors = [
 
 const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px' }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [linkUrl, setLinkUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   const exec = useCallback((command: string, val?: string) => {
     document.execCommand(command, false, val);
@@ -32,6 +37,12 @@ const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px'
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
+  }, [onChange]);
+
+  const insertHTML = useCallback((html: string) => {
+    editorRef.current?.focus();
+    document.execCommand('insertHTML', false, html);
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
   }, [onChange]);
 
   const handleInput = () => {
@@ -45,6 +56,45 @@ const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '200px'
       exec('createLink', linkUrl);
       setLinkUrl('');
     }
+  };
+
+  const insertImageByUrl = () => {
+    if (!imageUrl) return;
+    insertHTML(`<img src="${imageUrl}" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;" />`);
+    setImageUrl('');
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `editor/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('lesson-assets').upload(path, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from('lesson-assets').getPublicUrl(path);
+      insertHTML(`<img src="${data.publicUrl}" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;" />`);
+    } catch (e: any) {
+      toast({ title: 'Upload thất bại', description: e.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const insertVideo = () => {
+    if (!videoUrl) return;
+    let html = '';
+    const yt = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+    const vimeo = videoUrl.match(/vimeo\.com\/(\d+)/);
+    if (yt) {
+      html = `<div style="position:relative;padding-bottom:56.25%;height:0;margin:12px 0;border-radius:12px;overflow:hidden;"><iframe src="https://www.youtube.com/embed/${yt[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`;
+    } else if (vimeo) {
+      html = `<div style="position:relative;padding-bottom:56.25%;height:0;margin:12px 0;border-radius:12px;overflow:hidden;"><iframe src="https://player.vimeo.com/video/${vimeo[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`;
+    } else {
+      html = `<video src="${videoUrl}" controls style="max-width:100%;border-radius:12px;margin:12px 0;"></video>`;
+    }
+    insertHTML(html);
+    setVideoUrl('');
   };
 
   return (
