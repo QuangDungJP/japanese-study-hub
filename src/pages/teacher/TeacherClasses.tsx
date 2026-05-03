@@ -39,6 +39,12 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
+interface CustomField {
+  key: string;
+  label: string;
+  value: string;
+}
+
 interface ClassData {
   id: string;
   name: string;
@@ -51,6 +57,9 @@ interface ClassData {
   end_date: string | null;
   is_active: boolean;
   created_at: string;
+  approval_status?: string;
+  rejection_reason?: string | null;
+  custom_fields?: any;
   student_count?: number;
   courses?: { title_vi: string };
 }
@@ -106,7 +115,8 @@ const TeacherClasses = () => {
     course_id: '',
     max_students: 30,
     start_date: '',
-    end_date: ''
+    end_date: '',
+    custom_fields: [] as CustomField[],
   });
 
   useEffect(() => {
@@ -157,8 +167,7 @@ const TeacherClasses = () => {
       const { data } = await supabase
         .from('courses')
         .select('id, title_vi')
-        .eq('is_published', true)
-        .eq('language', 'japanese');
+        .eq('is_published', true);
 
       setCourses(data || []);
     } catch (error) {
@@ -310,14 +319,23 @@ const TeacherClasses = () => {
   };
 
   const handleSubmit = async () => {
+    if (!formData.name_vi.trim()) {
+      toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập tên lớp', variant: 'destructive' });
+      return;
+    }
     try {
-      const classData = {
-        ...formData,
+      const classData: any = {
+        name: formData.name || formData.name_vi,
+        name_vi: formData.name_vi,
+        description: formData.description,
+        description_vi: formData.description_vi,
+        max_students: formData.max_students,
+        custom_fields: formData.custom_fields as any,
         teacher_id: user?.id,
         course_id: formData.course_id || null,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        is_active: true
+        is_active: true,
       };
 
       if (editingClass) {
@@ -331,20 +349,20 @@ const TeacherClasses = () => {
       } else {
         const { error } = await supabase
           .from('classes')
-          .insert(classData);
+          .insert({ ...classData, approval_status: 'pending' });
 
         if (error) throw error;
-        toast({ title: 'Thành công', description: 'Đã tạo lớp học mới' });
+        toast({ title: 'Đã gửi duyệt', description: 'Lớp học sẽ hoạt động sau khi admin duyệt' });
       }
 
       setIsDialogOpen(false);
       resetForm();
       fetchClasses();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving class:', error);
       toast({ 
         title: 'Lỗi', 
-        description: 'Không thể lưu lớp học', 
+        description: error?.message || 'Không thể lưu lớp học', 
         variant: 'destructive' 
       });
     }
@@ -360,7 +378,8 @@ const TeacherClasses = () => {
       course_id: classItem.course_id || '',
       max_students: classItem.max_students,
       start_date: classItem.start_date || '',
-      end_date: classItem.end_date || ''
+      end_date: classItem.end_date || '',
+      custom_fields: Array.isArray(classItem.custom_fields) ? classItem.custom_fields : [],
     });
     setIsDialogOpen(true);
   };
@@ -394,7 +413,8 @@ const TeacherClasses = () => {
       course_id: '',
       max_students: 30,
       start_date: '',
-      end_date: ''
+      end_date: '',
+      custom_fields: [],
     });
   };
 
@@ -441,8 +461,13 @@ const TeacherClasses = () => {
                     <CardTitle className="text-lg">{classItem.name_vi}</CardTitle>
                     <p className="text-sm text-muted-foreground">{classItem.name}</p>
                   </div>
-                  <Badge className={classItem.is_active ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'}>
-                    {classItem.is_active ? 'Đang hoạt động' : 'Đã kết thúc'}
+                  <Badge className={
+                    classItem.approval_status === 'approved' ? 'bg-green-500/10 text-green-600' :
+                    classItem.approval_status === 'rejected' ? 'bg-red-500/10 text-red-600' :
+                    'bg-yellow-500/10 text-yellow-700'
+                  }>
+                    {classItem.approval_status === 'approved' ? 'Đã duyệt' :
+                     classItem.approval_status === 'rejected' ? 'Bị từ chối' : 'Chờ duyệt'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -578,6 +603,64 @@ const TeacherClasses = () => {
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 />
               </div>
+            </div>
+
+            {/* Custom fields */}
+            <div className="space-y-2 border-t pt-4">
+              <div className="flex justify-between items-center">
+                <Label>Trường tùy chỉnh</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      custom_fields: [...formData.custom_fields, { key: '', label: '', value: '' }],
+                    })
+                  }
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Thêm trường
+                </Button>
+              </div>
+              {formData.custom_fields.length === 0 && (
+                <p className="text-xs text-muted-foreground">Tạo các trường thông tin riêng cho lớp (ví dụ: Phòng học, Học phí, Link tài liệu...)</p>
+              )}
+              {formData.custom_fields.map((cf, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_2fr_auto] gap-2 items-center">
+                  <Input
+                    placeholder="Tên trường"
+                    value={cf.label}
+                    onChange={(e) => {
+                      const next = [...formData.custom_fields];
+                      next[idx] = { ...next[idx], label: e.target.value, key: e.target.value };
+                      setFormData({ ...formData, custom_fields: next });
+                    }}
+                  />
+                  <Input
+                    placeholder="Giá trị"
+                    value={cf.value}
+                    onChange={(e) => {
+                      const next = [...formData.custom_fields];
+                      next[idx] = { ...next[idx], value: e.target.value };
+                      setFormData({ ...formData, custom_fields: next });
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        custom_fields: formData.custom_fields.filter((_, i) => i !== idx),
+                      })
+                    }
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
           </div>
 

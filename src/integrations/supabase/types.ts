@@ -315,8 +315,12 @@ export type Database = {
       }
       classes: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           course_id: string | null
           created_at: string
+          custom_fields: Json
           description: string | null
           description_vi: string | null
           end_date: string | null
@@ -325,14 +329,19 @@ export type Database = {
           max_students: number | null
           name: string
           name_vi: string
+          rejection_reason: string | null
           schedule: Json | null
           start_date: string | null
           teacher_id: string
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           course_id?: string | null
           created_at?: string
+          custom_fields?: Json
           description?: string | null
           description_vi?: string | null
           end_date?: string | null
@@ -341,14 +350,19 @@ export type Database = {
           max_students?: number | null
           name: string
           name_vi: string
+          rejection_reason?: string | null
           schedule?: Json | null
           start_date?: string | null
           teacher_id: string
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           course_id?: string | null
           created_at?: string
+          custom_fields?: Json
           description?: string | null
           description_vi?: string | null
           end_date?: string | null
@@ -357,6 +371,7 @@ export type Database = {
           max_students?: number | null
           name?: string
           name_vi?: string
+          rejection_reason?: string | null
           schedule?: Json | null
           start_date?: string | null
           teacher_id?: string

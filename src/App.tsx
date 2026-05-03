@@ -49,6 +49,7 @@ import AdminContactForm from "./pages/admin/AdminContactForm";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminTeachers from "./pages/admin/AdminTeachers";
+import AdminClasses from "./pages/admin/AdminClasses";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import TeacherLayout from "./pages/teacher/TeacherLayout";
@@ -121,6 +122,7 @@ const App = () => (
                 <Route path="blog" element={<AdminBlog />} />
                 <Route path="teachers" element={<AdminTeachers />} />
                 <Route path="courses" element={<AdminCourses />} />
+                <Route path="classes" element={<AdminClasses />} />
                 <Route path="lessons" element={<AdminLessons />} />
                 <Route path="vocabulary" element={<AdminVocabulary />} />
                 <Route path="finance" element={<AdminFinance />} />
