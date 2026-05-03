@@ -42,27 +42,17 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_progress')
-        .select('user_id, total_xp, streak, lessons_completed')
-        .order('total_xp', { ascending: false })
-        .limit(10);
-
-      if (progressError) throw progressError;
-
-      if (progressData && progressData.length > 0) {
-        const userIds = progressData.map(p => p.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name')
-          .in('user_id', userIds);
-
-        const entriesWithProfiles = progressData.map(progress => ({
-          ...progress,
-          profile: profiles?.find(p => p.user_id === progress.user_id) || null
+      const { data, error } = await supabase.rpc('get_leaderboard', { _limit: 10 });
+      if (error) throw error;
+      if (data) {
+        const mapped = (data as any[]).map((row, i) => ({
+          user_id: `rank-${i}`,
+          total_xp: row.total_xp ?? 0,
+          streak: row.streak ?? 0,
+          lessons_completed: row.lessons_completed ?? 0,
+          profile: { full_name: row.display_name ?? null },
         }));
-
-        setEntries(entriesWithProfiles);
+        setEntries(mapped);
       }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
