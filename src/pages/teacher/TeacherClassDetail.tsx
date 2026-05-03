@@ -144,7 +144,10 @@ const TeacherClassDetail = () => {
         <Button variant="ghost" size="icon" asChild><Link to="/teacher/classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{cls.name_vi}</h1>
-          <p className="text-sm text-muted-foreground">{cls.description_vi || cls.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {cls.slug && <span className="font-mono text-xs mr-2">/{cls.slug}</span>}
+            {cls.description_vi || cls.name}
+          </p>
         </div>
         <Badge className={
           cls.approval_status === 'approved' ? 'bg-green-500/10 text-green-600' :
