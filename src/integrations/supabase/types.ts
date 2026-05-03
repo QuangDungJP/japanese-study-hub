@@ -1940,8 +1940,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_class_student: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_class_teacher: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_senior_teacher: { Args: { user_uuid: string }; Returns: boolean }
       is_teacher: { Args: { user_uuid: string }; Returns: boolean }
+      teacher_has_student: {
+        Args: { _student_id: string; _teacher_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "teacher" | "senior_teacher"
