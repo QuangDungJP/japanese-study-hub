@@ -113,7 +113,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   // Save to database
   const saveToDb = useCallback(async (updates: Record<string, string>) => {
     if (!userId) return;
-    await supabase.from('profiles').update(updates).eq('user_id', userId);
+    await supabase.from('profiles').update(updates as never).eq('user_id', userId);
   }, [userId]);
 
   // Apply theme color
