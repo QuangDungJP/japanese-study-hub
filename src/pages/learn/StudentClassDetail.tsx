@@ -5,8 +5,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, BookOpen, ClipboardList, GraduationCap, CalendarClock, ExternalLink, Link2, Play, Clock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, BookOpen, ClipboardList, GraduationCap, CalendarClock, ExternalLink, Link2, Play, Clock, Upload, FileText, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const StudentClassDetail = () => {
