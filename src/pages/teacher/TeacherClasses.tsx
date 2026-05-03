@@ -378,7 +378,8 @@ const TeacherClasses = () => {
       course_id: classItem.course_id || '',
       max_students: classItem.max_students,
       start_date: classItem.start_date || '',
-      end_date: classItem.end_date || ''
+      end_date: classItem.end_date || '',
+      custom_fields: Array.isArray(classItem.custom_fields) ? classItem.custom_fields : [],
     });
     setIsDialogOpen(true);
   };
