@@ -281,6 +281,51 @@ export type Database = {
         }
         Relationships: []
       }
+      class_assignments: {
+        Row: {
+          class_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          exercise_id: string | null
+          file_url: string | null
+          id: string
+          lesson_id: string | null
+          link_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          exercise_id?: string | null
+          file_url?: string | null
+          id?: string
+          lesson_id?: string | null
+          link_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          exercise_id?: string | null
+          file_url?: string | null
+          id?: string
+          lesson_id?: string | null
+          link_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       class_students: {
         Row: {
           class_id: string
@@ -1109,6 +1154,7 @@ export type Database = {
       }
       lessons: {
         Row: {
+          class_id: string | null
           content: Json | null
           content_html: string | null
           created_at: string | null
@@ -1130,6 +1176,7 @@ export type Database = {
           xp_reward: number | null
         }
         Insert: {
+          class_id?: string | null
           content?: Json | null
           content_html?: string | null
           created_at?: string | null
@@ -1151,6 +1198,7 @@ export type Database = {
           xp_reward?: number | null
         }
         Update: {
+          class_id?: string | null
           content?: Json | null
           content_html?: string | null
           created_at?: string | null
@@ -1780,6 +1828,7 @@ export type Database = {
         Row: {
           audio_url: string | null
           category: string | null
+          class_id: string | null
           created_at: string | null
           example: string | null
           example_vi: string | null
@@ -1793,6 +1842,7 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           category?: string | null
+          class_id?: string | null
           created_at?: string | null
           example?: string | null
           example_vi?: string | null
@@ -1806,6 +1856,7 @@ export type Database = {
         Update: {
           audio_url?: string | null
           category?: string | null
+          class_id?: string | null
           created_at?: string | null
           example?: string | null
           example_vi?: string | null

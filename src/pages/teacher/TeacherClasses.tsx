@@ -492,14 +492,17 @@ const TeacherClasses = () => {
                   )}
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button variant="default" size="sm" asChild>
+                    <a href={`/teacher/classes/${classItem.id}`}>
+                      <Eye className="w-4 h-4 mr-1" />Mở lớp
+                    </a>
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => openStudentsDialog(classItem)}>
-                    <Eye className="w-4 h-4 mr-1" />
-                    Học viên
+                    <Users className="w-4 h-4 mr-1" />Học viên
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => openEditDialog(classItem)}>
-                    <Edit className="w-4 h-4 mr-1" />
-                    Sửa
+                    <Edit className="w-4 h-4 mr-1" />Sửa
                   </Button>
                 </div>
               </CardContent>
