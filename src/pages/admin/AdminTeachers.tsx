@@ -243,7 +243,7 @@ export default function AdminTeachers() {
 
   const handleToggleVisibility = async (teacher: TeacherRow, field: "is_available" | "is_featured") => {
     const newVal = !(teacher[field] ?? false);
-    const { error } = await supabase.from("teacher_profiles").update({ [field]: newVal }).eq("id", teacher.id);
+    const { error } = await supabase.from("teacher_profiles").update({ [field]: newVal } as never).eq("id", teacher.id);
     if (!error) {
       setTeachers((prev) => prev.map((t) => (t.id === teacher.id ? { ...t, [field]: newVal } : t)));
       toast({ title: field === "is_available" ? (newVal ? "Đã hiện giảng viên" : "Đã ẩn giảng viên") : (newVal ? "Đã ghim trang chủ" : "Đã bỏ ghim trang chủ") });
