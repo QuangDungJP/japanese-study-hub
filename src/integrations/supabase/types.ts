@@ -1854,6 +1854,24 @@ export type Database = {
           total_xp: number
         }[]
       }
+      get_lesson_exercises: {
+        Args: { _lesson_id: string }
+        Returns: {
+          audio_url: string
+          content: Json
+          created_at: string
+          exercise_type: string
+          id: string
+          instructions: string
+          instructions_vi: string
+          lesson_id: string
+          order_index: number
+          requires_grading: boolean
+          title: string
+          title_vi: string
+          updated_at: string
+        }[]
+      }
       grade_exercise: {
         Args: { _answers: Json; _exercise_id: string }
         Returns: Json
