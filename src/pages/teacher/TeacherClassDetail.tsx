@@ -171,6 +171,7 @@ const TeacherClassDetail = () => {
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
           <TabsTrigger value="vocab"><BookText className="w-4 h-4 mr-1" />Từ vựng</TabsTrigger>
           <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
+          <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Bài nộp</TabsTrigger>
         </TabsList>
 
