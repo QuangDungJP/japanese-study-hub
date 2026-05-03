@@ -32,6 +32,8 @@ import Courses from "./pages/learn/Courses";
 import StudentCalendar from "./pages/learn/Calendar";
 import Settings from "./pages/learn/Settings";
 import Profile from "./pages/learn/Profile";
+import MyClasses from "./pages/learn/MyClasses";
+import StudentClassDetail from "./pages/learn/StudentClassDetail";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCourses from "./pages/admin/AdminCourses";
