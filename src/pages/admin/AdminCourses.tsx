@@ -118,7 +118,34 @@ const AdminCourses = () => {
     section_visibility: { ...defaultVisibility },
   });
 
-  useEffect(() => { fetchCourses(); fetchTeachers(); }, []);
+  useEffect(() => { fetchCourses(); fetchTeachers(); fetchLevels(); }, []);
+
+  const fetchLevels = async () => {
+    const { data } = await (supabase as any).from('course_levels').select('*').order('order_index');
+    if (data && data.length) setJlptLevels(data);
+  };
+
+  const addLevel = async () => {
+    if (!newLevel.value || !newLevel.label_vi) {
+      toast({ title: 'Thiếu thông tin', description: 'Cần mã và tên cấp độ', variant: 'destructive' });
+      return;
+    }
+    const { error } = await (supabase as any).from('course_levels').insert({
+      value: newLevel.value.trim(),
+      label: newLevel.label.trim() || newLevel.label_vi.trim(),
+      label_vi: newLevel.label_vi.trim(),
+      order_index: jlptLevels.length + 1,
+    });
+    if (error) { toast({ title: 'Lỗi', description: error.message, variant: 'destructive' }); return; }
+    setNewLevel({ value: '', label: '', label_vi: '' });
+    fetchLevels();
+    toast({ title: 'Đã thêm cấp độ' });
+  };
+
+  const deleteLevel = async (id: string) => {
+    await (supabase as any).from('course_levels').delete().eq('id', id);
+    fetchLevels();
+  };
 
   const fetchTeachers = async () => {
     const { data } = await supabase
