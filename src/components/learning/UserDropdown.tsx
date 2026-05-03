@@ -56,9 +56,14 @@ const UserDropdown = () => {
           <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
         </div>
         
-        <DropdownMenuItem onClick={() => { navigate('/learn'); setOpen(false); }}>
+        <DropdownMenuItem onClick={() => { navigate('/learn/profile'); setOpen(false); }}>
           <User className="w-4 h-4 mr-2" />
           Hồ sơ của tôi
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={() => { navigate('/learn'); setOpen(false); }}>
+          <Settings className="w-4 h-4 mr-2" />
+          Vào trang học
         </DropdownMenuItem>
         
         <DropdownMenuItem onClick={() => { navigate('/learn/courses'); setOpen(false); }}>
