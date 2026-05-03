@@ -223,11 +223,8 @@ const AdminSettings = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="homepage" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="homepage" className="flex items-center gap-2">
-            <Home className="w-4 h-4" />Trang chủ
-          </TabsTrigger>
+      <Tabs defaultValue="auth" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="auth" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />Trang Auth
           </TabsTrigger>
@@ -247,10 +244,6 @@ const AdminSettings = () => {
             <Settings2 className="w-4 h-4" />Chung
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="homepage" className="space-y-4">
-          <HomepageSectionOrder />
-        </TabsContent>
 
         <TabsContent value="auth" className="space-y-4">
           <Card>
