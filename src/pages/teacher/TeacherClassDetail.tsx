@@ -36,12 +36,13 @@ const TeacherClassDetail = () => {
 
   const fetchAll = async () => {
     setLoading(true);
+    const sb: any = supabase;
     const [{ data: c }, { data: s }, { data: l }, { data: v }, { data: a }] = await Promise.all([
-      supabase.from('classes').select('*').eq('id', id!).maybeSingle(),
-      supabase.from('class_students').select('*').eq('class_id', id!),
-      supabase.from('lessons').select('*').eq('class_id' as any, id!).order('order_index'),
-      supabase.from('vocabulary').select('*').eq('class_id' as any, id!).order('created_at', { ascending: false }),
-      (supabase as any).from('class_assignments').select('*').eq('class_id', id!).order('created_at', { ascending: false }),
+      sb.from('classes').select('*').eq('id', id!).maybeSingle(),
+      sb.from('class_students').select('*').eq('class_id', id!),
+      sb.from('lessons').select('*').eq('class_id', id!).order('order_index'),
+      sb.from('vocabulary').select('*').eq('class_id', id!).order('created_at', { ascending: false }),
+      sb.from('class_assignments').select('*').eq('class_id', id!).order('created_at', { ascending: false }),
     ]);
     setCls(c);
     setAssignments(a || []);
