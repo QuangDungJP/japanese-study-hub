@@ -461,8 +461,13 @@ const TeacherClasses = () => {
                     <CardTitle className="text-lg">{classItem.name_vi}</CardTitle>
                     <p className="text-sm text-muted-foreground">{classItem.name}</p>
                   </div>
-                  <Badge className={classItem.is_active ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'}>
-                    {classItem.is_active ? 'Đang hoạt động' : 'Đã kết thúc'}
+                  <Badge className={
+                    classItem.approval_status === 'approved' ? 'bg-green-500/10 text-green-600' :
+                    classItem.approval_status === 'rejected' ? 'bg-red-500/10 text-red-600' :
+                    'bg-yellow-500/10 text-yellow-700'
+                  }>
+                    {classItem.approval_status === 'approved' ? 'Đã duyệt' :
+                     classItem.approval_status === 'rejected' ? 'Bị từ chối' : 'Chờ duyệt'}
                   </Badge>
                 </div>
               </CardHeader>
