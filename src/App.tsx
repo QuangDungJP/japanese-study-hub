@@ -49,6 +49,7 @@ import AdminContactForm from "./pages/admin/AdminContactForm";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminTeachers from "./pages/admin/AdminTeachers";
+import AdminClasses from "./pages/admin/AdminClasses";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import TeacherLayout from "./pages/teacher/TeacherLayout";
