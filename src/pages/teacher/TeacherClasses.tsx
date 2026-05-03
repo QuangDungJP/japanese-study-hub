@@ -39,6 +39,12 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
+interface CustomField {
+  key: string;
+  label: string;
+  value: string;
+}
+
 interface ClassData {
   id: string;
   name: string;
@@ -51,6 +57,9 @@ interface ClassData {
   end_date: string | null;
   is_active: boolean;
   created_at: string;
+  approval_status?: string;
+  rejection_reason?: string | null;
+  custom_fields?: CustomField[];
   student_count?: number;
   courses?: { title_vi: string };
 }
