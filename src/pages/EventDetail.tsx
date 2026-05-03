@@ -125,7 +125,7 @@ const EventDetailPage = () => {
     setSubmitting(true);
     try {
       const { error } = await supabase.from('event_registrations').insert({
-        event_id: event?.id, user_id: user?.id || null, data: formData, status: 'registered',
+        event_id: event?.id, user_id: user?.id ?? null, data: formData, status: 'registered',
       } as any);
       if (error) throw error;
       setSubmitted(true);
