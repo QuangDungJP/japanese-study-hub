@@ -38,17 +38,19 @@ const TeacherClassDetail = () => {
   const fetchAll = async () => {
     setLoading(true);
     const sb: any = supabase;
-    const [{ data: c }, { data: s }, { data: l }, { data: v }, { data: a }] = await Promise.all([
+    const [{ data: c }, { data: s }, { data: l }, { data: v }, { data: a }, { data: ex }] = await Promise.all([
       sb.from('classes').select('*').eq('id', id!).maybeSingle(),
       sb.from('class_students').select('*').eq('class_id', id!),
-      sb.from('lessons').select('*').eq('class_id', id!).order('order_index'),
+      sb.from('lessons').select('*').eq('class_id', id!).order('start_at', { ascending: true, nullsFirst: false }),
       sb.from('vocabulary').select('*').eq('class_id', id!).order('created_at', { ascending: false }),
-      sb.from('class_assignments').select('*').eq('class_id', id!).order('created_at', { ascending: false }),
+      sb.from('class_assignments').select('*').eq('class_id', id!).order('start_at', { ascending: true, nullsFirst: false }),
+      sb.from('exams').select('*').eq('class_id', id!).order('exam_date', { ascending: true }),
     ]);
     setCls(c);
     setAssignments(a || []);
     setLessons(l || []);
     setVocab(v || []);
+    setExams(ex || []);
 
     // student profiles + progress
     const studentIds = (s || []).map((x: any) => x.student_id);
