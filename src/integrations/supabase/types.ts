@@ -1836,6 +1836,46 @@ export type Database = {
     }
     Functions: {
       generate_slug: { Args: { input_text: string }; Returns: string }
+      get_exercise_answers: {
+        Args: { _exercise_id: string }
+        Returns: {
+          correct_answers: Json
+          explanation: Json
+        }[]
+      }
+      get_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          display_name: string
+          initial: string
+          lessons_completed: number
+          rank: number
+          streak: number
+          total_xp: number
+        }[]
+      }
+      get_lesson_exercises: {
+        Args: { _lesson_id: string }
+        Returns: {
+          audio_url: string
+          content: Json
+          created_at: string
+          exercise_type: string
+          id: string
+          instructions: string
+          instructions_vi: string
+          lesson_id: string
+          order_index: number
+          requires_grading: boolean
+          title: string
+          title_vi: string
+          updated_at: string
+        }[]
+      }
+      grade_exercise: {
+        Args: { _answers: Json; _exercise_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
