@@ -421,10 +421,15 @@ const AdminCourses = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Cấp độ JLPT</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Cấp độ JLPT</Label>
+                        <Button type="button" variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => setLevelsDialogOpen(true)}>
+                          <Settings2 className="w-3 h-3" /> Quản lý
+                        </Button>
+                      </div>
                       <Select value={form.level} onValueChange={v => setForm({ ...form, level: v })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{jlptLevels.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
+                        <SelectContent>{jlptLevels.map(l => <SelectItem key={l.value} value={l.value}>{l.label_vi || l.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
