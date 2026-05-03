@@ -304,6 +304,58 @@ const AdminClasses = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Students dialog */}
+      <Dialog open={studentsOpen} onOpenChange={setStudentsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Học viên - {selected?.name_vi}</DialogTitle></DialogHeader>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <div className="font-medium mb-2 text-sm">Đã thêm ({classStudents.length})</div>
+              <div className="border rounded max-h-[400px] overflow-y-auto">
+                {classStudents.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6 text-sm">Chưa có học viên</div>
+                ) : classStudents.map(s => (
+                  <div key={s.id} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0">
+                    <div>
+                      <div className="font-medium text-sm">{s.full_name}</div>
+                      <div className="text-xs text-muted-foreground">Tham gia: {format(new Date(s.enrolled_at), 'dd/MM/yyyy')}</div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeStudent(s.student_id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="font-medium mb-2 text-sm">Thêm học viên</div>
+              <div className="relative mb-2">
+                <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
+                <Input className="pl-8" placeholder="Tìm tên học viên..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
+              </div>
+              <div className="border rounded max-h-[360px] overflow-y-auto">
+                {availableUsers.filter(u => !userSearch || u.full_name?.toLowerCase().includes(userSearch.toLowerCase())).length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6 text-sm">Không có học viên khả dụng</div>
+                ) : availableUsers
+                  .filter(u => !userSearch || u.full_name?.toLowerCase().includes(userSearch.toLowerCase()))
+                  .slice(0, 50)
+                  .map(u => (
+                    <div key={u.user_id} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0">
+                      <div className="text-sm">{u.full_name || '—'}</div>
+                      <Button variant="ghost" size="icon" className="text-green-600" onClick={() => addStudent(u.user_id)}>
+                        <UserPlus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setStudentsOpen(false)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
