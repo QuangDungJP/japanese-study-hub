@@ -115,7 +115,8 @@ const TeacherClasses = () => {
     course_id: '',
     max_students: 30,
     start_date: '',
-    end_date: ''
+    end_date: '',
+    custom_fields: [] as CustomField[],
   });
 
   useEffect(() => {
