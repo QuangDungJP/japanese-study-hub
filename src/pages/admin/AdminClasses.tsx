@@ -116,6 +116,49 @@ const AdminClasses = () => {
     fetchAll();
   };
 
+  const openStudents = async (cls: ClassRow) => {
+    setSelected(cls);
+    setStudentsOpen(true);
+    await loadClassStudents(cls.id);
+    await loadAvailableUsers(cls.id);
+  };
+
+  const loadClassStudents = async (classId: string) => {
+    const { data } = await supabase.from('class_students').select('*').eq('class_id', classId).order('enrolled_at', { ascending: false });
+    const ids = (data || []).map((s: any) => s.student_id);
+    const { data: profs } = ids.length ? await supabase.from('profiles').select('user_id, full_name').in('user_id', ids) : { data: [] as any[] };
+    setClassStudents((data || []).map((s: any) => ({ ...s, full_name: profs?.find((p: any) => p.user_id === s.student_id)?.full_name || '—' })));
+  };
+
+  const loadAvailableUsers = async (classId: string) => {
+    const { data: existing } = await supabase.from('class_students').select('student_id').eq('class_id', classId);
+    const exIds = new Set((existing || []).map((e: any) => e.student_id));
+    const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'user');
+    const ids = (roles || []).map((r: any) => r.user_id).filter((id: string) => !exIds.has(id));
+    if (!ids.length) return setAvailableUsers([]);
+    const { data: profs } = await supabase.from('profiles').select('user_id, full_name').in('user_id', ids).limit(200);
+    setAvailableUsers(profs || []);
+  };
+
+  const addStudent = async (uid: string) => {
+    if (!selected) return;
+    const { error } = await supabase.from('class_students').insert({ class_id: selected.id, student_id: uid, status: 'active' });
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    toast({ title: 'Đã thêm học viên' });
+    await loadClassStudents(selected.id);
+    await loadAvailableUsers(selected.id);
+    fetchAll();
+  };
+
+  const removeStudent = async (sid: string) => {
+    if (!selected || !confirm('Xóa học viên khỏi lớp?')) return;
+    const { error } = await supabase.from('class_students').delete().eq('class_id', selected.id).eq('student_id', sid);
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    await loadClassStudents(selected.id);
+    await loadAvailableUsers(selected.id);
+    fetchAll();
+  };
+
   const filtered = classes.filter(c =>
     tab === 'all' ? true : c.approval_status === tab
   );
