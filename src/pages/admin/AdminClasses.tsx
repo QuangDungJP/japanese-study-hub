@@ -53,6 +53,10 @@ const AdminClasses = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectOpen, setRejectOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [studentsOpen, setStudentsOpen] = useState(false);
+  const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{ user_id: string; full_name: string | null }[]>([]);
+  const [userSearch, setUserSearch] = useState('');
   const { toast } = useToast();
 
   useEffect(() => { fetchAll(); }, []);
