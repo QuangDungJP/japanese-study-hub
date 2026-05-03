@@ -55,15 +55,11 @@ const Exercises = () => {
         setLessonTitle(lessonData.title_vi || lessonData.title);
       }
 
-      // Fetch exercises
-      const { data } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('lesson_id', lessonId)
-        .order('order_index', { ascending: true });
+      // Fetch exercises via RPC (excludes correct_answers/explanation)
+      const { data } = await supabase.rpc('get_lesson_exercises', { _lesson_id: lessonId });
 
       if (data) {
-        setExercises(data);
+        setExercises(data as any);
       }
       setLoading(false);
     };
