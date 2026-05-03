@@ -207,12 +207,15 @@ const TeacherClassDetail = () => {
           </div>
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead>Tiêu đề</TableHead><TableHead>Cấp độ</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Tiêu đề</TableHead><TableHead>Lịch học</TableHead><TableHead>Cấp độ</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
               <TableBody>
-                {lessons.length === 0 ? <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Chưa có bài học. Vào "Quản lý bài học" và gán class_id.</TableCell></TableRow> :
+                {lessons.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Chưa có bài học. Vào "Quản lý bài học" và gán class_id.</TableCell></TableRow> :
                   lessons.map(l => (
                     <TableRow key={l.id}>
                       <TableCell className="font-medium">{l.title_vi}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {l.start_at ? <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />{format(new Date(l.start_at), 'dd/MM HH:mm')}{l.end_at && ` → ${format(new Date(l.end_at), 'HH:mm')}`}</span> : '—'}
+                      </TableCell>
                       <TableCell>{l.level}</TableCell>
                       <TableCell>{l.is_published ? <Badge className="bg-green-500/10 text-green-600">Đã đăng</Badge> : <Badge variant="outline">Nháp</Badge>}</TableCell>
                     </TableRow>
