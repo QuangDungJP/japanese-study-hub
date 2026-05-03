@@ -1817,6 +1817,17 @@ export type Database = {
       }
     }
     Views: {
+      leaderboard_view: {
+        Row: {
+          display_name: string | null
+          initial: string | null
+          lessons_completed: number | null
+          rank: number | null
+          streak: number | null
+          total_xp: number | null
+        }
+        Relationships: []
+      }
       teacher_public_view: {
         Row: {
           bio: string | null
@@ -1836,6 +1847,28 @@ export type Database = {
     }
     Functions: {
       generate_slug: { Args: { input_text: string }; Returns: string }
+      get_exercise_answers: {
+        Args: { _exercise_id: string }
+        Returns: {
+          correct_answers: Json
+          explanation: Json
+        }[]
+      }
+      get_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          display_name: string
+          initial: string
+          lessons_completed: number
+          rank: number
+          streak: number
+          total_xp: number
+        }[]
+      }
+      grade_exercise: {
+        Args: { _answers: Json; _exercise_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
