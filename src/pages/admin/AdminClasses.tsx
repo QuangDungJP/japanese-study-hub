@@ -204,6 +204,9 @@ const AdminClasses = () => {
                     <Button variant="ghost" size="icon" onClick={() => { setSelected(c); setDetailOpen(true); }}>
                       <Eye className="w-4 h-4" />
                     </Button>
+                    <Button variant="ghost" size="icon" className="text-blue-600" onClick={() => openStudents(c)}>
+                      <Users className="w-4 h-4" />
+                    </Button>
                     {c.approval_status !== 'approved' && (
                       <Button variant="ghost" size="icon" className="text-green-600" onClick={() => approve(c)}>
                         <Check className="w-4 h-4" />
