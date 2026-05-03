@@ -17,15 +17,26 @@ const RelatedPosts = ({ category, currentId }: { category: string | null; curren
   const { data: posts = [] } = useQuery({
     queryKey: ['related-posts', category, currentId],
     queryFn: async () => {
-      let query = supabase
+      const base = supabase
         .from('blog_posts')
         .select('id, title_vi, slug, thumbnail_url, excerpt_vi, published_at, view_count')
         .eq('is_published', true)
         .neq('id', currentId)
         .order('published_at', { ascending: false })
         .limit(3);
-      if (category) query = query.eq('category', category);
-      const { data, error } = await query;
+      if (category) {
+        const { data, error } = await base.eq('category', category);
+        if (error) throw error;
+        if (data && data.length > 0) return data;
+      }
+      // Fallback: latest other posts regardless of category
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('id, title_vi, slug, thumbnail_url, excerpt_vi, published_at, view_count')
+        .eq('is_published', true)
+        .neq('id', currentId)
+        .order('published_at', { ascending: false })
+        .limit(3);
       if (error) throw error;
       return data;
     },
@@ -37,7 +48,7 @@ const RelatedPosts = ({ category, currentId }: { category: string | null; curren
   return (
     <ScrollReveal delay={300}>
       <div className="mt-16 pt-10 border-t border-border">
-        <h2 className="text-2xl font-bold text-foreground mb-6">Bài viết liên quan</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-6">Bài viết khác</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map(post => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="group block rounded-2xl border border-border bg-card overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
