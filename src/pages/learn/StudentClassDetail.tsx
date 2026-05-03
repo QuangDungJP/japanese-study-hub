@@ -148,6 +148,7 @@ const StudentClassDetail = () => {
           <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
           <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Nộp bài</TabsTrigger>
+          <TabsTrigger value="status"><CheckCircle2 className="w-4 h-4 mr-1" />Trạng thái nộp bài</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lessons" className="mt-4 space-y-3">
@@ -281,6 +282,70 @@ const StudentClassDetail = () => {
                 </Card>
               );
             })}
+        </TabsContent>
+
+        <TabsContent value="status" className="mt-4 space-y-3">
+          {(() => {
+            const rows = assignments.map(a => {
+              const sub = submissionFor(a.id);
+              const overdue = a.due_date && new Date(a.due_date) < now;
+              const upcoming = a.start_at && new Date(a.start_at) > now;
+              let state: 'graded' | 'pending' | 'overdue' | 'upcoming' | 'open' = 'open';
+              if (sub?.status === 'graded') state = 'graded';
+              else if (sub) state = 'pending';
+              else if (upcoming) state = 'upcoming';
+              else if (overdue) state = 'overdue';
+              return { a, sub, state };
+            });
+            const counts = {
+              graded: rows.filter(r => r.state === 'graded').length,
+              pending: rows.filter(r => r.state === 'pending').length,
+              overdue: rows.filter(r => r.state === 'overdue').length,
+              open: rows.filter(r => r.state === 'open').length,
+              upcoming: rows.filter(r => r.state === 'upcoming').length,
+            };
+            const stateBadge = (s: typeof rows[number]['state'], sub: any) => {
+              if (s === 'graded') return <Badge className="bg-green-500/10 text-green-600">Đã chấm{sub?.score != null ? ` • ${sub.score}` : ''}</Badge>;
+              if (s === 'pending') return <Badge className="bg-blue-500/10 text-blue-600">Chờ duyệt</Badge>;
+              if (s === 'overdue') return <Badge className="bg-red-500/10 text-red-600">Quá hạn</Badge>;
+              if (s === 'upcoming') return <Badge variant="outline">Chưa mở</Badge>;
+              return <Badge variant="outline">Chưa nộp</Badge>;
+            };
+            if (rows.length === 0) {
+              return <Card><CardContent className="py-12 text-center text-muted-foreground">Chưa có bài tập</CardContent></Card>;
+            }
+            return (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Đã chấm</p><p className="text-2xl font-bold text-green-600">{counts.graded}</p></CardContent></Card>
+                  <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Chờ duyệt</p><p className="text-2xl font-bold text-blue-600">{counts.pending}</p></CardContent></Card>
+                  <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Quá hạn</p><p className="text-2xl font-bold text-red-600">{counts.overdue}</p></CardContent></Card>
+                  <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Chưa nộp</p><p className="text-2xl font-bold">{counts.open}</p></CardContent></Card>
+                  <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Chưa mở</p><p className="text-2xl font-bold text-muted-foreground">{counts.upcoming}</p></CardContent></Card>
+                </div>
+                <div className="space-y-2">
+                  {rows.map(({ a, sub, state }) => (
+                    <Card key={a.id}>
+                      <CardContent className="p-4 flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold truncate">{a.title}</h3>
+                            {stateBadge(state, sub)}
+                          </div>
+                          <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
+                            {a.start_at && <span>Mở: {format(new Date(a.start_at), 'dd/MM HH:mm')}</span>}
+                            {a.due_date && <span>Hạn: {format(new Date(a.due_date), 'dd/MM HH:mm')}</span>}
+                            {sub && <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-500" />Nộp: {format(new Date(sub.submitted_at), 'dd/MM HH:mm')}</span>}
+                          </div>
+                          {sub?.feedback && <p className="text-xs mt-1"><strong>Phản hồi:</strong> {sub.feedback}</p>}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
