@@ -79,21 +79,19 @@ export default function HomepageSectionOrder() {
     try {
       const { error } = await supabase
         .from('website_content')
-        .update({ content: sections as any, updated_at: new Date().toISOString() })
-        .eq('section_key', 'homepage_sections');
-
-      if (error) {
-        await supabase.from('website_content').insert({
+        .upsert({
           section_key: 'homepage_sections',
           title: 'Homepage Section Order',
           content: sections as any,
           is_active: true,
-        });
-      }
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'section_key' });
+
+      if (error) throw error;
       toast({ title: 'Đã lưu thứ tự trang chủ ✓' });
       setChanged(false);
-    } catch {
-      toast({ title: 'Lỗi khi lưu', variant: 'destructive' });
+    } catch (e: any) {
+      toast({ title: 'Lỗi khi lưu', description: e?.message, variant: 'destructive' });
     }
     setSaving(false);
   };
