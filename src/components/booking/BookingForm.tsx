@@ -121,6 +121,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
 
       const { error } = await supabase.from("bookings").insert({
         user_id: user.id,
+        teacher_id: selectedTeacher?.user_id || null,
         teacher_name: selectedTeacher?.name || values.teacher,
         booking_date: format(values.date, "yyyy-MM-dd"),
         booking_time: values.time,
