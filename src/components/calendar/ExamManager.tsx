@@ -405,14 +405,14 @@ export const ExamManager = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Lớp (tùy chọn)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={(v) => field.onChange(v === 'all' ? '' : v)} value={field.value || 'all'}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Chọn lớp..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Tất cả</SelectItem>
+                          <SelectItem value="all">Tất cả</SelectItem>
                           {classes.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.name_vi}

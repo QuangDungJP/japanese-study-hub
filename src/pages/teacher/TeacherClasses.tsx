@@ -513,14 +513,14 @@ const TeacherClasses = () => {
             <div className="space-y-2">
               <Label>Khóa học liên kết</Label>
               <Select 
-                value={formData.course_id} 
-                onValueChange={(value) => setFormData({ ...formData, course_id: value })}
+                value={formData.course_id || 'none'} 
+                onValueChange={(value) => setFormData({ ...formData, course_id: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn khóa học (không bắt buộc)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Không liên kết</SelectItem>
+                  <SelectItem value="none">Không liên kết</SelectItem>
                   {courses.map((course) => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.title_vi}
