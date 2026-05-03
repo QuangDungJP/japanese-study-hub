@@ -148,6 +148,7 @@ const StudentClassDetail = () => {
           <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
           <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Nộp bài</TabsTrigger>
+          <TabsTrigger value="status"><CheckCircle2 className="w-4 h-4 mr-1" />Trạng thái nộp bài</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lessons" className="mt-4 space-y-3">
