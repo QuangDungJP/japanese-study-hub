@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Search, Loader2, Flame, Zap, Users, TrendingUp, BookOpen, Eye,
+  Search, Loader2, Flame, Users, TrendingUp, BookOpen, Eye,
   ChevronUp, ChevronDown, Shield, GraduationCap, Filter, X,
   Crown, Star, MoreHorizontal
 } from 'lucide-react';
@@ -27,17 +27,14 @@ interface UserWithProgress {
   created_at: string;
   current_language?: string | null;
   progress: {
-    total_xp: number;
     streak: number;
     lessons_completed: number;
     vocabulary_mastered: number;
-    daily_progress: number;
-    daily_goal: number;
   } | null;
   roles: string[];
 }
 
-type SortField = 'name' | 'xp' | 'streak' | 'lessons' | 'date';
+type SortField = 'name' | 'streak' | 'lessons' | 'date';
 type SortDirection = 'asc' | 'desc';
 type RoleFilter = 'all' | 'user' | 'teacher' | 'senior_teacher' | 'moderator' | 'admin';
 
@@ -128,7 +125,6 @@ const AdminUsers = () => {
     let vA: number | string, vB: number | string;
     switch (sortField) {
       case 'name': vA = a.full_name?.toLowerCase() || ''; vB = b.full_name?.toLowerCase() || ''; break;
-      case 'xp': vA = a.progress?.total_xp || 0; vB = b.progress?.total_xp || 0; break;
       case 'streak': vA = a.progress?.streak || 0; vB = b.progress?.streak || 0; break;
       case 'lessons': vA = a.progress?.lessons_completed || 0; vB = b.progress?.lessons_completed || 0; break;
       case 'date': vA = new Date(a.created_at).getTime(); vB = new Date(b.created_at).getTime(); break;
@@ -157,8 +153,7 @@ const AdminUsers = () => {
     user: users.filter(u => u.roles.length === 0 || (u.roles.length === 1 && u.roles[0] === 'user')).length,
   };
 
-  const activeToday = users.filter(u => (u.progress?.daily_progress || 0) > 0).length;
-  const getLevel = (xp: number) => Math.floor(xp / 500) + 1;
+  const activeToday = users.filter(u => (u.progress?.streak || 0) > 0).length;
 
   return (
     <div className="space-y-6">
@@ -175,7 +170,7 @@ const AdminUsers = () => {
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 font-medium">
             <TrendingUp className="w-4 h-4" />
-            {activeToday} online hôm nay
+            {activeToday} đang hoạt động
           </div>
         </div>
       </div>
@@ -249,9 +244,6 @@ const AdminUsers = () => {
                       Người dùng <SortIcon field="name" />
                     </TableHead>
                     <TableHead className="text-center">Vai trò</TableHead>
-                    <TableHead className="text-center cursor-pointer hover:text-foreground" onClick={() => handleSort('xp')}>
-                      XP <SortIcon field="xp" />
-                    </TableHead>
                     <TableHead className="text-center cursor-pointer hover:text-foreground hidden md:table-cell" onClick={() => handleSort('streak')}>
                       Streak <SortIcon field="streak" />
                     </TableHead>
@@ -266,7 +258,6 @@ const AdminUsers = () => {
                 </TableHeader>
                 <TableBody>
                   {sortedUsers.map((user, index) => {
-                    const level = getLevel(user.progress?.total_xp || 0);
                     const primaryRole = getUserPrimaryRole(user.roles);
                     const config = ROLE_CONFIG[primaryRole];
                     return (
@@ -293,7 +284,6 @@ const AdminUsers = () => {
                               <p className="font-medium text-foreground truncate text-sm">
                                 {user.full_name || 'Chưa đặt tên'}
                               </p>
-                              <p className="text-xs text-muted-foreground">Lv.{level}</p>
                             </div>
                           </div>
                         </TableCell>
@@ -317,12 +307,6 @@ const AdminUsers = () => {
                                 );
                               })
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Zap className="w-3.5 h-3.5 text-amber-500" />
-                            <span className="font-semibold text-sm">{(user.progress?.total_xp || 0).toLocaleString()}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-center hidden md:table-cell">
@@ -380,7 +364,12 @@ const AdminUsers = () => {
         </CardContent>
       </Card>
 
-      <StudentProgressModal open={modalOpen} onOpenChange={setModalOpen} student={selectedStudent} />
+      <StudentProgressModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        student={selectedStudent}
+        onDeleted={fetchUsers}
+      />
     </div>
   );
 };
