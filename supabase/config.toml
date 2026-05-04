@@ -1,1 +1,4 @@
 project_id = "mkhrvapbjwtwumbestjf"
+
+[functions.delete-user]
+verify_jwt = true
