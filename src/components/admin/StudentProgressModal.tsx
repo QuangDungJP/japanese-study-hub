@@ -15,21 +15,31 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Flame, 
-  Zap, 
   BookOpen, 
   Calendar,
   Target,
   TrendingUp,
-  Award,
   Loader2,
   Save,
   Bell,
   ShoppingBag,
   CalendarCheck,
   GraduationCap,
-  User as UserIcon
+  User as UserIcon,
+  Trash2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface StudentProgressModalProps {
   open: boolean;
@@ -42,14 +52,12 @@ interface StudentProgressModalProps {
     created_at: string;
     current_language?: string | null;
     progress: {
-      total_xp: number;
       streak: number;
       lessons_completed: number;
       vocabulary_mastered: number;
-      daily_progress: number;
-      daily_goal: number;
     } | null;
   } | null;
+  onDeleted?: () => void;
 }
 
 interface CompletedLesson {
@@ -61,14 +69,14 @@ interface CompletedLesson {
     title: string;
     title_vi: string;
     skill: string;
-    xp_reward: number;
   };
 }
 
-const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressModalProps) => {
+const StudentProgressModal = ({ open, onOpenChange, student, onDeleted }: StudentProgressModalProps) => {
   const [completedLessons, setCompletedLessons] = useState<CompletedLesson[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   // Editable profile
@@ -77,9 +85,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
   const [avatarUrl, setAvatarUrl] = useState('');
 
   // Editable progress
-  const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [dailyGoal, setDailyGoal] = useState(50);
   const [vocab, setVocab] = useState(0);
 
   // Counts
@@ -94,9 +100,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
       setFullName(student.full_name || '');
       setCurrentLanguage(student.current_language || 'english');
       setAvatarUrl(student.avatar_url || '');
-      setXp(student.progress?.total_xp || 0);
       setStreak(student.progress?.streak || 0);
-      setDailyGoal(student.progress?.daily_goal || 50);
       setVocab(student.progress?.vocabulary_mastered || 0);
       fetchCompletedLessons();
       fetchCounts();
@@ -142,7 +146,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
     try {
       const { error } = await supabase
         .from('user_progress')
-        .update({ total_xp: xp, streak, daily_goal: dailyGoal, vocabulary_mastered: vocab })
+        .update({ streak, vocabulary_mastered: vocab })
         .eq('user_id', student.user_id);
       if (error) throw error;
       toast({ title: 'Đã lưu', description: 'Tiến độ đã được cập nhật' });
@@ -150,6 +154,25 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
       toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteUser = async () => {
+    if (!student) return;
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: student.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Đã xóa', description: 'Người dùng đã bị xóa khỏi hệ thống' });
+      onOpenChange(false);
+      onDeleted?.();
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message || 'Không thể xóa người dùng', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -210,11 +233,6 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
   if (!student) return null;
 
   const progress = student.progress;
-  const dailyPercent = progress ? Math.min((progress.daily_progress / progress.daily_goal) * 100, 100) : 0;
-  const level = progress ? Math.floor(progress.total_xp / 500) + 1 : 1;
-  const xpForNextLevel = level * 500;
-  const currentLevelXp = progress ? progress.total_xp - ((level - 1) * 500) : 0;
-  const levelPercent = (currentLevelXp / 500) * 100;
 
   const skillLabels: Record<string, string> = {
     reading: 'Đọc',
@@ -251,30 +269,8 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-4">
-          {/* Level & XP */}
-          <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl p-5 border border-primary/20">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-primary" />
-                <span className="font-bold text-lg">Level {level}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {currentLevelXp} / 500 XP
-              </span>
-            </div>
-            <Progress value={levelPercent} className="h-3" />
-            <p className="text-xs text-muted-foreground mt-2">
-              Cần {500 - currentLevelXp} XP nữa để lên level {level + 1}
-            </p>
-          </div>
-
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-card rounded-xl border border-border p-4 text-center">
-              <Zap className="w-6 h-6 text-accent mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">{progress?.total_xp?.toLocaleString() || 0}</p>
-              <p className="text-xs text-muted-foreground">Tổng XP</p>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-card rounded-xl border border-border p-4 text-center">
               <Flame className="w-6 h-6 text-orange-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-foreground">{progress?.streak || 0}</p>
@@ -316,20 +312,6 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
             </div>
           </div>
 
-          {/* Daily Progress */}
-          <div className="bg-card rounded-xl border border-border p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                <span className="font-medium">Tiến độ hôm nay</span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {progress?.daily_progress || 0} / {progress?.daily_goal || 50} XP
-              </span>
-            </div>
-            <Progress value={dailyPercent} className="h-2" />
-          </div>
-
           {/* Recent Completed Lessons */}
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="p-4 border-b border-border bg-muted/30">
@@ -362,10 +344,6 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
                           {cl.score}%
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Zap className="w-3 h-3 text-accent" />
-                        +{cl.lesson?.xp_reward || 25}
-                      </span>
                     </div>
                   </div>
                 ))}
@@ -404,16 +382,8 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
           <TabsContent value="progress" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tổng XP</Label>
-                <Input type="number" value={xp} onChange={(e) => setXp(parseInt(e.target.value) || 0)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Streak (ngày)</Label>
                 <Input type="number" value={streak} onChange={(e) => setStreak(parseInt(e.target.value) || 0)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mục tiêu hằng ngày (XP)</Label>
-                <Input type="number" value={dailyGoal} onChange={(e) => setDailyGoal(parseInt(e.target.value) || 0)} />
               </div>
               <div className="space-y-2">
                 <Label>Từ vựng đã thuộc</Label>
@@ -441,6 +411,31 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
             </Button>
           </TabsContent>
         </Tabs>
+
+        <div className="mt-6 pt-4 border-t border-border flex justify-end">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={deleting} className="gap-2">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Xóa người dùng khỏi hệ thống
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa người dùng?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Hành động này sẽ xóa vĩnh viễn tài khoản <strong>{student.full_name || student.user_id.slice(0, 8)}</strong> khỏi hệ thống bao gồm tất cả dữ liệu liên quan. Không thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Xóa vĩnh viễn
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </DialogContent>
     </Dialog>
   );
