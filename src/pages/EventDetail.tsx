@@ -14,7 +14,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { CalendarDays, Clock, MapPin, Users, Video, ArrowLeft, CheckCircle, Loader2, Share2, Sparkles, Heart } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Users, Video, ArrowLeft, CheckCircle, Loader2, Share2, Sparkles, Heart, Mic2, ListOrdered, HelpCircle, Award, Tag } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -38,6 +39,15 @@ interface EventDetail {
   layout_style: string;
   content_html: string | null;
   content_html_vi: string | null;
+  agenda?: Array<{ time: string; title: string; description?: string }>;
+  speakers?: Array<{ name: string; title?: string; avatar_url?: string; bio?: string }>;
+  highlights?: Array<{ title: string; description?: string }>;
+  faq?: Array<{ question: string; answer: string }>;
+  sponsors?: Array<{ name: string; logo_url?: string; url?: string }>;
+  price?: number | null;
+  price_note?: string | null;
+  register_button_label?: string | null;
+  section_visibility?: Record<string, boolean>;
 }
 
 interface FormField {
