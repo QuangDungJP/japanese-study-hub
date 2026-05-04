@@ -899,7 +899,7 @@ const AdminWebsiteCMS = () => {
                 </div>
 
                 {/* Section-specific editor fields */}
-                {editingSection && ['hero', 'teachers', 'cta'].includes(editingSection.section_key) ? (
+                {editingSection && ['hero', 'teachers', 'cta', 'zoom'].includes(editingSection.section_key) ? (
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <FileText className="w-4 h-4" />
