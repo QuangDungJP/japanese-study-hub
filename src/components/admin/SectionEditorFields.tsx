@@ -537,6 +537,102 @@ const CTAEditor = ({ content, onChange }: { content: Record<string, any>; onChan
   );
 };
 
+const ZoomEditor = ({ content, onChange }: { content: Record<string, any>; onChange: (c: Record<string, any>) => void }) => {
+  const update = (key: string, value: any) => onChange({ ...content, [key]: value });
+  const features = (content.features as Array<{ icon: string; title: string; description: string }>) || [];
+
+  const updateFeature = (i: number, key: string, value: string) => {
+    const next = [...features];
+    next[i] = { ...next[i], [key]: value };
+    update("features", next);
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="font-semibold text-foreground mb-3">Thông tin giáo viên (mock)</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Tên giáo viên</Label>
+            <Input value={content.teacherName || ""} onChange={(e) => update("teacherName", e.target.value)} placeholder="Ms. Sarah Johnson" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Vai trò</Label>
+            <Input value={content.teacherRole || ""} onChange={(e) => update("teacherRole", e.target.value)} placeholder="IELTS Instructor" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-foreground mb-3">Hai nút CTA</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Nút chính - Nội dung</Label>
+            <Input value={content.primaryButton || ""} onChange={(e) => update("primaryButton", e.target.value)} placeholder="Đăng ký học thử miễn phí" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Nút chính - Link</Label>
+            <Input value={content.primaryButtonUrl || ""} onChange={(e) => update("primaryButtonUrl", e.target.value)} placeholder="/contact" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Nút phụ - Nội dung</Label>
+            <Input value={content.secondaryButton || ""} onChange={(e) => update("secondaryButton", e.target.value)} placeholder="Xem lịch học" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Nút phụ - Link</Label>
+            <Input value={content.secondaryButtonUrl || ""} onChange={(e) => update("secondaryButtonUrl", e.target.value)} placeholder="/learn/calendar" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-foreground">Tính năng ({features.length})</h3>
+          <Button variant="outline" size="sm" onClick={() => update("features", [...features, { icon: "video", title: "", description: "" }])}>
+            <Plus className="w-3.5 h-3.5 mr-1" /> Thêm
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {features.map((f, i) => (
+            <div key={i} className="rounded-lg border border-border p-3 space-y-2 bg-muted/30">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Icon</Label>
+                  <select
+                    value={f.icon || "video"}
+                    onChange={(e) => updateFeature(i, "icon", e.target.value)}
+                    className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  >
+                    <option value="video">video</option>
+                    <option value="users">users</option>
+                    <option value="calendar">calendar</option>
+                    <option value="clock">clock</option>
+                    <option value="message">message</option>
+                    <option value="award">award</option>
+                  </select>
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <Label className="text-[11px]">Tiêu đề</Label>
+                  <Input value={f.title || ""} onChange={(e) => updateFeature(i, "title", e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px]">Mô tả</Label>
+                <Textarea rows={2} value={f.description || ""} onChange={(e) => updateFeature(i, "description", e.target.value)} />
+              </div>
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => update("features", features.filter((_, j) => j !== i))}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFieldsProps) => {
   switch (sectionKey) {
     case "hero":
@@ -545,6 +641,8 @@ const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFie
       return <TeachersEditor content={content} onChange={onChange} />;
     case "cta":
       return <CTAEditor content={content} onChange={onChange} />;
+    case "zoom":
+      return <ZoomEditor content={content} onChange={onChange} />;
     default:
       return null;
   }
