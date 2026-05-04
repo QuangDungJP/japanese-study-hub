@@ -884,6 +884,7 @@ export type Database = {
       }
       events: {
         Row: {
+          agenda: Json
           content_html: string | null
           content_html_vi: string | null
           created_at: string
@@ -892,7 +893,9 @@ export type Database = {
           description_vi: string | null
           end_time: string | null
           event_date: string
+          faq: Json
           gallery_urls: Json | null
+          highlights: Json
           id: string
           is_online: boolean | null
           is_published: boolean | null
@@ -901,7 +904,14 @@ export type Database = {
           location_vi: string | null
           max_participants: number | null
           meet_link: string | null
+          order_index: number
+          price: number | null
+          price_note: string | null
+          register_button_label: string | null
+          section_visibility: Json
           slug: string | null
+          speakers: Json
+          sponsors: Json
           start_time: string
           thumbnail_url: string | null
           title: string
@@ -910,6 +920,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          agenda?: Json
           content_html?: string | null
           content_html_vi?: string | null
           created_at?: string
@@ -918,7 +929,9 @@ export type Database = {
           description_vi?: string | null
           end_time?: string | null
           event_date: string
+          faq?: Json
           gallery_urls?: Json | null
+          highlights?: Json
           id?: string
           is_online?: boolean | null
           is_published?: boolean | null
@@ -927,7 +940,14 @@ export type Database = {
           location_vi?: string | null
           max_participants?: number | null
           meet_link?: string | null
+          order_index?: number
+          price?: number | null
+          price_note?: string | null
+          register_button_label?: string | null
+          section_visibility?: Json
           slug?: string | null
+          speakers?: Json
+          sponsors?: Json
           start_time: string
           thumbnail_url?: string | null
           title: string
@@ -936,6 +956,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          agenda?: Json
           content_html?: string | null
           content_html_vi?: string | null
           created_at?: string
@@ -944,7 +965,9 @@ export type Database = {
           description_vi?: string | null
           end_time?: string | null
           event_date?: string
+          faq?: Json
           gallery_urls?: Json | null
+          highlights?: Json
           id?: string
           is_online?: boolean | null
           is_published?: boolean | null
@@ -953,7 +976,14 @@ export type Database = {
           location_vi?: string | null
           max_participants?: number | null
           meet_link?: string | null
+          order_index?: number
+          price?: number | null
+          price_note?: string | null
+          register_button_label?: string | null
+          section_visibility?: Json
           slug?: string | null
+          speakers?: Json
+          sponsors?: Json
           start_time?: string
           thumbnail_url?: string | null
           title?: string
