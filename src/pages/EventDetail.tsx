@@ -182,13 +182,16 @@ const EventDetailPage = () => {
   const isFull = event.max_participants ? regCount >= event.max_participants : false;
   const isHeroLayout = event.layout_style === 'hero';
   const progressPercent = event.max_participants ? Math.round((regCount / event.max_participants) * 100) : 0;
+  const vis = event.section_visibility || {};
+  const show = (k: string) => vis[k] !== false;
+  const formatPrice = (p: number) => p === 0 ? 'Miễn phí' : new Intl.NumberFormat('vi-VN').format(p) + ' đ';
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Banner */}
-      <section className="relative min-h-[50vh] md:min-h-[65vh] flex items-end overflow-hidden">
+      {show('hero') && <section className="relative min-h-[50vh] md:min-h-[65vh] flex items-end overflow-hidden">
         <div className="absolute inset-0">
           {event.thumbnail_url ? (
             <img src={event.thumbnail_url} alt={event.title_vi} className="w-full h-full object-cover scale-105" />
@@ -228,10 +231,10 @@ const EventDetailPage = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Info Cards Strip */}
-      <section className="py-6 border-b border-border/50">
+      {show('info') && <section className="py-6 border-b border-border/50">
         <div className="container mx-auto px-4">
           <ScrollReveal>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -254,7 +257,7 @@ const EventDetailPage = () => {
             </div>
           </ScrollReveal>
         </div>
-      </section>
+      </section>}
 
       {/* Content + Registration */}
       <section className="py-10 md:py-16">
@@ -263,7 +266,7 @@ const EventDetailPage = () => {
             {/* Left: Content */}
             <div className="lg:col-span-3 space-y-8">
               {/* Video */}
-              {event.video_url && (
+              {show('video') && event.video_url && (
                 <ScrollReveal>
                   <div className="rounded-2xl overflow-hidden shadow-xl border border-border/50">
                     <video src={event.video_url} controls className="w-full aspect-video" poster={event.thumbnail_url || undefined} />
@@ -272,7 +275,7 @@ const EventDetailPage = () => {
               )}
 
               {/* Gallery */}
-              {event.gallery_urls && event.gallery_urls.length > 0 && (
+              {show('gallery') && event.gallery_urls && event.gallery_urls.length > 0 && (
                 <ScrollReveal>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {(event.gallery_urls as string[]).map((url, i) => (
@@ -284,8 +287,28 @@ const EventDetailPage = () => {
                 </ScrollReveal>
               )}
 
+              {/* Highlights */}
+              {show('highlights') && (event.highlights || []).length > 0 && (
+                <ScrollReveal>
+                  <Card className="border-border/50 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" />Điểm nổi bật</CardTitle>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {(event.highlights || []).map((h, i) => (
+                        <div key={i} className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                          <h4 className="font-semibold text-foreground">{h.title}</h4>
+                          {h.description && <p className="text-sm text-muted-foreground mt-1">{h.description}</p>}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </ScrollReveal>
+              )}
+
               {/* Content */}
-              {event.content_html_vi && (
+              {show('content') && event.content_html_vi && (
                 <ScrollReveal>
                   <Card className="border-border/50 shadow-sm">
                     <CardHeader className="pb-3">
@@ -302,10 +325,107 @@ const EventDetailPage = () => {
                   </Card>
                 </ScrollReveal>
               )}
+
+              {/* Agenda */}
+              {show('agenda') && (event.agenda || []).length > 0 && (
+                <ScrollReveal>
+                  <Card className="border-border/50 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2"><ListOrdered className="w-5 h-5 text-primary" />Lịch trình</CardTitle>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="pt-6 space-y-3">
+                      {(event.agenda || []).map((a, i) => (
+                        <div key={i} className="flex gap-4 pb-3 border-b border-border/40 last:border-0 last:pb-0">
+                          <div className="w-28 shrink-0 text-sm font-semibold text-primary">{a.time}</div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-foreground">{a.title}</h4>
+                            {a.description && <p className="text-sm text-muted-foreground mt-0.5">{a.description}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </ScrollReveal>
+              )}
+
+              {/* Speakers */}
+              {show('speakers') && (event.speakers || []).length > 0 && (
+                <ScrollReveal>
+                  <Card className="border-border/50 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2"><Mic2 className="w-5 h-5 text-primary" />Diễn giả</CardTitle>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {(event.speakers || []).map((s, i) => (
+                        <div key={i} className="flex gap-3 p-3 rounded-xl border border-border/40">
+                          {s.avatar_url ? (
+                            <img src={s.avatar_url} alt={s.name} className="w-16 h-16 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="w-16 h-16 rounded-full bg-muted shrink-0 flex items-center justify-center"><Mic2 className="w-6 h-6 text-muted-foreground" /></div>
+                          )}
+                          <div className="min-w-0">
+                            <h4 className="font-semibold text-foreground">{s.name}</h4>
+                            {s.title && <p className="text-xs text-primary">{s.title}</p>}
+                            {s.bio && <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{s.bio}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </ScrollReveal>
+              )}
+
+              {/* Sponsors */}
+              {show('sponsors') && (event.sponsors || []).length > 0 && (
+                <ScrollReveal>
+                  <Card className="border-border/50 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2"><Award className="w-5 h-5 text-primary" />Nhà tài trợ & Đối tác</CardTitle>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="pt-6 flex flex-wrap items-center gap-4">
+                      {(event.sponsors || []).map((s, i) => {
+                        const inner = s.logo_url ? (
+                          <img src={s.logo_url} alt={s.name} className="h-14 w-auto object-contain" />
+                        ) : (
+                          <span className="text-sm font-medium px-4 py-2 rounded-lg bg-muted">{s.name}</span>
+                        );
+                        return s.url ? (
+                          <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition" title={s.name}>{inner}</a>
+                        ) : <div key={i} title={s.name}>{inner}</div>;
+                      })}
+                    </CardContent>
+                  </Card>
+                </ScrollReveal>
+              )}
+
+              {/* FAQ */}
+              {show('faq') && (event.faq || []).length > 0 && (
+                <ScrollReveal>
+                  <Card className="border-border/50 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2"><HelpCircle className="w-5 h-5 text-primary" />Câu hỏi thường gặp</CardTitle>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="pt-4">
+                      <Accordion type="single" collapsible>
+                        {(event.faq || []).map((f, i) => (
+                          <AccordionItem key={i} value={`q-${i}`}>
+                            <AccordionTrigger className="text-left">{f.question}</AccordionTrigger>
+                            <AccordionContent className="whitespace-pre-wrap text-muted-foreground">{f.answer}</AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </CardContent>
+                  </Card>
+                </ScrollReveal>
+              )}
             </div>
 
             {/* Right: Registration Form */}
-            <div className="lg:col-span-2">
+            {show('register') && <div className="lg:col-span-2">
               <ScrollReveal delay={150}>
                 <div className="sticky top-24">
                   <Card className="border-primary/20 shadow-xl overflow-hidden">
@@ -314,6 +434,13 @@ const EventDetailPage = () => {
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Heart className="w-5 h-5 text-primary" />Đăng ký tham gia
                       </CardTitle>
+                      {(event.price !== null && event.price !== undefined) && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Tag className="w-4 h-4 text-primary" />
+                          <span className="text-lg font-bold text-primary">{formatPrice(event.price)}</span>
+                          {event.price_note && <span className="text-xs text-muted-foreground">({event.price_note})</span>}
+                        </div>
+                      )}
                       {event.max_participants && !eventPast && !submitted && (
                         <div className="mt-3">
                           <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
@@ -407,7 +534,7 @@ const EventDetailPage = () => {
                           ))}
                           <Button type="submit" className="w-full mt-2" size="lg" disabled={submitting}>
                             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            🚀 Đăng ký ngay
+                            🚀 {event.register_button_label || 'Đăng ký ngay'}
                           </Button>
                           <p className="text-[11px] text-center text-muted-foreground">🔒 Thông tin được bảo mật tuyệt đối</p>
                         </form>
@@ -416,7 +543,7 @@ const EventDetailPage = () => {
                   </Card>
                 </div>
               </ScrollReveal>
-            </div>
+            </div>}
           </div>
         </div>
       </section>
