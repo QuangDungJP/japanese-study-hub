@@ -73,6 +73,7 @@ import Terms from "./pages/Terms";
 import EventsPage from "./pages/EventsPage";
 import EventDetailPage from "./pages/EventDetail";
 import AdminEvents from "./pages/admin/AdminEvents";
+import FloatingChat from "./components/FloatingChat";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+            <FloatingChat />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/gioi-thieu" element={<About />} />
