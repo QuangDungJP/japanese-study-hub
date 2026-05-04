@@ -15,21 +15,31 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Flame, 
-  Zap, 
   BookOpen, 
   Calendar,
   Target,
   TrendingUp,
-  Award,
   Loader2,
   Save,
   Bell,
   ShoppingBag,
   CalendarCheck,
   GraduationCap,
-  User as UserIcon
+  User as UserIcon,
+  Trash2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface StudentProgressModalProps {
   open: boolean;
@@ -42,14 +52,12 @@ interface StudentProgressModalProps {
     created_at: string;
     current_language?: string | null;
     progress: {
-      total_xp: number;
       streak: number;
       lessons_completed: number;
       vocabulary_mastered: number;
-      daily_progress: number;
-      daily_goal: number;
     } | null;
   } | null;
+  onDeleted?: () => void;
 }
 
 interface CompletedLesson {
@@ -61,14 +69,14 @@ interface CompletedLesson {
     title: string;
     title_vi: string;
     skill: string;
-    xp_reward: number;
   };
 }
 
-const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressModalProps) => {
+const StudentProgressModal = ({ open, onOpenChange, student, onDeleted }: StudentProgressModalProps) => {
   const [completedLessons, setCompletedLessons] = useState<CompletedLesson[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   // Editable profile
@@ -77,9 +85,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
   const [avatarUrl, setAvatarUrl] = useState('');
 
   // Editable progress
-  const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [dailyGoal, setDailyGoal] = useState(50);
   const [vocab, setVocab] = useState(0);
 
   // Counts
@@ -94,9 +100,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
       setFullName(student.full_name || '');
       setCurrentLanguage(student.current_language || 'english');
       setAvatarUrl(student.avatar_url || '');
-      setXp(student.progress?.total_xp || 0);
       setStreak(student.progress?.streak || 0);
-      setDailyGoal(student.progress?.daily_goal || 50);
       setVocab(student.progress?.vocabulary_mastered || 0);
       fetchCompletedLessons();
       fetchCounts();
@@ -142,7 +146,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
     try {
       const { error } = await supabase
         .from('user_progress')
-        .update({ total_xp: xp, streak, daily_goal: dailyGoal, vocabulary_mastered: vocab })
+        .update({ streak, vocabulary_mastered: vocab })
         .eq('user_id', student.user_id);
       if (error) throw error;
       toast({ title: 'Đã lưu', description: 'Tiến độ đã được cập nhật' });
@@ -150,6 +154,25 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
       toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteUser = async () => {
+    if (!student) return;
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: student.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Đã xóa', description: 'Người dùng đã bị xóa khỏi hệ thống' });
+      onOpenChange(false);
+      onDeleted?.();
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message || 'Không thể xóa người dùng', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -210,11 +233,6 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
   if (!student) return null;
 
   const progress = student.progress;
-  const dailyPercent = progress ? Math.min((progress.daily_progress / progress.daily_goal) * 100, 100) : 0;
-  const level = progress ? Math.floor(progress.total_xp / 500) + 1 : 1;
-  const xpForNextLevel = level * 500;
-  const currentLevelXp = progress ? progress.total_xp - ((level - 1) * 500) : 0;
-  const levelPercent = (currentLevelXp / 500) * 100;
 
   const skillLabels: Record<string, string> = {
     reading: 'Đọc',
