@@ -1038,6 +1038,43 @@ const AdminWebsiteCMS = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create New Section Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tạo section mới</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Mã section (key, không dấu)</Label>
+              <Input
+                value={newSection.section_key}
+                onChange={(e) => setNewSection(p => ({ ...p, section_key: e.target.value }))}
+                placeholder="vd: testimonials"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Tiêu đề (Tiếng Việt)</Label>
+              <Input value={newSection.title_vi} onChange={(e) => setNewSection(p => ({ ...p, title_vi: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Phụ đề (Tiếng Việt)</Label>
+              <Input value={newSection.subtitle_vi} onChange={(e) => setNewSection(p => ({ ...p, subtitle_vi: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Mô tả (Tiếng Việt)</Label>
+              <Textarea rows={3} value={newSection.description_vi} onChange={(e) => setNewSection(p => ({ ...p, description_vi: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Hủy</Button>
+            <Button onClick={handleCreateSection} disabled={creating}>
+              {creating ? 'Đang tạo...' : 'Tạo'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
