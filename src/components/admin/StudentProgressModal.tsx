@@ -269,30 +269,8 @@ const StudentProgressModal = ({ open, onOpenChange, student, onDeleted }: Studen
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-4">
-          {/* Level & XP */}
-          <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl p-5 border border-primary/20">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-primary" />
-                <span className="font-bold text-lg">Level {level}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {currentLevelXp} / 500 XP
-              </span>
-            </div>
-            <Progress value={levelPercent} className="h-3" />
-            <p className="text-xs text-muted-foreground mt-2">
-              Cần {500 - currentLevelXp} XP nữa để lên level {level + 1}
-            </p>
-          </div>
-
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-card rounded-xl border border-border p-4 text-center">
-              <Zap className="w-6 h-6 text-accent mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">{progress?.total_xp?.toLocaleString() || 0}</p>
-              <p className="text-xs text-muted-foreground">Tổng XP</p>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-card rounded-xl border border-border p-4 text-center">
               <Flame className="w-6 h-6 text-orange-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-foreground">{progress?.streak || 0}</p>
@@ -334,20 +312,6 @@ const StudentProgressModal = ({ open, onOpenChange, student, onDeleted }: Studen
             </div>
           </div>
 
-          {/* Daily Progress */}
-          <div className="bg-card rounded-xl border border-border p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                <span className="font-medium">Tiến độ hôm nay</span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {progress?.daily_progress || 0} / {progress?.daily_goal || 50} XP
-              </span>
-            </div>
-            <Progress value={dailyPercent} className="h-2" />
-          </div>
-
           {/* Recent Completed Lessons */}
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="p-4 border-b border-border bg-muted/30">
@@ -380,10 +344,6 @@ const StudentProgressModal = ({ open, onOpenChange, student, onDeleted }: Studen
                           {cl.score}%
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Zap className="w-3 h-3 text-accent" />
-                        +{cl.lesson?.xp_reward || 25}
-                      </span>
                     </div>
                   </div>
                 ))}
@@ -422,16 +382,8 @@ const StudentProgressModal = ({ open, onOpenChange, student, onDeleted }: Studen
           <TabsContent value="progress" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tổng XP</Label>
-                <Input type="number" value={xp} onChange={(e) => setXp(parseInt(e.target.value) || 0)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Streak (ngày)</Label>
                 <Input type="number" value={streak} onChange={(e) => setStreak(parseInt(e.target.value) || 0)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mục tiêu hằng ngày (XP)</Label>
-                <Input type="number" value={dailyGoal} onChange={(e) => setDailyGoal(parseInt(e.target.value) || 0)} />
               </div>
               <div className="space-y-2">
                 <Label>Từ vựng đã thuộc</Label>
@@ -459,6 +411,31 @@ const StudentProgressModal = ({ open, onOpenChange, student, onDeleted }: Studen
             </Button>
           </TabsContent>
         </Tabs>
+
+        <div className="mt-6 pt-4 border-t border-border flex justify-end">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={deleting} className="gap-2">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Xóa người dùng khỏi hệ thống
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa người dùng?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Hành động này sẽ xóa vĩnh viễn tài khoản <strong>{student.full_name || student.user_id.slice(0, 8)}</strong> khỏi hệ thống bao gồm tất cả dữ liệu liên quan. Không thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Xóa vĩnh viễn
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </DialogContent>
     </Dialog>
   );
