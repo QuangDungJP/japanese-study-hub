@@ -17,7 +17,7 @@ import SectionEditorFields from '@/components/admin/SectionEditorFields';
 import { 
   Layout, Image, Video, Eye, EyeOff, Save, Upload, Trash2, 
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
-  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, Home
+  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, Home, Plus
 } from 'lucide-react';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 
@@ -76,6 +76,9 @@ const AdminWebsiteCMS = () => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [creatingTeachersSection, setCreatingTeachersSection] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newSection, setNewSection] = useState({ section_key: '', title_vi: '', subtitle_vi: '', description_vi: '' });
+  const [creating, setCreating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -166,6 +169,53 @@ const AdminWebsiteCMS = () => {
       });
     } finally {
       setCreatingTeachersSection(false);
+    }
+  };
+
+  const handleCreateSection = async () => {
+    const key = newSection.section_key.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+    if (!key) {
+      toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập mã section', variant: 'destructive' });
+      return;
+    }
+    if (sections.some(s => s.section_key === key)) {
+      toast({ title: 'Trùng', description: 'Mã section đã tồn tại', variant: 'destructive' });
+      return;
+    }
+    setCreating(true);
+    try {
+      const { error } = await supabase.from('website_content').insert({
+        section_key: key,
+        title_vi: newSection.title_vi || null,
+        subtitle_vi: newSection.subtitle_vi || null,
+        description_vi: newSection.description_vi || null,
+        is_active: true,
+        order_index: sections.length,
+        content: {},
+      });
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã tạo section mới' });
+      setIsCreateOpen(false);
+      setNewSection({ section_key: '', title_vi: '', subtitle_vi: '', description_vi: '' });
+      fetchSections();
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Lỗi', description: 'Không thể tạo section', variant: 'destructive' });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteSection = async (section: WebsiteContent) => {
+    if (!confirm(`Xóa section "${sectionLabels[section.section_key] || section.section_key}"?`)) return;
+    try {
+      const { error } = await supabase.from('website_content').delete().eq('id', section.id);
+      if (error) throw error;
+      toast({ title: 'Đã xóa', description: 'Section đã được xóa' });
+      fetchSections();
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Lỗi', description: 'Không thể xóa section', variant: 'destructive' });
     }
   };
 
