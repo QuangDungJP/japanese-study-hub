@@ -504,13 +504,20 @@ const AdminWebsiteCMS = () => {
         <TabsContent value="sections" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Các section trên trang chủ
-              </CardTitle>
-              <CardDescription>
-                Kéo thả để sắp xếp thứ tự, chỉnh sửa nội dung cho từng phần
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5" />
+                    Các section trên trang chủ
+                  </CardTitle>
+                  <CardDescription>
+                    Kéo thả để sắp xếp thứ tự, chỉnh sửa nội dung cho từng phần
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setIsCreateOpen(true)} size="sm">
+                  <Plus className="w-4 h-4 mr-1" /> Tạo section mới
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -637,6 +644,14 @@ const AdminWebsiteCMS = () => {
                           >
                             <Edit className="w-3.5 h-3.5 mr-1" />
                             Sửa
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteSection(section)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>
