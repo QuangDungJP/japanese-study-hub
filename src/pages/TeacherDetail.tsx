@@ -13,7 +13,7 @@ import Footer from "@/components/Footer";
 import {
   Star, Award, BookOpen, Globe, MessageCircle,
   Calendar, CheckCircle2, Clock, Users, Play, GraduationCap,
-  MapPin, Heart, Search, Filter, ExternalLink,
+  MapPin, Heart, Search, Filter, ExternalLink, Sparkles, Image as ImageIcon, Film,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Database } from "@/integrations/supabase/types";
@@ -139,6 +139,30 @@ const TeacherDetail = () => {
   const introVideo = teacher.intro_video_url || "";
   const extraData = parseExtra(teacher.extra_data);
   const socialLinks = parseSocial(teacher.social_links);
+  const t: any = teacher;
+  const gallery = parseArr(t.gallery_urls);
+  const videos: { title: string; url: string }[] = Array.isArray(t.videos)
+    ? t.videos.filter((v: any) => v && v.url).map((v: any) => ({ title: String(v.title || ""), url: String(v.url) }))
+    : [];
+  const customSections: { title: string; body: string; image_url?: string; video_url?: string }[] = Array.isArray(t.custom_sections)
+    ? t.custom_sections.filter((s: any) => s && (s.title || s.body || s.image_url || s.video_url))
+    : [];
+  const achievements = parseArr(t.achievements);
+  const subtitle: string = t.subtitle || "";
+  const vis = (k: string, def = true): boolean => {
+    const v = t.section_visibility;
+    if (v && typeof v === "object" && k in v) return Boolean(v[k]);
+    return def;
+  };
+  const ytEmbed = (url: string) => {
+    try {
+      const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+      if (m) return `https://www.youtube.com/embed/${m[1]}`;
+      const vm = url.match(/vimeo\.com\/(\d+)/);
+      if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+    } catch {}
+    return url;
+  };
 
   const stats = [
     { icon: Clock, value: `${experienceYears}`, label: "Năm kinh nghiệm", show: experienceYears > 0 },
