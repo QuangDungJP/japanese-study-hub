@@ -481,10 +481,14 @@ export default function AdminTeachers() {
           <ScrollArea className="max-h-[calc(90vh-140px)]">
             <div className="p-6 pt-4">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="w-full grid grid-cols-4 mb-6">
+                <TabsList className="w-full grid grid-cols-4 md:grid-cols-8 mb-6 h-auto">
                   <TabsTrigger value="basic">Cơ bản</TabsTrigger>
                   <TabsTrigger value="details">Chi tiết</TabsTrigger>
                   <TabsTrigger value="media">Media</TabsTrigger>
+                  <TabsTrigger value="gallery">Gallery</TabsTrigger>
+                  <TabsTrigger value="videos">Videos</TabsTrigger>
+                  <TabsTrigger value="custom">Sections</TabsTrigger>
+                  <TabsTrigger value="visibility">Hiển thị</TabsTrigger>
                   <TabsTrigger value="extra">Tùy chỉnh</TabsTrigger>
                 </TabsList>
 
@@ -498,6 +502,10 @@ export default function AdminTeachers() {
                       <Label className="flex items-center gap-1">Tên giảng viên <span className="text-destructive">*</span></Label>
                       <Input value={formData.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="VD: Tanaka Yuki" />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phụ đề (Subtitle)</Label>
+                    <Input value={formData.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Một câu nổi bật về giảng viên" />
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Việt)</Label>
@@ -567,6 +575,10 @@ export default function AdminTeachers() {
                     <Label className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" />Ngôn ngữ</Label>
                     <TagInput value={formData.languages} onChange={(v) => set("languages", v)} placeholder="VD: 日本語, Tiếng Việt..." />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" />Thành tích nổi bật</Label>
+                    <TagInput value={formData.achievements} onChange={(v) => set("achievements", v)} placeholder="VD: Giải nhất Speech Contest 2022..." />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="media" className="space-y-5">
@@ -594,6 +606,135 @@ export default function AdminTeachers() {
                   <div className="space-y-2">
                     <Label>Video giới thiệu (URL)</Label>
                     <Input value={formData.intro_video_url} onChange={(e) => set("intro_video_url", e.target.value)} placeholder="https://youtube.com/..." />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="gallery" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="flex items-center gap-1"><ImageIcon className="w-4 h-4" />Thư viện ảnh</Label>
+                      <p className="text-xs text-muted-foreground">Thêm nhiều ảnh để hiển thị trong gallery</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => set("gallery_urls", [...formData.gallery_urls, ""])}>
+                      <Plus className="w-4 h-4 mr-1" /> Thêm ảnh
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {formData.gallery_urls.map((url, i) => (
+                      <div key={i} className="border rounded-lg p-3 space-y-2 relative">
+                        <Button size="icon" variant="ghost" className="absolute top-1 right-1 h-7 w-7 text-destructive" onClick={() => set("gallery_urls", formData.gallery_urls.filter((_, j) => j !== i))}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <MediaUploader value={url} onChange={(u) => { const arr = [...formData.gallery_urls]; arr[i] = u; set("gallery_urls", arr); }} folder="teachers/gallery" aspectRatio="square" accept="image" />
+                        <Input value={url} onChange={(e) => { const arr = [...formData.gallery_urls]; arr[i] = e.target.value; set("gallery_urls", arr); }} placeholder="URL ảnh" className="text-xs" />
+                      </div>
+                    ))}
+                  </div>
+                  {formData.gallery_urls.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-6 border rounded-lg border-dashed">Chưa có ảnh nào trong thư viện</p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="videos" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="flex items-center gap-1"><Film className="w-4 h-4" />Videos</Label>
+                      <p className="text-xs text-muted-foreground">Thêm nhiều video YouTube/Vimeo/MP4</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => set("videos", [...formData.videos, { title: "", url: "" }])}>
+                      <Plus className="w-4 h-4 mr-1" /> Thêm video
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {formData.videos.map((v, i) => (
+                      <div key={i} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex gap-2">
+                          <Input placeholder="Tiêu đề video" value={v.title} onChange={(e) => { const arr = [...formData.videos]; arr[i] = { ...arr[i], title: e.target.value }; set("videos", arr); }} />
+                          <Button size="icon" variant="ghost" className="text-destructive shrink-0" onClick={() => set("videos", formData.videos.filter((_, j) => j !== i))}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <Input placeholder="https://youtube.com/watch?v=..." value={v.url} onChange={(e) => { const arr = [...formData.videos]; arr[i] = { ...arr[i], url: e.target.value }; set("videos", arr); }} />
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="custom" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="flex items-center gap-1"><Layers className="w-4 h-4" />Sections tự tạo</Label>
+                      <p className="text-xs text-muted-foreground">Thêm các phần nội dung tùy ý: tiêu đề, mô tả, ảnh, video</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => set("custom_sections", [...formData.custom_sections, { title: "", body: "", image_url: "", video_url: "" }])}>
+                      <Plus className="w-4 h-4 mr-1" /> Thêm section
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {formData.custom_sections.map((s, i) => {
+                      const move = (dir: -1 | 1) => {
+                        const j = i + dir;
+                        if (j < 0 || j >= formData.custom_sections.length) return;
+                        const arr = [...formData.custom_sections];
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                        set("custom_sections", arr);
+                      };
+                      const upd = (k: keyof CustomSection, val: string) => { const arr = [...formData.custom_sections]; arr[i] = { ...arr[i], [k]: val }; set("custom_sections", arr); };
+                      return (
+                        <div key={i} className="border rounded-lg p-3 space-y-2 bg-muted/20">
+                          <div className="flex items-center gap-1">
+                            <Input placeholder="Tiêu đề section" value={s.title} onChange={(e) => upd("title", e.target.value)} className="font-medium" />
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => move(-1)}><ChevronUp className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => move(1)}><ChevronDown className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => set("custom_sections", formData.custom_sections.filter((_, j) => j !== i))}><X className="w-4 h-4" /></Button>
+                          </div>
+                          <Textarea placeholder="Nội dung..." value={s.body} onChange={(e) => upd("body", e.target.value)} rows={3} />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Ảnh (tuỳ chọn)</Label>
+                              <MediaUploader value={s.image_url} onChange={(u) => upd("image_url", u)} folder="teachers/sections" aspectRatio="banner" accept="image" />
+                              <Input value={s.image_url} onChange={(e) => upd("image_url", e.target.value)} placeholder="URL ảnh" className="text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Video URL (tuỳ chọn)</Label>
+                              <Input value={s.video_url} onChange={(e) => upd("video_url", e.target.value)} placeholder="https://youtube.com/..." />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="visibility" className="space-y-3">
+                  <div>
+                    <Label className="flex items-center gap-1"><Eye className="w-4 h-4" />Hiển thị từng phần</Label>
+                    <p className="text-xs text-muted-foreground">Bật/tắt từng section trên trang chi tiết giảng viên</p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {(Object.keys(DEFAULT_VISIBILITY) as SectionKey[]).map((k) => (
+                      <div key={k} className="flex items-center justify-between border rounded-lg p-3">
+                        <span className="text-sm capitalize">{k}</span>
+                        <Switch checked={formData.section_visibility[k] ?? true} onCheckedChange={(v) => set("section_visibility", { ...formData.section_visibility, [k]: v })} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t pt-4">
+                    <Label className="flex items-center gap-1 mb-2"><Eye className="w-4 h-4" />Preview nhanh</Label>
+                    <div className="border rounded-xl overflow-hidden">
+                      {formData.cover_image_url && <img src={formData.cover_image_url} className="w-full h-32 object-cover" alt="" />}
+                      <div className="p-4 flex gap-4">
+                        {formData.image_url && <img src={formData.image_url} className="w-20 h-20 rounded-xl object-cover border" alt="" />}
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg">{formData.display_name || "Tên giảng viên"}</h3>
+                          <p className="text-sm text-primary">{formData.headline}</p>
+                          {formData.subtitle && <p className="text-xs text-muted-foreground mt-1">{formData.subtitle}</p>}
+                          <div className="flex gap-2 flex-wrap mt-2">
+                            {formData.specializations.slice(0, 4).map((s, i) => (<Badge key={i} variant="secondary" className="text-xs">{s}</Badge>))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
 
