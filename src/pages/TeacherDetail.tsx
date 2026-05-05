@@ -218,6 +218,7 @@ const TeacherDetail = () => {
                     <div>
                       <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-foreground">{name}</h1>
                       <p className="text-primary font-semibold mt-1">{headline}</p>
+                      {subtitle && <p className="text-sm text-muted-foreground mt-1 max-w-xl">{subtitle}</p>}
                       {location && (
                         <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1 justify-center md:justify-start">
                           <MapPin className="w-3.5 h-3.5" /> {location}
@@ -234,7 +235,7 @@ const TeacherDetail = () => {
                     </div>
                   </div>
 
-                  {stats.length > 0 && (
+                  {stats.length > 0 && vis("stats") && (
                     <div className="flex flex-wrap gap-6 mt-6 justify-center md:justify-start">
                       {stats.map((stat, i) => (
                         <div key={i} className="flex items-center gap-2.5">
@@ -259,7 +260,7 @@ const TeacherDetail = () => {
       <section className="container mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {bio && (
+            {bio && vis("bio") && (
               <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary" />Giới thiệu
@@ -268,7 +269,7 @@ const TeacherDetail = () => {
               </div>
             )}
 
-            {specializations.length > 0 && (
+            {specializations.length > 0 && vis("specializations") && (
               <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-primary" />Chuyên môn
@@ -281,7 +282,7 @@ const TeacherDetail = () => {
               </div>
             )}
 
-            {certifications.length > 0 && (
+            {certifications.length > 0 && vis("certifications") && (
               <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <Award className="w-5 h-5 text-primary" />Chứng chỉ & Bằng cấp
@@ -297,7 +298,69 @@ const TeacherDetail = () => {
               </div>
             )}
 
-            {Object.keys(extraData).length > 0 && (
+            {achievements.length > 0 && (
+              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />Thành tích nổi bật
+                </h2>
+                <ul className="space-y-2">
+                  {achievements.map((a) => (
+                    <li key={a} className="flex items-start gap-3 bg-muted/40 rounded-lg p-3">
+                      <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-foreground">{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {videos.length > 0 && vis("videos") && (
+              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Film className="w-5 h-5 text-primary" />Videos
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {videos.map((v, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                        <iframe src={ytEmbed(v.url)} className="w-full h-full" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                      </div>
+                      {v.title && <p className="text-sm font-medium">{v.title}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {gallery.length > 0 && vis("gallery") && (
+              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary" />Thư viện ảnh
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {gallery.map((g, i) => (
+                    <a key={i} href={g} target="_blank" rel="noopener noreferrer" className="aspect-square rounded-xl overflow-hidden bg-muted block group">
+                      <img src={g} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {customSections.length > 0 && vis("custom") && customSections.map((s, i) => (
+              <div key={i} className="bg-card rounded-2xl border border-border p-6 md:p-8">
+                {s.title && <h2 className="text-xl font-bold text-foreground mb-4">{s.title}</h2>}
+                {s.image_url && <img src={s.image_url} className="w-full rounded-xl mb-4 object-cover max-h-80" alt="" />}
+                {s.video_url && (
+                  <div className="aspect-video rounded-xl overflow-hidden bg-black mb-4">
+                    <iframe src={ytEmbed(s.video_url)} className="w-full h-full" allowFullScreen />
+                  </div>
+                )}
+                {s.body && <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{s.body}</p>}
+              </div>
+            ))}
+
+            {Object.keys(extraData).length > 0 && vis("extra") && (
               <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <Heart className="w-5 h-5 text-primary" />Thông tin thêm
@@ -315,7 +378,7 @@ const TeacherDetail = () => {
           </div>
 
           <div className="space-y-6">
-            {languages.length > 0 && (
+            {languages.length > 0 && vis("languages") && (
               <div className="bg-card rounded-2xl border border-border p-6">
                 <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
                   <Globe className="w-4 h-4 text-primary" />Ngôn ngữ
@@ -331,7 +394,7 @@ const TeacherDetail = () => {
               </div>
             )}
 
-            {Object.values(socialLinks).some((v) => v) && (
+            {Object.values(socialLinks).some((v) => v) && vis("social") && (
               <div className="bg-card rounded-2xl border border-border p-6">
                 <h3 className="font-bold text-foreground mb-3">Kết nối</h3>
                 <div className="space-y-2">
@@ -353,6 +416,7 @@ const TeacherDetail = () => {
               </div>
             )}
 
+            {vis("cta") && (
             <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-6 text-white">
               <h3 className="text-lg font-bold mb-2">Bắt đầu học cùng {name.split(" ").pop()}</h3>
               <p className="text-sm text-white/80 mb-4">Đặt lịch buổi học đầu tiên ngay hôm nay</p>
@@ -360,6 +424,7 @@ const TeacherDetail = () => {
                 <Link to="/auth"><Calendar className="w-4 h-4 mr-2" />Đặt lịch học ngay</Link>
               </Button>
             </div>
+            )}
           </div>
         </div>
       </section>
