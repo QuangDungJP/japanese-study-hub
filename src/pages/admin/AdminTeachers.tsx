@@ -15,7 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop,
+  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop, Image as ImageIcon, Film, Layers, Sparkles, ChevronUp, ChevronDown, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
@@ -25,9 +25,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 type TeacherRow = Database["public"]["Tables"]["teacher_profiles"]["Row"];
 
+interface CustomSection {
+  title: string;
+  body: string;
+  image_url?: string;
+  video_url?: string;
+}
+interface VideoItem { title: string; url: string; }
+
+type SectionKey =
+  | "hero" | "stats" | "bio" | "specializations" | "certifications"
+  | "languages" | "gallery" | "videos" | "custom" | "extra" | "social" | "cta";
+
+const DEFAULT_VISIBILITY: Record<SectionKey, boolean> = {
+  hero: true, stats: true, bio: true, specializations: true, certifications: true,
+  languages: true, gallery: true, videos: true, custom: true, extra: true, social: true, cta: true,
+};
+
 interface FormData {
   display_name: string;
   headline: string;
+  subtitle: string;
   bio: string;
   bio_vi: string;
   image_url: string;
@@ -47,19 +65,26 @@ interface FormData {
   specializations: string[];
   certifications: string[];
   languages: string[];
+  achievements: string[];
   social_links: Record<string, string>;
   extra_fields: { key: string; value: string }[];
+  gallery_urls: string[];
+  videos: VideoItem[];
+  custom_sections: CustomSection[];
+  section_visibility: Record<SectionKey, boolean>;
 }
 
 const emptyForm: FormData = {
-  display_name: "", headline: "", bio: "", bio_vi: "",
+  display_name: "", headline: "", subtitle: "", bio: "", bio_vi: "",
   image_url: "", cover_image_url: "", intro_video_url: "",
   experience_years: 0, rating: 0, total_reviews: 0, total_students: 0,
   total_lessons: 0, total_hours: 0, hourly_rate: 0,
   location: "", slug: "",
   is_available: true, is_featured: false,
-  specializations: [], certifications: [], languages: [],
+  specializations: [], certifications: [], languages: [], achievements: [],
   social_links: {}, extra_fields: [],
+  gallery_urls: [], videos: [], custom_sections: [],
+  section_visibility: { ...DEFAULT_VISIBILITY },
 };
 
 function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder: string }) {
