@@ -235,9 +235,11 @@ export default function AdminTeachers() {
 
   const openEdit = (teacher: TeacherRow) => {
     setEditingTeacher(teacher);
+    const t = teacher as any;
     setFormData({
       display_name: teacher.display_name || "",
       headline: teacher.headline || "",
+      subtitle: t.subtitle || "",
       bio: teacher.bio || "",
       bio_vi: teacher.bio_vi || "",
       image_url: teacher.image_url || "",
@@ -257,8 +259,13 @@ export default function AdminTeachers() {
       specializations: parseJsonArray(teacher.specializations),
       certifications: parseJsonArray(teacher.certifications),
       languages: parseJsonArray(teacher.languages),
+      achievements: parseJsonArray(t.achievements),
       social_links: parseSocialLinks(teacher.social_links),
       extra_fields: parseExtraData(teacher.extra_data),
+      gallery_urls: parseJsonArray(t.gallery_urls),
+      videos: Array.isArray(t.videos) ? t.videos.filter((v: any) => v && typeof v === "object").map((v: any) => ({ title: String(v.title || ""), url: String(v.url || "") })) : [],
+      custom_sections: Array.isArray(t.custom_sections) ? t.custom_sections.filter((s: any) => s && typeof s === "object").map((s: any) => ({ title: String(s.title || ""), body: String(s.body || ""), image_url: s.image_url || "", video_url: s.video_url || "" })) : [],
+      section_visibility: { ...DEFAULT_VISIBILITY, ...(t.section_visibility && typeof t.section_visibility === "object" ? t.section_visibility : {}) },
     });
     setDialogOpen(true);
   };
@@ -288,6 +295,7 @@ export default function AdminTeachers() {
     const payload: any = {
       display_name: formData.display_name,
       headline: formData.headline || null,
+      subtitle: formData.subtitle || null,
       bio: formData.bio || null,
       bio_vi: formData.bio_vi || null,
       image_url: formData.image_url || null,
@@ -307,8 +315,13 @@ export default function AdminTeachers() {
       specializations: formData.specializations,
       certifications: formData.certifications,
       languages: formData.languages,
+      achievements: formData.achievements,
       social_links: formData.social_links,
       extra_data: extraData,
+      gallery_urls: formData.gallery_urls,
+      videos: formData.videos.filter((v) => v.url),
+      custom_sections: formData.custom_sections.filter((s) => s.title || s.body || s.image_url || s.video_url),
+      section_visibility: formData.section_visibility,
     };
 
     try {
