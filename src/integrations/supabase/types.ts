@@ -1679,14 +1679,17 @@ export type Database = {
       }
       teacher_profiles: {
         Row: {
+          achievements: Json
           bio: string | null
           bio_vi: string | null
           certifications: Json | null
           cover_image_url: string | null
           created_at: string
+          custom_sections: Json
           display_name: string | null
           experience_years: number | null
           extra_data: Json | null
+          gallery_urls: Json
           headline: string | null
           hourly_rate: number | null
           id: string
@@ -1698,25 +1701,31 @@ export type Database = {
           location: string | null
           order_index: number | null
           rating: number | null
+          section_visibility: Json
           slug: string | null
           social_links: Json | null
           specializations: Json | null
+          subtitle: string | null
           total_hours: number | null
           total_lessons: number | null
           total_reviews: number | null
           total_students: number | null
           updated_at: string
           user_id: string | null
+          videos: Json
         }
         Insert: {
+          achievements?: Json
           bio?: string | null
           bio_vi?: string | null
           certifications?: Json | null
           cover_image_url?: string | null
           created_at?: string
+          custom_sections?: Json
           display_name?: string | null
           experience_years?: number | null
           extra_data?: Json | null
+          gallery_urls?: Json
           headline?: string | null
           hourly_rate?: number | null
           id?: string
@@ -1728,25 +1737,31 @@ export type Database = {
           location?: string | null
           order_index?: number | null
           rating?: number | null
+          section_visibility?: Json
           slug?: string | null
           social_links?: Json | null
           specializations?: Json | null
+          subtitle?: string | null
           total_hours?: number | null
           total_lessons?: number | null
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string
           user_id?: string | null
+          videos?: Json
         }
         Update: {
+          achievements?: Json
           bio?: string | null
           bio_vi?: string | null
           certifications?: Json | null
           cover_image_url?: string | null
           created_at?: string
+          custom_sections?: Json
           display_name?: string | null
           experience_years?: number | null
           extra_data?: Json | null
+          gallery_urls?: Json
           headline?: string | null
           hourly_rate?: number | null
           id?: string
@@ -1758,15 +1773,18 @@ export type Database = {
           location?: string | null
           order_index?: number | null
           rating?: number | null
+          section_visibility?: Json
           slug?: string | null
           social_links?: Json | null
           specializations?: Json | null
+          subtitle?: string | null
           total_hours?: number | null
           total_lessons?: number | null
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string
           user_id?: string | null
+          videos?: Json
         }
         Relationships: []
       }
