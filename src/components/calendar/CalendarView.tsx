@@ -161,6 +161,37 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
         })));
       }
 
+      // Map class sessions (visible to admin/teacher of class & enrolled students via RLS)
+      if (showEventTypes.includes('class')) {
+        const { data: sessions } = await (supabase as any)
+          .from('class_sessions')
+          .select('*, classes(name_vi, name, teacher_id)')
+          .gte('session_date', startDate)
+          .lte('session_date', endDate);
+        if (sessions && sessions.length) {
+          const teacherIds = [...new Set(sessions.map((s: any) => s.classes?.teacher_id).filter(Boolean))];
+          let teacherMap = new Map<string, string>();
+          if (teacherIds.length) {
+            const { data: profs } = await supabase.from('profiles').select('user_id, full_name').in('user_id', teacherIds);
+            teacherMap = new Map((profs || []).map((p: any) => [p.user_id, p.full_name || '']));
+          }
+          sessions.forEach((s: any) => {
+            const cls = s.classes;
+            const teacherName = cls?.teacher_id ? teacherMap.get(cls.teacher_id) : '';
+            allEvents.push({
+              id: `class-${s.id}`,
+              title: `${cls?.name_vi || cls?.name || 'Lớp'}${s.topic ? ` · ${s.topic}` : ''}`,
+              start_time: `${s.session_date}T${s.start_time}`,
+              end_time: `${s.session_date}T${s.end_time || s.start_time}`,
+              event_type: 'class' as const,
+              description: [teacherName && `GV: ${teacherName}`, s.location, s.notes].filter(Boolean).join(' • '),
+              meet_link: s.meet_link || undefined,
+              reference_id: s.class_id,
+            });
+          });
+        }
+      }
+
       setEvents(allEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
