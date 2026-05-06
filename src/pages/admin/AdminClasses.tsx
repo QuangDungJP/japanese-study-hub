@@ -361,6 +361,17 @@ const AdminClasses = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sessions dialog */}
+      <Dialog open={sessionsOpen} onOpenChange={setSessionsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Lịch học - {selected?.name_vi}</DialogTitle></DialogHeader>
+          {selected && <ClassSessionsManager classId={selected.id} className={selected.name_vi} canEdit />}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setSessionsOpen(false)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
