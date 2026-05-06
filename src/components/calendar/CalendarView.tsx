@@ -244,7 +244,7 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
             <div key={type} className="flex items-center gap-1.5">
               <div className={cn('w-3 h-3 rounded-full', eventColors[type])} />
               <span className="text-muted-foreground capitalize">
-                {type === 'booking' ? 'Lịch học' : type === 'exam' ? 'Kiểm tra' : type === 'leave' ? 'Nghỉ phép' : 'Nhắc nhở'}
+                {type === 'booking' ? 'Lịch 1-1' : type === 'exam' ? 'Kiểm tra' : type === 'leave' ? 'Nghỉ phép' : type === 'class' ? 'Lớp học' : 'Nhắc nhở'}
               </span>
             </div>
           );
