@@ -176,6 +176,12 @@ const StudentClassDetail = () => {
             })}
         </TabsContent>
 
+        <TabsContent value="sessions" className="mt-4">
+          <Card><CardContent className="p-4">
+            {id && <ClassSessionsManager classId={id} className={cls?.name_vi} />}
+          </CardContent></Card>
+        </TabsContent>
+
         <TabsContent value="assignments" className="mt-4 space-y-3">
           {assignments.length === 0 ? <Card><CardContent className="py-12 text-center text-muted-foreground">Chưa có bài tập</CardContent></Card> :
             assignments.map(a => {
