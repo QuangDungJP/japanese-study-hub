@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, BookOpen, ClipboardList, GraduationCap, CalendarClock, ExternalLink, Link2, Play, Clock, Upload, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, ClipboardList, GraduationCap, CalendarClock, ExternalLink, Link2, Play, Clock, Upload, FileText, CheckCircle2, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
+import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
 
 const StudentClassDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +146,7 @@ const StudentClassDetail = () => {
       <Tabs defaultValue="lessons">
         <TabsList className="flex-wrap">
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
+          <TabsTrigger value="sessions"><CalendarDays className="w-4 h-4 mr-1" />Lịch học</TabsTrigger>
           <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
           <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Nộp bài</TabsTrigger>
@@ -172,6 +174,12 @@ const StudentClassDetail = () => {
                 </Card>
               );
             })}
+        </TabsContent>
+
+        <TabsContent value="sessions" className="mt-4">
+          <Card><CardContent className="p-4">
+            {id && <ClassSessionsManager classId={id} className={cls?.name_vi} />}
+          </CardContent></Card>
         </TabsContent>
 
         <TabsContent value="assignments" className="mt-4 space-y-3">
