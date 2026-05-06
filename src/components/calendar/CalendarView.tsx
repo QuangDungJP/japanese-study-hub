@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Video, FileText, Clock, UserX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Video, FileText, Clock, UserX, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ interface CalendarEvent {
   title: string;
   start_time: string;
   end_time: string;
-  event_type: 'booking' | 'exam' | 'leave' | 'reminder';
+  event_type: 'booking' | 'exam' | 'leave' | 'reminder' | 'class';
   description?: string;
   color?: string;
   meet_link?: string;
@@ -23,7 +23,7 @@ interface CalendarEvent {
 
 interface CalendarViewProps {
   onEventClick?: (event: CalendarEvent) => void;
-  showEventTypes?: ('booking' | 'exam' | 'leave' | 'reminder')[];
+  showEventTypes?: ('booking' | 'exam' | 'leave' | 'reminder' | 'class')[];
 }
 
 const eventColors: Record<string, string> = {
@@ -31,6 +31,7 @@ const eventColors: Record<string, string> = {
   exam: 'bg-red-500',
   leave: 'bg-yellow-500',
   reminder: 'bg-green-500',
+  class: 'bg-purple-500',
 };
 
 const eventIcons: Record<string, React.ElementType> = {
@@ -38,9 +39,10 @@ const eventIcons: Record<string, React.ElementType> = {
   exam: FileText,
   leave: UserX,
   reminder: Clock,
+  class: GraduationCap,
 };
 
-export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam', 'leave', 'reminder'] }: CalendarViewProps) => {
+export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam', 'leave', 'reminder', 'class'] }: CalendarViewProps) => {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
