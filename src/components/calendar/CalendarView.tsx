@@ -169,7 +169,7 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
           .gte('session_date', startDate)
           .lte('session_date', endDate);
         if (sessions && sessions.length) {
-          const teacherIds = [...new Set(sessions.map((s: any) => s.classes?.teacher_id).filter(Boolean))];
+          const teacherIds = [...new Set(sessions.map((s: any) => s.classes?.teacher_id).filter(Boolean))] as string[];
           let teacherMap = new Map<string, string>();
           if (teacherIds.length) {
             const { data: profs } = await supabase.from('profiles').select('user_id, full_name').in('user_id', teacherIds);
