@@ -203,6 +203,12 @@ const TeacherClassDetail = () => {
           </CardContent></Card>
         </TabsContent>
 
+        <TabsContent value="sessions" className="mt-4">
+          <Card><CardContent className="p-4">
+            {id && <ClassSessionsManager classId={id} className={cls?.name_vi} canEdit />}
+          </CardContent></Card>
+        </TabsContent>
+
         <TabsContent value="lessons" className="mt-4">
           <div className="flex justify-end mb-3">
             <Button asChild size="sm"><Link to="/teacher/lessons"><Plus className="w-4 h-4 mr-1" />Quản lý bài học</Link></Button>
