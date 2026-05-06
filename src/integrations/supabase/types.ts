@@ -377,6 +377,62 @@ export type Database = {
         }
         Relationships: []
       }
+      class_sessions: {
+        Row: {
+          class_id: string
+          created_at: string
+          created_by: string | null
+          end_time: string | null
+          id: string
+          location: string | null
+          meet_link: string | null
+          notes: string | null
+          session_date: string
+          start_time: string
+          status: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          meet_link?: string | null
+          notes?: string | null
+          session_date: string
+          start_time: string
+          status?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          meet_link?: string | null
+          notes?: string | null
+          session_date?: string
+          start_time?: string
+          status?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_students: {
         Row: {
           class_id: string

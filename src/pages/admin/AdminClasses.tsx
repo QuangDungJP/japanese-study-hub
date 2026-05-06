@@ -16,8 +16,9 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Check, X, Eye, Trash2, Users, UserPlus, Search } from 'lucide-react';
+import { Check, X, Eye, Trash2, Users, UserPlus, Search, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
+import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
 
 interface ClassStudent {
   id: string;
@@ -54,6 +55,7 @@ const AdminClasses = () => {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [studentsOpen, setStudentsOpen] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [availableUsers, setAvailableUsers] = useState<{ user_id: string; full_name: string | null }[]>([]);
   const [userSearch, setUserSearch] = useState('');
@@ -207,6 +209,9 @@ const AdminClasses = () => {
                     <Button variant="ghost" size="icon" className="text-blue-600" onClick={() => openStudents(c)}>
                       <Users className="w-4 h-4" />
                     </Button>
+                    <Button variant="ghost" size="icon" className="text-purple-600" onClick={() => { setSelected(c); setSessionsOpen(true); }}>
+                      <CalendarDays className="w-4 h-4" />
+                    </Button>
                     {c.approval_status !== 'approved' && (
                       <Button variant="ghost" size="icon" className="text-green-600" onClick={() => approve(c)}>
                         <Check className="w-4 h-4" />
@@ -353,6 +358,17 @@ const AdminClasses = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setStudentsOpen(false)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sessions dialog */}
+      <Dialog open={sessionsOpen} onOpenChange={setSessionsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Lịch học - {selected?.name_vi}</DialogTitle></DialogHeader>
+          {selected && <ClassSessionsManager classId={selected.id} className={selected.name_vi} canEdit />}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setSessionsOpen(false)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
