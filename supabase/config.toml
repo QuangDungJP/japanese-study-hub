@@ -2,3 +2,6 @@ project_id = "mkhrvapbjwtwumbestjf"
 
 [functions.delete-user]
 verify_jwt = true
+
+[functions.chatbot]
+verify_jwt = false

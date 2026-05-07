@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { Sparkles, Users, BookOpen, Trophy, Target, ArrowRight, GraduationCap, Heart, Star, Zap, Globe, HelpCircle, Search } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import ThreeCValues from "@/components/about/ThreeCValues";
+import AboutZoomSection from "@/components/about/AboutZoomSection";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -198,6 +199,7 @@ const About = () => {
       <ThreeCValues />
       <SkillsSection />
       <FeaturesSection />
+      <AboutZoomSection />
 
       {/* ── FAQ Section ── */}
       <section className="py-20 md:py-28 bg-muted/30 relative overflow-hidden">
