@@ -10,7 +10,6 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import CoursesPage from "./pages/CoursesPage";
 import TeachersPage from "./pages/TeachersPage";
-import ZoomPage from "./pages/ZoomPage";
 import Contact from "./pages/Contact";
 import CourseDetail from "./pages/CourseDetail";
 import TeacherDetail from "./pages/TeacherDetail";
@@ -92,7 +91,6 @@ const App = () => (
               <Route path="/gioi-thieu" element={<About />} />
               <Route path="/khoa-hoc" element={<CoursesPage />} />
               <Route path="/giao-vien" element={<TeachersPage />} />
-              <Route path="/zoom" element={<ZoomPage />} />
               <Route path="/lien-he" element={<Contact />} />
               <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
               <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
