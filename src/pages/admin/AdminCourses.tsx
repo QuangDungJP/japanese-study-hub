@@ -461,6 +461,20 @@ const AdminCourses = () => {
                     <Switch checked={form.is_published} onCheckedChange={v => setForm({ ...form, is_published: v })} />
                     <Label>Xuất bản ngay</Label>
                   </div>
+                  <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={form.show_on_homepage} onCheckedChange={v => setForm({ ...form, show_on_homepage: v })} />
+                      <Label>Hiện ở trang chủ</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={form.is_featured} onCheckedChange={v => setForm({ ...form, is_featured: v })} />
+                      <Label>Khóa học nổi bật (làm hero ở /khoa-hoc)</Label>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Thứ tự ưu tiên trang chủ</Label>
+                      <Input type="number" value={form.homepage_order} onChange={e => setForm({ ...form, homepage_order: parseInt(e.target.value) || 0 })} />
+                    </div>
+                  </div>
                 </TabsContent>
 
                 {/* === CONTENT === */}
