@@ -53,6 +53,9 @@ interface Course {
   faq: any; testimonials: any; custom_fields: any;
   section_visibility: any;
   created_at: string;
+  show_on_homepage?: boolean | null;
+  is_featured?: boolean | null;
+  homepage_order?: number | null;
 }
 
 interface JlptLevel { id: string; value: string; label: string; label_vi: string; order_index: number; is_active: boolean }
@@ -116,6 +119,9 @@ const AdminCourses = () => {
     testimonials: [] as Testimonial[],
     custom_fields: [] as CustomField[],
     section_visibility: { ...defaultVisibility },
+    show_on_homepage: false,
+    is_featured: false,
+    homepage_order: 0,
   });
 
   useEffect(() => { fetchCourses(); fetchTeachers(); fetchLevels(); }, []);
@@ -182,6 +188,9 @@ const AdminCourses = () => {
       featuresText: '', highlightsText: '', requirementsText: '', outcomesText: '',
       timeline: [], faq: [], testimonials: [], custom_fields: [],
       section_visibility: { ...defaultVisibility },
+      show_on_homepage: false,
+      is_featured: false,
+      homepage_order: 0,
     });
     setSelectedTeacherIds([]);
     setEditingCourse(null);
@@ -217,6 +226,9 @@ const AdminCourses = () => {
       testimonials: Array.isArray(c.testimonials) ? c.testimonials : [],
       custom_fields: Array.isArray(c.custom_fields) ? c.custom_fields : [],
       section_visibility: { ...defaultVisibility, ...(c.section_visibility || {}) },
+      show_on_homepage: !!(c as any).show_on_homepage,
+      is_featured: !!(c as any).is_featured,
+      homepage_order: (c as any).homepage_order || 0,
     });
     const { data: ct } = await (supabase as any).from('course_teachers').select('teacher_id').eq('course_id', c.id);
     setSelectedTeacherIds((ct || []).map((x: any) => x.teacher_id));
@@ -267,6 +279,9 @@ const AdminCourses = () => {
         testimonials: form.testimonials,
         custom_fields: form.custom_fields,
         section_visibility: form.section_visibility,
+        show_on_homepage: form.show_on_homepage,
+        is_featured: form.is_featured,
+        homepage_order: form.homepage_order || 0,
       };
 
       let courseId: string | null = null;
@@ -445,6 +460,20 @@ const AdminCourses = () => {
                   <div className="flex items-center gap-2">
                     <Switch checked={form.is_published} onCheckedChange={v => setForm({ ...form, is_published: v })} />
                     <Label>Xuất bản ngay</Label>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={form.show_on_homepage} onCheckedChange={v => setForm({ ...form, show_on_homepage: v })} />
+                      <Label>Hiện ở trang chủ</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={form.is_featured} onCheckedChange={v => setForm({ ...form, is_featured: v })} />
+                      <Label>Khóa học nổi bật (làm hero ở /khoa-hoc)</Label>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Thứ tự ưu tiên trang chủ</Label>
+                      <Input type="number" value={form.homepage_order} onChange={e => setForm({ ...form, homepage_order: parseInt(e.target.value) || 0 })} />
+                    </div>
                   </div>
                 </TabsContent>
 
