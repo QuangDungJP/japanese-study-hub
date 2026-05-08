@@ -279,6 +279,9 @@ const AdminCourses = () => {
         testimonials: form.testimonials,
         custom_fields: form.custom_fields,
         section_visibility: form.section_visibility,
+        show_on_homepage: form.show_on_homepage,
+        is_featured: form.is_featured,
+        homepage_order: form.homepage_order || 0,
       };
 
       let courseId: string | null = null;
