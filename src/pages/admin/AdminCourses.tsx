@@ -226,6 +226,9 @@ const AdminCourses = () => {
       testimonials: Array.isArray(c.testimonials) ? c.testimonials : [],
       custom_fields: Array.isArray(c.custom_fields) ? c.custom_fields : [],
       section_visibility: { ...defaultVisibility, ...(c.section_visibility || {}) },
+      show_on_homepage: !!(c as any).show_on_homepage,
+      is_featured: !!(c as any).is_featured,
+      homepage_order: (c as any).homepage_order || 0,
     });
     const { data: ct } = await (supabase as any).from('course_teachers').select('teacher_id').eq('course_id', c.id);
     setSelectedTeacherIds((ct || []).map((x: any) => x.teacher_id));
