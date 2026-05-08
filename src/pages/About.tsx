@@ -10,7 +10,8 @@ import ThreeCValues from "@/components/about/ThreeCValues";
 import AboutZoomSection from "@/components/about/AboutZoomSection";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +24,18 @@ interface FAQ {
 
 const About = () => {
   const [faqSearch, setFaqSearch] = useState('');
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      // Wait for content to render
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [location.hash]);
 
   const { data: faqs = [] } = useQuery({
     queryKey: ['faqs-public'],
