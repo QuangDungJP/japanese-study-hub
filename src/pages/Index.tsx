@@ -9,12 +9,28 @@ import {
   Zap, Award, ChevronRight
 } from "lucide-react";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import courseDefaultImg from "@/assets/course-default-jp.jpg";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useHomepageSections } from "@/hooks/useHomepageSections";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
   const { data: sectionOrder } = useHomepageSections();
+  const [homepageCourses, setHomepageCourses] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, title_vi, description_vi, thumbnail_url, level, slug, price, original_price, duration_weeks, show_on_homepage, homepage_order")
+        .eq("is_published", true)
+        .eq("show_on_homepage", true)
+        .order("homepage_order", { ascending: true })
+        .limit(6);
+      setHomepageCourses(data || []);
+    })();
+  }, []);
   const heroContent = null;
   const statsContent = {
     students: "50K+",
@@ -257,6 +273,45 @@ const Index = () => {
             ))}
           </div>
 
+          {homepageCourses.length > 0 && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {homepageCourses.map((c, i) => (
+                <ScrollReveal key={c.id} delay={i * 80} direction="up">
+                  <Link
+                    to={`/khoa-hoc/${c.slug || c.id}`}
+                    className="group bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col"
+                  >
+                    <div className="relative aspect-video overflow-hidden bg-muted">
+                      <img
+                        src={c.thumbnail_url || courseDefaultImg}
+                        alt={c.title_vi}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <Badge className="absolute top-3 left-3 bg-japanese text-white border-0">JLPT {c.level}</Badge>
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col">
+                      <h3 className="font-bold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-japanese transition-colors">
+                        {c.title_vi}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
+                        {c.description_vi || "Khóa học toàn diện chuẩn JLPT."}
+                      </p>
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <span className="font-extrabold text-foreground">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(c.price || 0)}
+                        </span>
+                        <span className="text-xs text-japanese font-semibold flex items-center gap-1">
+                          Xem chi tiết <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </ScrollReveal>
+              ))}
+            </div>
+          )}
+
           <ScrollReveal delay={500}>
             <div className="text-center">
               <Button size="lg" className="rounded-2xl h-14 px-10 text-base" asChild>
@@ -336,7 +391,7 @@ const Index = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="h-14 px-8 bg-white text-primary hover:bg-white/90 rounded-2xl text-base" asChild>
-                  <Link to="/zoom">
+                  <Link to="/gioi-thieu#zoom">
                     <Video className="w-5 h-5 mr-2" />
                     Đăng ký học thử
                   </Link>

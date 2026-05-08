@@ -733,8 +733,10 @@ export type Database = {
           features: Json | null
           gallery_urls: Json
           highlights: Json
+          homepage_order: number
           id: string
           intro_video_url: string | null
+          is_featured: boolean
           is_published: boolean | null
           language: string
           level: string
@@ -749,6 +751,7 @@ export type Database = {
           schedule_text: string | null
           schedule_text_vi: string | null
           section_visibility: Json
+          show_on_homepage: boolean
           slug: string | null
           start_date: string | null
           subtitle: string | null
@@ -774,8 +777,10 @@ export type Database = {
           features?: Json | null
           gallery_urls?: Json
           highlights?: Json
+          homepage_order?: number
           id?: string
           intro_video_url?: string | null
+          is_featured?: boolean
           is_published?: boolean | null
           language?: string
           level?: string
@@ -790,6 +795,7 @@ export type Database = {
           schedule_text?: string | null
           schedule_text_vi?: string | null
           section_visibility?: Json
+          show_on_homepage?: boolean
           slug?: string | null
           start_date?: string | null
           subtitle?: string | null
@@ -815,8 +821,10 @@ export type Database = {
           features?: Json | null
           gallery_urls?: Json
           highlights?: Json
+          homepage_order?: number
           id?: string
           intro_video_url?: string | null
+          is_featured?: boolean
           is_published?: boolean | null
           language?: string
           level?: string
@@ -831,6 +839,7 @@ export type Database = {
           schedule_text?: string | null
           schedule_text_vi?: string | null
           section_visibility?: Json
+          show_on_homepage?: boolean
           slug?: string | null
           start_date?: string | null
           subtitle?: string | null

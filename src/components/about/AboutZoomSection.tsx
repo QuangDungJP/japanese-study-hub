@@ -22,7 +22,7 @@ const AboutZoomSection = () => {
   const description = c?.description_vi || "Lớp 1-1 hoặc nhóm nhỏ tối đa 6 học viên với giáo viên bản ngữ. Công nghệ HD, tương tác trực tiếp.";
 
   return (
-    <section className="py-20 md:py-28 bg-background relative overflow-hidden">
+    <section id="zoom" className="py-20 md:py-28 bg-background relative overflow-hidden scroll-mt-20">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2" />
         <div className="absolute top-1/2 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -translate-y-1/2" />
