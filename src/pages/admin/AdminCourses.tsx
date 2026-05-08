@@ -53,6 +53,9 @@ interface Course {
   faq: any; testimonials: any; custom_fields: any;
   section_visibility: any;
   created_at: string;
+  show_on_homepage?: boolean | null;
+  is_featured?: boolean | null;
+  homepage_order?: number | null;
 }
 
 interface JlptLevel { id: string; value: string; label: string; label_vi: string; order_index: number; is_active: boolean }
@@ -116,6 +119,9 @@ const AdminCourses = () => {
     testimonials: [] as Testimonial[],
     custom_fields: [] as CustomField[],
     section_visibility: { ...defaultVisibility },
+    show_on_homepage: false,
+    is_featured: false,
+    homepage_order: 0,
   });
 
   useEffect(() => { fetchCourses(); fetchTeachers(); fetchLevels(); }, []);
@@ -182,6 +188,9 @@ const AdminCourses = () => {
       featuresText: '', highlightsText: '', requirementsText: '', outcomesText: '',
       timeline: [], faq: [], testimonials: [], custom_fields: [],
       section_visibility: { ...defaultVisibility },
+      show_on_homepage: false,
+      is_featured: false,
+      homepage_order: 0,
     });
     setSelectedTeacherIds([]);
     setEditingCourse(null);
