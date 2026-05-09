@@ -185,27 +185,28 @@ const TeacherDetail = () => {
     <main className="min-h-screen bg-background">
       <Navbar />
 
-      <section className="relative pt-20">
-        <div className="h-64 md:h-80 relative overflow-hidden">
+      <section className="relative pt-16">
+        <div className="h-72 md:h-[420px] relative overflow-hidden">
           {coverImage ? (
-            <img src={coverImage} alt="" className="w-full h-full object-cover" />
+            <img src={coverImage} alt="" className="w-full h-full object-cover scale-105" />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10">
-              <div className="absolute inset-0">
-                <div className="absolute top-10 right-20 w-40 h-40 rounded-full bg-primary/10 blur-3xl" />
-                <div className="absolute bottom-10 left-10 w-60 h-60 rounded-full bg-primary/10 blur-3xl" />
-              </div>
+            <div className="w-full h-full bg-gradient-to-br from-primary/30 via-primary/10 to-accent/20">
+              <div className="absolute top-10 right-20 w-72 h-72 rounded-full bg-primary/20 blur-3xl animate-pulse" />
+              <div className="absolute bottom-10 left-10 w-96 h-96 rounded-full bg-accent/20 blur-3xl animate-pulse" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_transparent_30%,_hsl(var(--background))_85%)]" />
         </div>
 
-        <div className="container mx-auto px-4 relative z-10 -mt-32 md:-mt-40">
-          <div className="bg-card border border-border rounded-3xl shadow-lg overflow-hidden">
-            <div className="p-6 md:p-8">
-              <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+        <div className="container mx-auto px-4 relative z-10 -mt-44 md:-mt-56">
+          <div className="relative bg-card/95 backdrop-blur-xl border border-border/60 rounded-3xl shadow-2xl shadow-primary/5 overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+            <div className="p-6 md:p-10">
+              <div className="flex flex-col md:flex-row gap-6 md:gap-10">
                 <div className="relative flex-shrink-0 mx-auto md:mx-0">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden border-4 border-background shadow-xl bg-gradient-to-br from-primary/20 to-primary/20">
+                  <div className="absolute -inset-2 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary opacity-60 blur-lg" />
+                  <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-3xl overflow-hidden ring-4 ring-background bg-gradient-to-br from-primary/20 to-accent/20 shadow-xl">
                     {avatar ? (
                       <img src={avatar} alt={name} className="w-full h-full object-cover" />
                     ) : (
@@ -215,27 +216,34 @@ const TeacherDetail = () => {
                   {introVideo && (
                     <button
                       onClick={() => setVideoUrl(introVideo)}
-                      className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                      className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground flex items-center justify-center shadow-xl shadow-primary/30 hover:scale-110 transition-transform ring-4 ring-background"
+                      aria-label="Xem video giới thiệu"
                     >
-                      <Play className="w-4 h-4 fill-white ml-0.5" />
+                      <Play className="w-5 h-5 fill-current ml-0.5" />
                     </button>
                   )}
                 </div>
 
-                <div className="flex-1 text-center md:text-left">
+                <div className="flex-1 text-center md:text-left min-w-0">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div>
-                      <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-foreground">{name}</h1>
-                      <p className="text-primary font-semibold mt-1">{headline}</p>
-                      {subtitle && <p className="text-sm text-muted-foreground mt-1 max-w-xl">{subtitle}</p>}
-                      {location && (
-                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1 justify-center md:justify-start">
-                          <MapPin className="w-3.5 h-3.5" /> {location}
-                        </p>
-                      )}
+                    <div className="min-w-0">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">
+                        <Sparkles className="w-3 h-3" /> Giảng viên
+                      </div>
+                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">{name}</h1>
+                      <p className="text-primary font-semibold mt-2 text-base md:text-lg">{headline}</p>
+                      {subtitle && <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-2xl leading-relaxed">{subtitle}</p>}
+                      <div className="flex flex-wrap items-center gap-3 mt-3 justify-center md:justify-start text-sm text-muted-foreground">
+                        {location && (
+                          <span className="inline-flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{location}</span>
+                        )}
+                        {languages.slice(0, 3).map((l) => (
+                          <span key={l} className="inline-flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{l}</span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex gap-2 justify-center md:justify-end">
-                      <Button variant="default" size="lg" asChild>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center md:justify-end shrink-0">
+                      <Button size="lg" asChild className="shadow-lg shadow-primary/20">
                         <Link to="/auth"><Calendar className="w-4 h-4 mr-2" />Đặt lịch học</Link>
                       </Button>
                       <Button variant="outline" size="lg" asChild>
@@ -245,15 +253,15 @@ const TeacherDetail = () => {
                   </div>
 
                   {stats.length > 0 && vis("stats") && (
-                    <div className="flex flex-wrap gap-6 mt-6 justify-center md:justify-start">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-8 pt-6 border-t border-border/60">
                       {stats.map((stat, i) => (
-                        <div key={i} className="flex items-center gap-2.5">
-                          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                            <stat.icon className="w-5 h-5 text-muted-foreground" />
+                        <div key={i} className="group flex items-center gap-3 p-3 rounded-2xl bg-muted/40 hover:bg-muted/70 transition-colors">
+                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center group-hover:scale-105 transition-transform">
+                            <stat.icon className="w-5 h-5 text-primary" />
                           </div>
-                          <div>
-                            <p className="text-lg font-bold text-foreground leading-tight">{stat.value}</p>
-                            <p className="text-xs text-muted-foreground">{stat.label}</p>
+                          <div className="min-w-0">
+                            <p className="text-lg font-extrabold text-foreground leading-tight">{stat.value}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{stat.label}</p>
                           </div>
                         </div>
                       ))}
@@ -270,9 +278,10 @@ const TeacherDetail = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             {bio && vis("bio") && (
-              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-primary" />Giới thiệu
+              <div className="group bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><BookOpen className="w-5 h-5" /></span>
+                  Giới thiệu
                 </h2>
                 {isHtml(bio) ? (
                   <div className="prose prose-sm md:prose-base max-w-none text-muted-foreground leading-relaxed [&_img]:rounded-xl [&_iframe]:rounded-xl [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_a]:text-primary" dangerouslySetInnerHTML={{ __html: bio }} />
@@ -283,28 +292,32 @@ const TeacherDetail = () => {
             )}
 
             {specializations.length > 0 && vis("specializations") && (
-              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-primary" />Chuyên môn
+              <div className="bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><GraduationCap className="w-5 h-5" /></span>
+                  Chuyên môn
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {specializations.map((spec) => (
-                    <Badge key={spec} variant="secondary" className="text-sm px-4 py-2">{spec}</Badge>
+                    <span key={spec} className="text-sm px-4 py-2 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 text-foreground font-medium border border-primary/15 hover:border-primary/40 hover:from-primary/15 hover:to-accent/15 transition-colors">{spec}</span>
                   ))}
                 </div>
               </div>
             )}
 
             {certifications.length > 0 && vis("certifications") && (
-              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-primary" />Chứng chỉ & Bằng cấp
+              <div className="bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Award className="w-5 h-5" /></span>
+                  Chứng chỉ & Bằng cấp
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {certifications.map((cert) => (
-                    <div key={cert} className="flex items-center gap-3 bg-muted/50 rounded-xl p-4">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      <span className="text-foreground font-medium">{cert}</span>
+                    <div key={cert} className="group flex items-center gap-3 bg-gradient-to-br from-muted/60 to-muted/30 rounded-2xl p-4 border border-border/40 hover:border-primary/30 transition-colors">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <span className="text-foreground font-medium text-sm">{cert}</span>
                     </div>
                   ))}
                 </div>
@@ -312,15 +325,16 @@ const TeacherDetail = () => {
             )}
 
             {achievements.length > 0 && (
-              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />Thành tích nổi bật
+              <div className="bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center"><Sparkles className="w-5 h-5" /></span>
+                  Thành tích nổi bật
                 </h2>
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {achievements.map((a) => (
-                    <li key={a} className="flex items-start gap-3 bg-muted/40 rounded-lg p-3">
+                    <li key={a} className="flex items-start gap-3 bg-gradient-to-r from-amber-500/5 to-transparent rounded-xl p-3.5 border-l-2 border-amber-500/60">
                       <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-foreground">{a}</span>
+                      <span className="text-foreground text-sm md:text-base">{a}</span>
                     </li>
                   ))}
                 </ul>
@@ -328,17 +342,18 @@ const TeacherDetail = () => {
             )}
 
             {videos.length > 0 && vis("videos") && (
-              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Film className="w-5 h-5 text-primary" />Videos
+              <div className="bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Film className="w-5 h-5" /></span>
+                  Videos giới thiệu
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {videos.map((v, i) => (
-                    <div key={i} className="space-y-2">
-                      <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                    <div key={i} className="space-y-2 group">
+                      <div className="aspect-video rounded-2xl overflow-hidden bg-black ring-1 ring-border/60 group-hover:ring-primary/40 transition-all shadow-sm">
                         {renderVideo(v.url)}
                       </div>
-                      {v.title && <p className="text-sm font-medium">{v.title}</p>}
+                      {v.title && <p className="text-sm font-semibold text-foreground px-1">{v.title}</p>}
                     </div>
                   ))}
                 </div>
@@ -346,14 +361,16 @@ const TeacherDetail = () => {
             )}
 
             {gallery.length > 0 && vis("gallery") && (
-              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-primary" />Thư viện ảnh
+              <div className="bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><ImageIcon className="w-5 h-5" /></span>
+                  Thư viện ảnh
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {gallery.map((g, i) => (
-                    <a key={i} href={g} target="_blank" rel="noopener noreferrer" className="aspect-square rounded-xl overflow-hidden bg-muted block group">
-                      <img src={g} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="" />
+                    <a key={i} href={g} target="_blank" rel="noopener noreferrer" className="relative aspect-square rounded-2xl overflow-hidden bg-muted block group ring-1 ring-border/60 hover:ring-primary/40 transition-all">
+                      <img src={g} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>
                   ))}
                 </div>
@@ -361,11 +378,16 @@ const TeacherDetail = () => {
             )}
 
             {customSections.length > 0 && vis("custom") && customSections.map((s, i) => (
-              <div key={i} className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                {s.title && <h2 className="text-xl font-bold text-foreground mb-4">{s.title}</h2>}
-                {s.image_url && <img src={s.image_url} className="w-full rounded-xl mb-4 object-cover max-h-80" alt="" />}
+              <div key={i} className="bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                {s.title && (
+                  <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-xl bg-accent/15 text-accent-foreground flex items-center justify-center"><Sparkles className="w-5 h-5 text-primary" /></span>
+                    {s.title}
+                  </h2>
+                )}
+                {s.image_url && <img src={s.image_url} className="w-full rounded-2xl mb-4 object-cover max-h-96 ring-1 ring-border/60" alt="" />}
                 {s.video_url && (
-                  <div className="aspect-video rounded-xl overflow-hidden bg-black mb-4">
+                  <div className="aspect-video rounded-2xl overflow-hidden bg-black mb-4 ring-1 ring-border/60">
                     {renderVideo(s.video_url)}
                   </div>
                 )}
@@ -378,14 +400,15 @@ const TeacherDetail = () => {
             ))}
 
             {Object.keys(extraData).length > 0 && vis("extra") && (
-              <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-primary" />Thông tin thêm
+              <div className="bg-card rounded-3xl border border-border/60 p-6 md:p-8 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-5 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center"><Heart className="w-5 h-5" /></span>
+                  Thông tin thêm
                 </h2>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-3">
                   {Object.entries(extraData).map(([key, value]) => (
-                    <div key={key} className="bg-muted/50 rounded-xl p-4">
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{key}</p>
+                    <div key={key} className="bg-gradient-to-br from-muted/60 to-muted/20 rounded-2xl p-4 border border-border/40">
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1.5">{key}</p>
                       <p className="text-foreground font-medium">{value}</p>
                     </div>
                   ))}
@@ -394,17 +417,18 @@ const TeacherDetail = () => {
             )}
           </div>
 
-          <div className="space-y-6">
+          <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
             {languages.length > 0 && vis("languages") && (
-              <div className="bg-card rounded-2xl border border-border p-6">
-                <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-primary" />Ngôn ngữ
+              <div className="bg-card rounded-3xl border border-border/60 p-6 shadow-sm">
+                <h3 className="font-bold text-foreground mb-4 flex items-center gap-2.5">
+                  <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Globe className="w-4 h-4" /></span>
+                  Ngôn ngữ giảng dạy
                 </h3>
                 <div className="space-y-2">
                   {languages.map((lang) => (
-                    <div key={lang} className="flex items-center gap-2 bg-muted/50 rounded-lg px-4 py-2.5">
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground">{lang}</span>
+                    <div key={lang} className="flex items-center gap-2.5 bg-muted/50 rounded-xl px-4 py-2.5 hover:bg-muted transition-colors">
+                      <Globe className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground text-sm">{lang}</span>
                     </div>
                   ))}
                 </div>
@@ -412,9 +436,9 @@ const TeacherDetail = () => {
             )}
 
             {Object.values(socialLinks).some((v) => v) && vis("social") && (
-              <div className="bg-card rounded-2xl border border-border p-6">
-                <h3 className="font-bold text-foreground mb-3">Kết nối</h3>
-                <div className="space-y-2">
+              <div className="bg-card rounded-3xl border border-border/60 p-6 shadow-sm">
+                <h3 className="font-bold text-foreground mb-4">Kết nối</h3>
+                <div className="grid grid-cols-2 gap-2">
                   {Object.entries(socialLinks).map(([platform, url]) =>
                     url ? (
                       <a
@@ -422,10 +446,10 @@ const TeacherDetail = () => {
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 bg-muted/50 rounded-lg px-4 py-2.5 hover:bg-muted transition-colors"
+                        className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2.5 hover:bg-primary/10 hover:text-primary transition-colors group"
                       >
-                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                        <span className="capitalize font-medium text-foreground">{platform}</span>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                        <span className="capitalize font-medium text-foreground text-sm group-hover:text-primary truncate">{platform}</span>
                       </a>
                     ) : null
                   )}
@@ -434,23 +458,31 @@ const TeacherDetail = () => {
             )}
 
             {vis("cta") && (
-            <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-6 text-white">
-              <h3 className="text-lg font-bold mb-2">Bắt đầu học cùng {name.split(" ").pop()}</h3>
-              <p className="text-sm text-white/80 mb-4">Đặt lịch buổi học đầu tiên ngay hôm nay</p>
-              <Button className="w-full bg-white text-foreground hover:bg-white/90" asChild>
-                <Link to="/auth"><Calendar className="w-4 h-4 mr-2" />Đặt lịch học ngay</Link>
-              </Button>
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-accent rounded-3xl p-6 text-primary-foreground shadow-xl shadow-primary/20">
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative">
+                <Sparkles className="w-6 h-6 mb-3 opacity-90" />
+                <h3 className="text-lg font-bold mb-1.5 leading-tight">Bắt đầu học cùng {name.split(" ").pop()}</h3>
+                <p className="text-sm opacity-90 mb-4 leading-relaxed">Đặt lịch buổi học đầu tiên ngay hôm nay và trải nghiệm sự khác biệt.</p>
+                <Button className="w-full bg-background text-foreground hover:bg-background/90 shadow-lg" asChild>
+                  <Link to="/auth"><Calendar className="w-4 h-4 mr-2" />Đặt lịch học ngay</Link>
+                </Button>
+              </div>
             </div>
             )}
-          </div>
+          </aside>
         </div>
       </section>
 
-      <section className="bg-muted/30 py-16">
+      <section className="bg-gradient-to-b from-muted/30 to-muted/50 py-16 md:py-20 border-t border-border/40">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Giảng viên khác</h2>
-            <p className="text-muted-foreground">Khám phá thêm đội ngũ giảng viên tuyệt vời của chúng tôi</p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3">
+              <Users className="w-3 h-3" /> Đội ngũ giảng viên
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-3 tracking-tight">Giảng viên khác</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Khám phá thêm những giáo viên tâm huyết, sẵn sàng đồng hành cùng bạn trên hành trình tiếng Nhật</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mb-8">
@@ -460,11 +492,11 @@ const TeacherDetail = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm giảng viên..."
-                className="pl-9"
+                className="pl-9 h-11 rounded-xl bg-card border-border/60"
               />
             </div>
             <Select value={filterSpec} onValueChange={setFilterSpec}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[200px] h-11 rounded-xl bg-card border-border/60">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Chuyên môn" />
               </SelectTrigger>
@@ -488,27 +520,27 @@ const TeacherDetail = () => {
                 <Link
                   key={t.id}
                   to={`/giao-vien/${t.slug || t.id}`}
-                  className="group bg-card rounded-2xl border border-border shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:-translate-y-1"
+                  className="group bg-card rounded-3xl border border-border/60 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 overflow-hidden hover:-translate-y-1.5"
                 >
-                  <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/20 overflow-hidden">
+                  <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
                     {t.image_url ? (
-                      <img src={t.image_url} alt={t.display_name || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={t.image_url} alt={t.display_name || ""} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <span className="text-5xl">👩‍🏫</span>
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     {Number(t.rating) > 0 && (
-                      <div className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1 shadow-md">
+                      <div className="absolute top-3 right-3 bg-card/95 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1 shadow-md">
                         <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                         <span className="text-xs font-bold">{Number(t.rating).toFixed(1)}</span>
                       </div>
                     )}
                   </div>
                   <div className="p-4">
-                    <h3 className="font-bold text-foreground truncate">{t.display_name || "Giảng viên"}</h3>
-                    {t.headline && <p className="text-xs text-primary font-medium truncate mt-0.5">{t.headline}</p>
-                    }
+                    <h3 className="font-bold text-foreground truncate group-hover:text-primary transition-colors">{t.display_name || "Giảng viên"}</h3>
+                    {t.headline && <p className="text-xs text-primary font-medium truncate mt-0.5">{t.headline}</p>}
                     <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                       {t.experience_years ? <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" />{t.experience_years} năm</span> : null}
                       {(t.total_students ?? 0) > 0 && <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{t.total_students}</span>}
@@ -533,7 +565,9 @@ const TeacherDetail = () => {
       <Dialog open={!!videoUrl} onOpenChange={() => setVideoUrl(null)}>
         <DialogContent className="max-w-3xl p-0 overflow-hidden">
           {videoUrl && (
-            <video src={videoUrl} controls autoPlay className="w-full aspect-video" />
+            isFileVideo(videoUrl)
+              ? <video src={videoUrl} controls autoPlay className="w-full aspect-video" />
+              : <iframe src={ytEmbed(videoUrl)} className="w-full aspect-video" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
           )}
         </DialogContent>
       </Dialog>
