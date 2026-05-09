@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
 import ImageCropModal from "@/components/shared/ImageCropModal";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import { Database } from "@/integrations/supabase/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -509,11 +510,11 @@ export default function AdminTeachers() {
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Việt)</Label>
-                    <Textarea value={formData.bio_vi} onChange={(e) => set("bio_vi", e.target.value)} rows={3} placeholder="Mô tả ngắn về giảng viên..." />
+                    <RichTextEditor value={formData.bio_vi} onChange={(v) => set("bio_vi", v)} placeholder="Mô tả ngắn về giảng viên..." minHeight="160px" />
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Nhật / English)</Label>
-                    <Textarea value={formData.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
+                    <RichTextEditor value={formData.bio} onChange={(v) => set("bio", v)} minHeight="160px" />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -605,6 +606,7 @@ export default function AdminTeachers() {
                   </div>
                   <div className="space-y-2">
                     <Label>Video giới thiệu (URL)</Label>
+                    <MediaUploader value={formData.intro_video_url} onChange={(u) => set("intro_video_url", u)} folder="teachers/videos" aspectRatio="video" accept="video" maxSizeMB={200} placeholder="Tải video giới thiệu hoặc dán URL bên dưới" />
                     <Input value={formData.intro_video_url} onChange={(e) => set("intro_video_url", e.target.value)} placeholder="https://youtube.com/..." />
                   </div>
                 </TabsContent>
@@ -654,6 +656,7 @@ export default function AdminTeachers() {
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
+                        <MediaUploader value={v.url} onChange={(u) => { const arr = [...formData.videos]; arr[i] = { ...arr[i], url: u }; set("videos", arr); }} folder="teachers/videos" aspectRatio="video" accept="video" maxSizeMB={200} placeholder="Tải video lên hoặc dán URL bên dưới" />
                         <Input placeholder="https://youtube.com/watch?v=..." value={v.url} onChange={(e) => { const arr = [...formData.videos]; arr[i] = { ...arr[i], url: e.target.value }; set("videos", arr); }} />
                       </div>
                     ))}
@@ -688,7 +691,7 @@ export default function AdminTeachers() {
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => move(1)}><ChevronDown className="w-4 h-4" /></Button>
                             <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => set("custom_sections", formData.custom_sections.filter((_, j) => j !== i))}><X className="w-4 h-4" /></Button>
                           </div>
-                          <Textarea placeholder="Nội dung..." value={s.body} onChange={(e) => upd("body", e.target.value)} rows={3} />
+                          <RichTextEditor value={s.body} onChange={(v) => upd("body", v)} placeholder="Nội dung..." minHeight="140px" />
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             <div className="space-y-1">
                               <Label className="text-xs">Ảnh (tuỳ chọn)</Label>
@@ -696,8 +699,9 @@ export default function AdminTeachers() {
                               <Input value={s.image_url} onChange={(e) => upd("image_url", e.target.value)} placeholder="URL ảnh" className="text-xs" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs">Video URL (tuỳ chọn)</Label>
-                              <Input value={s.video_url} onChange={(e) => upd("video_url", e.target.value)} placeholder="https://youtube.com/..." />
+                              <Label className="text-xs">Video (tuỳ chọn)</Label>
+                              <MediaUploader value={s.video_url || ""} onChange={(u) => upd("video_url", u)} folder="teachers/sections" aspectRatio="video" accept="video" maxSizeMB={200} placeholder="Tải video hoặc dán URL bên dưới" />
+                              <Input value={s.video_url} onChange={(e) => upd("video_url", e.target.value)} placeholder="https://youtube.com/..." className="text-xs" />
                             </div>
                           </div>
                         </div>
