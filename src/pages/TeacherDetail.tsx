@@ -163,6 +163,15 @@ const TeacherDetail = () => {
     } catch {}
     return url;
   };
+  const isFileVideo = (url: string) => /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url);
+  const isHtml = (s: string) => /<\/?[a-z][\s\S]*>/i.test(s);
+  const renderVideo = (url: string) => (
+    isFileVideo(url) ? (
+      <video src={url} controls className="w-full h-full" />
+    ) : (
+      <iframe src={ytEmbed(url)} className="w-full h-full" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+    )
+  );
 
   const stats = [
     { icon: Clock, value: `${experienceYears}`, label: "Năm kinh nghiệm", show: experienceYears > 0 },
@@ -265,7 +274,11 @@ const TeacherDetail = () => {
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary" />Giới thiệu
                 </h2>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{bio}</p>
+                {isHtml(bio) ? (
+                  <div className="prose prose-sm md:prose-base max-w-none text-muted-foreground leading-relaxed [&_img]:rounded-xl [&_iframe]:rounded-xl [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_a]:text-primary" dangerouslySetInnerHTML={{ __html: bio }} />
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{bio}</p>
+                )}
               </div>
             )}
 
@@ -323,7 +336,7 @@ const TeacherDetail = () => {
                   {videos.map((v, i) => (
                     <div key={i} className="space-y-2">
                       <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                        <iframe src={ytEmbed(v.url)} className="w-full h-full" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                        {renderVideo(v.url)}
                       </div>
                       {v.title && <p className="text-sm font-medium">{v.title}</p>}
                     </div>
@@ -353,10 +366,14 @@ const TeacherDetail = () => {
                 {s.image_url && <img src={s.image_url} className="w-full rounded-xl mb-4 object-cover max-h-80" alt="" />}
                 {s.video_url && (
                   <div className="aspect-video rounded-xl overflow-hidden bg-black mb-4">
-                    <iframe src={ytEmbed(s.video_url)} className="w-full h-full" allowFullScreen />
+                    {renderVideo(s.video_url)}
                   </div>
                 )}
-                {s.body && <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{s.body}</p>}
+                {s.body && (isHtml(s.body) ? (
+                  <div className="prose prose-sm md:prose-base max-w-none text-muted-foreground leading-relaxed [&_img]:rounded-xl [&_iframe]:rounded-xl [&_a]:text-primary" dangerouslySetInnerHTML={{ __html: s.body }} />
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{s.body}</p>
+                ))}
               </div>
             ))}
 
