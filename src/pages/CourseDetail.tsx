@@ -14,7 +14,9 @@ import {
   Sparkles, MapPin, Award, Quote, HelpCircle, ListChecks, Flame, AlertCircle
 } from "lucide-react";
 import courseDefaultImg from "@/assets/course-default-jp.jpg";
-
+import ScrollReveal from "@/components/ScrollReveal";
+import PromotionPolicySection from "@/components/courses/PromotionPolicySection";
+import StudentBenefitsSection from "@/components/courses/StudentBenefitsSection";
 interface Course {
   id: string;
   title: string; title_vi: string;
@@ -567,6 +569,17 @@ const CourseDetail = () => {
         </section>
       )}
 
+      {/* PROMOTION POLICY */}
+      <ScrollReveal>
+        <PromotionPolicySection />
+      </ScrollReveal>
+
+      {/* STUDENT BENEFITS */}
+      <ScrollReveal>
+        <StudentBenefitsSection />
+      </ScrollReveal>
+    
+
       {/* CTA */}
       <section className="py-20">
         <div className="container mx-auto px-4 text-center">
@@ -580,9 +593,10 @@ const CourseDetail = () => {
         </div>
       </section>
 
-      <Footer />
-    </main>
-  );
+
+<Footer />
+</main>
+);
 };
 
 export default CourseDetail;

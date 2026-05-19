@@ -69,18 +69,42 @@ const AboutZoomSection = () => {
                 <span className="text-sm font-medium text-muted-foreground">TNQDO Live Class</span>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-4 h-4" />45:23</div>
               </div>
-              <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                {c?.image_url ? (
-                  <img src={c.image_url} alt="Class" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-card mx-auto mb-3 flex items-center justify-center shadow-lg text-4xl">👩‍🏫</div>
-                    <p className="font-semibold text-foreground">Sensei</p>
-                    <p className="text-sm text-muted-foreground">Native Teacher</p>
-                  </div>
-                )}
-                <div className="absolute bottom-4 right-4 w-32 h-24 bg-card rounded-xl shadow-lg overflow-hidden border-2 border-card flex items-center justify-center text-2xl">🧑‍🎓</div>
-              </div>
+              <div className="relative aspect-video overflow-hidden group">
+  <img
+    src="/img/zoom-meeting.png"
+    alt="TNQDO Online Class"
+    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+  />
+
+  {/* Overlay */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+
+  {/* Live Badge */}
+  <div className="absolute top-4 left-4 bg-green-500/90 backdrop-blur-md text-white px-3 py-1 rounded-full flex items-center gap-2 text-sm font-medium shadow-lg">
+    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+    Đang live
+  </div>
+
+  {/* Teacher Info */}
+  <div className="absolute bottom-4 left-4">
+    <div className="bg-black/50 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10">
+      <p className="text-white font-semibold">Sensei</p>
+      <p className="text-white/70 text-sm">Native Teacher</p>
+    </div>
+  </div>
+
+  {/* Student Preview */}
+  <div className="absolute bottom-4 right-4 w-36 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-black/40 backdrop-blur-md">
+    <img
+      src="/img/zoom-meeting.png"
+      alt="Student"
+      className="w-full h-24 object-cover"
+    />
+    <div className="px-3 py-2">
+      <p className="text-xs text-white font-medium">5 học viên online</p>
+    </div>
+  </div>
+</div>
               <div className="px-6 py-4 flex items-center justify-center gap-3 bg-foreground/5">
                 {[Video, MessageCircle, Users, Award].map((I, i) => (
                   <button key={i} className="w-11 h-11 rounded-full bg-card shadow-md flex items-center justify-center hover:bg-muted transition-colors">
