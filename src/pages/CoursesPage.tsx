@@ -14,7 +14,8 @@ import {
   GraduationCap, Trophy, Target, Zap, CheckCircle2, Flame, Filter
 } from "lucide-react";
 import courseDefaultImg from "@/assets/course-default-jp.jpg";
-
+import PromotionPolicySection from "@/components/courses/PromotionPolicySection";
+import StudentBenefitsSection from "@/components/courses/StudentBenefitsSection";
 interface Course {
   id: string;
   title: string;
@@ -416,7 +417,15 @@ const CoursesPage = () => {
           </div>
         </section>
       </ScrollReveal>
+      {/* PROMOTION POLICY */}
+      <ScrollReveal>
+        <PromotionPolicySection />
+      </ScrollReveal>
 
+      {/* STUDENT BENEFITS */}
+      <ScrollReveal>
+        <StudentBenefitsSection />
+      </ScrollReveal>
       {/* TEACHERS */}
       <ScrollReveal>
         <TeachersSection />

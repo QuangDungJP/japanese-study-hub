@@ -23,7 +23,7 @@ const defaultValues: ValueItem[] = [
     quote:
       "GV luôn đặt thử thách đầu giờ cho HV trước khi vào bài",
     quoteAuthor: "Phương pháp TNQDO",
-    imageUrl: "/img/challenging.png",
+    imageUrl: "/img/3C_about/Challenging.jpg",
   },
   {
     letter: "C",
@@ -35,7 +35,7 @@ const defaultValues: ValueItem[] = [
     quote:
       "Bài học nói về văn hóa 'Ông hát bà khen hay' khi đàm thoại",
     quoteAuthor: "Văn hóa Nhật Bản",
-    imageUrl: "/img/cultural.png",
+    imageUrl: "/img/3C_about/Cultural-Based.jpg",
   },
   {
     letter: "C",
@@ -47,7 +47,7 @@ const defaultValues: ValueItem[] = [
     quote:
       "GV bắt HV đi tìm chủ ngữ, vị ngữ để cùng giải mã bài tập",
     quoteAuthor: "Phương pháp tương tác",
-    imageUrl: "/img/colearning.png",
+    imageUrl: "/img/3C_about/Co-Learning.jpg",
   },
 ];
 
