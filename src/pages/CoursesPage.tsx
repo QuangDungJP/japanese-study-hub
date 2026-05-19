@@ -14,7 +14,7 @@ import {
   Sparkles, BookOpen, Clock, Users, Star, ArrowRight,
   GraduationCap, Trophy, Target, Zap, CheckCircle2, Flame, Filter
 } from "lucide-react";
-import courseDefaultImg from "@/assets/course-default-jp.jpg";
+import courseDefaultImg from "@/assets/course-default-jp.webp";
 import PromotionPolicySection from "@/components/courses/PromotionPolicySection";
 import StudentBenefitsSection from "@/components/courses/StudentBenefitsSection";
 type Course = Database["public"]["Tables"]["courses"]["Row"];
