@@ -1,4 +1,4 @@
-
+--D:\QuangDung\QuangDung\japanese-study-hub\supabase\migrations\20260401094000_78fbc286-6338-46d1-960d-f91658e061df.sql
 INSERT INTO public.website_content (section_key, title_vi, subtitle_vi, description_vi, is_active, order_index, content)
 VALUES 
   ('about_hero', 'Nền tảng học Tiếng Nhật hàng đầu', 'Về TNQDO', 'Sứ mệnh giúp người Việt chinh phục tiếng Nhật hiệu quả nhất với phương pháp khoa học và công nghệ AI tiên tiến', true, 100, '{}'),
