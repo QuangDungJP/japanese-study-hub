@@ -56,15 +56,16 @@ const Footer = () => {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-accent mt-0.5" />
-                <span className="text-primary-foreground/70">123 Nguyễn Huệ, Q.1, TP.HCM</span>
+                <span className="text-primary-foreground/70">TP.HCM</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-accent" />
-                <span className="text-primary-foreground/70">1900 1234</span>
+                <span className="text-primary-foreground/70">(+84) 901 189 399 (Mr. Triệu)</span>
+                <span className="text-primary-foreground/70">(+84) 939 734 210 (Mr. Hưng)</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-accent" />
-                <span className="text-primary-foreground/70">hello@tnqdo.com</span>
+                <span className="text-primary-foreground/70">quangdungonline.education@gmail.com</span>
               </li>
             </ul>
           </div>
@@ -73,7 +74,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-primary-foreground/60 text-sm">
-            © 2024 TNQDO. All rights reserved.
+            © 2026 TNQDO. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link to="/chinh-sach-bao-mat" className="text-primary-foreground/60 hover:text-primary-foreground text-sm transition-colors">
