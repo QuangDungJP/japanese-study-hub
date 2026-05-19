@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { usePageSetting } from "@/hooks/usePageSettings";
 import {
   Sparkles, BookOpen, Clock, Users, Star, ArrowRight,
@@ -16,33 +17,20 @@ import {
 import courseDefaultImg from "@/assets/course-default-jp.jpg";
 import PromotionPolicySection from "@/components/courses/PromotionPolicySection";
 import StudentBenefitsSection from "@/components/courses/StudentBenefitsSection";
-interface Course {
-  id: string;
-  title: string;
-  title_vi: string;
-  description_vi: string | null;
-  description: string | null;
-  price: number;
-  original_price: number | null;
-  duration_weeks: number | null;
-  level: string;
-  language: string;
-  thumbnail_url: string | null;
-  features: any;
-  slug: string | null;
-  is_published: boolean | null;
-  is_featured?: boolean | null;
-}
+type Course = Database["public"]["Tables"]["courses"]["Row"];
+
+type TeacherProfile = Database["public"]["Tables"]["teacher_profiles"]["Row"];
+
+type TeacherPreview = Pick<TeacherProfile, "id" | "display_name" | "image_url" | "slug">;
+
+type CourseTeacherRecord = Pick<Database["public"]["Tables"]["course_teachers"]["Row"], "course_id" | "teacher_id" | "order_index" | "role_vi">;
 
 interface CourseTeacher {
   course_id: string;
   teacher_id: string;
-  teacher?: {
-    id: string;
-    display_name: string | null;
-    image_url: string | null;
-    slug: string | null;
-  };
+  order_index: number | null;
+  role_vi: string | null;
+  teacher?: TeacherPreview;
 }
 
 const levelConfig: Record<string, { color: string; gradient: string; label: string; kanji: string; bg: string }> = {
@@ -76,25 +64,25 @@ const CoursesPage = () => {
 
       if (list.length > 0) {
         const courseIds = list.map((c) => c.id);
-        const { data: ctData } = await (supabase as any)
+        const { data: ctData } = await supabase
           .from("course_teachers")
           .select("course_id, teacher_id, order_index, role_vi")
-          .in("course_id", courseIds);
+          .in("course_id", courseIds) as { data: CourseTeacherRecord[] | null };
 
         const teacherIds = Array.from(
-          new Set((ctData || []).map((ct: any) => ct.teacher_id as string))
+          new Set((ctData || []).map((ct) => ct.teacher_id))
         );
-        let teacherMap: Record<string, any> = {};
+        const teacherMap: Record<string, TeacherPreview | undefined> = {};
         if (teacherIds.length > 0) {
           const { data: teachers } = await supabase
             .from("teacher_profiles")
             .select("id, display_name, image_url, slug")
-            .in("id", teacherIds as string[]);
+            .in("id", teacherIds) as { data: TeacherPreview[] | null };
           (teachers || []).forEach((t) => { teacherMap[t.id] = t; });
         }
 
         const grouped: Record<string, CourseTeacher[]> = {};
-        (ctData || []).forEach((ct: any) => {
+        (ctData || []).forEach((ct) => {
           if (!grouped[ct.course_id]) grouped[ct.course_id] = [];
           grouped[ct.course_id].push({ ...ct, teacher: teacherMap[ct.teacher_id] });
         });
@@ -111,7 +99,7 @@ const CoursesPage = () => {
     return courses.filter((c) => c.level === filterLevel);
   }, [courses, filterLevel]);
 
-  const featured = courses.find((c) => (c as any).is_featured) || courses[0];
+  const featured = courses.find((c) => c.is_featured) || courses[0];
   const heroTitle = page?.hero_title_vi || "Khóa học Tiếng Nhật toàn diện";
   const heroSubtitle = page?.hero_subtitle_vi || "Từ N5 đến N1 — lộ trình chuẩn JLPT, đồng hành cùng giảng viên bản ngữ và Việt Nam giàu kinh nghiệm";
   const displayName = page?.display_name_vi || "Khóa học";

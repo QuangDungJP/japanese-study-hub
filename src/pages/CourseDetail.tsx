@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,33 +14,11 @@ import {
   Trophy, Target, Zap, GraduationCap, Play, Calendar, ArrowRight,
   Sparkles, MapPin, Award, Quote, HelpCircle, ListChecks, Flame, AlertCircle
 } from "lucide-react";
-import courseDefaultImg from "@/assets/course-default-jp.jpg";
+import courseDefaultImg from "@/assets/course-default-jp.webp";
 import ScrollReveal from "@/components/ScrollReveal";
 import PromotionPolicySection from "@/components/courses/PromotionPolicySection";
 import StudentBenefitsSection from "@/components/courses/StudentBenefitsSection";
-interface Course {
-  id: string;
-  title: string; title_vi: string;
-  subtitle: string | null; subtitle_vi: string | null;
-  description: string | null; description_vi: string | null;
-  long_description: string | null; long_description_vi: string | null;
-  price: number; original_price: number | null;
-  duration_weeks: number | null;
-  level: string; language: string;
-  is_published: boolean | null;
-  features: any; thumbnail_url: string | null;
-  slug: string | null;
-  intro_video_url: string | null; certificate_image_url: string | null;
-  gallery_urls: any;
-  enrollment_capacity: number | null; enrolled_count: number;
-  enrollment_status: string;
-  start_date: string | null;
-  schedule_text_vi: string | null; schedule_text: string | null;
-  location_vi: string | null; location: string | null;
-  timeline: any; highlights: any; requirements: any; outcomes: any;
-  faq: any; testimonials: any; custom_fields: any;
-  section_visibility: any;
-}
+type Course = Database["public"]["Tables"]["courses"]["Row"];
 
 const levelConfig: Record<string, { color: string; gradient: string; label: string; kanji: string }> = {
   N5: { color: "text-emerald-600", gradient: "from-emerald-500 to-teal-600", label: "Sơ cấp", kanji: "初" },
@@ -66,12 +45,18 @@ const defaultVis = {
   faq: true, related: true, enrollment: true, certificate: true, custom: true,
 };
 
+type CourseDetailTeacher = Database["public"]["Tables"]["teacher_profiles"]["Row"];
+
+type CourseTeacherLink = Pick<Database["public"]["Tables"]["course_teachers"]["Row"], "teacher_id">;
+
+type TeacherPreview = Pick<CourseDetailTeacher, "id" | "display_name" | "image_url" | "bio_vi" | "slug" | "experience_years">;
+
 const CourseDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [lessonCount, setLessonCount] = useState(0);
-  const [teachers, setTeachers] = useState<Array<{ id: string; display_name: string | null; image_url: string | null; bio_vi: string | null; slug: string | null; experience_years: number | null }>>([]);
+  const [teachers, setTeachers] = useState<TeacherPreview[]>([]);
   const [related, setRelated] = useState<Course[]>([]);
 
   useEffect(() => {
@@ -81,21 +66,21 @@ const CourseDetail = () => {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
       const q = supabase.from("courses").select("*").eq("is_published", true);
       const { data } = isUuid ? await q.eq("id", slug).maybeSingle() : await q.eq("slug", slug).maybeSingle();
-      setCourse(data as any);
+      setCourse(data);
 
       if (data) {
         const { count } = await supabase.from("lessons").select("*", { count: "exact", head: true }).eq("level", data.level).eq("is_published", true);
         setLessonCount(count || 0);
 
-        const { data: ct } = await (supabase as any).from("course_teachers").select("teacher_id").eq("course_id", data.id);
-        const teacherIds = (ct || []).map((c: any) => c.teacher_id as string);
+        const { data: ct } = await supabase.from("course_teachers").select("teacher_id").eq("course_id", data.id) as { data: CourseTeacherLink[] | null };
+        const teacherIds = (ct || []).map((c) => c.teacher_id);
         if (teacherIds.length > 0) {
-          const { data: tData } = await supabase.from("teacher_profiles").select("id, display_name, image_url, bio_vi, slug, experience_years").in("id", teacherIds);
+          const { data: tData } = await supabase.from("teacher_profiles").select("id, display_name, image_url, bio_vi, slug, experience_years").in("id", teacherIds) as { data: TeacherPreview[] | null };
           setTeachers(tData || []);
         } else { setTeachers([]); }
 
         const { data: relData } = await supabase.from("courses").select("*").eq("is_published", true).eq("language", data.language).neq("id", data.id).limit(3);
-        setRelated((relData || []) as any);
+        setRelated(relData || []);
       }
       setLoading(false);
     };
@@ -103,16 +88,39 @@ const CourseDetail = () => {
   }, [slug]);
 
   const config = course ? levelConfig[course.level] || levelConfig.N5 : levelConfig.N5;
-  const features: string[] = Array.isArray(course?.features) ? course.features : [];
-  const highlights: string[] = Array.isArray(course?.highlights) ? course.highlights : [];
-  const outcomes: string[] = Array.isArray(course?.outcomes) ? course.outcomes : [];
-  const requirements: string[] = Array.isArray(course?.requirements) ? course.requirements : [];
-  const timeline: Array<{ week: string; title: string; description: string }> = Array.isArray(course?.timeline) ? course.timeline : [];
-  const faq: Array<{ q: string; a: string }> = Array.isArray(course?.faq) ? course.faq : [];
-  const testimonials: Array<{ name: string; role: string; content: string; avatar: string }> = Array.isArray(course?.testimonials) ? course.testimonials : [];
-  const customFields: Array<{ label: string; value: string; icon?: string }> = Array.isArray(course?.custom_fields) ? course.custom_fields : [];
-  const gallery: string[] = Array.isArray(course?.gallery_urls) ? course.gallery_urls : [];
-  const vis = { ...defaultVis, ...(course?.section_visibility || {}) };
+  const features: string[] = Array.isArray(course?.features)
+    ? course.features.filter((item): item is string => typeof item === "string")
+    : [];
+  const highlights: string[] = Array.isArray(course?.highlights)
+    ? course.highlights.filter((item): item is string => typeof item === "string")
+    : [];
+  const outcomes: string[] = Array.isArray(course?.outcomes)
+    ? course.outcomes.filter((item): item is string => typeof item === "string")
+    : [];
+  const requirements: string[] = Array.isArray(course?.requirements)
+    ? course.requirements.filter((item): item is string => typeof item === "string")
+    : [];
+  const timeline: Array<{ week?: string | null; title?: string | null; description?: string | null }> = Array.isArray(course?.timeline)
+    ? course.timeline.filter((item): item is { week?: string | null; title?: string | null; description?: string | null } => item !== null && typeof item === "object")
+    : [];
+  const faq: Array<{ q: string; a: string }> = Array.isArray(course?.faq)
+    ? course.faq.filter((item): item is { q: string; a: string } => item !== null && typeof item === "object" && !Array.isArray(item) && typeof (item as Record<string, unknown>).q === "string" && typeof (item as Record<string, unknown>).a === "string")
+    : [];
+  const testimonials: Array<{ name: string; role: string; content: string; avatar: string }> = Array.isArray(course?.testimonials)
+    ? course.testimonials.filter((item): item is { name: string; role: string; content: string; avatar: string } => item !== null && typeof item === "object" && !Array.isArray(item) && typeof (item as Record<string, unknown>).name === "string" && typeof (item as Record<string, unknown>).role === "string" && typeof (item as Record<string, unknown>).content === "string" && typeof (item as Record<string, unknown>).avatar === "string")
+    : [];
+  const customFields: Array<{ label: string; value: string; icon?: string }> = Array.isArray(course?.custom_fields)
+    ? course.custom_fields.filter((item): item is { label: string; value: string; icon?: string } => item !== null && typeof item === "object" && !Array.isArray(item) && typeof (item as Record<string, unknown>).label === "string" && typeof (item as Record<string, unknown>).value === "string")
+    : [];
+  const gallery: string[] = Array.isArray(course?.gallery_urls)
+    ? course.gallery_urls.filter((item): item is string => typeof item === "string")
+    : [];
+  const vis = {
+    ...defaultVis,
+    ...(course?.section_visibility && typeof course.section_visibility === "object"
+      ? (course.section_visibility as Record<string, boolean>)
+      : {}),
+  };
 
   const discount = course?.original_price && course.original_price > course.price
     ? Math.round(((course.original_price - course.price) / course.original_price) * 100) : 0;

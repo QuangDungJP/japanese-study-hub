@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, X, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
-import defaultBotImage from "@/assets/chatbot-robot.png";
+import defaultBotImage from "@/assets/chatbot-robot.webp";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -40,12 +40,20 @@ const FloatingChat = () => {
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    if (open && messages.length === 0 && config) {
-      const welcome = config.content?.welcome_message || "Xin chào 👋 Mình là Q-Bot. Bạn cần hỗ trợ gì?";
-      setMessages([{ role: "assistant", content: welcome }]);
-    }
-  }, [open, config]);
+ useEffect(() => {
+  if (open && messages.length === 0 && config) {
+    const welcome =
+      config.content?.welcome_message ||
+      "Xin chào 👋 Mình là Q-Bot. Bạn cần hỗ trợ gì?";
+
+    setMessages([
+      {
+        role: "assistant",
+        content: welcome,
+      },
+    ]);
+  }
+}, [open, config, messages.length]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
