@@ -11,7 +11,7 @@ import {
 import { useTeacherProfiles } from "@/hooks/useTeachers";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import courseDefaultImg from "@/assets/course-default-jp.jpg";
+import courseDefaultImg from "@/assets/course-default-jp.webp";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useHomepageSections } from "@/hooks/useHomepageSections";
 
