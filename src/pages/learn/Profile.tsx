@@ -62,7 +62,7 @@ const ProfilePage = () => {
           .from('teacher_profiles')
           .select('*')
           .eq('user_id', user!.id)
-          .single();
+          .maybeSingle();
 
         if (tData) {
           setTeacherProfile({
