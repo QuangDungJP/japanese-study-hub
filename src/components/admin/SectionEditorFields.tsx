@@ -249,9 +249,57 @@ const MediaField = ({
 const HeroEditor = ({ content, onChange }: { content: Record<string, any>; onChange: (c: Record<string, any>) => void }) => {
   const update = (key: string, value: string) => onChange({ ...content, [key]: value });
   const features = (content.features as string[]) || [];
+  const customFields = (content.custom_fields as Array<{ label: string; value: string }>) || [];
+  const [courses, setCourses] = useState<Array<{ id: string; title: string; level: string | null; slug: string | null }>>([]);
+
+  useEffect(() => {
+    supabase
+      .from("courses")
+      .select("id,title,level,slug")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setCourses((data as any) || []));
+  }, []);
 
   return (
     <div className="space-y-4">
+      <h3 className="font-semibold text-foreground">Nút CTA</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Nút chính - Nội dung</Label>
+          <Input value={content.cta_primary_label || ""} onChange={(e) => update("cta_primary_label", e.target.value)} placeholder="Học miễn phí ngay" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Nút chính - Link</Label>
+          <Input value={content.cta_primary_url || ""} onChange={(e) => update("cta_primary_url", e.target.value)} placeholder="/auth" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Nút phụ - Nội dung</Label>
+          <Input value={content.cta_secondary_label || ""} onChange={(e) => update("cta_secondary_label", e.target.value)} placeholder="Xem khóa học" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Nút phụ - Link</Label>
+          <Input value={content.cta_secondary_url || ""} onChange={(e) => update("cta_secondary_url", e.target.value)} placeholder="/khoa-hoc" />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Khóa học nổi bật (hiển thị ở card bên phải)</Label>
+        <select
+          value={content.featured_course_id || ""}
+          onChange={(e) => update("featured_course_id", e.target.value)}
+          className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+        >
+          <option value="">— Tự động (khóa nổi bật / mới nhất) —</option>
+          {courses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.title}{c.level ? ` • ${c.level}` : ""}
+            </option>
+          ))}
+        </select>
+        <p className="text-[11px] text-muted-foreground">Nút "Bắt đầu học" trên card sẽ trỏ đến khóa này.</p>
+      </div>
+
       <h3 className="font-semibold text-foreground">Thống kê Hero</h3>
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1">
@@ -278,7 +326,7 @@ const HeroEditor = ({ content, onChange }: { content: Record<string, any>; onCha
         </div>
       </div>
       <div className="space-y-2">
-        <Label className="text-xs">Tính năng nổi bật</Label>
+        <Label className="text-xs">Tính năng nổi bật (ghi đè danh sách lấy từ khóa học)</Label>
         {features.map((f, i) => (
           <div key={i} className="flex gap-2">
             <Input value={f} onChange={(e) => {
@@ -294,6 +342,42 @@ const HeroEditor = ({ content, onChange }: { content: Record<string, any>; onCha
         <Button variant="outline" size="sm" onClick={() => onChange({ ...content, features: [...features, ""] })}>
           <Plus className="w-3 h-3 mr-1" /> Thêm
         </Button>
+      </div>
+
+      <div className="space-y-2 pt-2 border-t border-border">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Trường tự tạo (Label / Value)</Label>
+          <Button variant="outline" size="sm" onClick={() => onChange({ ...content, custom_fields: [...customFields, { label: "", value: "" }] })}>
+            <Plus className="w-3 h-3 mr-1" /> Thêm trường
+          </Button>
+        </div>
+        {customFields.map((field, i) => (
+          <div key={i} className="flex gap-2">
+            <Input
+              placeholder="Nhãn"
+              value={field.label}
+              onChange={(e) => {
+                const next = [...customFields];
+                next[i] = { ...next[i], label: e.target.value };
+                onChange({ ...content, custom_fields: next });
+              }}
+              className="w-1/3"
+            />
+            <Input
+              placeholder="Giá trị"
+              value={field.value}
+              onChange={(e) => {
+                const next = [...customFields];
+                next[i] = { ...next[i], value: e.target.value };
+                onChange({ ...content, custom_fields: next });
+              }}
+            />
+            <Button variant="ghost" size="icon" onClick={() => onChange({ ...content, custom_fields: customFields.filter((_, j) => j !== i) })}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+        <p className="text-[11px] text-muted-foreground">Các trường này sẽ hiển thị dưới phần thống kê.</p>
       </div>
     </div>
   );
