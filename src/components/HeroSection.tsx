@@ -34,7 +34,7 @@ const HeroSection = () => {
     queryFn: async () => {
       let query = supabase
         .from("courses")
-        .select("id,title,slug,level,price,original_price,features,short_description,image_url")
+        .select("id,title,title_vi,slug,level,price,original_price,features,subtitle,subtitle_vi,thumbnail_url")
         .eq("is_published", true)
         .limit(1);
       if (featuredCourseId) {
@@ -74,10 +74,10 @@ const HeroSection = () => {
   const courseHref = heroCourse
     ? `/khoa-hoc/${heroCourse.slug || heroCourse.id}`
     : "/khoa-hoc";
-  const cardTitle = heroCourse?.title || "Tiếng Nhật";
-  const cardSubtitle = heroCourse?.short_description
+  const cardTitle = heroCourse?.title_vi || heroCourse?.title || "Tiếng Nhật";
+  const cardSubtitle = heroCourse?.subtitle_vi || heroCourse?.subtitle
     || (heroCourse?.level ? `JLPT ${heroCourse.level} • Giao tiếp • Thương mại` : "JLPT N5 - N1 • Giao tiếp • Thương mại");
-  const cardImage = heroCourse?.image_url || heroContent?.image_url;
+  const cardImage = heroCourse?.thumbnail_url || heroContent?.image_url;
 
   if (isLoading) {
     return (
