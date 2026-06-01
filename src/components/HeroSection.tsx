@@ -3,6 +3,11 @@ import { Play, Sparkles, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAllWebsiteContent } from "@/hooks/useWebsiteContent";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(price);
 
 const HeroSection = () => {
   const { data: content, isLoading } = useAllWebsiteContent();
@@ -15,7 +20,32 @@ const HeroSection = () => {
     features?: string[];
     rating?: string;
     reviews?: string;
+    cta_primary_label?: string;
+    cta_primary_url?: string;
+    cta_secondary_label?: string;
+    cta_secondary_url?: string;
+    featured_course_id?: string;
+    custom_fields?: Array<{ label: string; value: string }>;
   } | null;
+
+  const featuredCourseId = statsContent?.featured_course_id;
+  const { data: heroCourse } = useQuery({
+    queryKey: ["hero-course", featuredCourseId],
+    queryFn: async () => {
+      let query = supabase
+        .from("courses")
+        .select("id,title,title_vi,slug,level,price,original_price,features,subtitle,subtitle_vi,thumbnail_url")
+        .eq("is_published", true)
+        .limit(1);
+      if (featuredCourseId) {
+        query = query.eq("id", featuredCourseId);
+      } else {
+        query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
+      }
+      const { data } = await query.maybeSingle();
+      return data as any;
+    },
+  });
 
   // Default values
   const title = heroContent?.title_vi || "Chinh phục Tiếng Nhật cùng chúng tôi";
@@ -26,13 +56,28 @@ const HeroSection = () => {
   const students = statsContent?.students || "50K+";
   const teachers = statsContent?.teachers || "200+";
   const lessons = statsContent?.lessons || "1000+";
-  const features = statsContent?.features || [
-    "Lộ trình JLPT chuẩn",
-    "Kanji & Hiragana từ cơ bản",
-    "Giáo viên bản ngữ Nhật"
-  ];
+  const courseFeatures = Array.isArray(heroCourse?.features) ? (heroCourse!.features as string[]) : [];
+  const features = (statsContent?.features && statsContent.features.length > 0)
+    ? statsContent.features
+    : (courseFeatures.length > 0
+      ? courseFeatures.slice(0, 3)
+      : ["Lộ trình JLPT chuẩn", "Kanji & Hiragana từ cơ bản", "Giáo viên bản ngữ Nhật"]);
   const rating = statsContent?.rating || "4.9";
   const reviews = statsContent?.reviews || "2.5k đánh giá";
+  const customFields = statsContent?.custom_fields || [];
+
+  const primaryLabel = statsContent?.cta_primary_label || "Học miễn phí ngay";
+  const primaryUrl = statsContent?.cta_primary_url || "/auth";
+  const secondaryLabel = statsContent?.cta_secondary_label || "Xem khóa học";
+  const secondaryUrl = statsContent?.cta_secondary_url || "/khoa-hoc";
+
+  const courseHref = heroCourse
+    ? `/khoa-hoc/${heroCourse.slug || heroCourse.id}`
+    : "/khoa-hoc";
+  const cardTitle = heroCourse?.title_vi || heroCourse?.title || "Tiếng Nhật";
+  const cardSubtitle = heroCourse?.subtitle_vi || heroCourse?.subtitle
+    || (heroCourse?.level ? `JLPT ${heroCourse.level} • Giao tiếp • Thương mại` : "JLPT N5 - N1 • Giao tiếp • Thương mại");
+  const cardImage = heroCourse?.thumbnail_url || heroContent?.image_url;
 
   if (isLoading) {
     return (
@@ -93,14 +138,16 @@ const HeroSection = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up animation-delay-300">
               <Button variant="hero" size="xl" asChild>
-                <Link to="/auth">
+                <Link to={primaryUrl}>
                   <Sparkles className="w-5 h-5" />
-                  Học miễn phí ngay
+                  {primaryLabel}
                 </Link>
               </Button>
-              <Button variant="outline" size="xl">
-                <Play className="w-5 h-5" />
-                Xem demo
+              <Button variant="outline" size="xl" asChild>
+                <Link to={secondaryUrl}>
+                  <Play className="w-5 h-5" />
+                  {secondaryLabel}
+                </Link>
               </Button>
             </div>
 
@@ -118,6 +165,12 @@ const HeroSection = () => {
                 <div className="text-3xl font-bold text-foreground">{lessons}</div>
                 <div className="text-sm text-muted-foreground">Bài học</div>
               </div>
+              {customFields.filter((f) => f.label || f.value).map((f, i) => (
+                <div key={i} className="text-center">
+                  <div className="text-3xl font-bold text-foreground">{f.value}</div>
+                  <div className="text-sm text-muted-foreground">{f.label}</div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -126,10 +179,10 @@ const HeroSection = () => {
             <div className="relative w-full max-w-md mx-auto">
               {/* Main Japanese Card */}
               <div className="bg-card rounded-3xl p-8 shadow-card-hover border border-border animate-float">
-                {heroContent?.image_url ? (
-                  <img 
-                    src={heroContent.image_url} 
-                    alt="Japanese Learning" 
+                {cardImage ? (
+                  <img
+                    src={cardImage}
+                    alt={cardTitle}
                     className="w-16 h-16 rounded-2xl object-cover mb-6"
                   />
                 ) : (
@@ -137,8 +190,16 @@ const HeroSection = () => {
                     <span className="text-4xl">🇯🇵</span>
                   </div>
                 )}
-                <h3 className="text-2xl font-bold text-foreground mb-2">Tiếng Nhật</h3>
-                <p className="text-muted-foreground mb-4">JLPT N5 - N1 • Giao tiếp • Thương mại</p>
+                <h3 className="text-2xl font-bold text-foreground mb-2 line-clamp-2">{cardTitle}</h3>
+                <p className="text-muted-foreground mb-4 line-clamp-2">{cardSubtitle}</p>
+                {heroCourse?.price != null && (
+                  <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-2xl font-extrabold text-foreground">{formatPrice(Number(heroCourse.price))}</span>
+                    {heroCourse.original_price && heroCourse.original_price > heroCourse.price && (
+                      <span className="text-sm text-muted-foreground line-through">{formatPrice(Number(heroCourse.original_price))}</span>
+                    )}
+                  </div>
+                )}
                 
                 {/* Features */}
                 <div className="space-y-3 mb-6">
@@ -163,13 +224,13 @@ const HeroSection = () => {
                   <span className="text-sm text-muted-foreground">({reviews})</span>
                 </div>
 
-                {/* Progress indicator */}
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full w-0 bg-japanese rounded-full animate-pulse" />
-                  </div>
-                  <span className="text-sm font-medium text-muted-foreground">Bắt đầu học</span>
-                </div>
+                {/* CTA to real course */}
+                <Button variant="hero" className="w-full" asChild>
+                  <Link to={courseHref}>
+                    <Sparkles className="w-4 h-4" />
+                    Bắt đầu học
+                  </Link>
+                </Button>
               </div>
 
               {/* Decorative elements */}
