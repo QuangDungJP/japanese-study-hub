@@ -335,6 +335,12 @@ const TeacherLessons = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="exams">
+          <ExamManager />
+        </TabsContent>
+      </Tabs>
 
       {/* Lesson Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
