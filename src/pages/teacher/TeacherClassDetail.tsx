@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Trash2, Upload, Link2, ExternalLink, Star, Flame, CalendarClock, GraduationCap, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Trash2, Upload, Link2, ExternalLink, Star, Flame, CalendarClock, GraduationCap, CalendarDays, Search, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
 
@@ -33,6 +33,11 @@ const TeacherClassDetail = () => {
   const [aOpen, setAOpen] = useState(false);
   const [aForm, setAForm] = useState({ title: '', description: '', link_url: '', file_url: '', start_at: '', due_date: '', lesson_id: '' });
   const [uploading, setUploading] = useState(false);
+
+  // Add student dialog
+  const [addOpen, setAddOpen] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [searchUser, setSearchUser] = useState('');
 
   useEffect(() => { if (id) fetchAll(); }, [id]);
 
@@ -91,6 +96,25 @@ const TeacherClassDetail = () => {
     if (!confirm('Xóa học viên khỏi lớp?')) return;
     const { error } = await supabase.from('class_students').delete().eq('class_id', id!).eq('student_id', sid);
     if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    fetchAll();
+  };
+
+  const openAddStudent = async () => {
+    setAddOpen(true);
+    setSearchUser('');
+    const existingIds = students.map((s: any) => s.student_id);
+    const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'user');
+    const candidateIds = (roles || []).map((r: any) => r.user_id).filter((u: string) => !existingIds.includes(u));
+    if (candidateIds.length === 0) { setAvailableUsers([]); return; }
+    const { data: profs } = await supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', candidateIds);
+    setAvailableUsers(profs || []);
+  };
+
+  const addStudent = async (uid: string) => {
+    const { error } = await supabase.from('class_students').insert({ class_id: id, student_id: uid, status: 'active' });
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    toast({ title: 'Đã thêm học viên vào lớp' });
+    setAvailableUsers((prev) => prev.filter((u) => u.user_id !== uid));
     fetchAll();
   };
 
@@ -178,6 +202,12 @@ const TeacherClassDetail = () => {
         </TabsList>
 
         <TabsContent value="students" className="mt-4">
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-sm text-muted-foreground">Quản lý học viên ({students.length}/{cls.max_students})</p>
+            <Button size="sm" onClick={openAddStudent} disabled={students.length >= cls.max_students}>
+              <UserPlus className="w-4 h-4 mr-1" />Thêm học viên
+            </Button>
+          </div>
           <Card><CardContent className="p-0">
             <Table>
               <TableHeader><TableRow>
@@ -355,6 +385,36 @@ const TeacherClassDetail = () => {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAOpen(false)}>Hủy</Button>
             <Button onClick={saveAssignment} disabled={uploading}>Tạo bài tập</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add student dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Thêm học viên vào lớp</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input value={searchUser} onChange={(e) => setSearchUser(e.target.value)} placeholder="Tìm theo tên..." className="pl-9" />
+            </div>
+            <div className="max-h-80 overflow-y-auto space-y-2">
+              {availableUsers.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-6">Không có học viên khả dụng</p>
+              ) : availableUsers
+                .filter((u) => !searchUser || (u.full_name || '').toLowerCase().includes(searchUser.toLowerCase()))
+                .map((u) => (
+                  <div key={u.user_id} className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/40">
+                    <span className="text-sm">{u.full_name || 'Học viên'}</span>
+                    <Button size="sm" variant="outline" onClick={() => addStudent(u.user_id)}>
+                      <Plus className="w-3 h-3 mr-1" />Thêm
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddOpen(false)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
