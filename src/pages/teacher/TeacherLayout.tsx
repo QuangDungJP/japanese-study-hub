@@ -23,7 +23,7 @@ const navSections = [
   {
     label: 'Giảng dạy',
     items: [
-      { name: 'Bài học', href: '/teacher/lessons', icon: BookOpen },
+      { name: 'Bài học & Kiểm tra', href: '/teacher/lessons', icon: BookOpen },
       { name: 'Lớp học', href: '/teacher/classes', icon: Users },
       { name: 'Chấm bài', href: '/teacher/submissions', icon: FileText },
       { name: 'Điểm danh', href: '/teacher/attendance', icon: ClipboardCheck },
@@ -33,7 +33,7 @@ const navSections = [
     label: 'Lịch trình',
     items: [
       { name: 'Lịch Zoom', href: '/teacher/zoom', icon: Video },
-      { name: 'Lịch & Kiểm tra', href: '/teacher/calendar', icon: Calendar },
+      { name: 'Lịch & Nghỉ phép', href: '/teacher/calendar', icon: Calendar },
     ],
   },
   {

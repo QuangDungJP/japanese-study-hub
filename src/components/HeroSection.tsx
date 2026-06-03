@@ -26,6 +26,9 @@ const HeroSection = () => {
     cta_secondary_url?: string;
     featured_course_id?: string;
     custom_fields?: Array<{ label: string; value: string }>;
+    background_image_url?: string;
+    background_overlay?: string | number;
+    background_position?: string;
   } | null;
 
   const featuredCourseId = statsContent?.featured_course_id;
@@ -79,6 +82,11 @@ const HeroSection = () => {
     || (heroCourse?.level ? `JLPT ${heroCourse.level} • Giao tiếp • Thương mại` : "JLPT N5 - N1 • Giao tiếp • Thương mại");
   const cardImage = heroCourse?.thumbnail_url || heroContent?.image_url;
 
+  const bgImage = statsContent?.background_image_url;
+  const overlayRaw = statsContent?.background_overlay;
+  const overlayPct = Math.max(0, Math.min(100, Number(overlayRaw ?? 60))) / 100;
+  const bgPos = statsContent?.background_position || "center";
+
   if (isLoading) {
     return (
       <section className="relative min-h-screen bg-gradient-hero pt-20 overflow-hidden">
@@ -104,6 +112,22 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen bg-gradient-hero pt-20 overflow-hidden">
+      {/* Custom background image */}
+      {bgImage && (
+        <>
+          <img
+            src={bgImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: bgPos }}
+            loading="eager"
+          />
+          <div
+            className="absolute inset-0 bg-background"
+            style={{ opacity: overlayPct }}
+          />
+        </>
+      )}
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-72 h-72 bg-japanese/10 rounded-full blur-3xl animate-float" />
