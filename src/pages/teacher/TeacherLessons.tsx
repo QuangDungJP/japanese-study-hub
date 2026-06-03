@@ -26,6 +26,9 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import LessonEditor from '@/components/teacher/LessonEditor';
 import LessonExercises from '@/components/admin/LessonExercises';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExamManager } from '@/components/calendar/ExamManager';
+import { FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
