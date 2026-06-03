@@ -180,22 +180,38 @@ const TeacherLessons = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Bài học của tôi</h1>
-          <p className="text-muted-foreground mt-1">
-            {isSeniorTeacher 
-              ? 'Bạn có thể tự xuất bản bài học' 
-              : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
-          </p>
-        </div>
-        <Button onClick={() => openEditor()} variant="hero">
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo bài học
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Không gian giảng dạy</h1>
+        <p className="text-muted-foreground mt-1">
+          Quản lý bài học và bài kiểm tra ở cùng một nơi
+        </p>
       </div>
 
-      <Card>
+      <Tabs defaultValue="lessons" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="lessons" className="gap-2">
+            <BookOpen className="w-4 h-4" />
+            Bài học
+          </TabsTrigger>
+          <TabsTrigger value="exams" className="gap-2">
+            <FileText className="w-4 h-4" />
+            Bài kiểm tra
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="lessons" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              {isSeniorTeacher
+                ? 'Bạn có thể tự xuất bản bài học'
+                : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
+            </p>
+            <Button onClick={() => openEditor()} variant="hero">
+              <Plus className="w-4 h-4 mr-2" />
+              Tạo bài học
+            </Button>
+          </div>
+          <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5" />
