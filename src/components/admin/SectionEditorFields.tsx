@@ -263,6 +263,42 @@ const HeroEditor = ({ content, onChange }: { content: Record<string, any>; onCha
 
   return (
     <div className="space-y-4">
+      <h3 className="font-semibold text-foreground">Ảnh nền / Cover Hero</h3>
+      <MediaField
+        label="Ảnh nền Hero (hiển thị mờ phía sau nội dung, tự động responsive)"
+        value={content.background_image_url || ""}
+        onChange={(url) => update("background_image_url", url)}
+        accept="image"
+        bucket="website-assets"
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Độ mờ overlay (0-100)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            value={content.background_overlay ?? 60}
+            onChange={(e) => update("background_overlay", e.target.value)}
+            placeholder="60"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Vị trí ảnh</Label>
+          <select
+            value={content.background_position || "center"}
+            onChange={(e) => update("background_position", e.target.value)}
+            className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+          >
+            <option value="center">Giữa</option>
+            <option value="top">Trên</option>
+            <option value="bottom">Dưới</option>
+            <option value="left">Trái</option>
+            <option value="right">Phải</option>
+          </select>
+        </div>
+      </div>
+
       <h3 className="font-semibold text-foreground">Nút CTA</h3>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
