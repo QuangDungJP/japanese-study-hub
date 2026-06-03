@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { 
   BookOpen, Plus, Edit, Clock, Send, Dumbbell, 
-  Image, Film, MoreHorizontal, Eye
+  Image, Film, MoreHorizontal, Eye, Layers, FileText, GraduationCap
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -28,7 +28,6 @@ import LessonEditor from '@/components/teacher/LessonEditor';
 import LessonExercises from '@/components/admin/LessonExercises';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExamManager } from '@/components/calendar/ExamManager';
-import { FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
