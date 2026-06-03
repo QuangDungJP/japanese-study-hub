@@ -179,43 +179,44 @@ const TeacherLessons = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Không gian giảng dạy</h1>
-        <p className="text-muted-foreground mt-1">
-          Quản lý bài học và bài kiểm tra ở cùng một nơi
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Không gian giảng dạy</h1>
+          <p className="text-muted-foreground mt-1">
+            Tạo bài học, quản lý module bài tập và bài kiểm tra ở cùng một nơi
+          </p>
+        </div>
+        <Button onClick={() => openEditor()} variant="hero">
+          <Plus className="w-4 h-4 mr-2" />
+          Tạo bài học
+        </Button>
       </div>
 
-      <Tabs defaultValue="lessons" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+      <Tabs defaultValue="lessons" className="space-y-4">
+        <TabsList className="flex-wrap h-auto justify-start">
           <TabsTrigger value="lessons" className="gap-2">
-            <BookOpen className="w-4 h-4" />
-            Bài học
+            <BookOpen className="w-4 h-4" />Bài học
+          </TabsTrigger>
+          <TabsTrigger value="modules" className="gap-2">
+            <Layers className="w-4 h-4" />Module bài tập
           </TabsTrigger>
           <TabsTrigger value="exams" className="gap-2">
-            <FileText className="w-4 h-4" />
-            Bài kiểm tra
+            <GraduationCap className="w-4 h-4" />Bài kiểm tra
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="lessons" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">
-              {isSeniorTeacher
-                ? 'Bạn có thể tự xuất bản bài học'
-                : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
-            </p>
-            <Button onClick={() => openEditor()} variant="hero">
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo bài học
-            </Button>
-          </div>
+        <TabsContent value="lessons" className="space-y-4 mt-4">
           <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5" />
             Danh sách bài học ({lessons.length})
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {isSeniorTeacher
+              ? 'Bạn có thể tự xuất bản bài học'
+              : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
+          </p>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -336,8 +337,66 @@ const TeacherLessons = () => {
       </Card>
         </TabsContent>
 
-        <TabsContent value="exams">
-          <ExamManager />
+        <TabsContent value="modules" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="w-5 h-5" />
+                Module bài tập theo bài học
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Chọn một bài học để quản lý các module / bài tập bên trong.</p>
+            </CardHeader>
+            <CardContent>
+              {lessons.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Layers className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p>Chưa có bài học nào. Hãy tạo bài học trước khi thêm module.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {lessons.map((l) => {
+                    const skill = getSkillInfo(l.skill);
+                    return (
+                      <button
+                        key={l.id}
+                        onClick={() => setExercisesLesson(l)}
+                        className="text-left rounded-xl border border-border/60 bg-card hover:border-primary/50 hover:shadow-md transition-all p-4 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Badge className={skill.color}>{skill.icon} {skill.label}</Badge>
+                          <Badge variant="outline">{l.level}</Badge>
+                        </div>
+                        <h4 className="font-semibold line-clamp-2">{l.title_vi || l.title}</h4>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />{l.duration_minutes} phút
+                          <span>•</span>
+                          <span>{l.is_published ? 'Đã xuất bản' : 'Nháp'}</span>
+                        </div>
+                        <div className="pt-1 text-primary text-sm font-medium flex items-center gap-1">
+                          <Dumbbell className="w-3 h-3" />Mở module bài tập →
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="exams" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5" />
+                Bài kiểm tra
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Tạo, lên lịch và theo dõi các bài kiểm tra cho lớp của bạn.</p>
+            </CardHeader>
+            <CardContent>
+              <ExamManager />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
