@@ -26,6 +26,9 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import LessonEditor from '@/components/teacher/LessonEditor';
 import LessonExercises from '@/components/admin/LessonExercises';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExamManager } from '@/components/calendar/ExamManager';
+import { FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -177,22 +180,38 @@ const TeacherLessons = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Bài học của tôi</h1>
-          <p className="text-muted-foreground mt-1">
-            {isSeniorTeacher 
-              ? 'Bạn có thể tự xuất bản bài học' 
-              : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
-          </p>
-        </div>
-        <Button onClick={() => openEditor()} variant="hero">
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo bài học
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Không gian giảng dạy</h1>
+        <p className="text-muted-foreground mt-1">
+          Quản lý bài học và bài kiểm tra ở cùng một nơi
+        </p>
       </div>
 
-      <Card>
+      <Tabs defaultValue="lessons" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="lessons" className="gap-2">
+            <BookOpen className="w-4 h-4" />
+            Bài học
+          </TabsTrigger>
+          <TabsTrigger value="exams" className="gap-2">
+            <FileText className="w-4 h-4" />
+            Bài kiểm tra
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="lessons" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              {isSeniorTeacher
+                ? 'Bạn có thể tự xuất bản bài học'
+                : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
+            </p>
+            <Button onClick={() => openEditor()} variant="hero">
+              <Plus className="w-4 h-4 mr-2" />
+              Tạo bài học
+            </Button>
+          </div>
+          <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5" />
@@ -316,6 +335,12 @@ const TeacherLessons = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="exams">
+          <ExamManager />
+        </TabsContent>
+      </Tabs>
 
       {/* Lesson Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
