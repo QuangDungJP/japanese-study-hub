@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { 
   BookOpen, Plus, Edit, Clock, Send, Dumbbell, 
-  Image, Film, MoreHorizontal, Eye, Layers, FileText, GraduationCap
+  Image, Film, MoreHorizontal, Eye, Layers, FileText, GraduationCap, FolderOpen
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -28,6 +28,7 @@ import LessonEditor from '@/components/teacher/LessonEditor';
 import LessonExercises from '@/components/admin/LessonExercises';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExamManager } from '@/components/calendar/ExamManager';
+import MaterialsManager from '@/components/teacher/MaterialsManager';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -199,6 +200,9 @@ const TeacherLessons = () => {
           </TabsTrigger>
           <TabsTrigger value="modules" className="gap-2">
             <Layers className="w-4 h-4" />Module bài tập
+          </TabsTrigger>
+          <TabsTrigger value="materials" className="gap-2">
+            <FolderOpen className="w-4 h-4" />Tài liệu
           </TabsTrigger>
           <TabsTrigger value="exams" className="gap-2">
             <GraduationCap className="w-4 h-4" />Bài kiểm tra
@@ -397,6 +401,10 @@ const TeacherLessons = () => {
               <ExamManager />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="materials" className="mt-4">
+          <MaterialsManager lessons={lessons.map(l => ({ id: l.id, title: l.title, title_vi: l.title_vi }))} />
         </TabsContent>
       </Tabs>
 
