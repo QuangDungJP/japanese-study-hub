@@ -1058,6 +1058,59 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_attempts: {
+        Row: {
+          answers: Json
+          created_at: string
+          exam_id: string
+          id: string
+          score: number | null
+          started_at: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          time_spent_seconds: number
+          total: number | null
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          exam_id: string
+          id?: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+          time_spent_seconds?: number
+          total?: number | null
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          exam_id?: string
+          id?: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
+          time_spent_seconds?: number
+          total?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_attempts_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_registrations: {
         Row: {
           created_at: string
@@ -1101,19 +1154,27 @@ export type Database = {
           description_vi: string | null
           duration_minutes: number
           end_time: string | null
+          ends_at: string | null
           exam_date: string
           exam_type: string
           id: string
+          instructions: string | null
           is_published: boolean | null
           location: string | null
+          lock_after_end: boolean
+          max_attempts: number
           max_score: number | null
           meet_link: string | null
           passing_score: number | null
+          questions: Json
+          shuffle_questions: boolean
           start_time: string
+          starts_at: string | null
           teacher_id: string
           title: string
           title_vi: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           class_id?: string | null
@@ -1122,19 +1183,27 @@ export type Database = {
           description_vi?: string | null
           duration_minutes?: number
           end_time?: string | null
+          ends_at?: string | null
           exam_date: string
           exam_type?: string
           id?: string
+          instructions?: string | null
           is_published?: boolean | null
           location?: string | null
+          lock_after_end?: boolean
+          max_attempts?: number
           max_score?: number | null
           meet_link?: string | null
           passing_score?: number | null
+          questions?: Json
+          shuffle_questions?: boolean
           start_time: string
+          starts_at?: string | null
           teacher_id: string
           title: string
           title_vi: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           class_id?: string | null
@@ -1143,19 +1212,27 @@ export type Database = {
           description_vi?: string | null
           duration_minutes?: number
           end_time?: string | null
+          ends_at?: string | null
           exam_date?: string
           exam_type?: string
           id?: string
+          instructions?: string | null
           is_published?: boolean | null
           location?: string | null
+          lock_after_end?: boolean
+          max_attempts?: number
           max_score?: number | null
           meet_link?: string | null
           passing_score?: number | null
+          questions?: Json
+          shuffle_questions?: boolean
           start_time?: string
+          starts_at?: string | null
           teacher_id?: string
           title?: string
           title_vi?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -1303,6 +1380,69 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      lesson_materials: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          description: string | null
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          is_published: boolean
+          lesson_id: string | null
+          order_index: number
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_size?: number | null
+          file_type?: string
+          file_url: string
+          id?: string
+          is_published?: boolean
+          lesson_id?: string | null
+          order_index?: number
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          is_published?: boolean
+          lesson_id?: string | null
+          order_index?: number
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_materials_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_materials_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lessons: {
         Row: {

@@ -58,6 +58,7 @@ const Settings = lazy(() => import("./pages/learn/Settings"));
 const Profile = lazy(() => import("./pages/learn/Profile"));
 const MyClasses = lazy(() => import("./pages/learn/MyClasses"));
 const StudentClassDetail = lazy(() => import("./pages/learn/StudentClassDetail"));
+const ExamRunner = lazy(() => import("./pages/learn/ExamRunner"));
 
 /* =========================
    ADMIN
@@ -143,6 +144,8 @@ const App = () => {
                     <Route path="/huong-dan" element={<UserGuide />} />
                     <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />
                     <Route path="/dieu-khoan" element={<Terms />} />
+
+                    <Route path="/learn/exams/:id" element={<ExamRunner />} />
 
                     {/* STUDENT */}
                     <Route path="/learn" element={<LearningLayout />}>
