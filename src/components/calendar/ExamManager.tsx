@@ -102,6 +102,8 @@ export const ExamManager = () => {
   const [attempts, setAttempts] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'upcoming' | 'open' | 'closed'>('all');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'reviewed' | 'needs_revision'>('all');
+  const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({});
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -213,7 +215,7 @@ export const ExamManager = () => {
     setAttemptsExam(exam);
     const { data } = await supabase
       .from('exam_attempts')
-      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at, student_comment, attachment_url, attachment_name, video_url')
+      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at, student_comment, attachment_url, attachment_name, video_url, review_status, teacher_feedback, reviewed_at')
       .eq('exam_id', exam.id).order('submitted_at', { ascending: false });
     let rows: any[] = data || [];
     if (rows.length) {
@@ -223,6 +225,25 @@ export const ExamManager = () => {
       rows = rows.map((r) => ({ ...r, full_name: map.get(r.student_id) || 'Học viên' }));
     }
     setAttempts(rows);
+    const drafts: Record<string, string> = {};
+    rows.forEach((r) => { drafts[r.id] = r.teacher_feedback || ''; });
+    setFeedbackDraft(drafts);
+  };
+
+  const updateReview = async (attemptId: string, review_status: 'pending' | 'reviewed' | 'needs_revision') => {
+    const teacher_feedback = feedbackDraft[attemptId] ?? null;
+    const { error } = await supabase.from('exam_attempts').update({
+      review_status, teacher_feedback, reviewed_at: review_status === 'pending' ? null : new Date().toISOString(),
+    }).eq('id', attemptId);
+    if (error) { toast.error('Không lưu được', { description: error.message }); return; }
+    toast.success('Đã cập nhật trạng thái');
+    setAttempts((arr) => arr.map((a) => a.id === attemptId ? { ...a, review_status, teacher_feedback, reviewed_at: new Date().toISOString() } : a));
+  };
+
+  const reviewBadge = (s?: string) => {
+    if (s === 'reviewed') return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30">Đã chấm</Badge>;
+    if (s === 'needs_revision') return <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30">Cần sửa</Badge>;
+    return <Badge variant="outline">Chưa chấm</Badge>;
   };
 
   const updateQuestion = (i: number, patch: Partial<Question>) =>
@@ -553,11 +574,23 @@ export const ExamManager = () => {
       <Dialog open={!!attemptsExam} onOpenChange={() => setAttemptsExam(null)}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Bài làm – {attemptsExam?.title_vi}</DialogTitle></DialogHeader>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">Lọc chấm bài:</span>
+            <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as any)}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="pending">Chưa chấm</SelectItem>
+                <SelectItem value="reviewed">Đã chấm</SelectItem>
+                <SelectItem value="needs_revision">Cần sửa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {attempts.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Chưa có học viên làm bài.</p>
           ) : (
             <div className="space-y-2">
-              {attempts.map((a) => (
+              {attempts.filter((a) => reviewFilter === 'all' ? true : (a.review_status || 'pending') === reviewFilter).map((a) => (
                 <div key={a.id} className="p-3 rounded-lg border space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="min-w-0">
@@ -571,6 +604,7 @@ export const ExamManager = () => {
                       <Badge variant={a.status === 'auto_submitted' ? 'destructive' : a.status === 'in_progress' ? 'outline' : 'default'}>
                         {a.status === 'in_progress' ? 'Đang làm' : a.status === 'auto_submitted' ? 'Hết giờ' : 'Đã nộp'}
                       </Badge>
+                      {reviewBadge(a.review_status)}
                       {a.score != null && <span className="font-bold text-primary">{a.score}/{a.total}</span>}
                     </div>
                   </div>
@@ -587,6 +621,34 @@ export const ExamManager = () => {
                           <a href={a.video_url} target="_blank" rel="noreferrer" className="text-primary underline">
                             🎬 Video trả lời
                           </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {a.status !== 'in_progress' && (
+                    <div className="space-y-2 pt-1 border-t">
+                      <Textarea
+                        rows={2}
+                        placeholder="Nhận xét của giáo viên..."
+                        value={feedbackDraft[a.id] ?? ''}
+                        onChange={(e) => setFeedbackDraft((d) => ({ ...d, [a.id]: e.target.value }))}
+                      />
+                      <div className="flex gap-2 flex-wrap">
+                        <Button size="sm" variant="outline" onClick={() => updateReview(a.id, 'reviewed')}>
+                          ✓ Đã chấm
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-amber-600 border-amber-500/30" onClick={() => updateReview(a.id, 'needs_revision')}>
+                          ↺ Cần sửa
+                        </Button>
+                        {a.review_status && a.review_status !== 'pending' && (
+                          <Button size="sm" variant="ghost" onClick={() => updateReview(a.id, 'pending')}>
+                            Đặt lại Chưa chấm
+                          </Button>
+                        )}
+                        {a.reviewed_at && (
+                          <span className="text-xs text-muted-foreground ml-auto self-center">
+                            Chấm: {new Date(a.reviewed_at).toLocaleString('vi-VN')}
+                          </span>
                         )}
                       </div>
                     </div>

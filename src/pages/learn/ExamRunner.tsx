@@ -225,6 +225,7 @@ const ExamRunner = () => {
             <h2 className="text-2xl font-bold">{passed ? "Chúc mừng!" : "Đã nộp bài"}</h2>
             <p className="text-4xl font-extrabold text-primary">{result.score}/{result.total}</p>
             <p className="text-muted-foreground">Điểm đạt yêu cầu: {passing}</p>
+            <p className="text-sm text-muted-foreground">Giáo viên sẽ chấm và phản hồi sớm. Bạn có thể xem trạng thái trong mục bài kiểm tra.</p>
             <Button onClick={() => navigate("/learn")}>Về trang học tập</Button>
           </CardContent>
         </Card>
