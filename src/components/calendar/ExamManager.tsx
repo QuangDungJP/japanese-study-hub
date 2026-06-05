@@ -574,11 +574,23 @@ export const ExamManager = () => {
       <Dialog open={!!attemptsExam} onOpenChange={() => setAttemptsExam(null)}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Bài làm – {attemptsExam?.title_vi}</DialogTitle></DialogHeader>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">Lọc chấm bài:</span>
+            <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as any)}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="pending">Chưa chấm</SelectItem>
+                <SelectItem value="reviewed">Đã chấm</SelectItem>
+                <SelectItem value="needs_revision">Cần sửa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {attempts.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Chưa có học viên làm bài.</p>
           ) : (
             <div className="space-y-2">
-              {attempts.map((a) => (
+              {attempts.filter((a) => reviewFilter === 'all' ? true : (a.review_status || 'pending') === reviewFilter).map((a) => (
                 <div key={a.id} className="p-3 rounded-lg border space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="min-w-0">
@@ -592,6 +604,7 @@ export const ExamManager = () => {
                       <Badge variant={a.status === 'auto_submitted' ? 'destructive' : a.status === 'in_progress' ? 'outline' : 'default'}>
                         {a.status === 'in_progress' ? 'Đang làm' : a.status === 'auto_submitted' ? 'Hết giờ' : 'Đã nộp'}
                       </Badge>
+                      {reviewBadge(a.review_status)}
                       {a.score != null && <span className="font-bold text-primary">{a.score}/{a.total}</span>}
                     </div>
                   </div>
@@ -608,6 +621,34 @@ export const ExamManager = () => {
                           <a href={a.video_url} target="_blank" rel="noreferrer" className="text-primary underline">
                             🎬 Video trả lời
                           </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {a.status !== 'in_progress' && (
+                    <div className="space-y-2 pt-1 border-t">
+                      <Textarea
+                        rows={2}
+                        placeholder="Nhận xét của giáo viên..."
+                        value={feedbackDraft[a.id] ?? ''}
+                        onChange={(e) => setFeedbackDraft((d) => ({ ...d, [a.id]: e.target.value }))}
+                      />
+                      <div className="flex gap-2 flex-wrap">
+                        <Button size="sm" variant="outline" onClick={() => updateReview(a.id, 'reviewed')}>
+                          ✓ Đã chấm
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-amber-600 border-amber-500/30" onClick={() => updateReview(a.id, 'needs_revision')}>
+                          ↺ Cần sửa
+                        </Button>
+                        {a.review_status && a.review_status !== 'pending' && (
+                          <Button size="sm" variant="ghost" onClick={() => updateReview(a.id, 'pending')}>
+                            Đặt lại Chưa chấm
+                          </Button>
+                        )}
+                        {a.reviewed_at && (
+                          <span className="text-xs text-muted-foreground ml-auto self-center">
+                            Chấm: {new Date(a.reviewed_at).toLocaleString('vi-VN')}
+                          </span>
                         )}
                       </div>
                     </div>
