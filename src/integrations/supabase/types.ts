@@ -1066,12 +1066,15 @@ export type Database = {
           created_at: string
           exam_id: string
           id: string
+          review_status: string
+          reviewed_at: string | null
           score: number | null
           started_at: string
           status: string
           student_comment: string | null
           student_id: string
           submitted_at: string | null
+          teacher_feedback: string | null
           time_spent_seconds: number
           total: number | null
           updated_at: string
@@ -1084,12 +1087,15 @@ export type Database = {
           created_at?: string
           exam_id: string
           id?: string
+          review_status?: string
+          reviewed_at?: string | null
           score?: number | null
           started_at?: string
           status?: string
           student_comment?: string | null
           student_id: string
           submitted_at?: string | null
+          teacher_feedback?: string | null
           time_spent_seconds?: number
           total?: number | null
           updated_at?: string
@@ -1102,12 +1108,15 @@ export type Database = {
           created_at?: string
           exam_id?: string
           id?: string
+          review_status?: string
+          reviewed_at?: string | null
           score?: number | null
           started_at?: string
           status?: string
           student_comment?: string | null
           student_id?: string
           submitted_at?: string | null
+          teacher_feedback?: string | null
           time_spent_seconds?: number
           total?: number | null
           updated_at?: string

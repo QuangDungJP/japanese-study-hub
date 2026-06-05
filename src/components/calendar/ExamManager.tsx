@@ -102,6 +102,8 @@ export const ExamManager = () => {
   const [attempts, setAttempts] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'upcoming' | 'open' | 'closed'>('all');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'reviewed' | 'needs_revision'>('all');
+  const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({});
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -213,7 +215,7 @@ export const ExamManager = () => {
     setAttemptsExam(exam);
     const { data } = await supabase
       .from('exam_attempts')
-      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at, student_comment, attachment_url, attachment_name, video_url')
+      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at, student_comment, attachment_url, attachment_name, video_url, review_status, teacher_feedback, reviewed_at')
       .eq('exam_id', exam.id).order('submitted_at', { ascending: false });
     let rows: any[] = data || [];
     if (rows.length) {
@@ -223,6 +225,25 @@ export const ExamManager = () => {
       rows = rows.map((r) => ({ ...r, full_name: map.get(r.student_id) || 'Học viên' }));
     }
     setAttempts(rows);
+    const drafts: Record<string, string> = {};
+    rows.forEach((r) => { drafts[r.id] = r.teacher_feedback || ''; });
+    setFeedbackDraft(drafts);
+  };
+
+  const updateReview = async (attemptId: string, review_status: 'pending' | 'reviewed' | 'needs_revision') => {
+    const teacher_feedback = feedbackDraft[attemptId] ?? null;
+    const { error } = await supabase.from('exam_attempts').update({
+      review_status, teacher_feedback, reviewed_at: review_status === 'pending' ? null : new Date().toISOString(),
+    }).eq('id', attemptId);
+    if (error) { toast.error('Không lưu được', { description: error.message }); return; }
+    toast.success('Đã cập nhật trạng thái');
+    setAttempts((arr) => arr.map((a) => a.id === attemptId ? { ...a, review_status, teacher_feedback, reviewed_at: new Date().toISOString() } : a));
+  };
+
+  const reviewBadge = (s?: string) => {
+    if (s === 'reviewed') return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30">Đã chấm</Badge>;
+    if (s === 'needs_revision') return <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30">Cần sửa</Badge>;
+    return <Badge variant="outline">Chưa chấm</Badge>;
   };
 
   const updateQuestion = (i: number, patch: Partial<Question>) =>
