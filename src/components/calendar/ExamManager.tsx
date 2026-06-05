@@ -100,6 +100,8 @@ export const ExamManager = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [attemptsExam, setAttemptsExam] = useState<Exam | null>(null);
   const [attempts, setAttempts] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'upcoming' | 'open' | 'closed'>('all');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -211,7 +213,7 @@ export const ExamManager = () => {
     setAttemptsExam(exam);
     const { data } = await supabase
       .from('exam_attempts')
-      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at')
+      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at, student_comment, attachment_url, attachment_name, video_url')
       .eq('exam_id', exam.id).order('submitted_at', { ascending: false });
     let rows: any[] = data || [];
     if (rows.length) {
@@ -247,6 +249,23 @@ export const ExamManager = () => {
     return <Badge className="bg-emerald-500/10 text-emerald-600">Đang mở</Badge>;
   };
 
+  const examStatus = (e: Exam): 'draft' | 'upcoming' | 'open' | 'closed' => {
+    const now = Date.now();
+    if (!e.is_published) return 'draft';
+    if (e.starts_at && new Date(e.starts_at).getTime() > now) return 'upcoming';
+    if (e.ends_at && new Date(e.ends_at).getTime() < now) return 'closed';
+    return 'open';
+  };
+
+  const examTime = (e: Exam) => {
+    if (e.starts_at) return new Date(e.starts_at).getTime();
+    return new Date(`${e.exam_date}T${e.start_time || '00:00'}`).getTime();
+  };
+
+  const visibleExams = exams
+    .filter((e) => statusFilter === 'all' ? true : examStatus(e) === statusFilter)
+    .sort((a, b) => sortOrder === 'desc' ? examTime(b) - examTime(a) : examTime(a) - examTime(b));
+
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
@@ -259,15 +278,38 @@ export const ExamManager = () => {
         <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Tạo mới</Button>
       </div>
 
-      {exams.length === 0 ? (
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm text-muted-foreground">Trạng thái:</span>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả</SelectItem>
+            <SelectItem value="draft">Nháp</SelectItem>
+            <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
+            <SelectItem value="open">Đang mở</SelectItem>
+            <SelectItem value="closed">Đã đóng</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-muted-foreground ml-2">Sắp xếp:</span>
+        <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
+          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="desc">Mới nhất trước</SelectItem>
+            <SelectItem value="asc">Cũ nhất trước</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground ml-auto">{visibleExams.length}/{exams.length} bài</span>
+      </div>
+
+      {visibleExams.length === 0 ? (
         <Card><CardContent className="py-12 text-center">
           <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-lg mb-2">Chưa có bài kiểm tra</h3>
-          <p className="text-muted-foreground">Tạo bài kiểm tra mới để bắt đầu</p>
+          <h3 className="font-semibold text-lg mb-2">{exams.length === 0 ? 'Chưa có bài kiểm tra' : 'Không có bài kiểm tra phù hợp bộ lọc'}</h3>
+          <p className="text-muted-foreground">{exams.length === 0 ? 'Tạo bài kiểm tra mới để bắt đầu' : 'Thử đổi bộ lọc trạng thái'}</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-4">
-          {exams.map((exam) => (
+          {visibleExams.map((exam) => (
             <Card key={exam.id} className="hover:shadow-md transition">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -516,20 +558,39 @@ export const ExamManager = () => {
           ) : (
             <div className="space-y-2">
               {attempts.map((a) => (
-                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{a.full_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {a.submitted_at ? `Nộp lúc ${new Date(a.submitted_at).toLocaleString('vi-VN')}` : 'Đang làm bài'}
-                      {a.time_spent_seconds ? ` • ${Math.floor(a.time_spent_seconds / 60)}p ${a.time_spent_seconds % 60}s` : ''}
-                    </p>
+                <div key={a.id} className="p-3 rounded-lg border space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="font-medium">{a.full_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.submitted_at ? `Nộp lúc ${new Date(a.submitted_at).toLocaleString('vi-VN')}` : 'Đang làm bài'}
+                        {a.time_spent_seconds ? ` • ${Math.floor(a.time_spent_seconds / 60)}p ${a.time_spent_seconds % 60}s` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={a.status === 'auto_submitted' ? 'destructive' : a.status === 'in_progress' ? 'outline' : 'default'}>
+                        {a.status === 'in_progress' ? 'Đang làm' : a.status === 'auto_submitted' ? 'Hết giờ' : 'Đã nộp'}
+                      </Badge>
+                      {a.score != null && <span className="font-bold text-primary">{a.score}/{a.total}</span>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={a.status === 'auto_submitted' ? 'destructive' : a.status === 'in_progress' ? 'outline' : 'default'}>
-                      {a.status === 'in_progress' ? 'Đang làm' : a.status === 'auto_submitted' ? 'Hết giờ' : 'Đã nộp'}
-                    </Badge>
-                    {a.score != null && <span className="font-bold text-primary">{a.score}/{a.total}</span>}
-                  </div>
+                  {(a.student_comment || a.attachment_url || a.video_url) && (
+                    <div className="rounded-md bg-muted/40 p-2 text-sm space-y-1">
+                      {a.student_comment && <p className="whitespace-pre-wrap">{a.student_comment}</p>}
+                      <div className="flex gap-3 flex-wrap text-xs">
+                        {a.attachment_url && (
+                          <a href={a.attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                            📎 {a.attachment_name || 'File đính kèm'}
+                          </a>
+                        )}
+                        {a.video_url && (
+                          <a href={a.video_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                            🎬 Video trả lời
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -1061,45 +1061,57 @@ export type Database = {
       exam_attempts: {
         Row: {
           answers: Json
+          attachment_name: string | null
+          attachment_url: string | null
           created_at: string
           exam_id: string
           id: string
           score: number | null
           started_at: string
           status: string
+          student_comment: string | null
           student_id: string
           submitted_at: string | null
           time_spent_seconds: number
           total: number | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           answers?: Json
+          attachment_name?: string | null
+          attachment_url?: string | null
           created_at?: string
           exam_id: string
           id?: string
           score?: number | null
           started_at?: string
           status?: string
+          student_comment?: string | null
           student_id: string
           submitted_at?: string | null
           time_spent_seconds?: number
           total?: number | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           answers?: Json
+          attachment_name?: string | null
+          attachment_url?: string | null
           created_at?: string
           exam_id?: string
           id?: string
           score?: number | null
           started_at?: string
           status?: string
+          student_comment?: string | null
           student_id?: string
           submitted_at?: string | null
           time_spent_seconds?: number
           total?: number | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {

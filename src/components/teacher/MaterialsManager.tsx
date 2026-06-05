@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import DocumentViewer from "./DocumentViewer";
 import {
   FileText, Upload, Trash2, Eye, FileType2, Presentation, FileSpreadsheet,
-  File as FileIcon, Loader2, Plus,
+  File as FileIcon, Loader2, Plus, ArrowUp, ArrowDown, RefreshCw,
 } from "lucide-react";
 
 interface Material {
@@ -24,6 +24,7 @@ interface Material {
   lesson_id: string | null;
   class_id: string | null;
   created_at: string;
+  order_index: number | null;
 }
 
 interface LessonRef { id: string; title_vi: string | null; title: string }
@@ -49,6 +50,8 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
   const [newTitle, setNewTitle] = useState("");
   const [linkLessonId, setLinkLessonId] = useState<string>("none");
   const inputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -57,6 +60,7 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
       .from("lesson_materials")
       .select("*")
       .eq("teacher_id", user.id)
+      .order("order_index", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false });
     if (error) toast({ title: "Lỗi", description: error.message, variant: "destructive" });
     setItems((data as Material[]) || []);
@@ -74,6 +78,7 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
       const { error: upErr } = await supabase.storage.from("lesson-assets").upload(path, file);
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("lesson-assets").getPublicUrl(path);
+      const nextOrder = (items.reduce((m, it) => Math.max(m, it.order_index || 0), 0) || 0) + 1;
       const { error: insErr } = await supabase.from("lesson_materials").insert({
         teacher_id: user.id,
         title: newTitle || file.name,
@@ -81,6 +86,7 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
         file_type: ext,
         file_size: file.size,
         lesson_id: linkLessonId === "none" ? null : linkLessonId,
+        order_index: nextOrder,
       });
       if (insErr) throw insErr;
       toast({ title: "Đã tải lên", description: file.name });
@@ -92,6 +98,45 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
     }
+  };
+
+  const handleReplace = async (m: Material, file: File) => {
+    if (!user) return;
+    setUploading(true);
+    try {
+      const ext = detectType(file.name);
+      const path = `materials/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("lesson-assets").upload(path, file);
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("lesson-assets").getPublicUrl(path);
+      const { error: updErr } = await supabase.from("lesson_materials").update({
+        file_url: publicUrl, file_type: ext, file_size: file.size,
+      }).eq("id", m.id);
+      if (updErr) throw updErr;
+      toast({ title: "Đã thay thế", description: file.name });
+      load();
+    } catch (e: any) {
+      toast({ title: "Lỗi thay thế", description: e.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      setReplacingId(null);
+      if (replaceInputRef.current) replaceInputRef.current.value = "";
+    }
+  };
+
+  const move = async (m: Material, direction: -1 | 1) => {
+    const sorted = [...filtered].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    const idx = sorted.findIndex((x) => x.id === m.id);
+    const swapIdx = idx + direction;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= sorted.length) return;
+    const other = sorted[swapIdx];
+    const a = m.order_index ?? idx + 1;
+    const b = other.order_index ?? swapIdx + 1;
+    await Promise.all([
+      supabase.from("lesson_materials").update({ order_index: b }).eq("id", m.id),
+      supabase.from("lesson_materials").update({ order_index: a }).eq("id", other.id),
+    ]);
+    load();
   };
 
   const remove = async (m: Material) => {
@@ -160,14 +205,17 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => (
+            {filtered.map((m, idx) => (
               <div key={m.id} className="rounded-xl border bg-card p-4 hover:shadow-md transition-all flex flex-col gap-3">
                 <div className="flex items-start gap-3">
                   <div className="w-11 h-11 rounded-lg bg-muted flex items-center justify-center shrink-0">
                     {iconFor(m.file_type)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold truncate">{m.title}</p>
+                    <p className="font-semibold truncate">
+                      <span className="text-xs text-muted-foreground mr-1">#{idx + 1}</span>
+                      {m.title}
+                    </p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Badge variant="outline" className="uppercase text-[10px]">{m.file_type}</Badge>
                       {m.file_size && (
@@ -175,10 +223,21 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
                       )}
                     </div>
                   </div>
+                  <div className="flex flex-col">
+                    <Button size="icon" variant="ghost" className="h-6 w-6" disabled={idx === 0} onClick={() => move(m, -1)}>
+                      <ArrowUp className="w-3 h-3" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" disabled={idx === filtered.length - 1} onClick={() => move(m, 1)}>
+                      <ArrowDown className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-auto">
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => setPreview(m)}>
                     <Eye className="w-3.5 h-3.5 mr-1" /> Xem
+                  </Button>
+                  <Button size="sm" variant="ghost" title="Thay thế file" onClick={() => { setReplacingId(m.id); replaceInputRef.current?.click(); }}>
+                    <RefreshCw className="w-4 h-4" />
                   </Button>
                   <Button size="sm" variant="ghost" className="text-destructive" onClick={() => remove(m)}>
                     <Trash2 className="w-4 h-4" />
@@ -188,6 +247,18 @@ const MaterialsManager = ({ lessons }: { lessons: LessonRef[] }) => {
             ))}
           </div>
         )}
+
+        <input
+          ref={replaceInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            const target = items.find((i) => i.id === replacingId);
+            if (f && target) handleReplace(target, f);
+          }}
+        />
 
         <Dialog open={!!preview} onOpenChange={() => setPreview(null)}>
           <DialogContent className="max-w-5xl">
