@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, CheckCircle2, AlertTriangle, Loader2, Trophy, Lock } from "lucide-react";
+import { Clock, CheckCircle2, AlertTriangle, Loader2, Trophy, Lock, Paperclip, Video as VideoIcon, MessageSquare, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Question {
   id?: string;
@@ -57,6 +60,10 @@ const ExamRunner = () => {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ score: number; total: number } | null>(null);
   const [locked, setLocked] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [attachment, setAttachment] = useState<{ url: string; name: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const submittedRef = useRef(false);
 
   const orderedQuestions = useMemo(() => {
@@ -111,6 +118,9 @@ const ExamRunner = () => {
           (full.answers as any[]).forEach((v, i) => { if (typeof v === "number") map[i] = v; });
           setAnswers(map);
         }
+        if (full?.student_comment) setComment(full.student_comment);
+        if (full?.video_url) setVideoUrl(full.video_url);
+        if (full?.attachment_url) setAttachment({ url: full.attachment_url, name: full.attachment_name || "Tệp đính kèm" });
       } else {
         const { data: ins, error: insErr } = await supabase.from("exam_attempts").insert({
           exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString(),
@@ -159,10 +169,32 @@ const ExamRunner = () => {
       submitted_at: new Date().toISOString(),
       status: auto ? "auto_submitted" : "submitted",
       score, total, answers: answersArr, time_spent_seconds: time_spent,
+      student_comment: comment || null,
+      video_url: videoUrl || null,
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
     }).eq("id", attemptId);
     setResult({ score, total });
     setSubmitting(false);
     toast({ title: auto ? "Hết giờ, đã tự nộp" : "Đã nộp bài", description: `Điểm: ${score}/${total}` });
+  };
+
+  const handleAttachment = async (file: File) => {
+    if (!user) return;
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+      const path = `exam-submissions/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("lesson-assets").upload(path, file);
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("lesson-assets").getPublicUrl(path);
+      setAttachment({ url: publicUrl, name: file.name });
+      toast({ title: "Đã tải lên", description: file.name });
+    } catch (e: any) {
+      toast({ title: "Lỗi tải lên", description: e.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
@@ -269,6 +301,48 @@ const ExamRunner = () => {
             </CardContent>
           </Card>
         ))}
+
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" /> Nhận xét & nộp bổ sung (tùy chọn)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label className="text-sm">Nhận xét / lời nhắn cho giáo viên</Label>
+              <Textarea
+                rows={3}
+                placeholder="Ví dụ: phần câu 5 em chưa chắc, mong cô góp ý..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="text-sm flex items-center gap-1"><VideoIcon className="w-4 h-4" /> Link video trả lời (YouTube, Drive, Loom...)</Label>
+              <Input placeholder="https://..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-sm flex items-center gap-1"><Paperclip className="w-4 h-4" /> File đính kèm</Label>
+              {attachment ? (
+                <div className="flex items-center justify-between rounded-md border p-2 bg-muted/30">
+                  <a href={attachment.url} target="_blank" rel="noreferrer" className="text-sm text-primary truncate">{attachment.name}</a>
+                  <Button type="button" size="icon" variant="ghost" onClick={() => setAttachment(null)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.txt"
+                  disabled={uploading}
+                  onChange={(e) => e.target.files?.[0] && handleAttachment(e.target.files[0])}
+                />
+              )}
+              {uploading && <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Đang tải lên...</p>}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
