@@ -213,7 +213,7 @@ export const ExamManager = () => {
     setAttemptsExam(exam);
     const { data } = await supabase
       .from('exam_attempts')
-      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at')
+      .select('id, student_id, status, score, total, submitted_at, time_spent_seconds, started_at, student_comment, attachment_url, attachment_name, video_url')
       .eq('exam_id', exam.id).order('submitted_at', { ascending: false });
     let rows: any[] = data || [];
     if (rows.length) {
@@ -558,20 +558,39 @@ export const ExamManager = () => {
           ) : (
             <div className="space-y-2">
               {attempts.map((a) => (
-                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{a.full_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {a.submitted_at ? `Nộp lúc ${new Date(a.submitted_at).toLocaleString('vi-VN')}` : 'Đang làm bài'}
-                      {a.time_spent_seconds ? ` • ${Math.floor(a.time_spent_seconds / 60)}p ${a.time_spent_seconds % 60}s` : ''}
-                    </p>
+                <div key={a.id} className="p-3 rounded-lg border space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="font-medium">{a.full_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.submitted_at ? `Nộp lúc ${new Date(a.submitted_at).toLocaleString('vi-VN')}` : 'Đang làm bài'}
+                        {a.time_spent_seconds ? ` • ${Math.floor(a.time_spent_seconds / 60)}p ${a.time_spent_seconds % 60}s` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={a.status === 'auto_submitted' ? 'destructive' : a.status === 'in_progress' ? 'outline' : 'default'}>
+                        {a.status === 'in_progress' ? 'Đang làm' : a.status === 'auto_submitted' ? 'Hết giờ' : 'Đã nộp'}
+                      </Badge>
+                      {a.score != null && <span className="font-bold text-primary">{a.score}/{a.total}</span>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={a.status === 'auto_submitted' ? 'destructive' : a.status === 'in_progress' ? 'outline' : 'default'}>
-                      {a.status === 'in_progress' ? 'Đang làm' : a.status === 'auto_submitted' ? 'Hết giờ' : 'Đã nộp'}
-                    </Badge>
-                    {a.score != null && <span className="font-bold text-primary">{a.score}/{a.total}</span>}
-                  </div>
+                  {(a.student_comment || a.attachment_url || a.video_url) && (
+                    <div className="rounded-md bg-muted/40 p-2 text-sm space-y-1">
+                      {a.student_comment && <p className="whitespace-pre-wrap">{a.student_comment}</p>}
+                      <div className="flex gap-3 flex-wrap text-xs">
+                        {a.attachment_url && (
+                          <a href={a.attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                            📎 {a.attachment_name || 'File đính kèm'}
+                          </a>
+                        )}
+                        {a.video_url && (
+                          <a href={a.video_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                            🎬 Video trả lời
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
