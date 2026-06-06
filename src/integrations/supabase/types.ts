@@ -1666,6 +1666,13 @@ export type Database = {
           created_at: string
           display_name: string
           display_name_vi: string
+          hero_badge_vi: string | null
+          hero_cta_primary_label: string | null
+          hero_cta_primary_url: string | null
+          hero_cta_secondary_label: string | null
+          hero_cta_secondary_url: string | null
+          hero_image_url: string | null
+          hero_overlay: number | null
           hero_subtitle: string | null
           hero_subtitle_vi: string | null
           hero_title: string | null
@@ -1684,6 +1691,13 @@ export type Database = {
           created_at?: string
           display_name: string
           display_name_vi: string
+          hero_badge_vi?: string | null
+          hero_cta_primary_label?: string | null
+          hero_cta_primary_url?: string | null
+          hero_cta_secondary_label?: string | null
+          hero_cta_secondary_url?: string | null
+          hero_image_url?: string | null
+          hero_overlay?: number | null
           hero_subtitle?: string | null
           hero_subtitle_vi?: string | null
           hero_title?: string | null
@@ -1702,6 +1716,13 @@ export type Database = {
           created_at?: string
           display_name?: string
           display_name_vi?: string
+          hero_badge_vi?: string | null
+          hero_cta_primary_label?: string | null
+          hero_cta_primary_url?: string | null
+          hero_cta_secondary_label?: string | null
+          hero_cta_secondary_url?: string | null
+          hero_image_url?: string | null
+          hero_overlay?: number | null
           hero_subtitle?: string | null
           hero_subtitle_vi?: string | null
           hero_title?: string | null

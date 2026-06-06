@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { usePageVisibility, PageVisibilitySettings } from '@/hooks/usePageVisibility';
 import { supabase } from '@/integrations/supabase/client';
+import { Slider } from '@/components/ui/slider';
 
 const supportedLanguages = [
   { code: 'english', name: 'English', flag: '🇬🇧', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] },
@@ -143,9 +144,29 @@ const AdminSettings = () => {
           nav_label_vi: p.nav_label_vi,
           hero_title_vi: p.hero_title_vi,
           hero_subtitle_vi: p.hero_subtitle_vi,
+          hero_badge_vi: p.hero_badge_vi ?? null,
+          hero_image_url: p.hero_image_url ?? null,
+          hero_overlay: p.hero_overlay ?? 50,
+          hero_cta_primary_label: p.hero_cta_primary_label ?? null,
+          hero_cta_primary_url: p.hero_cta_primary_url ?? null,
+          hero_cta_secondary_label: p.hero_cta_secondary_label ?? null,
+          hero_cta_secondary_url: p.hero_cta_secondary_url ?? null,
         })
         .eq('id', p.id);
     }
+  };
+
+  const uploadBannerImage = async (id: string, file: File) => {
+    const ext = file.name.split('.').pop();
+    const path = `page-banners/${id}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('website-assets').upload(path, file, { upsert: true });
+    if (error) {
+      toast({ title: 'Lỗi tải ảnh', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const { data: pub } = supabase.storage.from('website-assets').getPublicUrl(path);
+    updatePageSetting(id, 'hero_image_url', pub.publicUrl);
+    toast({ title: 'Đã tải ảnh', description: 'Nhớ bấm Lưu cài đặt' });
   };
 
   const toggleLanguage = (code: string) => {
@@ -369,6 +390,85 @@ const AdminSettings = () => {
                           value={p.hero_subtitle_vi || ''}
                           onChange={(e) => updatePageSetting(p.id, 'hero_subtitle_vi', e.target.value)}
                           rows={2}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-xs font-medium text-muted-foreground">Nhãn Badge phía trên tiêu đề (VI)</label>
+                        <Input
+                          value={p.hero_badge_vi || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'hero_badge_vi', e.target.value)}
+                          placeholder="VD: Đội ngũ giảng viên"
+                        />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Ảnh nền Banner</label>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Input
+                            value={p.hero_image_url || ''}
+                            onChange={(e) => updatePageSetting(p.id, 'hero_image_url', e.target.value)}
+                            placeholder="https://... hoặc tải lên bên cạnh"
+                            className="flex-1"
+                          />
+                          <label className="inline-flex items-center justify-center px-3 py-2 rounded-md border bg-background hover:bg-muted cursor-pointer text-sm">
+                            Tải lên
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) uploadBannerImage(p.id, f);
+                              }}
+                            />
+                          </label>
+                          {p.hero_image_url && (
+                            <Button variant="outline" size="sm" onClick={() => updatePageSetting(p.id, 'hero_image_url', '')}>Xóa</Button>
+                          )}
+                        </div>
+                        {p.hero_image_url && (
+                          <img src={p.hero_image_url} alt="preview" className="mt-2 h-24 w-full object-cover rounded border" />
+                        )}
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground">Độ mờ lớp phủ ({p.hero_overlay ?? 50}%)</label>
+                          <Slider
+                            value={[Number(p.hero_overlay ?? 50)]}
+                            min={0}
+                            max={100}
+                            step={5}
+                            onValueChange={(v) => updatePageSetting(p.id, 'hero_overlay', v[0] as any)}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Nút chính - Nhãn</label>
+                        <Input
+                          value={p.hero_cta_primary_label || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'hero_cta_primary_label', e.target.value)}
+                          placeholder="VD: Đăng ký ngay"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Nút chính - Liên kết</label>
+                        <Input
+                          value={p.hero_cta_primary_url || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'hero_cta_primary_url', e.target.value)}
+                          placeholder="/auth"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Nút phụ - Nhãn</label>
+                        <Input
+                          value={p.hero_cta_secondary_label || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'hero_cta_secondary_label', e.target.value)}
+                          placeholder="VD: Xem khóa học"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Nút phụ - Liên kết</label>
+                        <Input
+                          value={p.hero_cta_secondary_url || ''}
+                          onChange={(e) => updatePageSetting(p.id, 'hero_cta_secondary_url', e.target.value)}
+                          placeholder="/khoa-hoc"
                         />
                       </div>
                     </div>

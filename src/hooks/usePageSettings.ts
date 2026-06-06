@@ -16,6 +16,13 @@ export interface PageSetting {
   show_in_nav: boolean | null;
   order_index: number | null;
   is_active: boolean | null;
+  hero_badge_vi?: string | null;
+  hero_image_url?: string | null;
+  hero_overlay?: number | null;
+  hero_cta_primary_label?: string | null;
+  hero_cta_primary_url?: string | null;
+  hero_cta_secondary_label?: string | null;
+  hero_cta_secondary_url?: string | null;
 }
 
 export const usePageSettings = () => {
