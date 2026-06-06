@@ -22,6 +22,12 @@ const Blog = () => {
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(1);
   const { data: categories = [] } = useBlogCategories();
+  const { data: pageCfg } = usePageSetting('blog');
+  const heroBadge = pageCfg?.hero_badge_vi || 'Blog & Kiến thức';
+  const heroTitle = pageCfg?.hero_title_vi || 'Khám phá kiến thức Tiếng Nhật';
+  const heroSubtitle = pageCfg?.hero_subtitle_vi || 'Chia sẻ mẹo học, ngữ pháp, từ vựng và văn hóa Nhật Bản từ đội ngũ chuyên gia';
+  const heroImage = pageCfg?.hero_image_url;
+  const heroOverlay = Math.max(0, Math.min(100, Number(pageCfg?.hero_overlay ?? 50))) / 100;
 
   // Server-side paginated query
   const { data, isLoading } = useQuery({
