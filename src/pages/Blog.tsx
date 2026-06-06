@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useBlogCategories } from '@/components/admin/BlogCategoryManager';
 import ScrollReveal from '@/components/ScrollReveal';
+import { usePageSetting } from '@/hooks/usePageSettings';
 
 const POSTS_PER_PAGE = 9;
 
@@ -21,6 +22,12 @@ const Blog = () => {
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(1);
   const { data: categories = [] } = useBlogCategories();
+  const { data: pageCfg } = usePageSetting('blog');
+  const heroBadge = pageCfg?.hero_badge_vi || 'Blog & Kiến thức';
+  const heroTitle = pageCfg?.hero_title_vi || 'Khám phá kiến thức Tiếng Nhật';
+  const heroSubtitle = pageCfg?.hero_subtitle_vi || 'Chia sẻ mẹo học, ngữ pháp, từ vựng và văn hóa Nhật Bản từ đội ngũ chuyên gia';
+  const heroImage = pageCfg?.hero_image_url;
+  const heroOverlay = Math.max(0, Math.min(100, Number(pageCfg?.hero_overlay ?? 50))) / 100;
 
   // Server-side paginated query
   const { data, isLoading } = useQuery({
@@ -134,23 +141,44 @@ const Blog = () => {
 
       {/* Hero Section */}
       <section className="relative pt-28 pb-16 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/8 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-10 right-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float animation-delay-200" />
-        </div>
+        {heroImage ? (
+          <>
+            <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-background" style={{ opacity: heroOverlay }} />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-primary/8 rounded-full blur-3xl animate-float" />
+            <div className="absolute bottom-10 right-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float animation-delay-200" />
+          </div>
+        )}
         <div className="container mx-auto px-4 relative z-10">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6 border border-primary/20">
                 <Newspaper className="w-4 h-4" />
-                Blog & Kiến thức
+                {heroBadge}
               </div>
               <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-5 leading-tight">
-                Khám phá <span className="text-primary">kiến thức</span> Tiếng Nhật
+                {heroTitle}
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Chia sẻ mẹo học, ngữ pháp, từ vựng và văn hóa Nhật Bản từ đội ngũ chuyên gia
+                {heroSubtitle}
               </p>
+              {(pageCfg?.hero_cta_primary_label || pageCfg?.hero_cta_secondary_label) && (
+                <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+                  {pageCfg?.hero_cta_primary_label && (
+                    <Button variant="hero" size="lg" asChild>
+                      <Link to={pageCfg.hero_cta_primary_url || '#'}>{pageCfg.hero_cta_primary_label}</Link>
+                    </Button>
+                  )}
+                  {pageCfg?.hero_cta_secondary_label && (
+                    <Button variant="outline" size="lg" asChild>
+                      <Link to={pageCfg.hero_cta_secondary_url || '#'}>{pageCfg.hero_cta_secondary_label}</Link>
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </ScrollReveal>
 
