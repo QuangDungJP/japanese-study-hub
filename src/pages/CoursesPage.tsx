@@ -103,6 +103,13 @@ const CoursesPage = () => {
   const heroTitle = page?.hero_title_vi || "Khóa học Tiếng Nhật toàn diện";
   const heroSubtitle = page?.hero_subtitle_vi || "Từ N5 đến N1 — lộ trình chuẩn JLPT, đồng hành cùng giảng viên bản ngữ và Việt Nam giàu kinh nghiệm";
   const displayName = page?.display_name_vi || "Khóa học";
+  const heroBadge = page?.hero_badge_vi || `${displayName} JLPT N5 → N1`;
+  const heroImage = page?.hero_image_url;
+  const heroOverlay = Math.max(0, Math.min(100, Number(page?.hero_overlay ?? 50))) / 100;
+  const ctaPrimaryLabel = page?.hero_cta_primary_label || "Học thử miễn phí";
+  const ctaPrimaryUrl = page?.hero_cta_primary_url || "/auth";
+  const ctaSecondaryLabel = page?.hero_cta_secondary_label || "Xem tất cả khóa học";
+  const ctaSecondaryUrl = page?.hero_cta_secondary_url || "#all-courses";
 
   const levels = ["all", "N5", "N4", "N3", "N2", "N1"];
 
@@ -112,14 +119,21 @@ const CoursesPage = () => {
 
       {/* HERO */}
       <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-japanese/5 via-background to-primary/5">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-japanese/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        </div>
+        {heroImage ? (
+          <>
+            <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-background" style={{ opacity: heroOverlay }} />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-japanese/5 via-background to-primary/5">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-japanese/10 rounded-full blur-3xl animate-float" />
+            <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+          </div>
+        )}
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-japanese/10 text-japanese text-sm font-semibold mb-6 border border-japanese/20">
-              <Sparkles className="w-4 h-4" /> {displayName} JLPT N5 → N1
+              <Sparkles className="w-4 h-4" /> {heroBadge}
             </span>
             <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-6 leading-tight">
               {heroTitle.includes("Tiếng Nhật") ? (
@@ -135,10 +149,10 @@ const CoursesPage = () => {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button variant="japanese" size="lg" asChild>
-                <Link to="/auth"><GraduationCap className="w-5 h-5 mr-2" /> Học thử miễn phí</Link>
+                <Link to={ctaPrimaryUrl}><GraduationCap className="w-5 h-5 mr-2" /> {ctaPrimaryLabel}</Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <a href="#all-courses">Xem tất cả khóa học</a>
+                <a href={ctaSecondaryUrl}>{ctaSecondaryLabel}</a>
               </Button>
             </div>
 
