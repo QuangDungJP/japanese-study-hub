@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { usePageVisibility, PageVisibilitySettings } from '@/hooks/usePageVisibility';
 import { supabase } from '@/integrations/supabase/client';
+import { Slider } from '@/components/ui/slider';
 
 const supportedLanguages = [
   { code: 'english', name: 'English', flag: '🇬🇧', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] },
@@ -143,9 +144,29 @@ const AdminSettings = () => {
           nav_label_vi: p.nav_label_vi,
           hero_title_vi: p.hero_title_vi,
           hero_subtitle_vi: p.hero_subtitle_vi,
+          hero_badge_vi: p.hero_badge_vi ?? null,
+          hero_image_url: p.hero_image_url ?? null,
+          hero_overlay: p.hero_overlay ?? 50,
+          hero_cta_primary_label: p.hero_cta_primary_label ?? null,
+          hero_cta_primary_url: p.hero_cta_primary_url ?? null,
+          hero_cta_secondary_label: p.hero_cta_secondary_label ?? null,
+          hero_cta_secondary_url: p.hero_cta_secondary_url ?? null,
         })
         .eq('id', p.id);
     }
+  };
+
+  const uploadBannerImage = async (id: string, file: File) => {
+    const ext = file.name.split('.').pop();
+    const path = `page-banners/${id}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('website-assets').upload(path, file, { upsert: true });
+    if (error) {
+      toast({ title: 'Lỗi tải ảnh', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const { data: pub } = supabase.storage.from('website-assets').getPublicUrl(path);
+    updatePageSetting(id, 'hero_image_url', pub.publicUrl);
+    toast({ title: 'Đã tải ảnh', description: 'Nhớ bấm Lưu cài đặt' });
   };
 
   const toggleLanguage = (code: string) => {
