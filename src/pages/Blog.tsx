@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useBlogCategories } from '@/components/admin/BlogCategoryManager';
 import ScrollReveal from '@/components/ScrollReveal';
+import { usePageSetting } from '@/hooks/usePageSettings';
 
 const POSTS_PER_PAGE = 9;
 
