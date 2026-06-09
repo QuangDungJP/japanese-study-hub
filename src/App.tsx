@@ -119,6 +119,7 @@ const App = () => {
               <Sonner />
 
               <BrowserRouter>
+              
                 <FloatingChat />
                 <BackToTop />
 
