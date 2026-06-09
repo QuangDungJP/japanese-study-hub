@@ -13,6 +13,8 @@ import { CalendarDays, Clock, MapPin, Users, Video, ArrowRight, Loader2, Search,
 import { format, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { usePageSetting } from '@/hooks/usePageSettings';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Filter } from 'lucide-react';
 
 const EVENTS_PER_PAGE = 9;
 
@@ -116,41 +118,29 @@ const EventsPage = () => {
             </div>
           </ScrollReveal>
 
-          {/* Search */}
+          {/* Compact Search + Filter */}
           <ScrollReveal delay={100}>
-            <div className="max-w-xl mx-auto mt-8">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <div className="max-w-2xl mx-auto mt-10 flex flex-col sm:flex-row gap-2 items-stretch bg-card/70 backdrop-blur border border-border/60 rounded-2xl p-1.5 shadow-sm">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Tìm sự kiện..."
                   value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-12 h-12 rounded-2xl border-border/50 bg-card text-base shadow-sm"
+                  className="pl-11 h-11 border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm"
                 />
               </div>
-            </div>
-          </ScrollReveal>
-
-          {/* Filter Chips */}
-          <ScrollReveal delay={200}>
-            <div className="flex flex-wrap justify-center gap-2 mt-6">
-              {[
-                { key: 'upcoming' as const, label: 'Sắp diễn ra', count: upcomingCount, icon: Sparkles },
-                { key: 'past' as const, label: 'Đã qua', count: pastCount, icon: CalendarDays },
-                { key: 'all' as const, label: 'Tất cả', count: events.length, icon: CalendarDays },
-              ].map(f => (
-                <button
-                  key={f.key}
-                  onClick={() => handleFilterChange(f.key)}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                    filter === f.key
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {f.label} ({f.count})
-                </button>
-              ))}
+              <Select value={filter} onValueChange={(v) => handleFilterChange(v as typeof filter)}>
+                <SelectTrigger className="h-11 sm:w-52 border-0 bg-muted/50 rounded-xl">
+                  <Filter className="w-4 h-4 mr-1 text-muted-foreground" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="upcoming">Sắp diễn ra ({upcomingCount})</SelectItem>
+                  <SelectItem value="past">Đã qua ({pastCount})</SelectItem>
+                  <SelectItem value="all">Tất cả ({events.length})</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </ScrollReveal>
         </div>
