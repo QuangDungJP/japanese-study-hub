@@ -3,16 +3,31 @@ import Footer from "@/components/Footer";
 import ContactFormSection from "@/components/ContactFormSection";
 import { Mail, Phone, Sparkles } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import { usePageSetting } from "@/hooks/usePageSettings";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Contact = () => {
+  const { data: pageCfg } = usePageSetting('contact');
+  const heroBadge = pageCfg?.hero_badge_vi || 'Tư vấn nhanh chóng • Hỗ trợ tận tâm';
+  const heroTitle = pageCfg?.hero_title_vi;
+  const heroSubtitle = pageCfg?.hero_subtitle_vi;
+  const heroImage = pageCfg?.hero_image_url;
+  const heroOverlay = Math.max(0, Math.min(100, Number(pageCfg?.hero_overlay ?? 50))) / 100;
   return (
     <main className="min-h-screen overflow-hidden bg-background">
       <Navbar />
 
       {/* HERO SECTION */}
       <section className="relative pt-28 md:pt-36 pb-20 md:pb-28 overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-100 via-orange-50 to-background" />
+        {heroImage ? (
+          <>
+            <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-background" style={{ opacity: heroOverlay }} />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-100 via-orange-50 to-background" />
+        )}
 
         {/* Glow Effects */}
         <div className="absolute top-0 left-[-10%] w-[420px] h-[420px] bg-primary/15 rounded-full blur-3xl opacity-60" />
@@ -30,7 +45,7 @@ const Contact = () => {
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-white/70 backdrop-blur-sm shadow-md mb-6">
                   <Sparkles className="w-4 h-4 text-primary" />
                   <span className="text-sm font-semibold text-primary">
-                    Tư vấn nhanh chóng • Hỗ trợ tận tâm
+                    {heroBadge}
                   </span>
                 </div>
 
@@ -74,13 +89,17 @@ const Contact = () => {
                     text-foreground
                   "
                 >
-                  Để lại thông tin
-                  <br />
-                  đăng kí dịch vụ tại
-                  <br />
-                  <span className="text-primary">
-                    TNQDO Education
-                  </span>
+                  {heroTitle ? (
+                    heroTitle
+                  ) : (
+                    <>
+                      Để lại thông tin
+                      <br />
+                      đăng kí dịch vụ tại
+                      <br />
+                      <span className="text-primary">TNQDO Education</span>
+                    </>
+                  )}
                 </h1>
 
                 {/* Description */}
@@ -96,9 +115,22 @@ const Contact = () => {
                     lg:mx-0
                   "
                 >
-                  Bạn vui lòng để lại số điện thoại hoặc Zalo để đội ngũ CSKH
-                  bên mình hỗ trợ tư vấn nhanh nhất nha ✨
+                  {heroSubtitle || 'Bạn vui lòng để lại số điện thoại hoặc Zalo để đội ngũ CSKH bên mình hỗ trợ tư vấn nhanh nhất nha ✨'}
                 </p>
+                {(pageCfg?.hero_cta_primary_label || pageCfg?.hero_cta_secondary_label) && (
+                  <div className="flex flex-wrap gap-3 mt-6 justify-center lg:justify-start">
+                    {pageCfg?.hero_cta_primary_label && (
+                      <Button variant="hero" size="lg" asChild>
+                        <Link to={pageCfg.hero_cta_primary_url || '#'}>{pageCfg.hero_cta_primary_label}</Link>
+                      </Button>
+                    )}
+                    {pageCfg?.hero_cta_secondary_label && (
+                      <Button variant="outline" size="lg" asChild>
+                        <Link to={pageCfg.hero_cta_secondary_url || '#'}>{pageCfg.hero_cta_secondary_label}</Link>
+                      </Button>
+                    )}
+                  </div>
+                )}
 
                 {/* Quick Stats */}
                 <div className="flex flex-wrap justify-center lg:justify-start gap-4 mt-8">
