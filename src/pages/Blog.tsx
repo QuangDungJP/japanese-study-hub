@@ -14,6 +14,8 @@ import { vi } from 'date-fns/locale';
 import { useBlogCategories } from '@/components/admin/BlogCategoryManager';
 import ScrollReveal from '@/components/ScrollReveal';
 import { usePageSetting } from '@/hooks/usePageSettings';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Filter } from 'lucide-react';
 
 const POSTS_PER_PAGE = 9;
 
@@ -182,47 +184,32 @@ const Blog = () => {
             </div>
           </ScrollReveal>
 
-          {/* Search Bar */}
+          {/* Compact Search + Filter */}
           <ScrollReveal delay={100}>
-            <div className="max-w-xl mx-auto mt-8">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <div className="max-w-2xl mx-auto mt-10 flex flex-col sm:flex-row gap-2 items-stretch bg-card/70 backdrop-blur border border-border/60 rounded-2xl p-1.5 shadow-sm">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Tìm bài viết..."
                   value={search}
                   onChange={e => handleSearchChange(e.target.value)}
-                  className="pl-12 h-12 rounded-2xl border-border/50 bg-card text-base shadow-sm focus:shadow-md transition-shadow"
+                  className="pl-11 h-11 border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm"
                 />
               </div>
-            </div>
-          </ScrollReveal>
-
-          {/* Category Chips */}
-          <ScrollReveal delay={200}>
-            <div className="flex flex-wrap justify-center gap-2 mt-6">
-              <button
-                onClick={() => handleCategoryChange('all')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  category === 'all'
-                    ? 'bg-primary text-primary-foreground shadow-md'
-                    : 'bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                Tất cả ({categoryCounts.all || 0})
-              </button>
-              {categories.map(c => (
-                <button
-                  key={c.value}
-                  onClick={() => handleCategoryChange(c.value)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                    category === c.value
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {c.label} ({categoryCounts[c.value] || 0})
-                </button>
-              ))}
+              <Select value={category} onValueChange={handleCategoryChange}>
+                <SelectTrigger className="h-11 sm:w-56 border-0 bg-muted/50 rounded-xl">
+                  <Filter className="w-4 h-4 mr-1 text-muted-foreground" />
+                  <SelectValue placeholder="Danh mục" />
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <SelectItem value="all">Tất cả ({categoryCounts.all || 0})</SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label} ({categoryCounts[c.value] || 0})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </ScrollReveal>
         </div>
