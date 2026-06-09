@@ -689,6 +689,63 @@ const AdminSettings = () => {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="map" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5 text-primary" /> Bản đồ Google Maps trang Liên hệ</CardTitle>
+              <CardDescription>
+                Dán mã nhúng (iframe src) từ Google Maps. Mở <a className="text-primary underline" href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps</a> → tìm địa điểm → Chia sẻ → Nhúng bản đồ → copy nội dung trong thuộc tính <code>src="..."</code>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Embed URL (iframe src)</label>
+                <Textarea
+                  value={mapCms.embed_url}
+                  onChange={(e) => setMapCms(prev => ({ ...prev, embed_url: e.target.value }))}
+                  placeholder="https://www.google.com/maps/embed?pb=..."
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Tiêu đề section</label>
+                  <Input value={mapCms.title} onChange={(e) => setMapCms(p => ({ ...p, title: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Mô tả ngắn</label>
+                  <Input value={mapCms.subtitle} onChange={(e) => setMapCms(p => ({ ...p, subtitle: e.target.value }))} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium">Địa chỉ hiển thị</label>
+                  <Input value={mapCms.address} onChange={(e) => setMapCms(p => ({ ...p, address: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Hotline</label>
+                  <Input value={mapCms.phone} onChange={(e) => setMapCms(p => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Giờ làm việc</label>
+                  <Input value={mapCms.hours} onChange={(e) => setMapCms(p => ({ ...p, hours: e.target.value }))} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium">Link chỉ đường (mở Google Maps)</label>
+                  <Input value={mapCms.directions_url} onChange={(e) => setMapCms(p => ({ ...p, directions_url: e.target.value }))} placeholder="https://www.google.com/maps?q=..." />
+                </div>
+              </div>
+
+              {mapCms.embed_url && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Xem trước</p>
+                  <div className="aspect-[16/9] rounded-xl overflow-hidden border border-border bg-muted">
+                    <iframe src={mapCms.embed_url} className="w-full h-full border-0" loading="lazy" title="map-preview" />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
