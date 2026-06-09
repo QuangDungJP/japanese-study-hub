@@ -7,6 +7,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ScrollReveal from '@/components/ScrollReveal';
+import { usePageSetting } from '@/hooks/usePageSettings';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface FAQ {
   id: string;
@@ -16,6 +19,12 @@ interface FAQ {
 
 const FAQPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: pageCfg } = usePageSetting('faq');
+  const heroBadge = pageCfg?.hero_badge_vi || 'FAQ';
+  const heroTitle = pageCfg?.hero_title_vi || 'Câu hỏi thường gặp';
+  const heroSubtitle = pageCfg?.hero_subtitle_vi || 'Tìm câu trả lời cho những thắc mắc phổ biến về LinguaViet';
+  const heroImage = pageCfg?.hero_image_url;
+  const heroOverlay = Math.max(0, Math.min(100, Number(pageCfg?.hero_overlay ?? 50))) / 100;
 
   const { data: faqs = [], isLoading } = useQuery({
     queryKey: ['faqs-public'],
@@ -43,19 +52,40 @@ const FAQPage = () => {
       
       {/* Hero */}
       <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-50" />
+        {heroImage ? (
+          <>
+            <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-background" style={{ opacity: heroOverlay }} />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-hero opacity-50" />
+        )}
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <HelpCircle className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">FAQ</span>
+              <span className="text-sm font-medium text-primary">{heroBadge}</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Câu hỏi <span className="text-gradient">thường gặp</span>
+              {heroTitle}
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Tìm câu trả lời cho những thắc mắc phổ biến về LinguaViet
+              {heroSubtitle}
             </p>
+            {(pageCfg?.hero_cta_primary_label || pageCfg?.hero_cta_secondary_label) && (
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
+                {pageCfg?.hero_cta_primary_label && (
+                  <Button variant="hero" size="lg" asChild>
+                    <Link to={pageCfg.hero_cta_primary_url || '#'}>{pageCfg.hero_cta_primary_label}</Link>
+                  </Button>
+                )}
+                {pageCfg?.hero_cta_secondary_label && (
+                  <Button variant="outline" size="lg" asChild>
+                    <Link to={pageCfg.hero_cta_secondary_url || '#'}>{pageCfg.hero_cta_secondary_label}</Link>
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="relative max-w-xl mx-auto">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
