@@ -6,6 +6,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { usePageSetting } from "@/hooks/usePageSettings";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import ContactMap from "@/components/ContactMap";
 
 const Contact = () => {
   const { data: pageCfg } = usePageSetting('contact');
@@ -340,6 +341,9 @@ const Contact = () => {
           </div>
         </div>
       </section>
+
+      {/* GOOGLE MAP */}
+      <ContactMap />
 
       <Footer />
     </main>
