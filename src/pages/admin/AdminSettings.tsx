@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit } from 'lucide-react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit, MapPin } from 'lucide-react';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,6 +77,26 @@ const defaultAuthCms: AuthCmsSettings = {
   image_url: '/teachers/quang-dung.png',
 };
 
+interface MapCms {
+  embed_url: string;
+  address: string;
+  phone: string;
+  hours: string;
+  directions_url: string;
+  title: string;
+  subtitle: string;
+}
+
+const defaultMapCms: MapCms = {
+  embed_url: '',
+  address: 'TP. Hồ Chí Minh, Việt Nam',
+  phone: '(+84) 901 189 399',
+  hours: 'Thứ 2 - Chủ nhật: 8:00 - 21:00',
+  directions_url: 'https://www.google.com/maps?q=TNQDO+Education',
+  title: 'Tìm đường đến TNQDO',
+  subtitle: 'Ghé thăm trung tâm, gặp gỡ đội ngũ và trải nghiệm lớp học demo miễn phí.',
+};
+
 const AdminSettings = () => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -84,6 +104,8 @@ const AdminSettings = () => {
   const [localVisibility, setLocalVisibility] = useState<PageVisibilitySettings | null>(null);
   const [authCms, setAuthCms] = useState<AuthCmsSettings>(defaultAuthCms);
   const [authCmsId, setAuthCmsId] = useState<string | null>(null);
+  const [mapCms, setMapCms] = useState<MapCms>(defaultMapCms);
+  const [mapCmsId, setMapCmsId] = useState<string | null>(null);
   const [pageSettingsList, setPageSettingsList] = useState<any[]>([]);
 
   const visibility = localVisibility || pageVisibility;
@@ -116,6 +138,21 @@ const AdminSettings = () => {
               vertical_text: c.vertical_text || defaultAuthCms.vertical_text,
               image_url: data.image_url || c.image_url || defaultAuthCms.image_url,
             });
+          }
+        }
+      });
+
+    supabase
+      .from('website_content')
+      .select('id, content')
+      .eq('section_key', 'contact_map')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setMapCmsId(data.id);
+          if (data.content && typeof data.content === 'object') {
+            const c = data.content as Record<string, string>;
+            setMapCms({ ...defaultMapCms, ...c });
           }
         }
       });
@@ -214,6 +251,20 @@ const AdminSettings = () => {
     }
   };
 
+  const saveMapCms = async () => {
+    const payload = {
+      section_key: 'contact_map',
+      content: { ...mapCms } as any,
+      is_active: true,
+    };
+    if (mapCmsId) {
+      await supabase.from('website_content').update(payload).eq('id', mapCmsId);
+    } else {
+      const { data } = await supabase.from('website_content').insert(payload).select('id').single();
+      if (data) setMapCmsId(data.id);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -222,6 +273,7 @@ const AdminSettings = () => {
       }
       await saveAuthCms();
       await savePageSettings();
+      await saveMapCms();
       toast({ title: 'Thành công', description: 'Đã lưu cài đặt' });
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể lưu cài đặt', variant: 'destructive' });
@@ -243,7 +295,7 @@ const AdminSettings = () => {
       </div>
 
       <Tabs defaultValue="auth" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="auth" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />Trang Auth
           </TabsTrigger>
@@ -252,6 +304,9 @@ const AdminSettings = () => {
           </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />Quản lý trang
+          </TabsTrigger>
+          <TabsTrigger value="map" className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" />Bản đồ
           </TabsTrigger>
           <TabsTrigger value="languages" className="flex items-center gap-2">
             <Globe className="w-4 h-4" />Ngôn ngữ
