@@ -11,6 +11,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 import FloatingChat from "./components/FloatingChat";
+import BackToTop from "./components/BackToTop";
 
 const queryClient = new QueryClient();
 
@@ -119,6 +120,7 @@ const App = () => {
 
               <BrowserRouter>
                 <FloatingChat />
+                <BackToTop />
 
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
