@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { usePageSetting } from "@/hooks/usePageSettings";
 
 interface FAQ {
   id: string;
@@ -47,6 +48,15 @@ const About = () => {
   const [muted, setMuted] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { data: pageCfg } = usePageSetting('about');
+  const heroBadge = pageCfg?.hero_badge_vi || 'Về TNQDO Education';
+  const heroTitle = pageCfg?.hero_title_vi;
+  const heroSubtitle = pageCfg?.hero_subtitle_vi || 'Kết hợp giáo dục hiện đại, công nghệ AI và phương pháp học tập Nhật Bản để giúp người Việt chinh phục tiếng Nhật nhanh hơn, sâu hơn và thực tế hơn.';
+  const heroImage = pageCfg?.hero_image_url;
+  const ctaPrimaryLabel = pageCfg?.hero_cta_primary_label || 'Bắt đầu miễn phí';
+  const ctaPrimaryUrl = pageCfg?.hero_cta_primary_url || '/auth';
+  const ctaSecondaryLabel = pageCfg?.hero_cta_secondary_label || 'Khám phá khóa học';
+  const ctaSecondaryUrl = pageCfg?.hero_cta_secondary_url || '/khoa-hoc';
 
   const location = useLocation();
 
@@ -102,17 +112,21 @@ const About = () => {
 
       {/* HERO */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* VIDEO */}
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/videos/about-hero.mp4" type="video/mp4" />
-        </video>
+        {/* BACKGROUND (admin image overrides video) */}
+        {heroImage ? (
+          <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="/videos/about-hero.mp4" type="video/mp4" />
+          </video>
+        )}
 
         {/* OVERLAY */}
         <div className="absolute inset-0 bg-black/60" />
@@ -157,23 +171,27 @@ const About = () => {
             <ScrollReveal>
               <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-sm font-semibold mb-8">
                 <GraduationCap className="w-4 h-4" />
-                Về TNQDO Education
+                {heroBadge}
               </div>
 
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight">
-                Nền tảng học
-                <br />
-                <span className="bg-gradient-to-r from-white via-orange-200 to-primary bg-clip-text text-transparent">
-                  Tiếng Nhật
-                </span>
-                <br />
-                thế hệ mới
+                {heroTitle ? (
+                  heroTitle
+                ) : (
+                  <>
+                    Nền tảng học
+                    <br />
+                    <span className="bg-gradient-to-r from-white via-orange-200 to-primary bg-clip-text text-transparent">
+                      Tiếng Nhật
+                    </span>
+                    <br />
+                    thế hệ mới
+                  </>
+                )}
               </h1>
 
               <p className="text-lg md:text-2xl text-white/80 max-w-3xl mx-auto mt-8 leading-relaxed">
-                Kết hợp giáo dục hiện đại, công nghệ AI và phương pháp học tập
-                Nhật Bản để giúp người Việt chinh phục tiếng Nhật nhanh hơn,
-                sâu hơn và thực tế hơn.
+                {heroSubtitle}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
@@ -182,8 +200,8 @@ const About = () => {
                   className="h-14 px-10 rounded-2xl text-base bg-white text-primary hover:bg-white/90 shadow-2xl"
                   asChild
                 >
-                  <Link to="/auth">
-                    Bắt đầu miễn phí
+                  <Link to={ctaPrimaryUrl}>
+                    {ctaPrimaryLabel}
                     <Sparkles className="w-5 h-5 ml-2" />
                   </Link>
                 </Button>
@@ -194,7 +212,7 @@ const About = () => {
                   className="h-14 px-10 rounded-2xl text-base border-white/20 bg-white/10 backdrop-blur-xl text-white hover:bg-white/20"
                   asChild
                 >
-                  <Link to="/khoa-hoc">Khám phá khóa học</Link>
+                  <Link to={ctaSecondaryUrl}>{ctaSecondaryLabel}</Link>
                 </Button>
               </div>
             </ScrollReveal>
