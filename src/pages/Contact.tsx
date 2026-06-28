@@ -7,6 +7,7 @@ import { usePageSetting } from "@/hooks/usePageSettings";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import ContactMap from "@/components/ContactMap";
+import { BRAND } from "@/config/brand";
 
 const Contact = () => {
   const { data: pageCfg } = usePageSetting('contact');
@@ -98,7 +99,7 @@ const Contact = () => {
                       <br />
                       đăng kí dịch vụ tại
                       <br />
-                      <span className="text-primary">TNQDO Education</span>
+                      <span className="text-primary">{BRAND.fullName}</span>
                     </>
                   )}
                 </h1>
@@ -197,7 +198,7 @@ const Contact = () => {
                     </h2>
 
                     <p className="mt-3 text-muted-foreground leading-relaxed">
-                      Điền thông tin bên dưới để đội ngũ TNQDO liên hệ hỗ trợ
+                      Điền thông tin bên dưới để {BRAND.contactTeamLabel} liên hệ hỗ trợ
                       bạn sớm nhất nhé.
                     </p>
                   </div>

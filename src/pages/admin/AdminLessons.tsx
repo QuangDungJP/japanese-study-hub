@@ -1,38 +1,32 @@
 import { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye,
-  EyeOff,
-  BookOpen,
-  Mic,
-  PenTool,
-  Headphones,
-  Loader2,
-  FileText
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  BookOpen, Plus, Edit, Clock, Eye, EyeOff, Dumbbell, Trash2,
+  Image as ImageIcon, Film, MoreHorizontal, Search, Layers, GraduationCap, FolderOpen, ArrowRight,
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import LessonEditor from '@/components/teacher/LessonEditor';
 import LessonExercises from '@/components/admin/LessonExercises';
+import MaterialsManager from '@/components/teacher/MaterialsManager';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { buildLessonPayload, parseLessonRow } from '@/lib/lessonSchema';
+import { Link } from 'react-router-dom';
 
 interface Lesson {
   id: string;
@@ -41,130 +35,70 @@ interface Lesson {
   description: string | null;
   description_vi: string | null;
   skill: string;
-  language: string;
   level: string;
-  xp_reward: number;
+  language?: string;
   duration_minutes: number;
+  xp_reward: number;
   is_published: boolean;
-  order_index: number;
   created_at: string;
+  thumbnail_url?: string;
+  video_url?: string;
+  content_html?: string;
+  class_id?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
+  order_index?: number;
 }
-
-const skillIcons: Record<string, React.ElementType> = {
-  reading: BookOpen,
-  speaking: Mic,
-  writing: PenTool,
-  listening: Headphones,
-};
-
-const skillColors: Record<string, string> = {
-  reading: 'bg-blue-500',
-  speaking: 'bg-green-500',
-  writing: 'bg-purple-500',
-  listening: 'bg-orange-500',
-};
 
 const AdminLessons = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterSkill, setFilterSkill] = useState<string>('all');
-  const [filterLanguage, setFilterLanguage] = useState<string>('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isExercisesOpen, setIsExercisesOpen] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [exercisesLesson, setExercisesLesson] = useState<Lesson | null>(null);
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
-    title: '',
-    title_vi: '',
-    description: '',
-    description_vi: '',
-    skill: 'reading',
-    language: 'english',
-    level: 'beginner',
-    xp_reward: 25,
-    duration_minutes: 15,
-    is_published: false,
-  });
-
-  useEffect(() => {
-    fetchLessons();
-  }, []);
+  useEffect(() => { fetchLessons(); }, []);
 
   const fetchLessons = async () => {
     try {
       const { data, error } = await supabase
         .from('lessons')
         .select('*')
+        .order('order_index', { ascending: true })
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setLessons(data || []);
-    } catch (error) {
-      console.error('Error fetching lessons:', error);
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể tải danh sách bài học',
-        variant: 'destructive',
-      });
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Lỗi', description: 'Không thể tải danh sách bài học', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
+  const handleSubmit = async (formData: any) => {
     try {
-      if (editingLesson) {
-        const { error } = await supabase
-          .from('lessons')
-          .update(formData)
-          .eq('id', editingLesson.id);
+      const payload = buildLessonPayload(formData, { language: 'japanese' });
 
+      if (editingLesson) {
+        const { error } = await (supabase.from('lessons') as any).update(payload).eq('id', editingLesson.id);
         if (error) throw error;
         toast({ title: 'Thành công', description: 'Đã cập nhật bài học' });
       } else {
-        const { error } = await supabase
-          .from('lessons')
-          .insert([formData]);
-
+        const { error } = await (supabase.from('lessons') as any).insert(payload);
         if (error) throw error;
         toast({ title: 'Thành công', description: 'Đã tạo bài học mới' });
       }
-
-      setIsDialogOpen(false);
-      resetForm();
+      setIsEditorOpen(false);
+      setEditingLesson(null);
       fetchLessons();
-    } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa bài học này?')) return;
-
-    try {
-      const { error } = await supabase.from('lessons').delete().eq('id', id);
-      if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã xóa bài học' });
-      fetchLessons();
-    } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: 'Lỗi', description: e.message || 'Không thể lưu bài học', variant: 'destructive' });
     }
   };
 
@@ -174,370 +108,331 @@ const AdminLessons = () => {
         .from('lessons')
         .update({ is_published: !lesson.is_published })
         .eq('id', lesson.id);
-
       if (error) throw error;
-      toast({ 
-        title: 'Thành công', 
-        description: lesson.is_published ? 'Đã ẩn bài học' : 'Đã xuất bản bài học' 
-      });
+      toast({ title: 'Thành công', description: lesson.is_published ? 'Đã ẩn bài học' : 'Đã xuất bản bài học' });
       fetchLessons();
-    } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      title_vi: '',
-      description: '',
-      description_vi: '',
-      skill: 'reading',
-      language: 'english',
-      level: 'beginner',
-      xp_reward: 25,
-      duration_minutes: 15,
-      is_published: false,
-    });
-    setEditingLesson(null);
+  const handleDelete = async (id: string) => {
+    if (!confirm('Bạn có chắc muốn xóa bài học này?')) return;
+    try {
+      const { error } = await supabase.from('lessons').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã xóa bài học' });
+      fetchLessons();
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
+    }
   };
 
-  const openEditDialog = (lesson: Lesson) => {
-    setEditingLesson(lesson);
-    setFormData({
-      title: lesson.title,
-      title_vi: lesson.title_vi,
-      description: lesson.description || '',
-      description_vi: lesson.description_vi || '',
-      skill: lesson.skill,
-      language: lesson.language,
-      level: lesson.level,
-      xp_reward: lesson.xp_reward,
-      duration_minutes: lesson.duration_minutes,
-      is_published: lesson.is_published,
-    });
-    setIsDialogOpen(true);
+  const openEditor = (lesson?: Lesson) => {
+    setEditingLesson(lesson || null);
+    setIsEditorOpen(true);
   };
 
-  const filteredLessons = lessons.filter((lesson) => {
-    const matchesSearch = 
-      lesson.title.toLowerCase().includes(search.toLowerCase()) ||
-      lesson.title_vi.toLowerCase().includes(search.toLowerCase());
-    const matchesSkill = filterSkill === 'all' || lesson.skill === filterSkill;
-    const matchesLanguage = filterLanguage === 'all' || lesson.language === filterLanguage;
-    return matchesSearch && matchesSkill && matchesLanguage;
+  const getSkillInfo = (skill: string) => ({
+    label: skill || 'Khác',
+    color: 'bg-primary/10 text-primary border-primary/20',
   });
+
+  const filteredLessons = lessons.filter((l) => {
+    const q = search.toLowerCase();
+    const matchesSearch = !q ||
+      (l.title || '').toLowerCase().includes(q) ||
+      (l.title_vi || '').toLowerCase().includes(q);
+    const matchesSkill = filterSkill === 'all' || l.skill === filterSkill;
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'published' && l.is_published) ||
+      (filterStatus === 'draft' && !l.is_published);
+    return matchesSearch && matchesSkill && matchesStatus;
+  });
+
+  const skillsForFilter = Array.from(new Set(lessons.map(l => l.skill).filter(Boolean)));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Quản lý bài học</h1>
-          <p className="text-muted-foreground">Tạo và quản lý các bài học cho từng kỹ năng</p>
+          <p className="text-muted-foreground mt-1">
+            Tạo, phê duyệt và quản lý toàn bộ bài học của hệ thống
+          </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button variant="hero">
-              <Plus className="w-4 h-4" />
-              Thêm bài học
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingLesson ? 'Chỉnh sửa bài học' : 'Thêm bài học mới'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Tiêu đề (EN)</label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Tiêu đề (VI)</label>
-                  <Input
-                    value={formData.title_vi}
-                    onChange={(e) => setFormData({ ...formData, title_vi: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Mô tả (EN)</label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Mô tả (VI)</label>
-                  <Textarea
-                    value={formData.description_vi}
-                    onChange={(e) => setFormData({ ...formData, description_vi: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Kỹ năng</label>
-                  <Select
-                    value={formData.skill}
-                    onValueChange={(value) => setFormData({ ...formData, skill: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="reading">Đọc hiểu</SelectItem>
-                      <SelectItem value="speaking">Nói</SelectItem>
-                      <SelectItem value="writing">Viết</SelectItem>
-                      <SelectItem value="listening">Nghe</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Ngôn ngữ</label>
-                  <Select
-                    value={formData.language}
-                    onValueChange={(value) => setFormData({ ...formData, language: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="english">Tiếng Anh</SelectItem>
-                      <SelectItem value="german">Tiếng Đức</SelectItem>
-                      <SelectItem value="chinese">Tiếng Trung</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Cấp độ</label>
-                  <Select
-                    value={formData.level}
-                    onValueChange={(value) => setFormData({ ...formData, level: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Cơ bản</SelectItem>
-                      <SelectItem value="intermediate">Trung cấp</SelectItem>
-                      <SelectItem value="advanced">Nâng cao</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">XP thưởng</label>
-                  <Input
-                    type="number"
-                    value={formData.xp_reward}
-                    onChange={(e) => setFormData({ ...formData, xp_reward: parseInt(e.target.value) })}
-                    min={0}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Thời lượng (phút)</label>
-                  <Input
-                    type="number"
-                    value={formData.duration_minutes}
-                    onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
-                    min={1}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Hủy
-                </Button>
-                <Button type="submit" variant="hero" disabled={saving}>
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {editingLesson ? 'Cập nhật' : 'Tạo bài học'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => openEditor()} variant="hero">
+          <Plus className="w-4 h-4 mr-2" />
+          Tạo bài học
+        </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            placeholder="Tìm kiếm bài học..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={filterSkill} onValueChange={setFilterSkill}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Kỹ năng" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="reading">Đọc hiểu</SelectItem>
-            <SelectItem value="speaking">Nói</SelectItem>
-            <SelectItem value="writing">Viết</SelectItem>
-            <SelectItem value="listening">Nghe</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterLanguage} onValueChange={setFilterLanguage}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Ngôn ngữ" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="english">Tiếng Anh</SelectItem>
-            <SelectItem value="german">Tiếng Đức</SelectItem>
-            <SelectItem value="chinese">Tiếng Trung</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs defaultValue="lessons" className="space-y-4">
+        <TabsList className="flex-wrap h-auto justify-start">
+          <TabsTrigger value="lessons" className="gap-2">
+            <BookOpen className="w-4 h-4" />Bài học
+          </TabsTrigger>
+          <TabsTrigger value="modules" className="gap-2">
+            <Layers className="w-4 h-4" />Module bài tập
+          </TabsTrigger>
+          <TabsTrigger value="materials" className="gap-2">
+            <FolderOpen className="w-4 h-4" />Tài liệu
+          </TabsTrigger>
+          <TabsTrigger value="exams" className="gap-2">
+            <GraduationCap className="w-4 h-4" />Bài kiểm tra
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Lessons Table */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center p-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : filteredLessons.length === 0 ? (
-          <div className="text-center p-12 text-muted-foreground">
-            Chưa có bài học nào. Nhấn "Thêm bài học" để tạo mới.
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left p-4 font-medium text-muted-foreground">Bài học</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Kỹ năng</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Ngôn ngữ</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Cấp độ</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Trạng thái</th>
-                <th className="text-right p-4 font-medium text-muted-foreground">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLessons.map((lesson) => {
-                const SkillIcon = skillIcons[lesson.skill] || BookOpen;
-                return (
-                  <tr key={lesson.id} className="border-t border-border hover:bg-muted/30">
-                    <td className="p-4">
-                      <div>
-                        <p className="font-medium text-foreground">{lesson.title}</p>
-                        <p className="text-sm text-muted-foreground">{lesson.title_vi}</p>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-lg ${skillColors[lesson.skill]}/10 flex items-center justify-center`}>
-                          <SkillIcon className={`w-4 h-4 ${skillColors[lesson.skill].replace('bg-', 'text-')}`} />
+        <TabsContent value="lessons" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5" />
+                  Danh sách bài học ({filteredLessons.length})
+                </CardTitle>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm bài học..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Select value={filterSkill} onValueChange={setFilterSkill}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Kỹ năng" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả kỹ năng</SelectItem>
+                    {skillsForFilter.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                    <SelectItem value="published">Đã xuất bản</SelectItem>
+                    <SelectItem value="draft">Nháp</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                </div>
+              ) : filteredLessons.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">Chưa có bài học</h3>
+                  <p className="text-sm mb-4">Bắt đầu bằng cách tạo bài học đầu tiên</p>
+                  <Button onClick={() => openEditor()} variant="outline">
+                    <Plus className="w-4 h-4 mr-2" />Tạo bài học
+                  </Button>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[80px]">Media</TableHead>
+                      <TableHead>Tiêu đề</TableHead>
+                      <TableHead>Kỹ năng</TableHead>
+                      <TableHead>Trình độ</TableHead>
+                      <TableHead>Thời lượng</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Ngày tạo</TableHead>
+                      <TableHead className="text-right">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLessons.map((lesson) => {
+                      const skillInfo = getSkillInfo(lesson.skill);
+                      return (
+                        <TableRow key={lesson.id}>
+                          <TableCell>
+                            <div className="w-16 h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                              {lesson.thumbnail_url ? (
+                                <img src={lesson.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                              ) : lesson.video_url ? (
+                                <Film className="w-5 h-5 text-muted-foreground" />
+                              ) : (
+                                <ImageIcon className="w-5 h-5 text-muted-foreground/50" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{lesson.title_vi || lesson.title}</p>
+                              {lesson.title && lesson.title_vi && lesson.title !== lesson.title_vi && (
+                                <p className="text-sm text-muted-foreground">{lesson.title}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={skillInfo.color}>{skillInfo.label}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {lesson.level ? <Badge variant="outline">{lesson.level}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="w-4 h-4" />
+                              {lesson.duration_minutes} phút
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {lesson.is_published ? (
+                              <Badge className="bg-green-500/10 text-green-600">Đã xuất bản</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                                Nháp
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(lesson.created_at), 'dd/MM/yyyy', { locale: vi })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditor(lesson)}>
+                                  <Edit className="w-4 h-4 mr-2" />Chỉnh sửa
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setExercisesLesson(lesson)}>
+                                  <Dumbbell className="w-4 h-4 mr-2" />Quản lý bài tập
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => togglePublish(lesson)}>
+                                  {lesson.is_published ? (
+                                    <><EyeOff className="w-4 h-4 mr-2" />Ẩn bài học</>
+                                  ) : (
+                                    <><Eye className="w-4 h-4 mr-2" />Xuất bản</>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDelete(lesson.id)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />Xóa
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="modules" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="w-5 h-5" />
+                Module bài tập theo bài học
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Chọn một bài học để quản lý các module / bài tập bên trong.</p>
+            </CardHeader>
+            <CardContent>
+              {lessons.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Layers className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p>Chưa có bài học nào. Hãy tạo bài học trước khi thêm module.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {lessons.map((l) => {
+                    const skill = getSkillInfo(l.skill);
+                    return (
+                      <button
+                        key={l.id}
+                        onClick={() => setExercisesLesson(l)}
+                        className="text-left rounded-xl border border-border/60 bg-card hover:border-primary/50 hover:shadow-md transition-all p-4 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className={skill.color}>{skill.label}</Badge>
+                          {l.level && <Badge variant="outline">{l.level}</Badge>}
                         </div>
-                        <span className="text-sm capitalize">{lesson.skill}</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm capitalize">
-                        {lesson.language === 'english' ? '🇬🇧 Anh' : 
-                         lesson.language === 'german' ? '🇩🇪 Đức' : '🇨🇳 Trung'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        lesson.level === 'beginner' ? 'bg-green-500/10 text-green-600' :
-                        lesson.level === 'intermediate' ? 'bg-yellow-500/10 text-yellow-600' :
-                        'bg-red-500/10 text-red-600'
-                      }`}>
-                        {lesson.level === 'beginner' ? 'Cơ bản' : 
-                         lesson.level === 'intermediate' ? 'Trung cấp' : 'Nâng cao'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        lesson.is_published 
-                          ? 'bg-green-500/10 text-green-600' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {lesson.is_published ? 'Đã xuất bản' : 'Nháp'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedLesson(lesson);
-                            setIsExercisesOpen(true);
-                          }}
-                          title="Quản lý bài tập"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => togglePublish(lesson)}
-                        >
-                          {lesson.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => openEditDialog(lesson)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleDelete(lesson.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                        <h4 className="font-semibold line-clamp-2">{l.title_vi || l.title}</h4>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />{l.duration_minutes} phút
+                          <span>•</span>
+                          <span>{l.is_published ? 'Đã xuất bản' : 'Nháp'}</span>
+                        </div>
+                        <div className="pt-1 text-primary text-sm font-medium flex items-center gap-1">
+                          <Dumbbell className="w-3 h-3" />Mở module bài tập →
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="materials" className="mt-4">
+          <MaterialsManager lessons={lessons.map(l => ({ id: l.id, title: l.title, title_vi: l.title_vi }))} />
+        </TabsContent>
+
+        <TabsContent value="exams" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5" />
+                Bài kiểm tra
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Bài kiểm tra (Exam) đã được tách thành mục riêng để quản lý thuận tiện hơn.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="hero">
+                <Link to="/admin/exams">
+                  <GraduationCap className="w-4 h-4 mr-2" />
+                  Mở trang Bài kiểm tra <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Lesson Editor Dialog */}
+      <Dialog open={isEditorOpen} onOpenChange={(open) => { setIsEditorOpen(open); if (!open) setEditingLesson(null); }}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-6">
+          <LessonEditor
+            lessonId={editingLesson?.id}
+            initialData={editingLesson ? parseLessonRow(editingLesson) : undefined}
+            onSubmit={handleSubmit}
+            onCancel={() => { setIsEditorOpen(false); setEditingLesson(null); }}
+            isEditing={!!editingLesson}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Exercises Dialog */}
-      <Dialog open={isExercisesOpen} onOpenChange={setIsExercisesOpen}>
+      <Dialog open={!!exercisesLesson} onOpenChange={() => setExercisesLesson(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Quản lý bài tập</DialogTitle>
-          </DialogHeader>
-          {selectedLesson && (
-            <LessonExercises 
-              lessonId={selectedLesson.id} 
-              lessonTitle={selectedLesson.title_vi} 
+          {exercisesLesson && (
+            <LessonExercises
+              lessonId={exercisesLesson.id}
+              lessonTitle={exercisesLesson.title_vi || exercisesLesson.title}
             />
           )}
         </DialogContent>

@@ -481,9 +481,9 @@ const TeachersEditor = ({ content, onChange }: { content: Record<string, any>; o
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground">Danh sách giảng viên ({teachers.length})</h3>
+        <h3 className="font-semibold text-foreground">Danh sách giáo viên ({teachers.length})</h3>
         <Button variant="outline" size="sm" onClick={addTeacher} className="gap-1.5">
-          <Plus className="w-3.5 h-3.5" /> Thêm giảng viên
+          <Plus className="w-3.5 h-3.5" /> Thêm giáo viên
         </Button>
       </div>
 
@@ -621,7 +621,7 @@ const TeachersEditor = ({ content, onChange }: { content: Record<string, any>; o
                 {/* Delete button */}
                 <div className="pt-2 border-t border-border flex justify-end">
                   <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5" onClick={() => removeTeacher(i)}>
-                    <Trash2 className="w-4 h-4" /> Xóa giảng viên
+                    <Trash2 className="w-4 h-4" /> Xóa giáo viên
                   </Button>
                 </div>
               </div>

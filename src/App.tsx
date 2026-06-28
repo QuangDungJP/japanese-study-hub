@@ -33,6 +33,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const UserGuide = lazy(() => import("./pages/UserGuide"));
+const UserGuides = lazy(() => import("./pages/public/UserGuides"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const EventsPage = lazy(() => import("./pages/EventsPage"));
@@ -51,6 +52,9 @@ const Writing = lazy(() => import("./pages/learn/Writing"));
 const Listening = lazy(() => import("./pages/learn/Listening"));
 const Vocabulary = lazy(() => import("./pages/learn/Vocabulary"));
 const Exercises = lazy(() => import("./pages/learn/Exercises"));
+const LearnerLessons = lazy(() => import("./pages/learn/Lessons"));
+const LessonViewer = lazy(() => import("./pages/learn/LessonViewer"));
+const LearnerExams = lazy(() => import("./pages/learn/Exams"));
 const Zoom = lazy(() => import("./pages/learn/Zoom"));
 const Achievements = lazy(() => import("./pages/learn/Achievements"));
 const Courses = lazy(() => import("./pages/learn/Courses"));
@@ -69,7 +73,7 @@ const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminLessons = lazy(() => import("./pages/admin/AdminLessons"));
-const AdminVocabulary = lazy(() => import("./pages/admin/AdminVocabulary"));
+const AdminExams = lazy(() => import("./pages/admin/AdminExams"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSubmissions = lazy(() => import("./pages/admin/AdminSubmissions"));
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
@@ -92,6 +96,7 @@ const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
 const TeacherLayout = lazy(() => import("./pages/teacher/TeacherLayout"));
 const TeacherDashboard = lazy(() => import("./pages/teacher/TeacherDashboard"));
 const TeacherLessons = lazy(() => import("./pages/teacher/TeacherLessons"));
+const TeacherExams = lazy(() => import("./pages/teacher/TeacherExams"));
 const TeacherClasses = lazy(() => import("./pages/teacher/TeacherClasses"));
 const TeacherClassDetail = lazy(() => import("./pages/teacher/TeacherClassDetail"));
 const TeacherSubmissions = lazy(() => import("./pages/teacher/TeacherSubmissions"));
@@ -102,11 +107,9 @@ const TeacherProfile = lazy(() => import("./pages/teacher/TeacherProfile"));
 const TeacherCalendar = lazy(() => import("./pages/teacher/TeacherCalendar"));
 const TeacherAttendance = lazy(() => import("./pages/teacher/TeacherAttendance"));
 
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-    Loading...
-  </div>
-);
+import ChibiLoader from "./components/shared/ChibiLoader";
+
+const PageLoader = () => <ChibiLoader />;
 
 const App = () => {
   return (
@@ -145,6 +148,7 @@ const App = () => {
                     <Route path="/su-kien/:slug" element={<EventDetailPage />} />
 
                     <Route path="/huong-dan" element={<UserGuide />} />
+                    <Route path="/huong-dan-chi-tiet" element={<UserGuides />} />
                     <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />
                     <Route path="/dieu-khoan" element={<Terms />} />
 
@@ -159,6 +163,9 @@ const App = () => {
                       <Route path="listening" element={<Listening />} />
                       <Route path="vocabulary" element={<Vocabulary />} />
                       <Route path="exercises" element={<Exercises />} />
+                      <Route path="lessons" element={<LearnerLessons />} />
+                      <Route path="lessons/:id" element={<LessonViewer />} />
+                      <Route path="exams" element={<LearnerExams />} />
                       <Route path="zoom" element={<Zoom />} />
                       <Route path="calendar" element={<StudentCalendar />} />
                       <Route path="achievements" element={<Achievements />} />
@@ -178,7 +185,7 @@ const App = () => {
                       <Route path="courses" element={<AdminCourses />} />
                       <Route path="classes" element={<AdminClasses />} />
                       <Route path="lessons" element={<AdminLessons />} />
-                      <Route path="vocabulary" element={<AdminVocabulary />} />
+                      <Route path="exams" element={<AdminExams />} />
                       <Route path="finance" element={<AdminFinance />} />
                       <Route path="orders" element={<AdminOrders />} />
                       <Route path="bookings" element={<AdminBookings />} />
@@ -195,6 +202,7 @@ const App = () => {
                     <Route path="/teacher" element={<TeacherLayout />}>
                       <Route index element={<TeacherDashboard />} />
                       <Route path="lessons" element={<TeacherLessons />} />
+                      <Route path="exams" element={<TeacherExams />} />
                       <Route path="classes" element={<TeacherClasses />} />
                       <Route path="classes/:id" element={<TeacherClassDetail />} />
                       <Route path="submissions" element={<TeacherSubmissions />} />

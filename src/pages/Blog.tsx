@@ -8,14 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, Calendar, Eye, ArrowRight, ChevronLeft, ChevronRight, Newspaper, Sparkles, TrendingUp } from 'lucide-react';
+import { Search, Calendar, Eye, ArrowRight, ChevronLeft, ChevronRight, Newspaper, Sparkles, TrendingUp, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useBlogCategories } from '@/components/admin/BlogCategoryManager';
 import ScrollReveal from '@/components/ScrollReveal';
 import { usePageSetting } from '@/hooks/usePageSettings';
+import { useBlogHomeSettings } from '@/hooks/useBlogHomeSettings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Filter } from 'lucide-react';
+import { Filter, Pin } from 'lucide-react';
 
 const POSTS_PER_PAGE = 9;
 
@@ -23,8 +24,11 @@ const Blog = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<'pinned' | 'newest' | 'oldest' | 'popular'>('pinned');
   const { data: categories = [] } = useBlogCategories();
   const { data: pageCfg } = usePageSetting('blog');
+  const { data: homeSettings } = useBlogHomeSettings();
+  const pinnedIds = homeSettings?.pinned_ids || [];
   const heroBadge = pageCfg?.hero_badge_vi || 'Blog & Kiến thức';
   const heroTitle = pageCfg?.hero_title_vi || 'Khám phá kiến thức Tiếng Nhật';
   const heroSubtitle = pageCfg?.hero_subtitle_vi || 'Chia sẻ mẹo học, ngữ pháp, từ vựng và văn hóa Nhật Bản từ đội ngũ chuyên gia';
@@ -33,7 +37,7 @@ const Blog = () => {
 
   // Server-side paginated query
   const { data, isLoading } = useQuery({
-    queryKey: ['blog-posts', category, search, page],
+    queryKey: ['blog-posts', category, search, page, sortBy],
     queryFn: async () => {
       // Count query
       let countQuery = supabase
@@ -52,9 +56,15 @@ const Blog = () => {
       let dataQuery = supabase
         .from('blog_posts')
         .select('*')
-        .eq('is_published', true)
-        .order('published_at', { ascending: false })
-        .range(from, to);
+        .eq('is_published', true);
+      if (sortBy === 'oldest') {
+        dataQuery = dataQuery.order('published_at', { ascending: true, nullsFirst: false });
+      } else if (sortBy === 'popular') {
+        dataQuery = dataQuery.order('view_count', { ascending: false, nullsFirst: false });
+      } else {
+        dataQuery = dataQuery.order('published_at', { ascending: false, nullsFirst: false });
+      }
+      dataQuery = dataQuery.range(from, to);
       if (category !== 'all') dataQuery = dataQuery.eq('category', category);
       if (search) dataQuery = dataQuery.or(`title_vi.ilike.%${search}%,title.ilike.%${search}%`);
 
@@ -66,8 +76,28 @@ const Blog = () => {
     placeholderData: (prev) => prev,
   });
 
-  // Featured post: only fetch on first page with no filters
-  const showFeatured = page === 1 && !search && category === 'all';
+  // Pinned posts: only on first page with no filters
+  const showPinned = sortBy === 'pinned' && page === 1 && !search && category === 'all';
+  const { data: pinnedPosts = [] } = useQuery({
+    queryKey: ['blog-pinned', pinnedIds],
+    queryFn: async () => {
+      if (pinnedIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('is_published', true)
+        .in('id', pinnedIds);
+      if (error) throw error;
+      // Preserve admin pin order
+      return pinnedIds
+        .map((id) => data?.find((p) => p.id === id))
+        .filter(Boolean) as any[];
+    },
+    enabled: showPinned && pinnedIds.length > 0,
+  });
+
+  // Fallback featured (only when there are NO pinned posts)
+  const showAutoFeatured = showPinned && pinnedIds.length === 0;
   const { data: featuredPost } = useQuery({
     queryKey: ['blog-featured'],
     queryFn: async () => {
@@ -81,7 +111,7 @@ const Blog = () => {
       if (error) throw error;
       return data;
     },
-    enabled: showFeatured,
+    enabled: showAutoFeatured,
   });
 
   // Category counts (lightweight query)
@@ -210,13 +240,142 @@ const Blog = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={sortBy} onValueChange={(v: any) => { setSortBy(v); setPage(1); }}>
+                <SelectTrigger className="h-11 sm:w-48 border-0 bg-muted/50 rounded-xl">
+                  <ArrowUpDown className="w-4 h-4 mr-1 text-muted-foreground" />
+                  <SelectValue placeholder="Sắp xếp" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pinned">Ghim trước</SelectItem>
+                  <SelectItem value="newest">Mới nhất</SelectItem>
+                  <SelectItem value="oldest">Cũ nhất</SelectItem>
+                  <SelectItem value="popular">Xem nhiều</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </ScrollReveal>
         </div>
       </section>
 
-      {/* Featured Post */}
-      {showFeatured && featuredPost && (
+      {/* Pinned Posts (admin-curated) */}
+      {showPinned && pinnedPosts.length > 0 && (
+        <section className="pb-8 pt-2">
+          <div className="container mx-auto px-4">
+            <ScrollReveal>
+              <div className="flex items-center gap-2 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-md">
+                  <Pin className="w-4 h-4 text-white" fill="currentColor" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground leading-tight">Bài viết được ghim</h2>
+                  <p className="text-xs text-muted-foreground">Nội dung chọn lọc từ ban biên tập</p>
+                </div>
+                <div className="flex-1 h-px bg-gradient-to-r from-border via-border/40 to-transparent ml-2" />
+              </div>
+            </ScrollReveal>
+
+            {/* Hero pinned + side strip */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Big hero — first pinned */}
+              {pinnedPosts[0] && (
+                <ScrollReveal className="lg:col-span-2">
+                  <Link to={`/blog/${pinnedPosts[0].slug}`}>
+                    <div className="group relative rounded-3xl overflow-hidden bg-card border border-accent/30 hover:shadow-2xl hover:border-accent/60 transition-all duration-500 h-full">
+                      <div className="grid grid-cols-1 md:grid-cols-2 h-full">
+                        <div className="relative aspect-video md:aspect-auto md:min-h-[320px] overflow-hidden bg-muted">
+                          {pinnedPosts[0].thumbnail_url ? (
+                            <img
+                              src={pinnedPosts[0].thumbnail_url}
+                              alt={pinnedPosts[0].title_vi}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
+                              <Newspaper className="w-16 h-16 text-primary/30" />
+                            </div>
+                          )}
+                          <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground border-0 gap-1 shadow-lg">
+                            <Pin className="w-3 h-3" fill="currentColor" /> Ghim
+                          </Badge>
+                        </div>
+                        <div className="p-6 md:p-8 flex flex-col justify-center">
+                          <Badge variant="secondary" className="self-start mb-3">
+                            {getCategoryLabel(pinnedPosts[0].category)}
+                          </Badge>
+                          <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors leading-tight line-clamp-3">
+                            {pinnedPosts[0].title_vi}
+                          </h3>
+                          {pinnedPosts[0].excerpt_vi && (
+                            <p className="text-muted-foreground line-clamp-3 mb-5 leading-relaxed">
+                              {pinnedPosts[0].excerpt_vi}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between mt-auto">
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {pinnedPosts[0].published_at ? format(new Date(pinnedPosts[0].published_at), 'dd MMM yyyy', { locale: vi }) : ''}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3.5 h-3.5" />{pinnedPosts[0].view_count}
+                              </span>
+                            </div>
+                            <span className="flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
+                              Đọc thêm <ArrowRight className="w-4 h-4" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </ScrollReveal>
+              )}
+
+              {/* Side strip — next pinned posts */}
+              {pinnedPosts.length > 1 && (
+                <div className="flex flex-col gap-4">
+                  {pinnedPosts.slice(1, 4).map((p, i) => (
+                    <ScrollReveal key={p.id} delay={i * 80}>
+                      <Link to={`/blog/${p.slug}`}>
+                        <Card className="overflow-hidden border-accent/20 hover:border-accent/50 hover:shadow-lg transition-all group rounded-2xl">
+                          <div className="flex gap-3 p-3">
+                            <div className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-muted">
+                              {p.thumbnail_url ? (
+                                <img src={p.thumbnail_url} alt={p.title_vi} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-accent/15 to-primary/15 flex items-center justify-center">
+                                  <Newspaper className="w-6 h-6 text-primary/30" />
+                                </div>
+                              )}
+                              <Pin className="absolute top-1 right-1 w-3 h-3 text-accent drop-shadow" fill="currentColor" />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                              <Badge variant="outline" className="self-start text-[10px] h-4 mb-1.5 px-1.5">
+                                {getCategoryLabel(p.category)}
+                              </Badge>
+                              <h4 className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                                {p.title_vi}
+                              </h4>
+                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1.5">
+                                <Calendar className="w-3 h-3" />
+                                {p.published_at ? format(new Date(p.published_at), 'dd/MM/yy') : ''}
+                                <Eye className="w-3 h-3 ml-1" />{p.view_count}
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </Link>
+                    </ScrollReveal>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Auto-Featured Fallback (only when no pinned) */}
+      {showAutoFeatured && featuredPost && (
         <section className="pb-8">
           <div className="container mx-auto px-4">
             <ScrollReveal>
@@ -278,7 +437,10 @@ const Blog = () => {
             </p>
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <TrendingUp className="w-4 h-4" />
-              Mới nhất
+              {sortBy === 'pinned' && 'Ghim trước'}
+              {sortBy === 'newest' && 'Mới nhất'}
+              {sortBy === 'oldest' && 'Cũ nhất'}
+              {sortBy === 'popular' && 'Xem nhiều'}
             </div>
           </div>
 
@@ -307,8 +469,9 @@ const Blog = () => {
             <>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {posts.map((post, i) => {
-                  // Skip featured post on first page
-                  if (showFeatured && featuredPost && post.id === featuredPost.id) return null;
+                  // Skip auto-featured fallback or pinned posts on first page
+                  if (showAutoFeatured && featuredPost && post.id === featuredPost.id) return null;
+                  if (showPinned && pinnedIds.includes(post.id)) return null;
                   return (
                     <ScrollReveal key={post.id} delay={i * 80} direction="up">
                       <Link to={`/blog/${post.slug}`} className="block h-full">

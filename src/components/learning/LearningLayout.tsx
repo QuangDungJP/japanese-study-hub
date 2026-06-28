@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import DarkModeToggle from '@/components/theme/DarkModeToggle';
+import { BRAND } from '@/config/brand';
 
 const LearningLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -31,9 +32,9 @@ const LearningLayout = () => {
         </Sheet>
         <div className="flex items-center gap-2 ml-2">
           <div className="w-7 h-7 rounded-md bg-gradient-primary flex items-center justify-center">
-            <img src="/logo.jpg" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
+            <img src="/logo.jpg" alt={BRAND.logoAlt} className="w-4 h-4 rounded-md object-cover" />
           </div>
-          <span className="text-sm font-bold text-foreground">TNQDO Learn</span>
+          <span className="text-sm font-bold text-foreground">{BRAND.learnTitle}</span>
         </div>
         <div className="ml-auto">
           <DarkModeToggle variant="compact" />
@@ -44,8 +45,7 @@ const LearningLayout = () => {
         <div className="hidden lg:block">
           <TopBar />
         </div>
-        <main className="p-4 pt-18 lg:pt-0 lg:p-6">
-          <div className="lg:hidden mb-0" />
+        <main className="px-3 sm:px-4 lg:px-6 pt-[4.5rem] lg:pt-4 pb-6 max-w-full overflow-x-hidden">
           <Outlet />
         </main>
       </div>

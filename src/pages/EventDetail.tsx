@@ -18,6 +18,7 @@ import { CalendarDays, Clock, MapPin, Users, Video, ArrowLeft, CheckCircle, Load
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { BRAND } from '@/config/brand';
 
 interface EventDetail {
   id: string;
@@ -90,7 +91,7 @@ const EventDetailPage = () => {
       if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    document.title = `${event.title_vi} | TNQDO`;
+    document.title = `${event.title_vi} | ${BRAND.name}`;
     setMeta('og:title', event.title_vi);
     setMeta('og:description', event.description_vi || event.title_vi);
     setMeta('og:type', 'article');
@@ -104,7 +105,7 @@ const EventDetailPage = () => {
     setNameMeta('twitter:title', event.title_vi);
     setNameMeta('twitter:description', event.description_vi || event.title_vi);
     if (event.thumbnail_url) setNameMeta('twitter:image', event.thumbnail_url);
-    return () => { document.title = 'TNQDO'; };
+    return () => { document.title = BRAND.name; };
   }, [event]);
 
   const fetchEvent = async () => {

@@ -12,6 +12,7 @@ import { vi } from 'date-fns/locale';
 import { useBlogCategories } from '@/components/admin/BlogCategoryManager';
 import { useToast } from '@/hooks/use-toast';
 import ScrollReveal from '@/components/ScrollReveal';
+import { BRAND } from '@/config/brand';
 
 const RelatedPosts = ({ category, currentId }: { category: string | null; currentId: string }) => {
   const { data: posts = [] } = useQuery({
@@ -118,7 +119,7 @@ const BlogDetail = () => {
       if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    document.title = `${post.title_vi} | TNQDO Blog`;
+    document.title = `${post.title_vi} | ${BRAND.name} Blog`;
     setMeta('og:title', post.title_vi);
     setMeta('og:description', post.excerpt_vi || post.title_vi);
     setMeta('og:type', 'article');
@@ -128,7 +129,7 @@ const BlogDetail = () => {
     setNameMeta('twitter:title', post.title_vi);
     setNameMeta('twitter:description', post.excerpt_vi || post.title_vi);
     if (post.thumbnail_url) setNameMeta('twitter:image', post.thumbnail_url);
-    return () => { document.title = 'TNQDO'; };
+    return () => { document.title = BRAND.name; };
   }, [post]);
 
   const handleShare = async () => {
@@ -250,7 +251,7 @@ const BlogDetail = () => {
           <ScrollReveal delay={200}>
             <div className="mt-12 p-6 md:p-8 rounded-2xl bg-card border border-border text-center">
               <h3 className="text-xl font-bold text-foreground mb-2">Bạn thấy bài viết hữu ích?</h3>
-              <p className="text-muted-foreground mb-4">Khám phá thêm nhiều bài viết hay trên Blog của TNQDO</p>
+              <p className="text-muted-foreground mb-4">{BRAND.blogExploreLabel}</p>
               <Button asChild className="rounded-xl">
                 <Link to="/blog">Xem thêm bài viết <ArrowRight className="w-4 h-4 ml-2" /></Link>
               </Button>

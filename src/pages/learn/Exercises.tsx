@@ -209,10 +209,10 @@ const Exercises = () => {
 
     return (
       <div className="max-w-lg mx-auto text-center py-12">
-        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/10 rounded-3xl border border-border p-8 animate-scale-in">
+        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/10 rounded-3xl border border-border p-5 sm:p-8 animate-scale-in">
           <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-6 animate-float" />
           
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             Hoàn thành xuất sắc!
           </h1>
           <p className="text-muted-foreground mb-6">{lessonTitle}</p>

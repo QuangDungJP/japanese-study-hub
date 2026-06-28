@@ -1,6 +1,7 @@
 import { Facebook, Youtube, Instagram, Mail, Phone, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
+import { BRAND } from "@/config/brand";
 
 const Footer = () => {
   return (
@@ -74,7 +75,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-primary-foreground/60 text-sm">
-            © 2026 TNQDO. All rights reserved.
+            &copy; {BRAND.year} {BRAND.name}. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link to="/chinh-sach-bao-mat" className="text-primary-foreground/60 hover:text-primary-foreground text-sm transition-colors">

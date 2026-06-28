@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MapPin, Phone, Clock, Navigation, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { BRAND } from "@/config/brand";
 
 interface MapContent {
   embed_url?: string;
@@ -11,17 +12,33 @@ interface MapContent {
   directions_url?: string;
   title?: string;
   subtitle?: string;
+  lat?: string;
+  lng?: string;
+  query?: string;
 }
 
 const DEFAULTS: MapContent = {
-  embed_url:
-    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.063055063!2d106.69791!3d10.776889!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f3c5e8e83a3%3A0x4d8e8b5b1b1b1b1b!2sHo%20Chi%20Minh%20City!5e0!3m2!1svi!2s!4v1700000000000",
+  embed_url: "",
   address: "TP. Hồ Chí Minh, Việt Nam",
   phone: "(+84) 901 189 399",
   hours: "Thứ 2 - Chủ nhật: 8:00 - 21:00",
-  directions_url: "https://www.google.com/maps?q=TNQDO+Education+Ho+Chi+Minh+City",
-  title: "Tìm đường đến TNQDO",
+  directions_url: `https://www.google.com/maps?q=${BRAND.mapQuery}`,
+  title: BRAND.mapTitle,
   subtitle: "Ghé thăm trung tâm, gặp gỡ đội ngũ và trải nghiệm lớp học demo miễn phí.",
+  lat: "10.776889",
+  lng: "106.700981",
+  query: BRAND.mapQuery,
+};
+
+const buildEmbedUrl = (c: MapContent): string => {
+  if (c.embed_url && c.embed_url.trim()) return c.embed_url.trim();
+  const lat = c.lat?.trim();
+  const lng = c.lng?.trim();
+  if (lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+    return `https://maps.google.com/maps?q=${lat},${lng}&z=16&hl=vi&output=embed`;
+  }
+  const q = c.query?.trim() || c.address?.trim() || BRAND.mapQuery;
+  return `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=15&hl=vi&output=embed`;
 };
 
 const ContactMap = () => {
@@ -45,12 +62,17 @@ const ContactMap = () => {
           directions_url: raw.directions_url || DEFAULTS.directions_url,
           title: raw.title || DEFAULTS.title,
           subtitle: raw.subtitle || DEFAULTS.subtitle,
+          lat: raw.lat ?? DEFAULTS.lat,
+          lng: raw.lng ?? DEFAULTS.lng,
+          query: raw.query ?? DEFAULTS.query,
         });
       });
     return () => {
       active = false;
     };
   }, []);
+
+  const mapSrc = buildEmbedUrl(c);
 
   return (
     <section className="relative py-20 overflow-hidden bg-gradient-to-b from-background via-muted/30 to-background">
@@ -73,10 +95,10 @@ const ContactMap = () => {
           <div className="relative rounded-[32px] overflow-hidden border border-border shadow-2xl bg-card">
             {/* Map */}
             <div className="relative aspect-[16/10] md:aspect-[21/9] w-full bg-muted">
-              {c.embed_url ? (
+              {mapSrc ? (
                 <iframe
-                  src={c.embed_url}
-                  title="Bản đồ TNQDO"
+                  src={mapSrc}
+                  title={`Bản đồ ${BRAND.name}`}
                   className="absolute inset-0 w-full h-full border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"

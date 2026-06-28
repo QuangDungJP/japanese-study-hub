@@ -41,7 +41,7 @@ type RoleFilter = 'all' | 'user' | 'teacher' | 'senior_teacher' | 'moderator' | 
 const ROLE_CONFIG: Record<string, { label: string; icon: typeof Users; color: string; badgeVariant: string; gradient: string }> = {
   admin: { label: 'Admin', icon: Crown, color: 'text-red-500', badgeVariant: 'destructive', gradient: 'from-red-500/20 to-red-600/5' },
   senior_teacher: { label: 'GV Cao cấp', icon: Star, color: 'text-amber-500', badgeVariant: 'default', gradient: 'from-amber-500/20 to-amber-600/5' },
-  teacher: { label: 'Giảng viên', icon: GraduationCap, color: 'text-blue-500', badgeVariant: 'secondary', gradient: 'from-blue-500/20 to-blue-600/5' },
+  teacher: { label: 'Giáo viên', icon: GraduationCap, color: 'text-blue-500', badgeVariant: 'secondary', gradient: 'from-blue-500/20 to-blue-600/5' },
   moderator: { label: 'Moderator', icon: Shield, color: 'text-purple-500', badgeVariant: 'outline', gradient: 'from-purple-500/20 to-purple-600/5' },
   user: { label: 'Học viên', icon: BookOpen, color: 'text-emerald-500', badgeVariant: 'outline', gradient: 'from-emerald-500/20 to-emerald-600/5' },
 };

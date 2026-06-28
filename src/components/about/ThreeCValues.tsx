@@ -1,5 +1,6 @@
 import ScrollReveal from "@/components/ScrollReveal";
 import { useWebsiteContent } from "@/hooks/useWebsiteContent";
+import { BRAND } from "@/config/brand";
 
 interface ValueItem {
   letter: string;
@@ -22,7 +23,7 @@ const defaultValues: ValueItem[] = [
       "Luôn tạo thử thách cho học viên, có tinh thần học tập không ngừng nghỉ. GV luôn đặt thử thách đầu giờ cho HV trước khi vào bài.",
     quote:
       "GV luôn đặt thử thách đầu giờ cho HV trước khi vào bài",
-    quoteAuthor: "Phương pháp TNQDO",
+    quoteAuthor: BRAND.methodName,
     imageUrl: "/img/3C_about/Challenging.jpg",
   },
   {
@@ -60,7 +61,7 @@ const ThreeCValues = () => {
 
   const title =
     (cmsContent?.title_display as string) ||
-    "Giá trị cốt lõi 3C tại TNQDO";
+    "Giá trị cốt lõi 3C tại " + BRAND.name;
 
   const values: ValueItem[] =
     (cmsContent?.values as ValueItem[]) || defaultValues;
@@ -80,7 +81,7 @@ const ThreeCValues = () => {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-background/80 backdrop-blur-xl border border-border shadow-sm mb-5">
               <span className="text-sm font-semibold text-primary">
-                TNQDO Method
+                {BRAND.methodLabel}
               </span>
             </div>
 

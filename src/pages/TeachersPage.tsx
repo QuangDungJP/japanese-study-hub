@@ -10,8 +10,8 @@ const TeachersPage = () => {
       <Navbar />
       <PageBanner
         pageKey="teachers"
-        defaultBadge="Đội ngũ giảng viên"
-        defaultTitle="Giảng viên xuất sắc & tận tâm"
+        defaultBadge="Đội ngũ giáo viên"
+        defaultTitle="Giáo viên xuất sắc & tận tâm"
         highlight="xuất sắc"
         defaultSubtitle="100% giáo viên có chứng chỉ giảng dạy, kinh nghiệm dày dặn và phương pháp giảng dạy sáng tạo"
       />

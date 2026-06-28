@@ -190,7 +190,7 @@ const ProfilePage = () => {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin': return 'Admin';
-      case 'teacher': return 'Giảng viên';
+      case 'teacher': return 'Giáo viên';
       case 'senior_teacher': return 'GV Cao cấp';
       case 'moderator': return 'Moderator';
       case 'user': return 'Học viên';
@@ -320,7 +320,7 @@ const ProfilePage = () => {
               <>
                 <div className="border-t border-border pt-5">
                   <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4" /> Thông tin giảng viên
+                    <GraduationCap className="w-4 h-4" /> Thông tin giáo viên
                   </h3>
                 </div>
 

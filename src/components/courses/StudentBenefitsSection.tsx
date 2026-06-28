@@ -7,6 +7,7 @@ import {
   Video,
   Network,
 } from "lucide-react";
+import { BRAND } from "@/config/brand";
 
 const benefits = [
   {
@@ -71,7 +72,7 @@ const StudentBenefitsSection = () => {
             {/* Ribbon */}
             <div className="relative px-10 md:px-20 py-5 rounded-[30px] border-[3px] border-[#b68934] bg-gradient-to-b from-[#fff5c5] via-[#f6df8f] to-[#cf9f39] shadow-2xl">
               <h2 className="text-2xl md:text-5xl font-black text-white tracking-tight text-center drop-shadow-[0_4px_0_rgba(31,64,181,1)]">
-                Quyền lợi học viên tại TNQDO
+                {BRAND.benefitHeading}
               </h2>
             </div>
           </div>

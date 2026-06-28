@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit, MapPin } from 'lucide-react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit, MapPin, MessageSquare, Sparkles } from 'lucide-react';
+import ChibiLoader from '@/components/shared/ChibiLoader';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
+import TestimonialsManager from '@/components/admin/TestimonialsManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { usePageVisibility, PageVisibilitySettings } from '@/hooks/usePageVisibility';
 import { supabase } from '@/integrations/supabase/client';
+import { BRAND } from '@/config/brand';
 import { Slider } from '@/components/ui/slider';
 
 const supportedLanguages = [
@@ -53,7 +56,7 @@ const sidebarItemLabels: Record<string, string> = {
   dashboard: 'Dashboard',
   lessons: 'Bài học',
   exercises: 'Bài tập',
-  zoom: 'Zoom Class',
+  zoom: 'Đặt lịch học',
   calendar: 'Lịch học',
   achievements: 'Thành tích',
   settings: 'Cài đặt',
@@ -85,6 +88,9 @@ interface MapCms {
   directions_url: string;
   title: string;
   subtitle: string;
+  lat: string;
+  lng: string;
+  query: string;
 }
 
 const defaultMapCms: MapCms = {
@@ -92,9 +98,12 @@ const defaultMapCms: MapCms = {
   address: 'TP. Hồ Chí Minh, Việt Nam',
   phone: '(+84) 901 189 399',
   hours: 'Thứ 2 - Chủ nhật: 8:00 - 21:00',
-  directions_url: 'https://www.google.com/maps?q=TNQDO+Education',
-  title: 'Tìm đường đến TNQDO',
+  directions_url: `https://www.google.com/maps?q=${BRAND.mapQuery}`,
+  title: BRAND.mapTitle,
   subtitle: 'Ghé thăm trung tâm, gặp gỡ đội ngũ và trải nghiệm lớp học demo miễn phí.',
+  lat: '10.776889',
+  lng: '106.700981',
+  query: BRAND.mapQuery,
 };
 
 const AdminSettings = () => {
@@ -295,7 +304,7 @@ const AdminSettings = () => {
       </div>
 
       <Tabs defaultValue="auth" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1">
           <TabsTrigger value="auth" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />Trang Auth
           </TabsTrigger>
@@ -304,6 +313,12 @@ const AdminSettings = () => {
           </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />Quản lý trang
+          </TabsTrigger>
+          <TabsTrigger value="homepage" className="flex items-center gap-2">
+            <Home className="w-4 h-4" />Trang chủ
+          </TabsTrigger>
+          <TabsTrigger value="feedback" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />Feedback
           </TabsTrigger>
           <TabsTrigger value="map" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />Bản đồ
@@ -318,6 +333,15 @@ const AdminSettings = () => {
             <Settings2 className="w-4 h-4" />Chung
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="homepage" className="space-y-4">
+          <HomepageSectionOrder />
+        </TabsContent>
+
+        <TabsContent value="feedback" className="space-y-4">
+          <TestimonialsManager />
+        </TabsContent>
+
 
         <TabsContent value="auth" className="space-y-4">
           <Card>
@@ -452,7 +476,7 @@ const AdminSettings = () => {
                         <Input
                           value={p.hero_badge_vi || ''}
                           onChange={(e) => updatePageSetting(p.id, 'hero_badge_vi', e.target.value)}
-                          placeholder="VD: Đội ngũ giảng viên"
+                          placeholder="VD: Đội ngũ giáo viên"
                         />
                       </div>
                       <div className="md:col-span-2 space-y-2">
@@ -687,6 +711,8 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <ChibiLoaderSettingsCard />
           </div>
         </TabsContent>
 
@@ -695,19 +721,55 @@ const AdminSettings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5 text-primary" /> Bản đồ Google Maps trang Liên hệ</CardTitle>
               <CardDescription>
-                Dán mã nhúng (iframe src) từ Google Maps. Mở <a className="text-primary underline" href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps</a> → tìm địa điểm → Chia sẻ → Nhúng bản đồ → copy nội dung trong thuộc tính <code>src="..."</code>.
+                Có 3 cách cấu hình theo độ ưu tiên: (1) Dán <strong>Embed URL</strong> từ Google Maps → Chia sẻ → Nhúng bản đồ. (2) Nhập <strong>Tọa độ (lat/lng)</strong> thủ công nếu không tìm được. (3) Nhập <strong>Từ khóa tìm kiếm</strong> hoặc dùng Địa chỉ.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Embed URL (iframe src)</label>
+                <label className="text-sm font-medium">Embed URL (iframe src) — tuỳ chọn</label>
                 <Textarea
                   value={mapCms.embed_url}
                   onChange={(e) => setMapCms(prev => ({ ...prev, embed_url: e.target.value }))}
                   placeholder="https://www.google.com/maps/embed?pb=..."
                   rows={3}
                 />
+                <p className="text-xs text-muted-foreground mt-1">Để trống nếu bạn muốn dùng toạ độ hoặc từ khoá bên dưới.</p>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl border border-dashed bg-muted/30">
+                <div>
+                  <label className="text-sm font-medium">Latitude (vĩ độ)</label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={mapCms.lat}
+                    onChange={(e) => setMapCms(p => ({ ...p, lat: e.target.value }))}
+                    placeholder="10.776889"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Longitude (kinh độ)</label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={mapCms.lng}
+                    onChange={(e) => setMapCms(p => ({ ...p, lng: e.target.value }))}
+                    placeholder="106.700981"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Từ khóa tìm kiếm</label>
+                  <Input
+                    value={mapCms.query}
+                    onChange={(e) => setMapCms(p => ({ ...p, query: e.target.value }))}
+                    placeholder="TNQDO Education Ho Chi Minh"
+                  />
+                </div>
+                <p className="md:col-span-3 text-xs text-muted-foreground">
+                  Mẹo: mở Google Maps, click chuột phải vào vị trí trung tâm → click vào cặp số để copy toạ độ (ví dụ 10.776889, 106.700981).
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Tiêu đề section</label>
@@ -735,14 +797,23 @@ const AdminSettings = () => {
                 </div>
               </div>
 
-              {mapCms.embed_url && (
-                <div>
-                  <p className="text-sm font-medium mb-2">Xem trước</p>
-                  <div className="aspect-[16/9] rounded-xl overflow-hidden border border-border bg-muted">
-                    <iframe src={mapCms.embed_url} className="w-full h-full border-0" loading="lazy" title="map-preview" />
-                  </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Xem trước</p>
+                <div className="aspect-[16/9] rounded-xl overflow-hidden border border-border bg-muted">
+                  <iframe
+                    src={
+                      mapCms.embed_url?.trim()
+                        ? mapCms.embed_url.trim()
+                        : mapCms.lat?.trim() && mapCms.lng?.trim() && !isNaN(Number(mapCms.lat)) && !isNaN(Number(mapCms.lng))
+                          ? `https://maps.google.com/maps?q=${mapCms.lat.trim()},${mapCms.lng.trim()}&z=16&hl=vi&output=embed`
+                          : `https://maps.google.com/maps?q=${encodeURIComponent(mapCms.query?.trim() || mapCms.address?.trim() || BRAND.mapQuery)}&z=15&hl=vi&output=embed`
+                    }
+                    className="w-full h-full border-0"
+                    loading="lazy"
+                    title="map-preview"
+                  />
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -752,3 +823,61 @@ const AdminSettings = () => {
 };
 
 export default AdminSettings;
+
+/* =========================
+   Chibi Loader settings (localStorage-backed)
+========================= */
+const ChibiLoaderSettingsCard = () => {
+  const { toast } = useToast();
+  const [frame1, setFrame1] = useState(() => localStorage.getItem('chibi_loader_frame1') || '');
+  const [frame2, setFrame2] = useState(() => localStorage.getItem('chibi_loader_frame2') || '');
+  const [label, setLabel] = useState(() => localStorage.getItem('chibi_loader_label') || 'Đang tải...');
+
+  const save = () => {
+    if (frame1) localStorage.setItem('chibi_loader_frame1', frame1); else localStorage.removeItem('chibi_loader_frame1');
+    if (frame2) localStorage.setItem('chibi_loader_frame2', frame2); else localStorage.removeItem('chibi_loader_frame2');
+    if (label) localStorage.setItem('chibi_loader_label', label); else localStorage.removeItem('chibi_loader_label');
+    toast({ title: 'Đã lưu', description: 'Loader sẽ cập nhật ở lần tải trang tiếp theo.' });
+  };
+
+  const reset = () => {
+    localStorage.removeItem('chibi_loader_frame1');
+    localStorage.removeItem('chibi_loader_frame2');
+    localStorage.removeItem('chibi_loader_label');
+    setFrame1(''); setFrame2(''); setLabel('Đang tải...');
+    toast({ title: 'Đã khôi phục mặc định' });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" /> Chibi Loader</CardTitle>
+        <CardDescription>Hình chibi chạy hiển thị khi đang tải trang. Để trống để dùng mặc định.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">URL khung hình 1</label>
+            <Input value={frame1} onChange={(e) => setFrame1(e.target.value)} placeholder="https://..." />
+          </div>
+          <div>
+            <label className="text-sm font-medium">URL khung hình 2</label>
+            <Input value={frame2} onChange={(e) => setFrame2(e.target.value)} placeholder="https://..." />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium">Văn bản hiển thị</label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Đang tải..." />
+          </div>
+        </div>
+        <div className="rounded-xl border border-border p-4 bg-muted/30">
+          <p className="text-xs text-muted-foreground mb-2">Xem trước</p>
+          <ChibiLoader fullScreen={false} size={120} label={label || 'Đang tải...'} />
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={save} variant="hero"><Save className="w-4 h-4 mr-2" />Lưu</Button>
+          <Button onClick={reset} variant="outline">Khôi phục mặc định</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

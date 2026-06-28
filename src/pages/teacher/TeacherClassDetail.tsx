@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Trash2, Upload, Link2, ExternalLink, Star, Flame, CalendarClock, GraduationCap, CalendarDays, Search, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
+import MaterialsManager from '@/components/teacher/MaterialsManager';
 
 const TeacherClassDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -195,6 +196,7 @@ const TeacherClassDetail = () => {
           <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" />Học viên</TabsTrigger>
           <TabsTrigger value="sessions"><CalendarDays className="w-4 h-4 mr-1" />Lịch học</TabsTrigger>
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
+          <TabsTrigger value="materials"><FileText className="w-4 h-4 mr-1" />Tài liệu</TabsTrigger>
           <TabsTrigger value="vocab"><BookText className="w-4 h-4 mr-1" />Từ vựng</TabsTrigger>
           <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
           <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
@@ -262,6 +264,12 @@ const TeacherClassDetail = () => {
             </Table>
           </CardContent></Card>
         </TabsContent>
+
+        <TabsContent value="materials" className="mt-4">
+          {id && <MaterialsManager scope={{ kind: 'class', classId: id }} title="Tài liệu lớp học" />}
+        </TabsContent>
+
+
 
         <TabsContent value="vocab" className="mt-4">
           <Card><CardContent className="p-0">

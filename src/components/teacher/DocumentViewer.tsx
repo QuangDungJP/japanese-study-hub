@@ -1,5 +1,7 @@
-import { Download, ExternalLink, FileText } from "lucide-react";
+import { useState } from "react";
+import { Download, ExternalLink, FileText, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PdfPresenter from "./PdfPresenter";
 
 interface DocumentViewerProps {
   url: string;
@@ -19,6 +21,7 @@ const getType = (url: string, fileType?: string) => {
 const DocumentViewer = ({ url, title, fileType }: DocumentViewerProps) => {
   const type = getType(url, fileType);
   const officeSrc = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+  const [presenting, setPresenting] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -28,6 +31,11 @@ const DocumentViewer = ({ url, title, fileType }: DocumentViewerProps) => {
           <span className="font-medium truncate">{title || "Tài liệu"}</span>
         </div>
         <div className="flex gap-2">
+          {type === "pdf" && (
+            <Button variant="hero" size="sm" onClick={() => setPresenting(true)}>
+              <Presentation className="w-3.5 h-3.5 mr-1" /> Trình chiếu
+            </Button>
+          )}
           <Button asChild variant="outline" size="sm">
             <a href={url} target="_blank" rel="noreferrer">
               <ExternalLink className="w-3.5 h-3.5 mr-1" /> Mở tab mới
@@ -61,6 +69,14 @@ const DocumentViewer = ({ url, title, fileType }: DocumentViewerProps) => {
           </div>
         )}
       </div>
+      {type === "pdf" && (
+        <PdfPresenter
+          open={presenting}
+          onOpenChange={setPresenting}
+          url={url}
+          title={title}
+        />
+      )}
     </div>
   );
 };

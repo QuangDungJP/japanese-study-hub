@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, BookOpen, ClipboardList, GraduationCap, CalendarClock, ExternalLink, Link2, Play, Clock, Upload, FileText, CheckCircle2, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
+import MaterialsManager from '@/components/teacher/MaterialsManager';
 
 const StudentClassDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -129,24 +130,25 @@ const StudentClassDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild><Link to="/learn/classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{cls.name_vi}</h1>
-          <p className="text-sm text-muted-foreground">{cls.description_vi || cls.name}</p>
+      <div className="flex items-start gap-2 sm:gap-3">
+        <Button variant="ghost" size="icon" asChild className="shrink-0"><Link to="/learn/classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">{cls.name_vi}</h1>
+          <p className="text-sm text-muted-foreground line-clamp-2">{cls.description_vi || cls.name}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card><CardContent className="p-4"><div className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-blue-500" /><span className="text-sm text-muted-foreground">Bài học</span></div><p className="text-2xl font-bold">{lessons.length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center gap-2"><ClipboardList className="w-4 h-4 text-orange-500" /><span className="text-sm text-muted-foreground">Bài tập</span></div><p className="text-2xl font-bold">{assignments.length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-purple-500" /><span className="text-sm text-muted-foreground">Kiểm tra</span></div><p className="text-2xl font-bold">{exams.length}</p></CardContent></Card>
       </div>
 
       <Tabs defaultValue="lessons">
-        <TabsList className="flex-wrap">
+        <TabsList className="flex flex-wrap h-auto justify-start gap-1 w-full overflow-x-auto">
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
           <TabsTrigger value="sessions"><CalendarDays className="w-4 h-4 mr-1" />Lịch học</TabsTrigger>
+          <TabsTrigger value="materials"><FileText className="w-4 h-4 mr-1" />Tài liệu</TabsTrigger>
           <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
           <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Nộp bài</TabsTrigger>
@@ -181,6 +183,11 @@ const StudentClassDetail = () => {
             {id && <ClassSessionsManager classId={id} className={cls?.name_vi} />}
           </CardContent></Card>
         </TabsContent>
+
+        <TabsContent value="materials" className="mt-4">
+          {id && <MaterialsManager scope={{ kind: 'class', classId: id }} readOnly title="Tài liệu lớp" />}
+        </TabsContent>
+
 
         <TabsContent value="assignments" className="mt-4 space-y-3">
           {assignments.length === 0 ? <Card><CardContent className="py-12 text-center text-muted-foreground">Chưa có bài tập</CardContent></Card> :

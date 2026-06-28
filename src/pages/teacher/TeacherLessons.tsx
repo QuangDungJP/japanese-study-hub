@@ -20,15 +20,16 @@ import {
 } from '@/components/ui/table';
 import { 
   BookOpen, Plus, Edit, Clock, Send, Dumbbell, 
-  Image, Film, MoreHorizontal, Eye, Layers, FileText, GraduationCap, FolderOpen
+  Image, Film, MoreHorizontal, Eye, Layers, FileText, GraduationCap, FolderOpen, ArrowRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import LessonEditor from '@/components/teacher/LessonEditor';
 import LessonExercises from '@/components/admin/LessonExercises';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ExamManager } from '@/components/calendar/ExamManager';
 import MaterialsManager from '@/components/teacher/MaterialsManager';
+import { buildLessonPayload, parseLessonRow } from '@/lib/lessonSchema';
+import { Link } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +53,10 @@ interface Lesson {
   thumbnail_url?: string;
   video_url?: string;
   content_html?: string;
+  class_id?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
+  order_index?: number;
 }
 
 interface TeacherContext {
@@ -83,6 +88,7 @@ const TeacherLessons = () => {
         .from('lessons')
         .select('*')
         .eq('teacher_id', user?.id)
+        .order('order_index', { ascending: true })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -96,24 +102,23 @@ const TeacherLessons = () => {
 
   const handleSubmit = async (formData: any) => {
     try {
-      const lessonData = {
-        ...formData,
-        teacher_id: user?.id,
+      const lessonData = buildLessonPayload(formData, {
         language: 'japanese',
-        is_published: false,
-      };
+        teacherId: user?.id || null,
+        isPublished: editingLesson ? undefined as any : false,
+      });
 
       if (editingLesson) {
-        const { error } = await supabase
-          .from('lessons')
+        const { error } = await (supabase
+          .from('lessons') as any)
           .update(lessonData)
           .eq('id', editingLesson.id);
 
         if (error) throw error;
         toast({ title: 'Thành công', description: 'Đã cập nhật bài học' });
       } else {
-        const { error } = await supabase
-          .from('lessons')
+        const { error } = await (supabase
+          .from('lessons') as any)
           .insert(lessonData);
 
         if (error) throw error;
@@ -166,17 +171,10 @@ const TeacherLessons = () => {
     setIsEditorOpen(true);
   };
 
-  const getSkillInfo = (skill: string) => {
-    const info: Record<string, { label: string; icon: string; color: string }> = {
-      reading: { label: 'Đọc hiểu', icon: '📖', color: 'bg-blue-500/10 text-blue-600' },
-      listening: { label: 'Nghe', icon: '🎧', color: 'bg-purple-500/10 text-purple-600' },
-      speaking: { label: 'Nói', icon: '🗣️', color: 'bg-green-500/10 text-green-600' },
-      writing: { label: 'Viết', icon: '✍️', color: 'bg-orange-500/10 text-orange-600' },
-      vocabulary: { label: 'Từ vựng', icon: '📚', color: 'bg-pink-500/10 text-pink-600' },
-      grammar: { label: 'Ngữ pháp', icon: '📝', color: 'bg-cyan-500/10 text-cyan-600' },
-    };
-    return info[skill] || { label: skill, icon: '📖', color: 'bg-muted text-muted-foreground' };
-  };
+  const getSkillInfo = (skill: string) => ({
+    label: skill || 'Khác',
+    color: 'bg-primary/10 text-primary border-primary/20',
+  });
 
   return (
     <div className="space-y-6">
@@ -280,12 +278,10 @@ const TeacherLessons = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={skillInfo.color}>
-                          {skillInfo.icon} {skillInfo.label}
-                        </Badge>
+                        <Badge variant="outline" className={skillInfo.color}>{skillInfo.label}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{lesson.level}</Badge>
+                        {lesson.level ? <Badge variant="outline">{lesson.level}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-muted-foreground">
@@ -367,8 +363,8 @@ const TeacherLessons = () => {
                         className="text-left rounded-xl border border-border/60 bg-card hover:border-primary/50 hover:shadow-md transition-all p-4 space-y-2"
                       >
                         <div className="flex items-center justify-between">
-                          <Badge className={skill.color}>{skill.icon} {skill.label}</Badge>
-                          <Badge variant="outline">{l.level}</Badge>
+                          <Badge variant="outline" className={skill.color}>{skill.label}</Badge>
+                          {l.level && <Badge variant="outline">{l.level}</Badge>}
                         </div>
                         <h4 className="font-semibold line-clamp-2">{l.title_vi || l.title}</h4>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -395,10 +391,17 @@ const TeacherLessons = () => {
                 <GraduationCap className="w-5 h-5" />
                 Bài kiểm tra
               </CardTitle>
-              <p className="text-sm text-muted-foreground">Tạo, lên lịch và theo dõi các bài kiểm tra cho lớp của bạn.</p>
+              <p className="text-sm text-muted-foreground">
+                Bài kiểm tra (Exam) được quản lý ở mục riêng — tách bạch với Bài học và Bài tập.
+              </p>
             </CardHeader>
             <CardContent>
-              <ExamManager />
+              <Button asChild variant="hero">
+                <Link to="/teacher/exams">
+                  <GraduationCap className="w-4 h-4 mr-2" />
+                  Mở trang Bài kiểm tra <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -412,19 +415,8 @@ const TeacherLessons = () => {
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-6">
           <LessonEditor
-            initialData={editingLesson ? {
-              title: editingLesson.title,
-              title_vi: editingLesson.title_vi,
-              description: editingLesson.description || '',
-              description_vi: editingLesson.description_vi || '',
-              skill: editingLesson.skill,
-              level: editingLesson.level,
-              duration_minutes: editingLesson.duration_minutes,
-              xp_reward: editingLesson.xp_reward,
-              thumbnail_url: editingLesson.thumbnail_url || '',
-              video_url: editingLesson.video_url || '',
-              content_html: editingLesson.content_html || '',
-            } : undefined}
+            lessonId={editingLesson?.id}
+            initialData={editingLesson ? parseLessonRow(editingLesson) : undefined}
             onSubmit={handleSubmit}
             onCancel={() => setIsEditorOpen(false)}
             isEditing={!!editingLesson}

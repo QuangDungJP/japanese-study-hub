@@ -52,7 +52,7 @@ const sectionLabels: Record<string, string> = {
   'hero': 'Trang chủ (Hero)',
   'skills': 'Kỹ năng',
   'languages': 'Ngôn ngữ',
-  'teachers': 'Giảng viên',
+  'teachers': 'Giáo viên',
   'zoom': 'Lớp học Zoom',
   'features': 'Tính năng',
   'cta': 'Kêu gọi hành động',
@@ -149,8 +149,8 @@ const AdminWebsiteCMS = () => {
         .from('website_content')
         .insert({
           section_key: 'teachers',
-          title_vi: 'Đội ngũ giảng viên xuất sắc',
-          subtitle_vi: 'Giảng viên',
+          title_vi: 'Đội ngũ giáo viên xuất sắc',
+          subtitle_vi: 'Giáo viên',
           description_vi: 'Danh sách giáo viên được tuyển chọn để đồng hành cùng bạn',
           is_active: true,
           order_index: orderIndex,
@@ -158,13 +158,13 @@ const AdminWebsiteCMS = () => {
         });
 
       if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã tạo mục Giảng viên' });
+      toast({ title: 'Thành công', description: 'Đã tạo mục Giáo viên' });
       await fetchSections();
     } catch (error) {
       console.error('Error creating teachers section:', error);
       toast({
         title: 'Lỗi',
-        description: 'Không thể tạo mục Giảng viên',
+        description: 'Không thể tạo mục Giáo viên',
         variant: 'destructive'
       });
     } finally {
@@ -524,14 +524,14 @@ const AdminWebsiteCMS = () => {
                 {!sections.some((s) => s.section_key === 'teachers') && (
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-xl border border-border bg-muted/40">
                     <div>
-                      <p className="text-sm font-medium">Mục "Giảng viên" chưa tồn tại.</p>
-                      <p className="text-xs text-muted-foreground">Tạo mục này để quản lý danh sách giảng viên hiển thị trên trang chủ.</p>
+                      <p className="text-sm font-medium">Mục "Giáo viên" chưa tồn tại.</p>
+                      <p className="text-xs text-muted-foreground">Tạo mục này để quản lý danh sách giáo viên hiển thị trên trang chủ.</p>
                     </div>
                     <Button
                       onClick={createTeachersSection}
                       disabled={creatingTeachersSection}
                     >
-                      {creatingTeachersSection ? 'Đang tạo...' : 'Tạo mục Giảng viên'}
+                      {creatingTeachersSection ? 'Đang tạo...' : 'Tạo mục Giáo viên'}
                     </Button>
                   </div>
                 )}

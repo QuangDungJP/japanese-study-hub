@@ -24,6 +24,7 @@ import {
 import ScrollReveal from "@/components/ScrollReveal";
 import ThreeCValues from "@/components/about/ThreeCValues";
 import AboutZoomSection from "@/components/about/AboutZoomSection";
+import TestimonialsSection from "@/components/about/TestimonialsSection";
 import {
   Accordion,
   AccordionContent,
@@ -35,6 +36,8 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageSetting } from "@/hooks/usePageSettings";
+import { BRAND } from "@/config/brand";
+import PageBanner from "@/components/shared/PageBanner";
 
 interface FAQ {
   id: string;
@@ -49,7 +52,7 @@ const About = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const { data: pageCfg } = usePageSetting('about');
-  const heroBadge = pageCfg?.hero_badge_vi || 'Về TNQDO Education';
+  const heroBadge = pageCfg?.hero_badge_vi || `Về ${BRAND.fullName}`;
   const heroTitle = pageCfg?.hero_title_vi;
   const heroSubtitle = pageCfg?.hero_subtitle_vi || 'Kết hợp giáo dục hiện đại, công nghệ AI và phương pháp học tập Nhật Bản để giúp người Việt chinh phục tiếng Nhật nhanh hơn, sâu hơn và thực tế hơn.';
   const heroImage = pageCfg?.hero_image_url;
@@ -110,162 +113,42 @@ const About = () => {
     <main className="min-h-screen bg-background overflow-hidden">
       <Navbar />
 
-      {/* HERO */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* BACKGROUND (admin image overrides video) */}
-        {heroImage ? (
-          <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-          >
-            <source src="/videos/about-hero.mp4" type="video/mp4" />
-          </video>
-        )}
+      {/* HERO - Đồng bộ với các trang khác */}
+      <PageBanner
+        pageKey="about"
+        defaultBadge={heroBadge}
+        defaultTitle={heroTitle || `Nền tảng học Tiếng Nhật thế hệ mới`}
+        defaultSubtitle={heroSubtitle}
+        defaultImage={heroImage}
+        defaultPrimaryLabel={ctaPrimaryLabel}
+        defaultPrimaryUrl={ctaPrimaryUrl}
+        defaultSecondaryLabel={ctaSecondaryLabel}
+        defaultSecondaryUrl={ctaSecondaryUrl}
+        highlight="Tiếng Nhật"
+      />
 
-        {/* OVERLAY */}
-        <div className="absolute inset-0 bg-black/60" />
-
-        {/* GLOW */}
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-japanese/20 rounded-full blur-3xl" />
-
-        {/* SOUND BUTTON */}
-        <button
-          onClick={() => setMuted(!muted)}
-          className="
-            absolute
-            bottom-6
-            right-6
-            z-30
-            w-14
-            h-14
-            rounded-full
-            bg-white/10
-            backdrop-blur-xl
-            border
-            border-white/20
-            flex
-            items-center
-            justify-center
-            text-white
-            hover:bg-white/20
-            transition-all
-          "
-        >
-          {muted ? (
-            <VolumeX className="w-6 h-6" />
-          ) : (
-            <Volume2 className="w-6 h-6" />
-          )}
-        </button>
-
-        {/* CONTENT */}
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-5xl mx-auto text-center">
-            <ScrollReveal>
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-sm font-semibold mb-8">
-                <GraduationCap className="w-4 h-4" />
-                {heroBadge}
-              </div>
-
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight">
-                {heroTitle ? (
-                  heroTitle
-                ) : (
-                  <>
-                    Nền tảng học
-                    <br />
-                    <span className="bg-gradient-to-r from-white via-orange-200 to-primary bg-clip-text text-transparent">
-                      Tiếng Nhật
-                    </span>
-                    <br />
-                    thế hệ mới
-                  </>
-                )}
-              </h1>
-
-              <p className="text-lg md:text-2xl text-white/80 max-w-3xl mx-auto mt-8 leading-relaxed">
-                {heroSubtitle}
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
-                <Button
-                  size="lg"
-                  className="h-14 px-10 rounded-2xl text-base bg-white text-primary hover:bg-white/90 shadow-2xl"
-                  asChild
+      {/* STATS */}
+      <section className="py-12 bg-background border-b border-border/40">
+        <div className="container mx-auto px-4">
+          <ScrollReveal>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+              {[
+                { icon: Users, value: "50,000+", label: "Học viên" },
+                { icon: BookOpen, value: "1,000+", label: "Bài học" },
+                { icon: Trophy, value: "95%", label: "Tỷ lệ đỗ JLPT" },
+                { icon: Target, value: "200+", label: "Giáo viên" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-border bg-card p-6 text-center hover:shadow-card-hover transition-all"
                 >
-                  <Link to={ctaPrimaryUrl}>
-                    {ctaPrimaryLabel}
-                    <Sparkles className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-14 px-10 rounded-2xl text-base border-white/20 bg-white/10 backdrop-blur-xl text-white hover:bg-white/20"
-                  asChild
-                >
-                  <Link to={ctaSecondaryUrl}>{ctaSecondaryLabel}</Link>
-                </Button>
-              </div>
-            </ScrollReveal>
-
-            {/* STATS */}
-            <ScrollReveal delay={200}>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-20">
-                {[
-                  {
-                    icon: Users,
-                    value: "50,000+",
-                    label: "Học viên",
-                  },
-                  {
-                    icon: BookOpen,
-                    value: "1,000+",
-                    label: "Bài học",
-                  },
-                  {
-                    icon: Trophy,
-                    value: "95%",
-                    label: "Tỷ lệ đỗ JLPT",
-                  },
-                  {
-                    icon: Target,
-                    value: "200+",
-                    label: "Giảng viên",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="
-                      rounded-3xl
-                      border
-                      border-white/10
-                      bg-white/10
-                      backdrop-blur-xl
-                      p-6
-                      text-white
-                    "
-                  >
-                    <item.icon className="w-8 h-8 mx-auto mb-4 text-orange-200" />
-
-                    <div className="text-3xl font-black mb-2">
-                      {item.value}
-                    </div>
-
-                    <div className="text-white/70 text-sm">{item.label}</div>
-                  </div>
-                ))}
-              </div>
-            </ScrollReveal>
-          </div>
+                  <item.icon className="w-8 h-8 mx-auto mb-3 text-japanese" />
+                  <div className="text-3xl font-black text-foreground mb-1">{item.value}</div>
+                  <div className="text-muted-foreground text-sm">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -284,7 +167,7 @@ const About = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary/10 text-primary border border-primary/20 mb-6 backdrop-blur-sm shadow-sm">
             <Heart className="w-4 h-4" />
-            Câu chuyện TNQDO
+            {BRAND.aboutStoryTitle}
           </div>
 
           {/* Title */}
@@ -298,7 +181,7 @@ const About = () => {
           {/* Description */}
           <div className="space-y-5 text-muted-foreground text-lg leading-relaxed">
             <p>
-              TNQDO được xây dựng với khát vọng tạo nên nền tảng học tiếng Nhật
+              {BRAND.name} được xây dựng với khát vọng tạo nên nền tảng học tiếng Nhật
               hiện đại dành riêng cho người Việt.
             </p>
 
@@ -308,7 +191,7 @@ const About = () => {
             </p>
 
             <p>
-              Không chỉ là học ngôn ngữ, TNQDO còn giúp học viên hiểu văn hóa,
+              Không chỉ là học ngôn ngữ, {BRAND.name} còn giúp học viên hiểu văn hóa,
               mở rộng cơ hội nghề nghiệp và phát triển bản thân.
             </p>
           </div>
@@ -375,7 +258,7 @@ const About = () => {
     <iframe
       className="w-full h-full"
       src="https://www.youtube.com/embed/8sEAdplNYeA?autoplay=1&mute=1&loop=1&playlist=8sEAdplNYeA&controls=1&rel=0"
-      title="TNQDO Video"
+      title={`${BRAND.name} Video`}
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen
     />
@@ -405,7 +288,7 @@ const About = () => {
                 shadow-lg
               "
             >
-              TNQDO Education
+              {BRAND.aboutFounderName}
             </div>
           </div>
 
@@ -446,6 +329,7 @@ const About = () => {
       <SkillsSection />
       <FeaturesSection />
       <AboutZoomSection />
+      <TestimonialsSection />
 
       {/* FAQ */}
       <section className="py-24 bg-background relative overflow-hidden">
@@ -544,7 +428,7 @@ const About = () => {
 
             <p className="text-white/80 text-lg md:text-xl leading-relaxed mb-10">
               Tham gia cùng hơn 50,000 học viên đang học tập và phát triển cùng
-              TNQDO Education
+              {BRAND.aboutLeaderName}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

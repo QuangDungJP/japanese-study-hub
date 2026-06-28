@@ -1,11 +1,12 @@
-import { Star, Award, BookOpen, Globe, Play } from "lucide-react";
+import { Star, Award, BookOpen, Globe, Play, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface Teacher {
   id: string;
@@ -22,9 +23,19 @@ interface Teacher {
   languages: string[];
 }
 
+const DEFAULT_CATEGORIES = [
+  "Đọc hiểu",
+  "Nghe hiểu",
+  "Từ vựng",
+  "Ngữ pháp",
+  "Kaiwa",
+  "Văn hóa Nhật",
+];
+
 const TeachersSection = () => {
   const { data: teachers, isLoading } = useTeacherProfiles();
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("all");
 
   const teacherList: Teacher[] = (teachers || []).map((t) => {
     const specializations = Array.isArray(t.specializations)
@@ -37,8 +48,8 @@ const TeachersSection = () => {
 
     return {
       id: t.id,
-      name: t.display_name || t.profile?.full_name || "Giảng viên",
-      role: "Giảng viên",
+      name: t.display_name || t.profile?.full_name || "Giáo viên",
+      role: "Giáo viên",
       avatar_url: t.image_url || t.profile?.avatar_url || "",
       video_url: undefined,
       bio: t.bio_vi || t.bio || "",
@@ -51,8 +62,21 @@ const TeachersSection = () => {
     };
   });
 
-  const title = "Đội ngũ giảng viên xuất sắc";
-  const subtitle = "Giảng viên";
+  const categories = useMemo(() => {
+    const set = new Set<string>(DEFAULT_CATEGORIES);
+    teacherList.forEach((t) => t.specializations.forEach((s) => s && set.add(s)));
+    return Array.from(set);
+  }, [teacherList]);
+
+  const filteredTeachers = useMemo(() => {
+    if (activeCategory === "all") return teacherList;
+    return teacherList.filter((t) =>
+      t.specializations.some((s) => s?.toLowerCase() === activeCategory.toLowerCase())
+    );
+  }, [teacherList, activeCategory]);
+
+  const title = "Đội ngũ giáo viên xuất sắc";
+  const subtitle = "Giáo viên";
   const description =
     "Giáo viên bản ngữ và giáo viên Việt Nam giàu kinh nghiệm, tận tâm đồng hành cùng bạn trên hành trình chinh phục tiếng Nhật";
 
@@ -97,14 +121,63 @@ const TeachersSection = () => {
           </p>
         </div>
 
+        {/* Category Filter */}
+        {teacherList.length > 0 && (
+          <div className="mb-10 mx-auto max-w-4xl">
+            <div className="flex items-center gap-2 p-2 rounded-2xl bg-card/70 backdrop-blur-sm border border-border shadow-soft">
+              <div className="hidden md:inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground px-3 shrink-0">
+                <Filter className="w-3.5 h-3.5" />
+                Chuyên môn
+              </div>
+              <div className="hidden md:block h-6 w-px bg-border shrink-0" />
+              <div className="flex-1 min-w-0 overflow-x-auto [scrollbar-width:none] [scrollbar-none::-webkit-scrollbar]:hidden">
+                <div className="flex items-center gap-1.5 w-max">
+                  <button
+                    type="button"
+                    onClick={() => setActiveCategory("all")}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
+                      activeCategory === "all"
+                        ? "bg-japanese text-white shadow-md"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    Tất cả
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setActiveCategory(cat)}
+                      className={cn(
+                        "px-3.5 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
+                        activeCategory === cat
+                          ? "bg-japanese text-white shadow-md"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      )}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+
         {/* Teachers Grid */}
         {teacherList.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground">
-            Đang cập nhật dữ liệu giảng viên, vui lòng quay lại sau.
+            Đang cập nhật dữ liệu giáo viên, vui lòng quay lại sau.
+          </div>
+        ) : filteredTeachers.length === 0 ? (
+          <div className="py-20 text-center text-muted-foreground">
+            Không có giáo viên nào thuộc chuyên môn "{activeCategory}".
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {teacherList.map((teacher) => (
+            {filteredTeachers.map((teacher) => (
               <Link
                 key={teacher.id}
                 to={`/giao-vien/${(teachers || []).find(t => t.id === teacher.id)?.slug || teacher.id}`}
@@ -202,7 +275,7 @@ const TeachersSection = () => {
         <div className="mt-12 text-center">
           <Button variant="japanese" size="lg" asChild>
             <a href="/auth">
-              Đăng ký học với giảng viên
+              Đăng ký học với giáo viên
             </a>
           </Button>
         </div>
