@@ -3,6 +3,7 @@ import { Video, Users, Calendar, Clock, MessageCircle, Award } from "lucide-reac
 import { useAllWebsiteContent } from "@/hooks/useWebsiteContent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link as RouterLink } from "react-router-dom";
+import { BRAND } from "@/config/brand";
 
 const defaultFeatures = [
   { icon: Video, title: "Lớp học 1-1", description: "Học riêng với giáo viên, tập trung vào điểm yếu của bạn" },
@@ -140,7 +141,7 @@ const ZoomSection = () => {
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">TNQDO - Class</span>
+                <span className="text-sm font-medium text-muted-foreground">{BRAND.zoomLabel}</span>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="w-4 h-4" />
                   <span>45:23</span>

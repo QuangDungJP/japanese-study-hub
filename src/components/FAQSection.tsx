@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BRAND } from '@/config/brand';
 
 interface FAQ {
   id: string;
@@ -37,7 +38,7 @@ const FAQSection = () => {
               Hỏi & Đáp
             </h2>
             <p className="text-muted-foreground">
-              Bạn có thể gửi thêm câu trả lời cho giáo viên khi là học viên tại TNQDO. Hoặc câu hỏi liên quan về khóa học và ứng dụng của tiếng Nhật, hãy gửi câu hỏi cho bộ phận CSKH{' '}
+              Bạn có thể gửi thêm câu trả lời cho giáo viên khi là học viên tại {BRAND.name}. Hoặc câu hỏi liên quan về khóa học và ứng dụng của tiếng Nhật, hãy gửi câu hỏi cho bộ phận CSKH{' '}
               <Link to="/faq" className="text-primary underline hover:opacity-80">
                 Tại đây
               </Link>.

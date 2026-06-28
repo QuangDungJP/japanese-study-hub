@@ -7,7 +7,39 @@ interface SectionConfig {
   visible: boolean;
 }
 
-const defaultOrder = ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
+const defaultOrder = ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'blog', 'cta'];
+
+const defaultLabels: Record<string, string> = {
+  hero: 'Hero Banner',
+  skills: '4 Kỹ năng cốt lõi',
+  courses: 'Khóa học JLPT',
+  features: 'Tại sao chọn chúng tôi',
+  zoom: 'Đặt lịch học',
+  teachers: 'Đội ngũ giảng viên',
+  blog: 'Blog nổi bật',
+  cta: 'CTA - Đăng ký ngay',
+};
+
+const mergeSectionsWithDefaults = (saved: SectionConfig[]) => {
+  const merged = [...saved];
+  const defaultIndex = (id: string) => defaultOrder.indexOf(id);
+
+  for (const id of defaultOrder) {
+    if (merged.some(section => section.id === id)) continue;
+
+    const nextDefault = defaultOrder.slice(defaultIndex(id) + 1);
+    const nextIndex = merged.findIndex(section => nextDefault.includes(section.id));
+    const section = { id, label: defaultLabels[id] || id, visible: true };
+
+    if (nextIndex >= 0) {
+      merged.splice(nextIndex, 0, section);
+    } else {
+      merged.push(section);
+    }
+  }
+
+  return merged;
+};
 
 export function useHomepageSections() {
   return useQuery({
@@ -19,11 +51,10 @@ export function useHomepageSections() {
         .eq('section_key', 'homepage_sections')
         .maybeSingle();
 
-      if (data?.content && Array.isArray(data.content)) {
-        const sections = data.content as unknown as SectionConfig[];
-        return sections;
-      }
-      return defaultOrder.map(id => ({ id, label: id, visible: true }));
+      const saved = (data?.content && Array.isArray(data.content))
+        ? (data.content as unknown as SectionConfig[])
+        : [];
+      return mergeSectionsWithDefaults(saved);
     },
     staleTime: 60_000,
   });

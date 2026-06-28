@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Video, Users, Calendar, Clock, MessageCircle, Award } from "lucide-react";
 import { useAllWebsiteContent } from "@/hooks/useWebsiteContent";
 import { Link as RouterLink } from "react-router-dom";
+import { BRAND } from "@/config/brand";
 
 const features = [
   { icon: Video, title: "Lớp học 1-1", desc: "Học riêng với giáo viên" },
@@ -66,13 +67,13 @@ const AboutZoomSection = () => {
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">TNQDO Live Class</span>
+                <span className="text-sm font-medium text-muted-foreground">{BRAND.zoomLiveLabel}</span>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-4 h-4" />45:23</div>
               </div>
               <div className="relative aspect-video overflow-hidden group">
   <img
     src="/img/zoom-meeting.png"
-    alt="TNQDO Online Class"
+    alt={`${BRAND.name} Online Class`}
     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
   />
 

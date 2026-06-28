@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { 
   Users, 
   BookOpen, 
-  BookText, 
   TrendingUp,
   Plus,
   ArrowRight,
@@ -19,7 +18,6 @@ import TopLearnersCard from '@/components/admin/TopLearnersCard';
 interface Stats {
   totalUsers: number;
   totalLessons: number;
-  totalVocabulary: number;
   activeUsers: number;
   totalContent: number; // Biến đếm số lượng khối nội dung tĩnh trong DB
 }
@@ -28,7 +26,6 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     totalLessons: 0,
-    totalVocabulary: 0,
     activeUsers: 0,
     totalContent: 0,
   });
@@ -42,10 +39,9 @@ const AdminDashboard = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      const [usersResult, lessonsResult, vocabResult, activeResult, contentResult] = await Promise.all([
+      const [usersResult, lessonsResult, activeResult, contentResult] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('lessons').select('*', { count: 'exact', head: true }),
-        supabase.from('vocabulary').select('*', { count: 'exact', head: true }),
         supabase.from('user_progress').select('*', { count: 'exact', head: true }).eq('last_activity_date', today),
         supabase.from('website_content').select('*', { count: 'exact', head: true }), // Đếm tổng số khối nội dung trang tĩnh
       ]);
@@ -53,7 +49,6 @@ const AdminDashboard = () => {
       setStats({
         totalUsers: usersResult.count || 0,
         totalLessons: lessonsResult.count || 0,
-        totalVocabulary: vocabResult.count || 0,
         activeUsers: activeResult.count || 0,
         totalContent: contentResult.count || 0,
       });
@@ -67,7 +62,6 @@ const AdminDashboard = () => {
   const statCards = [
     { name: 'Tổng người dùng', value: stats.totalUsers, icon: Users, color: 'bg-blue-500', href: '/admin/users' },
     { name: 'Bài học', value: stats.totalLessons, icon: BookOpen, color: 'bg-green-500', href: '/admin/lessons' },
-    { name: 'Từ vựng', value: stats.totalVocabulary, icon: BookText, color: 'bg-purple-500', href: '/admin/vocabulary' },
     { name: 'Nội dung Website', value: stats.totalContent, icon: Layout, color: 'bg-pink-500', href: '/admin/website' }, // Tích hợp link /admin/website
     { name: 'Hoạt động hôm nay', value: stats.activeUsers, icon: TrendingUp, color: 'bg-orange-500', href: '/admin/users' },
   ];
@@ -80,12 +74,6 @@ const AdminDashboard = () => {
           <p className="text-muted-foreground">Quản lý nội dung và người dùng</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link to="/admin/vocabulary">
-              <Plus className="w-4 h-4" />
-              Thêm từ vựng
-            </Link>
-          </Button>
           <Button variant="hero" asChild>
             <Link to="/admin/lessons">
               <Plus className="w-4 h-4" />
@@ -95,8 +83,8 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid - Đổi lên 5 cột (lg:grid-cols-5) để layout vừa vặn khi thêm card mới */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
           <Link
             key={stat.name}
@@ -140,16 +128,6 @@ const AdminDashboard = () => {
               <div className="flex items-center gap-3">
                 <BookOpen className="w-5 h-5 text-primary" />
                 <span className="font-medium">Quản lý bài học</span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground" />
-            </Link>
-            <Link
-              to="/admin/vocabulary"
-              className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <BookText className="w-5 h-5 text-primary" />
-                <span className="font-medium">Quản lý từ vựng</span>
               </div>
               <ArrowRight className="w-5 h-5 text-muted-foreground" />
             </Link>

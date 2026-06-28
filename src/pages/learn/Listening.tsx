@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Headphones, Play, Pause, RotateCcw, Check, Clock, Zap, Volume2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLearning } from '@/contexts/LearningContext';
@@ -15,6 +15,7 @@ interface Lesson {
   content: {
     audio_url?: string;
     transcript?: string;
+    audio_max_plays?: number;
     questions?: Array<{
       question: string;
       options: string[];
@@ -34,6 +35,38 @@ const Listening = () => {
   const [showResults, setShowResults] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playsUsed, setPlaysUsed] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const maxPlays = activeLesson?.content?.audio_max_plays ?? 0; // 0 = unlimited
+  const playsExhausted = maxPlays > 0 && playsUsed >= maxPlays;
+
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.playbackRate = playbackSpeed;
+  }, [playbackSpeed, activeLesson]);
+
+  const togglePlay = () => {
+    const a = audioRef.current;
+    if (!a) { setIsPlaying((p) => !p); return; }
+    if (a.paused) {
+      if (playsExhausted) {
+        toast({ title: 'Đã hết lượt nghe', description: `Bài này chỉ cho phép phát ${maxPlays} lần.`, variant: 'destructive' });
+        return;
+      }
+      a.play();
+    } else {
+      a.pause();
+    }
+  };
+
+  const restart = () => {
+    const a = audioRef.current;
+    if (a) { a.currentTime = 0; }
+    setCurrentTime(0);
+  };
 
   useEffect(() => {
     const fetchLessons = async () => {
@@ -164,6 +197,8 @@ const Listening = () => {
             setShowResults(false);
             setCurrentTime(0);
             setIsPlaying(false);
+            setPlaysUsed(0);
+            setDuration(0);
           }}>
             ← Quay lại danh sách
           </Button>
@@ -192,6 +227,26 @@ const Listening = () => {
             {/* Audio Player */}
             <div className="p-6 bg-muted/30">
               <div className="flex flex-col items-center gap-4">
+                {activeLesson.content?.audio_url && (
+                  <audio
+                    ref={audioRef}
+                    src={activeLesson.content.audio_url}
+                    onPlay={() => { setIsPlaying(true); setPlaysUsed((n) => n + 1); }}
+                    onPause={() => setIsPlaying(false)}
+                    onEnded={() => setIsPlaying(false)}
+                    onTimeUpdate={(e) => setCurrentTime(Math.floor((e.target as HTMLAudioElement).currentTime))}
+                    onLoadedMetadata={(e) => setDuration(Math.floor((e.target as HTMLAudioElement).duration) || 0)}
+                    preload="metadata"
+                  />
+                )}
+                {maxPlays > 0 && (
+                  <div className="w-full flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Giới hạn phát audio</span>
+                    <span className={playsExhausted ? 'text-destructive font-semibold' : 'text-foreground font-medium'}>
+                      {Math.min(playsUsed, maxPlays)} / {maxPlays} lượt
+                    </span>
+                  </div>
+                )}
                 {/* Waveform Visualization (Simulated) */}
                 <div className="w-full h-20 bg-card rounded-xl p-4 flex items-center justify-center gap-1">
                   {Array.from({ length: 40 }).map((_, i) => (
@@ -211,12 +266,12 @@ const Listening = () => {
                   <div className="h-2 bg-muted rounded-full overflow-hidden cursor-pointer">
                     <div 
                       className="h-full bg-orange-500 rounded-full transition-all"
-                      style={{ width: `${(currentTime / ((activeLesson.duration_minutes || 1) * 60)) * 100}%` }}
+                      style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                     />
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime((activeLesson.duration_minutes || 1) * 60)}</span>
+                    <span>{formatTime(duration || (activeLesson.duration_minutes || 1) * 60)}</span>
                   </div>
                 </div>
 
@@ -225,7 +280,7 @@ const Listening = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setCurrentTime(0)}
+                    onClick={restart}
                   >
                     <RotateCcw className="w-5 h-5" />
                   </Button>
@@ -234,7 +289,9 @@ const Listening = () => {
                     variant="hero"
                     size="lg"
                     className="w-16 h-16 rounded-full"
-                    onClick={() => setIsPlaying(!isPlaying)}
+                    onClick={togglePlay}
+                    disabled={playsExhausted && !isPlaying}
+                    title={playsExhausted ? 'Đã hết lượt nghe' : ''}
                   >
                     {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
                   </Button>

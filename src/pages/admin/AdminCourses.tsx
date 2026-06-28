@@ -354,7 +354,7 @@ const AdminCourses = () => {
     outcomes: 'Kết quả đạt được',
     features: 'Tính năng / module',
     timeline: 'Lộ trình timeline',
-    teachers: 'Giảng viên',
+    teachers: 'Giáo viên',
     gallery: 'Thư viện ảnh',
     testimonials: 'Đánh giá học viên',
     faq: 'Câu hỏi thường gặp',
@@ -568,17 +568,17 @@ const AdminCourses = () => {
                   </div>
 
                   <div className="space-y-2 pt-4 border-t">
-                    <Label className="flex items-center gap-2"><Users className="w-4 h-4" /> Giảng viên phụ trách ({selectedTeacherIds.length} đã chọn)</Label>
+                    <Label className="flex items-center gap-2"><Users className="w-4 h-4" /> Giáo viên phụ trách ({selectedTeacherIds.length} đã chọn)</Label>
                     <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
                       {allTeachers.length === 0
-                        ? <p className="text-sm text-muted-foreground">Chưa có giảng viên.</p>
+                        ? <p className="text-sm text-muted-foreground">Chưa có giáo viên.</p>
                         : allTeachers.map(t => (
                           <label key={t.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
                             <input type="checkbox" checked={selectedTeacherIds.includes(t.id)} onChange={() => toggleTeacher(t.id)} className="w-4 h-4" />
                             {t.image_url
                               ? <img src={t.image_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                               : <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs">👩‍🏫</div>}
-                            <span className="text-sm font-medium">{t.display_name || 'Giảng viên'}</span>
+                            <span className="text-sm font-medium">{t.display_name || 'Giáo viên'}</span>
                           </label>
                         ))}
                     </div>

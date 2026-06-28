@@ -422,92 +422,178 @@ const TeacherClasses = () => {
     !searchUserTerm || u.full_name?.toLowerCase().includes(searchUserTerm.toLowerCase())
   );
 
+  const totalStudents = classes.reduce((sum, c) => sum + (c.student_count || 0), 0);
+  const approvedCount = classes.filter((c) => c.approval_status === 'approved').length;
+  const pendingCount = classes.filter((c) => !c.approval_status || c.approval_status === 'pending').length;
+  const accents = [
+    'from-japanese/20 via-japanese/5 to-transparent',
+    'from-primary/20 via-primary/5 to-transparent',
+    'from-accent/25 via-accent/5 to-transparent',
+    'from-emerald-500/20 via-emerald-500/5 to-transparent',
+    'from-violet-500/20 via-violet-500/5 to-transparent',
+    'from-amber-500/20 via-amber-500/5 to-transparent',
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Quản lý lớp học</h1>
-          <p className="text-muted-foreground mt-1">Tạo và quản lý các lớp học của bạn</p>
+    <div className="space-y-8">
+      {/* Hero header */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-japanese/10 via-primary/5 to-transparent p-6 md:p-8">
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-japanese/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-japanese/10 text-japanese text-xs font-semibold">
+              <GraduationCap className="w-3.5 h-3.5" />
+              Khu vực giáo viên
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+              Quản lý lớp học
+            </h1>
+            <p className="text-muted-foreground max-w-xl">
+              Tạo lớp, theo dõi tiến độ và quản lý học viên — tất cả trong một nơi.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <div className="px-4 py-3 rounded-2xl bg-card/80 backdrop-blur border border-border min-w-[120px]">
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" /> Lớp
+              </div>
+              <div className="text-2xl font-bold mt-1">{classes.length}</div>
+            </div>
+            <div className="px-4 py-3 rounded-2xl bg-card/80 backdrop-blur border border-border min-w-[120px]">
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> Học viên
+              </div>
+              <div className="text-2xl font-bold text-japanese mt-1">{totalStudents}</div>
+            </div>
+            <div className="px-4 py-3 rounded-2xl bg-card/80 backdrop-blur border border-border min-w-[120px]">
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Trophy className="w-3.5 h-3.5" /> Đã duyệt
+              </div>
+              <div className="text-2xl font-bold text-emerald-600 mt-1">{approvedCount}</div>
+            </div>
+            <Button
+              onClick={() => { resetForm(); setIsDialogOpen(true); }}
+              size="lg"
+              className="rounded-2xl shadow-md"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Tạo lớp mới
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo lớp mới
-        </Button>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-64 rounded-2xl bg-muted/40 animate-pulse" />
+          ))}
         </div>
       ) : classes.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+        <Card className="border-dashed">
+          <CardContent className="py-16 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-japanese/10 flex items-center justify-center">
+              <Users className="w-10 h-10 text-japanese" />
+            </div>
             <h3 className="text-lg font-semibold mb-2">Chưa có lớp học nào</h3>
-            <p className="text-muted-foreground mb-4">Tạo lớp học đầu tiên để bắt đầu quản lý học viên</p>
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+              Tạo lớp học đầu tiên để bắt đầu quản lý học viên và bài học.
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)} size="lg" className="rounded-2xl">
               <Plus className="w-4 h-4 mr-2" />
               Tạo lớp học
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {classes.map((classItem) => (
-            <Card key={classItem.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {classes.map((classItem, idx) => {
+            const accent = accents[idx % accents.length];
+            const status = classItem.approval_status;
+            const fill = Math.min(100, Math.round(((classItem.student_count || 0) / Math.max(1, classItem.max_students)) * 100));
+            return (
+              <Card
+                key={classItem.id}
+                className="relative overflow-hidden border-border hover:border-japanese/40 hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 group"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br opacity-70 ${accent}`} />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+
+                <CardContent className="relative p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-card/90 backdrop-blur border border-border flex items-center justify-center shadow-sm">
+                      <BookOpen className="w-5 h-5 text-japanese" />
+                    </div>
+                    <Badge className={
+                      status === 'approved' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 rounded-full' :
+                      status === 'rejected' ? 'bg-red-500/15 text-red-600 border-red-500/20 rounded-full' :
+                      'bg-amber-500/15 text-amber-700 border-amber-500/20 rounded-full'
+                    }>
+                      {status === 'approved' ? '✓ Đã duyệt' :
+                       status === 'rejected' ? '✕ Từ chối' : '● Chờ duyệt'}
+                    </Badge>
+                  </div>
+
                   <div>
-                    <CardTitle className="text-lg">{classItem.name_vi}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{classItem.name}</p>
+                    <h3 className="font-bold text-lg leading-snug line-clamp-2 group-hover:text-japanese transition-colors">
+                      {classItem.name_vi}
+                    </h3>
+                    {classItem.name && classItem.name !== classItem.name_vi && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{classItem.name}</p>
+                    )}
                   </div>
-                  <Badge className={
-                    classItem.approval_status === 'approved' ? 'bg-green-500/10 text-green-600' :
-                    classItem.approval_status === 'rejected' ? 'bg-red-500/10 text-red-600' :
-                    'bg-yellow-500/10 text-yellow-700'
-                  }>
-                    {classItem.approval_status === 'approved' ? 'Đã duyệt' :
-                     classItem.approval_status === 'rejected' ? 'Bị từ chối' : 'Chờ duyệt'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {classItem.courses && (
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Khóa học:</span>{' '}
-                    <span className="font-medium">{classItem.courses.title_vi}</span>
-                  </p>
-                )}
-                
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span>{classItem.student_count}/{classItem.max_students}</span>
-                  </div>
-                  {classItem.start_date && (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span>{format(new Date(classItem.start_date), 'dd/MM/yyyy', { locale: vi })}</span>
+
+                  {classItem.courses && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium">
+                        {classItem.courses.title_vi}
+                      </span>
                     </div>
                   )}
-                </div>
 
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Button variant="default" size="sm" asChild>
-                    <a href={`/teacher/classes/${classItem.id}`}>
-                      <Eye className="w-4 h-4 mr-1" />Mở lớp
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => openStudentsDialog(classItem)}>
-                    <Users className="w-4 h-4 mr-1" />Học viên
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(classItem)}>
-                    <Edit className="w-4 h-4 mr-1" />Sửa
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {/* Capacity bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Users className="w-3 h-3" /> Sĩ số
+                      </span>
+                      <span className="font-semibold text-foreground">
+                        {classItem.student_count}/{classItem.max_students}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-japanese to-primary rounded-full transition-all"
+                        style={{ width: `${fill}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {classItem.start_date && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {format(new Date(classItem.start_date), 'dd MMM yyyy', { locale: vi })}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 pt-3 border-t border-border/60">
+                    <Button variant="default" size="sm" asChild className="rounded-full">
+                      <a href={`/teacher/classes/${classItem.id}`}>
+                        <Eye className="w-3.5 h-3.5 mr-1" />Mở lớp
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => openStudentsDialog(classItem)} className="rounded-full">
+                      <Users className="w-3.5 h-3.5 mr-1" />Học viên
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(classItem)} className="rounded-full">
+                      <Edit className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

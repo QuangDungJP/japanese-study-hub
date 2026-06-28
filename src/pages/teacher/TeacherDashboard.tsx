@@ -200,7 +200,7 @@ const TeacherDashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Xin chào, Giảng viên! 👋</h1>
+        <h1 className="text-3xl font-bold text-foreground">Xin chào, Giáo viên! 👋</h1>
         <p className="text-muted-foreground mt-1">Đây là tổng quan hoạt động của bạn</p>
       </div>
 

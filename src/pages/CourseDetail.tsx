@@ -483,9 +483,9 @@ const CourseDetail = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-foreground mb-3 flex items-center justify-center gap-3">
-                <GraduationCap className="w-7 h-7 text-japanese" /> Giảng viên phụ trách
+                <GraduationCap className="w-7 h-7 text-japanese" /> Giáo viên phụ trách
               </h2>
-              <p className="text-muted-foreground">Đội ngũ giảng viên đồng hành cùng bạn</p>
+              <p className="text-muted-foreground">Đội ngũ giáo viên đồng hành cùng bạn</p>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {teachers.map((t) => (
@@ -495,7 +495,7 @@ const CourseDetail = () => {
                       {t.image_url ? <img src={t.image_url} alt={t.display_name || ""} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👩‍🏫</div>}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-foreground truncate">{t.display_name || "Giảng viên"}</h3>
+                      <h3 className="font-bold text-foreground truncate">{t.display_name || "Giáo viên"}</h3>
                       {t.experience_years ? <p className="text-xs text-muted-foreground">{t.experience_years} năm kinh nghiệm</p> : null}
                     </div>
                   </div>

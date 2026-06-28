@@ -78,7 +78,7 @@ const StudentCalendarPage = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-auto lg:inline-grid h-auto">
           <TabsTrigger value="calendar" className="gap-2">
             <Calendar className="w-4 h-4" />
             <span className="hidden sm:inline">Lịch</span>

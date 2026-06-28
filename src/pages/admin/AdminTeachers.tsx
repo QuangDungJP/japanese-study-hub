@@ -173,7 +173,7 @@ export default function AdminTeachers() {
       .select("*")
       .order("order_index", { ascending: true })
       .order("created_at", { ascending: false });
-    if (error) toast({ title: "Không tải được giảng viên", variant: "destructive" });
+    if (error) toast({ title: "Không tải được giáo viên", variant: "destructive" });
     setTeachers(data || []);
     setLoading(false);
     setOrderChanged(false);
@@ -224,7 +224,7 @@ export default function AdminTeachers() {
         supabase.from("teacher_profiles").update({ order_index: i } as any).eq("id", t.id)
       );
       await Promise.all(updates);
-      toast({ title: "Đã lưu thứ tự giảng viên ✓" });
+      toast({ title: "Đã lưu thứ tự giáo viên ✓" });
       setOrderChanged(false);
     } catch {
       toast({ title: "Lỗi khi lưu thứ tự", variant: "destructive" });
@@ -279,13 +279,13 @@ export default function AdminTeachers() {
     const { error } = await supabase.from("teacher_profiles").update({ [field]: newVal } as never).eq("id", teacher.id);
     if (!error) {
       setTeachers((prev) => prev.map((t) => (t.id === teacher.id ? { ...t, [field]: newVal } : t)));
-      toast({ title: field === "is_available" ? (newVal ? "Đã hiện giảng viên" : "Đã ẩn giảng viên") : (newVal ? "Đã ghim trang chủ" : "Đã bỏ ghim trang chủ") });
+      toast({ title: field === "is_available" ? (newVal ? "Đã hiện giáo viên" : "Đã ẩn giáo viên") : (newVal ? "Đã ghim trang chủ" : "Đã bỏ ghim trang chủ") });
     }
   };
 
   const handleSave = async () => {
     if (!formData.display_name.trim()) {
-      toast({ title: "Vui lòng nhập tên giảng viên", variant: "destructive" });
+      toast({ title: "Vui lòng nhập tên giáo viên", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -329,12 +329,12 @@ export default function AdminTeachers() {
       if (editingTeacher) {
         const { error } = await supabase.from("teacher_profiles").update(payload).eq("id", editingTeacher.id);
         if (error) throw error;
-        toast({ title: "Đã cập nhật giảng viên ✓" });
+        toast({ title: "Đã cập nhật giáo viên ✓" });
       } else {
         payload.order_index = teachers.length;
         const { error } = await supabase.from("teacher_profiles").insert(payload);
         if (error) throw error;
-        toast({ title: "Đã tạo giảng viên mới ✓" });
+        toast({ title: "Đã tạo giáo viên mới ✓" });
       }
       setDialogOpen(false);
       fetchTeachers();
@@ -345,9 +345,9 @@ export default function AdminTeachers() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Xóa giảng viên này?")) return;
+    if (!confirm("Xóa giáo viên này?")) return;
     const { error } = await supabase.from("teacher_profiles").delete().eq("id", id);
-    if (!error) { toast({ title: "Đã xóa giảng viên" }); fetchTeachers(); }
+    if (!error) { toast({ title: "Đã xóa giáo viên" }); fetchTeachers(); }
   };
 
   const getDisplayName = (t: TeacherRow) => t.display_name || "Chưa đặt tên";
@@ -357,7 +357,7 @@ export default function AdminTeachers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Quản lý giảng viên</h1>
+          <h1 className="text-2xl font-bold">Quản lý giáo viên</h1>
           <p className="text-muted-foreground text-sm">Kéo thả để sắp xếp thứ tự • Toggle để hiện/ẩn</p>
         </div>
         <div className="flex gap-2 self-start">
@@ -368,7 +368,7 @@ export default function AdminTeachers() {
             </Button>
           )}
           <Button onClick={openNew}>
-            <Plus className="w-4 h-4 mr-2" /> Thêm giảng viên
+            <Plus className="w-4 h-4 mr-2" /> Thêm giáo viên
           </Button>
         </div>
       </div>
@@ -376,7 +376,7 @@ export default function AdminTeachers() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Tổng giảng viên", value: teachers.length, icon: Users },
+          { label: "Tổng giáo viên", value: teachers.length, icon: Users },
           { label: "Đang hiển thị", value: teachers.filter((t) => t.is_available).length, icon: Eye },
           { label: "Trang chủ", value: teachers.filter((t) => t.is_featured).length, icon: Star },
           { label: "Đang ẩn", value: teachers.filter((t) => !t.is_available).length, icon: EyeOff },
@@ -401,15 +401,15 @@ export default function AdminTeachers() {
           ) : teachers.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Chưa có giảng viên nào</p>
-              <Button variant="link" onClick={openNew}>Thêm giảng viên đầu tiên</Button>
+              <p>Chưa có giáo viên nào</p>
+              <Button variant="link" onClick={openNew}>Thêm giáo viên đầu tiên</Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10"></TableHead>
-                  <TableHead>Giảng viên</TableHead>
+                  <TableHead>Giáo viên</TableHead>
                   <TableHead className="hidden md:table-cell">Chuyên môn</TableHead>
                   <TableHead className="text-center">Website</TableHead>
                   <TableHead className="text-center">Trang chủ</TableHead>
@@ -477,7 +477,7 @@ export default function AdminTeachers() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] p-0">
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-xl">{editingTeacher ? "Chỉnh sửa giảng viên" : "Thêm giảng viên mới"}</DialogTitle>
+            <DialogTitle className="text-xl">{editingTeacher ? "Chỉnh sửa giáo viên" : "Thêm giáo viên mới"}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[calc(90vh-140px)]">
             <div className="p-6 pt-4">
@@ -497,20 +497,20 @@ export default function AdminTeachers() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Headline / Chức danh</Label>
-                      <Input value={formData.headline} onChange={(e) => set("headline", e.target.value)} placeholder="VD: Giảng viên JLPT N1" />
+                      <Input value={formData.headline} onChange={(e) => set("headline", e.target.value)} placeholder="VD: Giáo viên JLPT N1" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="flex items-center gap-1">Tên giảng viên <span className="text-destructive">*</span></Label>
+                      <Label className="flex items-center gap-1">Tên giáo viên <span className="text-destructive">*</span></Label>
                       <Input value={formData.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="VD: Tanaka Yuki" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Phụ đề (Subtitle)</Label>
-                    <Input value={formData.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Một câu nổi bật về giảng viên" />
+                    <Input value={formData.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Một câu nổi bật về giáo viên" />
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Việt)</Label>
-                    <RichTextEditor value={formData.bio_vi} onChange={(v) => set("bio_vi", v)} placeholder="Mô tả ngắn về giảng viên..." minHeight="160px" />
+                    <RichTextEditor value={formData.bio_vi} onChange={(v) => set("bio_vi", v)} placeholder="Mô tả ngắn về giáo viên..." minHeight="160px" />
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Nhật / English)</Label>
@@ -535,7 +535,7 @@ export default function AdminTeachers() {
                       <Switch checked={formData.is_available} onCheckedChange={(v) => set("is_available", v)} />
                       <div>
                         <Label className="flex items-center gap-1.5"><Eye className="w-4 h-4" />Hiện trên website</Label>
-                        <p className="text-xs text-muted-foreground">Trang giảng viên</p>
+                        <p className="text-xs text-muted-foreground">Trang giáo viên</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-lg border">
@@ -713,7 +713,7 @@ export default function AdminTeachers() {
                 <TabsContent value="visibility" className="space-y-3">
                   <div>
                     <Label className="flex items-center gap-1"><Eye className="w-4 h-4" />Hiển thị từng phần</Label>
-                    <p className="text-xs text-muted-foreground">Bật/tắt từng section trên trang chi tiết giảng viên</p>
+                    <p className="text-xs text-muted-foreground">Bật/tắt từng section trên trang chi tiết giáo viên</p>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {(Object.keys(DEFAULT_VISIBILITY) as SectionKey[]).map((k) => (
@@ -730,7 +730,7 @@ export default function AdminTeachers() {
                       <div className="p-4 flex gap-4">
                         {formData.image_url && <img src={formData.image_url} className="w-20 h-20 rounded-xl object-cover border" alt="" />}
                         <div className="flex-1">
-                          <h3 className="font-bold text-lg">{formData.display_name || "Tên giảng viên"}</h3>
+                          <h3 className="font-bold text-lg">{formData.display_name || "Tên giáo viên"}</h3>
                           <p className="text-sm text-primary">{formData.headline}</p>
                           {formData.subtitle && <p className="text-xs text-muted-foreground mt-1">{formData.subtitle}</p>}
                           <div className="flex gap-2 flex-wrap mt-2">
@@ -782,7 +782,7 @@ export default function AdminTeachers() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Hủy</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="animate-spin w-4 h-4 mr-2" />}
-              {editingTeacher ? "Cập nhật" : "Tạo giảng viên"}
+              {editingTeacher ? "Cập nhật" : "Tạo giáo viên"}
             </Button>
           </DialogFooter>
         </DialogContent>

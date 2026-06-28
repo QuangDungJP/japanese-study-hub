@@ -1473,15 +1473,20 @@ export type Database = {
           created_at: string | null
           description: string | null
           description_vi: string | null
+          difficulty: string | null
           duration_minutes: number | null
           end_at: string | null
+          estimated_minutes: number | null
           id: string
           is_published: boolean | null
           language: string
           level: string
+          objectives: string | null
           order_index: number | null
+          prerequisites: string | null
           skill: string
           start_at: string | null
+          tags: string[] | null
           teacher_id: string | null
           thumbnail_url: string | null
           title: string
@@ -1497,15 +1502,20 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_vi?: string | null
+          difficulty?: string | null
           duration_minutes?: number | null
           end_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           is_published?: boolean | null
           language: string
           level: string
+          objectives?: string | null
           order_index?: number | null
+          prerequisites?: string | null
           skill: string
           start_at?: string | null
+          tags?: string[] | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -1521,15 +1531,20 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_vi?: string | null
+          difficulty?: string | null
           duration_minutes?: number | null
           end_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           is_published?: boolean | null
           language?: string
           level?: string
+          objectives?: string | null
           order_index?: number | null
+          prerequisites?: string | null
           skill?: string
           start_at?: string | null
+          tags?: string[] | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -1736,6 +1751,30 @@ export type Database = {
           route_path?: string
           show_in_nav?: boolean | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pdf_presenter_state: {
+        Row: {
+          file_url: string
+          page: number
+          updated_at: string
+          user_id: string
+          zoom: number
+        }
+        Insert: {
+          file_url: string
+          page?: number
+          updated_at?: string
+          user_id: string
+          zoom?: number
+        }
+        Update: {
+          file_url?: string
+          page?: number
+          updated_at?: string
+          user_id?: string
+          zoom?: number
         }
         Relationships: []
       }

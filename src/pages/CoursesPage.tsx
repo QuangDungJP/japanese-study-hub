@@ -101,7 +101,7 @@ const CoursesPage = () => {
 
   const featured = courses.find((c) => c.is_featured) || courses[0];
   const heroTitle = page?.hero_title_vi || "Khóa học Tiếng Nhật toàn diện";
-  const heroSubtitle = page?.hero_subtitle_vi || "Từ N5 đến N1 — lộ trình chuẩn JLPT, đồng hành cùng giảng viên bản ngữ và Việt Nam giàu kinh nghiệm";
+  const heroSubtitle = page?.hero_subtitle_vi || "Từ N5 đến N1 — lộ trình chuẩn JLPT, đồng hành cùng giáo viên bản ngữ và Việt Nam giàu kinh nghiệm";
   const displayName = page?.display_name_vi || "Khóa học";
   const heroBadge = page?.hero_badge_vi || `${displayName} JLPT N5 → N1`;
   const heroImage = page?.hero_image_url;

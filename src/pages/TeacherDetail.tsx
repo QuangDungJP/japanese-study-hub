@@ -111,9 +111,9 @@ const TeacherDetail = () => {
         <div className="container mx-auto px-4 pt-28 pb-16 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-24 h-24 rounded-full bg-muted mx-auto mb-6 flex items-center justify-center text-5xl">🔍</div>
-            <h1 className="text-3xl font-bold text-foreground mb-4">Giảng viên không tìm thấy</h1>
-            <p className="text-muted-foreground mb-8">Giảng viên này có thể đã bị xóa hoặc không còn hoạt động</p>
-            <Button asChild variant="default"><Link to="/giang-vien">← Xem tất cả giảng viên</Link></Button>
+            <h1 className="text-3xl font-bold text-foreground mb-4">Giáo viên không tìm thấy</h1>
+            <p className="text-muted-foreground mb-8">Giáo viên này có thể đã bị xóa hoặc không còn hoạt động</p>
+            <Button asChild variant="default"><Link to="/giang-vien">← Xem tất cả giáo viên</Link></Button>
           </div>
         </div>
         <Footer />
@@ -121,7 +121,7 @@ const TeacherDetail = () => {
     );
   }
 
-  const name = teacher.display_name || "Giảng viên";
+  const name = teacher.display_name || "Giáo viên";
   const avatar = teacher.image_url || "";
   const coverImage = teacher.cover_image_url || "";
   const bio = teacher.bio_vi || teacher.bio || "";
@@ -228,7 +228,7 @@ const TeacherDetail = () => {
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">
-                        <Sparkles className="w-3 h-3" /> Giảng viên
+                        <Sparkles className="w-3 h-3" /> Giáo viên
                       </div>
                       <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">{name}</h1>
                       <p className="text-primary font-semibold mt-2 text-base md:text-lg">{headline}</p>
@@ -479,9 +479,9 @@ const TeacherDetail = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3">
-              <Users className="w-3 h-3" /> Đội ngũ giảng viên
+              <Users className="w-3 h-3" /> Đội ngũ giáo viên
             </div>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-3 tracking-tight">Giảng viên khác</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-3 tracking-tight">Giáo viên khác</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">Khám phá thêm những giáo viên tâm huyết, sẵn sàng đồng hành cùng bạn trên hành trình tiếng Nhật</p>
           </div>
 
@@ -491,7 +491,7 @@ const TeacherDetail = () => {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm giảng viên..."
+                placeholder="Tìm giáo viên..."
                 className="pl-9 h-11 rounded-xl bg-card border-border/60"
               />
             </div>
@@ -512,7 +512,7 @@ const TeacherDetail = () => {
           {otherTeachers.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>Không tìm thấy giảng viên phù hợp</p>
+              <p>Không tìm thấy giáo viên phù hợp</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -539,7 +539,7 @@ const TeacherDetail = () => {
                     )}
                   </div>
                   <div className="p-4">
-                    <h3 className="font-bold text-foreground truncate group-hover:text-primary transition-colors">{t.display_name || "Giảng viên"}</h3>
+                    <h3 className="font-bold text-foreground truncate group-hover:text-primary transition-colors">{t.display_name || "Giáo viên"}</h3>
                     {t.headline && <p className="text-xs text-primary font-medium truncate mt-0.5">{t.headline}</p>}
                     <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                       {t.experience_years ? <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" />{t.experience_years} năm</span> : null}

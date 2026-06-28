@@ -265,10 +265,10 @@ const TeachersPreview = ({ data }: SectionPreviewProps) => {
       <div className="text-center mb-4">
         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-japanese/10 text-japanese text-xs font-semibold mb-2">
           <Award className="w-3 h-3" />
-          {data.subtitle_vi || "Giảng viên"}
+          {data.subtitle_vi || "Giáo viên"}
         </span>
         <h2 className="text-lg font-bold text-foreground">
-          {data.title_vi || "Đội ngũ giảng viên xuất sắc"}
+          {data.title_vi || "Đội ngũ giáo viên xuất sắc"}
         </h2>
         <p className="text-xs text-muted-foreground mt-1">
           {data.description_vi || "Mô tả..."}
@@ -277,7 +277,7 @@ const TeachersPreview = ({ data }: SectionPreviewProps) => {
 
       {teachers.length === 0 ? (
         <div className="py-8 text-center text-muted-foreground">
-          Chưa có dữ liệu giảng viên. Vui lòng thêm trong Admin.
+          Chưa có dữ liệu giáo viên. Vui lòng thêm trong Admin.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2">

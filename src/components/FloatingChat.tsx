@@ -3,6 +3,7 @@ import { Send, X, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import defaultBotImage from "@/assets/chatbot-robot.webp";
+import { BRAND } from "@/config/brand";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -62,7 +63,7 @@ const FloatingChat = () => {
   if (config?.is_active === false) return null;
 
   const botImage = config?.image_url || defaultBotImage;
-  const title = config?.title_vi || "Trợ lý AI TNQDO";
+  const title = config?.title_vi || BRAND.chatTitle;
   const subtitle = config?.subtitle_vi || "Q-Bot 🤖";
   const suggestions = config?.content?.suggestions || [];
 

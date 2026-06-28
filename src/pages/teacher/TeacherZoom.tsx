@@ -137,7 +137,7 @@ const TeacherZoom = () => {
       await supabase.from('notifications').insert({
         user_id: selectedBooking.user_id,
         title: 'Link Zoom đã được thêm',
-        message: `Giảng viên đã thêm link cho buổi học ngày ${format(new Date(selectedBooking.booking_date), 'dd/MM/yyyy', { locale: vi })} lúc ${selectedBooking.booking_time}`,
+        message: `Giáo viên đã thêm link cho buổi học ngày ${format(new Date(selectedBooking.booking_date), 'dd/MM/yyyy', { locale: vi })} lúc ${selectedBooking.booking_time}`,
         type: 'info',
         link: '/learn/zoom'
       });

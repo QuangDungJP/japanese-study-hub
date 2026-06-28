@@ -87,8 +87,8 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
           return {
             id: t.id,
             user_id: t.user_id,
-            name: t.display_name || "Giảng viên",
-            specialty: t.headline || specs.slice(0, 2).join(", ") || "Giảng viên",
+            name: t.display_name || "Giáo viên",
+            specialty: t.headline || specs.slice(0, 2).join(", ") || "Giáo viên",
           };
         });
         setTeachers(opts);
@@ -167,9 +167,9 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
                     <SelectValue
                       placeholder={
                         loadingTeachers
-                          ? "Đang tải giảng viên..."
+                          ? "Đang tải giáo viên..."
                           : teachers.length === 0
-                          ? "Chưa có giảng viên khả dụng"
+                          ? "Chưa có giáo viên khả dụng"
                           : "Chọn giáo viên..."
                       }
                     />

@@ -6,6 +6,7 @@ import {
   Crown,
   Users,
 } from "lucide-react";
+import { BRAND } from "@/config/brand";
 
 const policies = [
   {
@@ -27,7 +28,7 @@ const policies = [
     title: "học phí",
     content: [
       "Cho mỗi một người thân bạn giới thiệu học bất kì bộ môn nào trong hệ sinh thái QDO",
-      "Khi bạn mua gói trọn bộ N543 tại TNQDO",
+      "Khi bạn mua gói trọn bộ N543 tại " + BRAND.name,
     ],
     icon: Gift,
   },
@@ -35,7 +36,7 @@ const policies = [
     percent: "-50%",
     title: "học phí",
     content:
-      "Nếu bạn là CBCNV tại QDO. Hoặc nếu bạn là nhà tài trợ VÀNG / KIM CƯƠNG cho TNQDO",
+      "Nếu bạn là CBCNV tại QDO. Hoặc nếu bạn là nhà tài trợ VÀNG / KIM CƯƠNG cho " + BRAND.name,
     icon: Crown,
   },
 ];

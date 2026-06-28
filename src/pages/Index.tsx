@@ -14,10 +14,15 @@ import { Badge } from "@/components/ui/badge";
 import courseDefaultImg from "@/assets/course-default-jp.webp";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useHomepageSections } from "@/hooks/useHomepageSections";
+import { BRAND } from "@/config/brand";
+import BlogHighlightsSection from "@/components/BlogHighlightsSection";
+import TestimonialsSection from "@/components/about/TestimonialsSection";
+import { useTestimonialsSettings } from "@/hooks/useTestimonials";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
   const { data: sectionOrder } = useHomepageSections();
+  const { data: testimonialsSettings } = useTestimonialsSettings();
   const [homepageCourses, setHomepageCourses] = useState<any[]>([]);
   useEffect(() => {
     (async () => {
@@ -43,8 +48,8 @@ const Index = () => {
   const featuredTeachers = (teachers || []).filter((t) => t.is_featured).slice(0, 4);
   const teacherList = (featuredTeachers.length ? featuredTeachers : teachers || []).map((t) => ({
     id: t.id,
-    name: t.display_name || t.profile?.full_name || "Giảng viên",
-    headline: t.headline || "Giảng viên",
+    name: t.display_name || t.profile?.full_name || "Giáo viên",
+    headline: t.headline || "Giáo viên",
     avatar_url: t.image_url || t.profile?.avatar_url || "",
     rating: t.rating || 0,
   }));
@@ -58,9 +63,17 @@ const Index = () => {
   }, []);
 
   const visibleSections = useMemo(() => {
-    if (!sectionOrder) return ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
-    return sectionOrder.filter(s => s.visible).map(s => s.id);
-  }, [sectionOrder]);
+    const base = sectionOrder
+      ? sectionOrder.filter(s => s.visible).map(s => s.id)
+      : ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'blog', 'cta'];
+    if (testimonialsSettings?.show_on_homepage && !base.includes('feedback')) {
+      // Insert feedback before cta if present, else append
+      const idx = base.indexOf('cta');
+      if (idx >= 0) return [...base.slice(0, idx), 'feedback', ...base.slice(idx)];
+      return [...base, 'feedback'];
+    }
+    return base;
+  }, [sectionOrder, testimonialsSettings]);
 
   const heroSection = (
       <section key="hero" className="relative min-h-[90vh] pt-20 overflow-hidden">
@@ -104,7 +117,7 @@ const Index = () => {
                     <path d="M2 10C50 4 100 2 150 6C200 10 250 4 298 8" stroke="hsl(0, 76%, 50%)" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                 </span>
-                {" "}cùng TNQDO
+                {" "}{BRAND.homepageCTA}
               </h1>
               
               <p className="text-xl text-muted-foreground mb-10 animate-slide-up animation-delay-200 leading-relaxed">
@@ -332,7 +345,7 @@ const Index = () => {
             <ScrollReveal direction="left">
               <div>
                 <span className="inline-block px-5 py-2.5 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-6 border border-accent/20">
-                  Tại sao chọn TNQDO?
+                  {BRAND.whyChooseLabel}
                 </span>
                 <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
                   Công nghệ học tập{" "}
@@ -416,10 +429,10 @@ const Index = () => {
             <div className="text-center max-w-3xl mx-auto mb-16">
               <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-japanese/10 text-japanese text-sm font-semibold mb-4 border border-japanese/20">
                 <Award className="w-4 h-4" />
-                Đội ngũ giảng viên
+                Đội ngũ giáo viên
               </span>
               <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-5">
-                Giảng viên xuất sắc, tận tâm
+                Giáo viên xuất sắc, tận tâm
               </h2>
               <p className="text-lg text-muted-foreground">
                 Giáo viên bản ngữ và giáo viên Việt Nam giàu kinh nghiệm
@@ -430,7 +443,7 @@ const Index = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
             {teacherList.length === 0 ? (
               <div className="col-span-full py-14 text-center text-muted-foreground">
-                Đang cập nhật danh sách giảng viên. Vui lòng quay lại sau.
+                Đang cập nhật danh sách giáo viên. Vui lòng quay lại sau.
               </div>
             ) : (
               teacherList.map((t, i) => (
@@ -517,6 +530,15 @@ const Index = () => {
     features: featuresSection,
     zoom: zoomSection,
     teachers: teachersSection,
+    blog: <BlogHighlightsSection key="blog" />,
+    feedback: (
+      <TestimonialsSection
+        key="feedback"
+        limit={testimonialsSettings?.homepage_limit ?? 6}
+        showTabs={false}
+        homepageOnly
+      />
+    ),
     cta: ctaSection,
   };
 
