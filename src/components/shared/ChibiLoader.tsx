@@ -18,15 +18,21 @@ const ChibiLoader = ({ label, fullScreen = true, size = 140 }: ChibiLoaderProps)
   const [frame1, setFrame1] = useState<string>(chibi1);
   const [frame2, setFrame2] = useState<string>(chibi2);
   const [text, setText] = useState<string>(label || 'Đang tải...');
+  const [speed, setSpeed] = useState<number>(0.4);
 
   useEffect(() => {
     try {
       const f1 = localStorage.getItem('chibi_loader_frame1');
       const f2 = localStorage.getItem('chibi_loader_frame2');
       const lb = localStorage.getItem('chibi_loader_label');
+      const sp = localStorage.getItem('chibi_loader_speed');
       if (f1) setFrame1(f1);
       if (f2) setFrame2(f2);
       if (!label && lb) setText(lb);
+      if (sp) {
+        const n = parseFloat(sp);
+        if (!isNaN(n) && n > 0.05 && n < 5) setSpeed(n);
+      }
     } catch { /* ignore */ }
   }, [label]);
 
@@ -65,14 +71,14 @@ const ChibiLoader = ({ label, fullScreen = true, size = 140 }: ChibiLoaderProps)
           0%, 49% { opacity: 0; }
           50%, 100% { opacity: 1; }
         }
-        .chibi-loader-stage { animation: chibi-bob 0.5s ease-in-out infinite; will-change: transform; }
-        .chibi-frame-1 { animation: chibi-swap-1 0.4s steps(1) infinite; will-change: opacity; }
-        .chibi-frame-2 { animation: chibi-swap-2 0.4s steps(1) infinite; will-change: opacity; }
+        .chibi-loader-stage { animation: chibi-bob ${(speed * 1.25).toFixed(3)}s ease-in-out infinite; will-change: transform; }
+        .chibi-frame-1 { animation: chibi-swap-1 ${speed.toFixed(3)}s steps(1) infinite; will-change: opacity; }
+        .chibi-frame-2 { animation: chibi-swap-2 ${speed.toFixed(3)}s steps(1) infinite; will-change: opacity; }
         .chibi-shadow {
           width: 70px; height: 8px; border-radius: 50%;
           background: radial-gradient(ellipse at center, rgba(0,0,0,0.25), rgba(0,0,0,0));
           margin-top: -8px;
-          animation: chibi-shadow 0.5s ease-in-out infinite;
+          animation: chibi-shadow ${(speed * 1.25).toFixed(3)}s ease-in-out infinite;
         }
         @keyframes chibi-shadow {
           0%, 100% { transform: scale(1); opacity: 0.7; }
