@@ -819,19 +819,45 @@ const ChibiLoaderSettingsCard = () => {
   const [frame1, setFrame1] = useState(() => localStorage.getItem('chibi_loader_frame1') || '');
   const [frame2, setFrame2] = useState(() => localStorage.getItem('chibi_loader_frame2') || '');
   const [label, setLabel] = useState(() => localStorage.getItem('chibi_loader_label') || 'Đang tải...');
+  const [speed, setSpeed] = useState<number>(() => {
+    const s = parseFloat(localStorage.getItem('chibi_loader_speed') || '0.4');
+    return isNaN(s) ? 0.4 : s;
+  });
+  const [uploading, setUploading] = useState<null | 1 | 2>(null);
+  const [previewKey, setPreviewKey] = useState(0);
+
+  const uploadFrame = async (file: File, slot: 1 | 2) => {
+    setUploading(slot);
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `chibi-loader/frame${slot}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('website-assets').upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from('website-assets').getPublicUrl(path);
+      if (slot === 1) setFrame1(data.publicUrl); else setFrame2(data.publicUrl);
+      toast({ title: `Đã tải khung hình ${slot}`, description: 'Bấm Lưu để áp dụng.' });
+    } catch (e: any) {
+      toast({ title: 'Lỗi tải ảnh', description: e.message, variant: 'destructive' });
+    }
+    setUploading(null);
+  };
 
   const save = () => {
     if (frame1) localStorage.setItem('chibi_loader_frame1', frame1); else localStorage.removeItem('chibi_loader_frame1');
     if (frame2) localStorage.setItem('chibi_loader_frame2', frame2); else localStorage.removeItem('chibi_loader_frame2');
     if (label) localStorage.setItem('chibi_loader_label', label); else localStorage.removeItem('chibi_loader_label');
-    toast({ title: 'Đã lưu', description: 'Loader sẽ cập nhật ở lần tải trang tiếp theo.' });
+    localStorage.setItem('chibi_loader_speed', String(speed));
+    setPreviewKey(k => k + 1);
+    toast({ title: 'Đã lưu', description: 'Loader đã được cập nhật.' });
   };
 
   const reset = () => {
     localStorage.removeItem('chibi_loader_frame1');
     localStorage.removeItem('chibi_loader_frame2');
     localStorage.removeItem('chibi_loader_label');
-    setFrame1(''); setFrame2(''); setLabel('Đang tải...');
+    localStorage.removeItem('chibi_loader_speed');
+    setFrame1(''); setFrame2(''); setLabel('Đang tải...'); setSpeed(0.4);
+    setPreviewKey(k => k + 1);
     toast({ title: 'Đã khôi phục mặc định' });
   };
 
@@ -839,26 +865,55 @@ const ChibiLoaderSettingsCard = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" /> Chibi Loader</CardTitle>
-        <CardDescription>Hình chibi chạy hiển thị khi đang tải trang. Để trống để dùng mặc định.</CardDescription>
+        <CardDescription>Upload 2 khung hình chibi và tuỳ chỉnh tốc độ chuyển hình. Để trống để dùng mặc định.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium">URL khung hình 1</label>
-            <Input value={frame1} onChange={(e) => setFrame1(e.target.value)} placeholder="https://..." />
-          </div>
-          <div>
-            <label className="text-sm font-medium">URL khung hình 2</label>
-            <Input value={frame2} onChange={(e) => setFrame2(e.target.value)} placeholder="https://..." />
-          </div>
+          {[1, 2].map((slot) => {
+            const value = slot === 1 ? frame1 : frame2;
+            const setValue = slot === 1 ? setFrame1 : setFrame2;
+            return (
+              <div key={slot} className="space-y-2 border rounded-xl p-3">
+                <label className="text-sm font-medium">Khung hình {slot}</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-20 rounded-lg border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
+                    {value ? <img src={value} alt="" className="w-full h-full object-contain" /> : <span className="text-xs text-muted-foreground">Trống</span>}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploading === slot}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadFrame(f, slot as 1 | 2);
+                        e.target.value = '';
+                      }}
+                    />
+                    <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="hoặc dán URL trực tiếp" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
           <div className="md:col-span-2">
             <label className="text-sm font-medium">Văn bản hiển thị</label>
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Đang tải..." />
           </div>
+          <div className="md:col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium">Tốc độ chuyển giữa 2 ảnh</label>
+              <span className="text-xs text-muted-foreground">{speed.toFixed(2)}s / chu kỳ • {(1 / speed).toFixed(1)} fps</span>
+            </div>
+            <Slider min={0.1} max={2} step={0.05} value={[speed]} onValueChange={(v) => setSpeed(v[0])} />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <span>Nhanh (0.1s)</span><span>Chậm (2s)</span>
+            </div>
+          </div>
         </div>
         <div className="rounded-xl border border-border p-4 bg-muted/30">
           <p className="text-xs text-muted-foreground mb-2">Xem trước</p>
-          <ChibiLoader fullScreen={false} size={120} label={label || 'Đang tải...'} />
+          <ChibiLoaderPreview key={previewKey} frame1={frame1} frame2={frame2} label={label} speed={speed} />
         </div>
         <div className="flex gap-2">
           <Button onClick={save} variant="hero"><Save className="w-4 h-4 mr-2" />Lưu</Button>
@@ -866,5 +921,27 @@ const ChibiLoaderSettingsCard = () => {
         </div>
       </CardContent>
     </Card>
+  );
+};
+
+// Live preview that reflects current form values without needing to save first
+import chibi1Default from '@/assets/chibi-run-1.png';
+import chibi2Default from '@/assets/chibi-run-2.png';
+const ChibiLoaderPreview = ({ frame1, frame2, label, speed }: { frame1: string; frame2: string; label: string; speed: number }) => {
+  const f1 = frame1 || chibi1Default;
+  const f2 = frame2 || chibi2Default;
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-6">
+      <div className="relative" style={{ width: 120, height: 120, animation: `chibi-bob-p ${(speed * 1.25).toFixed(3)}s ease-in-out infinite` }}>
+        <img src={f1} alt="" className="absolute inset-0 w-full h-full object-contain" style={{ animation: `chibi-swap-1-p ${speed.toFixed(3)}s steps(1) infinite` }} draggable={false} />
+        <img src={f2} alt="" className="absolute inset-0 w-full h-full object-contain" style={{ animation: `chibi-swap-2-p ${speed.toFixed(3)}s steps(1) infinite` }} draggable={false} />
+      </div>
+      <p className="text-sm font-medium text-muted-foreground animate-pulse">{label || 'Đang tải...'}</p>
+      <style>{`
+        @keyframes chibi-bob-p { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes chibi-swap-1-p { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+        @keyframes chibi-swap-2-p { 0%,49%{opacity:0} 50%,100%{opacity:1} }
+      `}</style>
+    </div>
   );
 };
