@@ -124,8 +124,6 @@ const AdminSettings = () => {
     enabledExerciseTypes: exerciseTypes.map(t => t.id),
     autoConfirmSubmissions: false,
     maxDailyLessons: 10,
-    xpPerLesson: 25,
-    streakBonus: 5,
   });
 
   useEffect(() => {
