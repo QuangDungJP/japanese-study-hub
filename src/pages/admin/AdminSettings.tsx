@@ -679,20 +679,9 @@ const AdminSettings = () => {
             <Card>
               <CardHeader><CardTitle>Cấu hình học tập</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Số bài học tối đa/ngày</label>
-                    <Input type="number" value={settings.maxDailyLessons} onChange={(e) => setSettings({ ...settings, maxDailyLessons: parseInt(e.target.value) })} min={1} max={50} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">XP mỗi bài học</label>
-                    <Input type="number" value={settings.xpPerLesson} onChange={(e) => setSettings({ ...settings, xpPerLesson: parseInt(e.target.value) })} min={5} max={100} />
-                  </div>
-                </div>
                 <div>
-                  <label className="text-sm font-medium">Bonus XP streak</label>
-                  <Input type="number" value={settings.streakBonus} onChange={(e) => setSettings({ ...settings, streakBonus: parseInt(e.target.value) })} min={1} max={50} />
-                  <p className="text-xs text-muted-foreground mt-1">XP bonus cho mỗi ngày streak liên tiếp</p>
+                  <label className="text-sm font-medium">Số bài học tối đa/ngày</label>
+                  <Input type="number" value={settings.maxDailyLessons} onChange={(e) => setSettings({ ...settings, maxDailyLessons: parseInt(e.target.value) })} min={1} max={50} />
                 </div>
               </CardContent>
             </Card>
