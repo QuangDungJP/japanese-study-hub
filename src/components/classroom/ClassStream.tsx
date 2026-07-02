@@ -43,7 +43,7 @@ const ClassStream = ({ classId, isTeacher }: Props) => {
       ids.length ? sb.from('class_stream_comments').select('*').in('post_id', ids).order('created_at') : Promise.resolve({ data: [] }),
       ids.length ? sb.from('class_stream_reactions').select('*').in('post_id', ids) : Promise.resolve({ data: [] }),
     ]);
-    const commentAuthorIds = [...new Set((cmts || []).map((c: any) => c.author_id))];
+    const commentAuthorIds: string[] = Array.from(new Set((cmts || []).map((c: any) => c.author_id)));
     let commentProfs: any[] = [];
     if (commentAuthorIds.length) {
       const { data } = await supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', commentAuthorIds);
