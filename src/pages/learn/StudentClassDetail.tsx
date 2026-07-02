@@ -15,6 +15,9 @@ import { ArrowLeft, BookOpen, ClipboardList, GraduationCap, CalendarClock, Exter
 import { format } from 'date-fns';
 import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
 import MaterialsManager from '@/components/teacher/MaterialsManager';
+import ClassBanner from '@/components/classroom/ClassBanner';
+import ClassStream from '@/components/classroom/ClassStream';
+import ClassworkTab from '@/components/classroom/ClassworkTab';
 
 const StudentClassDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -130,13 +133,11 @@ const StudentClassDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-2 sm:gap-3">
+      <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild className="shrink-0"><Link to="/learn/classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold truncate">{cls.name_vi}</h1>
-          <p className="text-sm text-muted-foreground line-clamp-2">{cls.description_vi || cls.name}</p>
-        </div>
+        <span className="text-sm text-muted-foreground">Quay lại danh sách lớp</span>
       </div>
+      <ClassBanner cls={cls} onUpdated={fetchAll} />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card><CardContent className="p-4"><div className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-blue-500" /><span className="text-sm text-muted-foreground">Bài học</span></div><p className="text-2xl font-bold">{lessons.length}</p></CardContent></Card>
@@ -144,16 +145,24 @@ const StudentClassDetail = () => {
         <Card><CardContent className="p-4"><div className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-purple-500" /><span className="text-sm text-muted-foreground">Kiểm tra</span></div><p className="text-2xl font-bold">{exams.length}</p></CardContent></Card>
       </div>
 
-      <Tabs defaultValue="lessons">
+      <Tabs defaultValue="stream">
         <TabsList className="flex flex-wrap h-auto justify-start gap-1 w-full overflow-x-auto">
+          <TabsTrigger value="stream"><FileText className="w-4 h-4 mr-1" />Bảng tin</TabsTrigger>
+          <TabsTrigger value="classwork"><ClipboardList className="w-4 h-4 mr-1" />Bài tập trên lớp</TabsTrigger>
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
           <TabsTrigger value="sessions"><CalendarDays className="w-4 h-4 mr-1" />Lịch học</TabsTrigger>
           <TabsTrigger value="materials"><FileText className="w-4 h-4 mr-1" />Tài liệu</TabsTrigger>
-          <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
           <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Nộp bài</TabsTrigger>
           <TabsTrigger value="status"><CheckCircle2 className="w-4 h-4 mr-1" />Trạng thái nộp bài</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="stream" className="mt-4">
+          {id && <ClassStream classId={id} />}
+        </TabsContent>
+        <TabsContent value="classwork" className="mt-4">
+          {id && <ClassworkTab classId={id} isTeacher={false} />}
+        </TabsContent>
 
         <TabsContent value="lessons" className="mt-4 space-y-3">
           {lessons.length === 0 ? <Card><CardContent className="py-12 text-center text-muted-foreground">Chưa có bài học nào</CardContent></Card> :

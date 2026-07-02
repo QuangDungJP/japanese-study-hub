@@ -284,6 +284,7 @@ export type Database = {
       class_assignment_submissions: {
         Row: {
           assignment_id: string
+          attachments: Json | null
           content: string | null
           feedback: string | null
           file_url: string | null
@@ -291,6 +292,8 @@ export type Database = {
           graded_by: string | null
           id: string
           link_url: string | null
+          returned_at: string | null
+          rubric_scores: Json | null
           score: number | null
           status: string
           student_id: string
@@ -299,6 +302,7 @@ export type Database = {
         }
         Insert: {
           assignment_id: string
+          attachments?: Json | null
           content?: string | null
           feedback?: string | null
           file_url?: string | null
@@ -306,6 +310,8 @@ export type Database = {
           graded_by?: string | null
           id?: string
           link_url?: string | null
+          returned_at?: string | null
+          rubric_scores?: Json | null
           score?: number | null
           status?: string
           student_id: string
@@ -314,6 +320,7 @@ export type Database = {
         }
         Update: {
           assignment_id?: string
+          attachments?: Json | null
           content?: string | null
           feedback?: string | null
           file_url?: string | null
@@ -321,6 +328,8 @@ export type Database = {
           graded_by?: string | null
           id?: string
           link_url?: string | null
+          returned_at?: string | null
+          rubric_scores?: Json | null
           score?: number | null
           status?: string
           student_id?: string
@@ -331,6 +340,8 @@ export type Database = {
       }
       class_assignments: {
         Row: {
+          assigned_to: Json | null
+          attachments: Json | null
           class_id: string
           created_at: string
           created_by: string
@@ -339,13 +350,21 @@ export type Database = {
           exercise_id: string | null
           file_url: string | null
           id: string
+          instructions: string | null
+          kind: string | null
           lesson_id: string | null
           link_url: string | null
+          order_index: number | null
+          points: number | null
+          rubric: Json | null
           start_at: string | null
           title: string
+          topic_id: string | null
           updated_at: string
         }
         Insert: {
+          assigned_to?: Json | null
+          attachments?: Json | null
           class_id: string
           created_at?: string
           created_by: string
@@ -354,13 +373,21 @@ export type Database = {
           exercise_id?: string | null
           file_url?: string | null
           id?: string
+          instructions?: string | null
+          kind?: string | null
           lesson_id?: string | null
           link_url?: string | null
+          order_index?: number | null
+          points?: number | null
+          rubric?: Json | null
           start_at?: string | null
           title: string
+          topic_id?: string | null
           updated_at?: string
         }
         Update: {
+          assigned_to?: Json | null
+          attachments?: Json | null
           class_id?: string
           created_at?: string
           created_by?: string
@@ -369,13 +396,81 @@ export type Database = {
           exercise_id?: string | null
           file_url?: string | null
           id?: string
+          instructions?: string | null
+          kind?: string | null
           lesson_id?: string | null
           link_url?: string | null
+          order_index?: number | null
+          points?: number | null
+          rubric?: Json | null
           start_at?: string | null
           title?: string
+          topic_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "class_assignments_topic_fk"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "class_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_materials: {
+        Row: {
+          attachments: Json
+          class_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          order_index: number
+          title: string
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_index?: number
+          title: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_index?: number
+          title?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_materials_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_materials_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "class_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       class_sessions: {
         Row: {
@@ -433,6 +528,160 @@ export type Database = {
           },
         ]
       }
+      class_stream_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_stream_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_stream_posts: {
+        Row: {
+          assignment_id: string | null
+          attachments: Json
+          author_id: string
+          body: string | null
+          class_id: string
+          created_at: string
+          id: string
+          kind: string
+          material_id: string | null
+          pinned: boolean
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          attachments?: Json
+          author_id: string
+          body?: string | null
+          class_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          material_id?: string | null
+          pinned?: boolean
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string | null
+          attachments?: Json
+          author_id?: string
+          body?: string | null
+          class_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          material_id?: string | null
+          pinned?: boolean
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_stream_posts_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "class_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_posts_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_posts_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "class_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_stream_reactions: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          emoji: string
+          id: string
+          post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          emoji?: string
+          id?: string
+          post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          emoji?: string
+          id?: string
+          post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_stream_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_students: {
         Row: {
           class_id: string
@@ -465,11 +714,48 @@ export type Database = {
           },
         ]
       }
+      class_topics: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_topics_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           approval_status: string
           approved_at: string | null
           approved_by: string | null
+          banner_url: string | null
+          color: string | null
           course_id: string | null
           created_at: string
           custom_fields: Json
@@ -478,6 +764,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean | null
+          join_code: string | null
           max_students: number | null
           name: string
           name_vi: string
@@ -492,6 +779,8 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
+          banner_url?: string | null
+          color?: string | null
           course_id?: string | null
           created_at?: string
           custom_fields?: Json
@@ -500,6 +789,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          join_code?: string | null
           max_students?: number | null
           name: string
           name_vi: string
@@ -514,6 +804,8 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
+          banner_url?: string | null
+          color?: string | null
           course_id?: string | null
           created_at?: string
           custom_fields?: Json
@@ -522,6 +814,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          join_code?: string | null
           max_students?: number | null
           name?: string
           name_vi?: string
