@@ -16,6 +16,9 @@ import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Tr
 import { format } from 'date-fns';
 import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
 import MaterialsManager from '@/components/teacher/MaterialsManager';
+import ClassBanner from '@/components/classroom/ClassBanner';
+import ClassStream from '@/components/classroom/ClassStream';
+import ClassworkTab from '@/components/classroom/ClassworkTab';
 
 const TeacherClassDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -166,23 +169,11 @@ const TeacherClassDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild><Link to="/teacher/classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{cls.name_vi}</h1>
-          <p className="text-sm text-muted-foreground">
-            {cls.slug && <span className="font-mono text-xs mr-2">/{cls.slug}</span>}
-            {cls.description_vi || cls.name}
-          </p>
-        </div>
-        <Badge className={
-          cls.approval_status === 'approved' ? 'bg-green-500/10 text-green-600' :
-          cls.approval_status === 'rejected' ? 'bg-red-500/10 text-red-600' :
-          'bg-yellow-500/10 text-yellow-700'
-        }>
-          {cls.approval_status === 'approved' ? 'Đã duyệt' : cls.approval_status === 'rejected' ? 'Bị từ chối' : 'Chờ duyệt'}
-        </Badge>
+        <span className="text-sm text-muted-foreground">Quay lại danh sách lớp</span>
       </div>
+      <ClassBanner cls={cls} isTeacher onUpdated={fetchAll} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-4"><div className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /><span className="text-sm text-muted-foreground">Học viên</span></div><p className="text-2xl font-bold">{students.length}/{cls.max_students}</p></CardContent></Card>
@@ -191,17 +182,26 @@ const TeacherClassDetail = () => {
         <Card><CardContent className="p-4"><div className="flex items-center gap-2"><ClipboardList className="w-4 h-4 text-orange-500" /><span className="text-sm text-muted-foreground">Bài tập</span></div><p className="text-2xl font-bold">{assignments.length}</p></CardContent></Card>
       </div>
 
-      <Tabs defaultValue="students">
+      <Tabs defaultValue="stream">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="stream"><FileText className="w-4 h-4 mr-1" />Bảng tin</TabsTrigger>
+          <TabsTrigger value="classwork"><ClipboardList className="w-4 h-4 mr-1" />Bài tập trên lớp</TabsTrigger>
           <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" />Học viên</TabsTrigger>
           <TabsTrigger value="sessions"><CalendarDays className="w-4 h-4 mr-1" />Lịch học</TabsTrigger>
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
           <TabsTrigger value="materials"><FileText className="w-4 h-4 mr-1" />Tài liệu</TabsTrigger>
           <TabsTrigger value="vocab"><BookText className="w-4 h-4 mr-1" />Từ vựng</TabsTrigger>
-          <TabsTrigger value="assignments"><ClipboardList className="w-4 h-4 mr-1" />Bài tập</TabsTrigger>
           <TabsTrigger value="exams"><GraduationCap className="w-4 h-4 mr-1" />Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-1" />Bài nộp</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="stream" className="mt-4">
+          {id && <ClassStream classId={id} isTeacher />}
+        </TabsContent>
+
+        <TabsContent value="classwork" className="mt-4">
+          {id && <ClassworkTab classId={id} isTeacher />}
+        </TabsContent>
 
         <TabsContent value="students" className="mt-4">
           <div className="flex justify-between items-center mb-3">
