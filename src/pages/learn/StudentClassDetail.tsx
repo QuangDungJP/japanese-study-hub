@@ -15,6 +15,9 @@ import { ArrowLeft, BookOpen, ClipboardList, GraduationCap, CalendarClock, Exter
 import { format } from 'date-fns';
 import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
 import MaterialsManager from '@/components/teacher/MaterialsManager';
+import ClassBanner from '@/components/classroom/ClassBanner';
+import ClassStream from '@/components/classroom/ClassStream';
+import ClassworkTab from '@/components/classroom/ClassworkTab';
 
 const StudentClassDetail = () => {
   const { id } = useParams<{ id: string }>();
