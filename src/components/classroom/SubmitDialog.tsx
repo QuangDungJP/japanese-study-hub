@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Link2, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import InlineViewer from './InlineViewer';
 
 interface Att { kind: 'file' | 'link'; url: string; name: string }
 interface Props {
@@ -22,6 +24,10 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
   const [link, setLink] = useState('');
   const [attachments, setAttachments] = useState<Att[]>([]);
   const [saving, setSaving] = useState(false);
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null);
+  const isReturned = existing?.status === 'graded' && existing?.returned_at;
+  const rubric: Array<{ title: string; max: number }> = Array.isArray(assignment?.rubric) ? assignment.rubric : [];
+  const rubricScores: Record<string, number> = existing?.rubric_scores || {};
 
   useEffect(() => {
     if (open) {
@@ -71,8 +77,34 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nộp bài: {assignment?.title}</DialogTitle></DialogHeader>
+        {isReturned && (
+          <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-green-700">Bài đã được chấm</span>
+              <Badge className="bg-green-500/15 text-green-700 border-green-500/30 text-base">
+                {existing.score}/{assignment.points || 100}
+              </Badge>
+            </div>
+            {rubric.length > 0 && (
+              <div className="grid sm:grid-cols-2 gap-2">
+                {rubric.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs bg-background/60 rounded px-2 py-1 border">
+                    <span>{c.title}</span>
+                    <span className="font-semibold text-primary">{rubricScores[c.title] ?? 0}/{c.max}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {existing.feedback && (
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase mb-1">Nhận xét</div>
+                <p className="text-sm whitespace-pre-wrap">{existing.feedback}</p>
+              </div>
+            )}
+          </div>
+        )}
         <div className="space-y-4">
           <div>
             <Label>Nội dung bài làm</Label>
@@ -91,10 +123,14 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
             {attachments.map((a, i) => (
               <div key={i} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                 {a.kind === 'file' ? <FileText className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-                <a href={a.url} target="_blank" rel="noreferrer" className="flex-1 text-sm truncate hover:underline">{a.name}</a>
+                <button className="flex-1 text-sm truncate hover:underline text-left" onClick={() => setPreviewIdx(previewIdx === i ? null : i)}>{a.name}</button>
+                <a href={a.url} target="_blank" rel="noreferrer" className="text-xs text-primary">Mở</a>
                 <Button variant="ghost" size="icon" onClick={() => setAttachments(as => as.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
               </div>
             ))}
+            {previewIdx != null && attachments[previewIdx] && (
+              <div className="pt-2"><InlineViewer url={attachments[previewIdx].url} name={attachments[previewIdx].name} /></div>
+            )}
           </div>
         </div>
         <DialogFooter>
