@@ -188,6 +188,8 @@ const TeacherClassDetail = () => {
         <TabsList className="flex-wrap">
           <TabsTrigger value="stream"><FileText className="w-4 h-4 mr-1" />Bảng tin</TabsTrigger>
           <TabsTrigger value="classwork"><ClipboardList className="w-4 h-4 mr-1" />Bài tập trên lớp</TabsTrigger>
+          <TabsTrigger value="gradebook"><ClipboardCheck className="w-4 h-4 mr-1" />Sổ điểm</TabsTrigger>
+          <TabsTrigger value="analytics"><BarChart3 className="w-4 h-4 mr-1" />Phân tích</TabsTrigger>
           <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" />Học viên</TabsTrigger>
           <TabsTrigger value="sessions"><CalendarDays className="w-4 h-4 mr-1" />Lịch học</TabsTrigger>
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
@@ -203,6 +205,14 @@ const TeacherClassDetail = () => {
 
         <TabsContent value="classwork" className="mt-4">
           {id && <ClassworkTab classId={id} isTeacher />}
+        </TabsContent>
+
+        <TabsContent value="gradebook" className="mt-4">
+          {id && <Gradebook classId={id} />}
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-4">
+          {id && <ClassAnalytics classId={id} />}
         </TabsContent>
 
         <TabsContent value="students" className="mt-4">
