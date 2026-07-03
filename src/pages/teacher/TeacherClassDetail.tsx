@@ -12,13 +12,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Trash2, Upload, Link2, ExternalLink, Star, Flame, CalendarClock, GraduationCap, CalendarDays, Search, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, BookOpen, BookText, FileText, ClipboardList, Plus, Trash2, Upload, Link2, ExternalLink, Star, Flame, CalendarClock, GraduationCap, CalendarDays, Search, UserPlus, BarChart3, ClipboardCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import ClassSessionsManager from '@/components/calendar/ClassSessionsManager';
 import MaterialsManager from '@/components/teacher/MaterialsManager';
 import ClassBanner from '@/components/classroom/ClassBanner';
 import ClassStream from '@/components/classroom/ClassStream';
 import ClassworkTab from '@/components/classroom/ClassworkTab';
+import Gradebook from '@/components/classroom/Gradebook';
+import ClassAnalytics from '@/components/classroom/ClassAnalytics';
 
 const TeacherClassDetail = () => {
   const { id } = useParams<{ id: string }>();
