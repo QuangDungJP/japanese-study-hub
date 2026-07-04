@@ -15,31 +15,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 interface Lesson {
   id: string;
-  title: string;
-  title_vi: string;
-  level: string;
-  duration_minutes: number | null;
-  xp_reward: number | null;
-  content: {
+title: string;
+title_vi: string;
+level: string;
+duration_minutes: number | null;
+xp_reward: number | null;
+content: {
     type?: "fill-blank" | "essay";
-    sentences?: Array<{ text: string; answer: string; hint: string }>;
-    prompt?: string;
-    promptVi?: string;
-    sampleAnswer?: string;
-  } | null;
+sentences?: Array<{ text: string;
+answer: string;
+hint: string }>;
+prompt?: string;
+promptVi?: string;
+sampleAnswer?: string;
+} | null;
 }
 const Writing = () => {
   const { addXp, currentLanguage, completedLessons } = useLearning();
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [fillBlanks, setFillBlanks] = useState<Record<number, string>>({});
-  const [showFillResults, setShowFillResults] = useState(false);
-  const [essayText, setEssayText] = useState("");
-  const [showHints, setShowHints] = useState<Record<number, boolean>>({});
-  const [essaySubmitted, setEssaySubmitted] = useState(false);
-  const [essayFeedback, setEssayFeedback] = useState<string | null>(null);
-  useEffect(() => {
+const [lessons, setLessons] = useState<Lesson[]>([]);
+const [loading, setLoading] = useState(true);
+const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+const [fillBlanks, setFillBlanks] = useState<Record<number, string>>({});
+const [showFillResults, setShowFillResults] = useState(false);
+const [essayText, setEssayText] = useState("");
+const [showHints, setShowHints] = useState<Record<number, boolean>>({});
+const [essaySubmitted, setEssaySubmitted] = useState(false);
+const [essayFeedback, setEssayFeedback] = useState<string | null>(null);
+useEffect(() => {
     const fetchLessons = async () => {
       const { data } = await supabase
         .from("lessons")
@@ -48,49 +50,49 @@ const Writing = () => {
         .eq("language", currentLanguage)
         .eq("is_published", true)
         .order("order_index", { ascending: true });
-      if (data) {
+if (data) {
         setLessons(
           data.map((lesson) => ({
             ...lesson,
             content: lesson.content as Lesson["content"],
           })),
         );
-      }
+}
       setLoading(false);
-    };
-    fetchLessons();
-  }, [currentLanguage]);
-  const handleFillSubmit = () => {
+};
+fetchLessons();
+}, [currentLanguage]);
+const handleFillSubmit = () => {
     if (!activeLesson?.content?.sentences) return;
-    setShowFillResults(true);
-    const correct = activeLesson.content.sentences.filter(
+setShowFillResults(true);
+const correct = activeLesson.content.sentences.filter(
       (s, i) => fillBlanks[i]?.toLowerCase().trim() === s.answer.toLowerCase(),
     ).length;
-    const xpEarned = correct * 10;
-    addXp(xpEarned);
-    toast({
+const xpEarned = correct * 10;
+addXp(xpEarned);
+toast({
       title: ``,
       description: `Bạn điền đúng ${correct}/${activeLesson.content.sentences.length} câu`,
     });
-  };
-  const handleEssaySubmit = () => {
+};
+const handleEssaySubmit = () => {
     if (essayText.split(" ").length < 20) {
       toast({
         title: "Đoạn văn quá ngắn",
         description: "Hãy viết ít nhất 50 từ",
         variant: "destructive",
       });
-      return;
-    }
+return;
+}
     setEssaySubmitted(true);
-    setTimeout(() => {
+setTimeout(() => {
       const wordCount = essayText.split(" ").length;
-      const score = Math.min(
+const score = Math.min(
         100,
         Math.floor(wordCount * 1.5) + Math.floor(Math.random() * 20) + 60,
       );
-      const xpEarned = Math.floor(score / 5);
-      setEssayFeedback(`
+const xpEarned = Math.floor(score / 5);
+setEssayFeedback(`
 **Điểm: ${score}/100** **Nhận xét:**
 - Số từ: ${wordCount} từ ✓
 - Cấu trúc câu: Khá tốt
@@ -98,22 +100,22 @@ const Writing = () => {
 - Ngữ pháp: Cần chú ý thì của động từ **Gợi ý cải thiện:**
 - Sử dụng thêm các liên từ (however, moreover, therefore)
 - Thêm ví dụ cụ thể để minh họa`);
-      addXp(xpEarned);
-      toast({
+addXp(xpEarned);
+toast({
         title: `Đã nộp bài!`,
         description: "AI đang chấm bài của bạn...",
       });
-    }, 2000);
-  };
-  const wordCount = essayText.split(" ").filter((w) => w.length > 0).length;
-  if (loading) {
+}, 2000);
+};
+const wordCount = essayText.split(" ").filter((w) => w.length > 0).length;
+if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         {" "}
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>{" "}
       </div>
     );
-  }
+}
   return (
     <div className="space-y-6">
       {" "}
@@ -138,17 +140,17 @@ const Writing = () => {
             {" "}
             {lessons.map((lesson, index) => {
               const isCompleted = completedLessons.includes(lesson.id);
-              return (
+return (
                 <div
                   key={lesson.id}
                   onClick={() => {
                     setActiveLesson(lesson);
-                    setFillBlanks({});
-                    setShowFillResults(false);
-                    setEssayText("");
-                    setEssaySubmitted(false);
-                    setEssayFeedback(null);
-                  }}
+setFillBlanks({});
+setShowFillResults(false);
+setEssayText("");
+setEssaySubmitted(false);
+setEssayFeedback(null);
+}}
                   className={`flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 cursor-pointer ${isCompleted ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900" : "bg-card border-border hover:border-primary/30 hover:shadow-soft"}`}
                 >
                   {" "}
@@ -192,7 +194,7 @@ const Writing = () => {
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />{" "}
                 </div>
               );
-            })}{" "}
+})}{" "}
           </div>
         ) : (
           <div className="text-center py-16 bg-card rounded-2xl border border-border">
@@ -229,7 +231,7 @@ const Writing = () => {
                   const isCorrect =
                     fillBlanks[index]?.toLowerCase().trim() ===
                     sentence.answer.toLowerCase();
-                  return (
+return (
                     <div key={index} className="space-y-2">
                       {" "}
                       <div className="flex items-center gap-4">
@@ -291,7 +293,7 @@ const Writing = () => {
                       )}{" "}
                     </div>
                   );
-                })}{" "}
+})}{" "}
               </div>{" "}
               <div className="flex items-center gap-4 mt-8">
                 {" "}
@@ -306,9 +308,9 @@ const Writing = () => {
                     size="lg"
                     onClick={() => {
                       setActiveLesson(null);
-                      setFillBlanks({});
-                      setShowFillResults(false);
-                    }}
+setFillBlanks({});
+setShowFillResults(false);
+}}
                   >
                     {" "}
                     <RotateCcw className="w-4 h-4" /> Hoàn thành{" "}

@@ -15,37 +15,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 interface Lesson {
   id: string;
-  title: string;
-  title_vi: string;
-  description: string | null;
-  level: string;
-  duration_minutes: number | null;
-  xp_reward: number | null;
-  content: {
+title: string;
+title_vi: string;
+description: string | null;
+level: string;
+duration_minutes: number | null;
+xp_reward: number | null;
+content: {
     text?: string;
-    questions?: Array<{
+questions?: Array<{
       id: number;
-      question: string;
-      options: string[];
-      correct: number;
-    }>;
-  } | null;
+question: string;
+options: string[];
+correct: number;
+}>;
+} | null;
 }
 const Reading = () => {
   const { addXp, currentLanguage, completedLessons } = useLearning();
-  const { user } = useAuth();
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [selectedAnswers, setSelectedAnswers] = useState<
+const { user } = useAuth();
+const [lessons, setLessons] = useState<Lesson[]>([]);
+const [loading, setLoading] = useState(true);
+const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+const [selectedAnswers, setSelectedAnswers] = useState<
     Record<number, number>
   >({});
-  const [showResults, setShowResults] = useState(false);
-  const [hoveredWord, setHoveredWord] = useState<{
+const [showResults, setShowResults] = useState(false);
+const [hoveredWord, setHoveredWord] = useState<{
     word: string;
-    meaning: string;
-  } | null>(null);
-  useEffect(() => {
+meaning: string;
+} | null>(null);
+useEffect(() => {
     const fetchLessons = async () => {
       const { data } = await supabase
         .from("lessons")
@@ -54,52 +54,52 @@ const Reading = () => {
         .eq("language", currentLanguage)
         .eq("is_published", true)
         .order("order_index", { ascending: true });
-      if (data) {
+if (data) {
         setLessons(
           data.map((lesson) => ({
             ...lesson,
             content: lesson.content as Lesson["content"],
           })),
         );
-      }
+}
       setLoading(false);
-    };
-    fetchLessons();
-  }, [currentLanguage]);
-  const handleAnswer = (questionId: number, optionIndex: number) => {
+};
+fetchLessons();
+}, [currentLanguage]);
+const handleAnswer = (questionId: number, optionIndex: number) => {
     if (!showResults) {
       setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
-    }
+}
   };
-  const handleSubmit = () => {
+const handleSubmit = () => {
     if (!activeLesson?.content?.questions) return;
-    setShowResults(true);
-    const correct = activeLesson.content.questions.filter(
+setShowResults(true);
+const correct = activeLesson.content.questions.filter(
       (q) => selectedAnswers[q.id] === q.correct,
     ).length;
-    const xpEarned = correct * 10;
-    addXp(xpEarned);
-    toast({
+const xpEarned = correct * 10;
+addXp(xpEarned);
+toast({
       title: `Chúc mừng!`,
       description: `Bạn trả lời đúng ${correct}/${activeLesson.content.questions.length} câu hỏi`,
     });
-  };
-  const handleWordHover = (e: React.MouseEvent<HTMLDivElement>) => {
+};
+const handleWordHover = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (target.classList.contains("vocab")) {
+if (target.classList.contains("vocab")) {
       const word = target.dataset.word || "";
-      const meaning = target.dataset.meaning || "";
-      setHoveredWord({ word, meaning });
-    }
+const meaning = target.dataset.meaning || "";
+setHoveredWord({ word, meaning });
+}
   };
-  if (loading) {
+if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         {" "}
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>{" "}
       </div>
     );
-  }
+}
   return (
     <div className="space-y-6">
       {" "}
@@ -127,7 +127,7 @@ const Reading = () => {
             {" "}
             {lessons.map((lesson, index) => {
               const isCompleted = completedLessons.includes(lesson.id);
-              return (
+return (
                 <div
                   key={lesson.id}
                   onClick={() => setActiveLesson(lesson)}
@@ -174,7 +174,7 @@ const Reading = () => {
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />{" "}
                 </div>
               );
-            })}{" "}
+})}{" "}
           </div>
         ) : (
           <div className="text-center py-16 bg-card rounded-2xl border border-border">
@@ -195,9 +195,9 @@ const Reading = () => {
             variant="ghost"
             onClick={() => {
               setActiveLesson(null);
-              setSelectedAnswers({});
-              setShowResults(false);
-            }}
+setSelectedAnswers({});
+setShowResults(false);
+}}
           >
             {" "}
             ← Quay lại danh sách{" "}
@@ -255,25 +255,25 @@ const Reading = () => {
                         {" "}
                         {q.options.map((option, oIndex) => {
                           const isSelected = selectedAnswers[q.id] === oIndex;
-                          const isCorrect = q.correct === oIndex;
-                          let buttonClass =
+const isCorrect = q.correct === oIndex;
+let buttonClass =
                             "p-4 rounded-xl border text-left transition-all ";
-                          if (showResults) {
+if (showResults) {
                             if (isCorrect) {
                               buttonClass +=
                                 "bg-green-50 border-green-500 text-green-700 dark:bg-green-950/30 dark:text-green-400";
-                            } else if (isSelected && !isCorrect) {
+} else if (isSelected && !isCorrect) {
                               buttonClass +=
                                 "bg-red-50 border-red-500 text-red-700 dark:bg-red-950/30 dark:text-red-400";
-                            } else {
+} else {
                               buttonClass +=
                                 "bg-muted/50 border-border text-muted-foreground";
-                            }
+}
                           } else {
                             buttonClass += isSelected
                               ? "bg-primary/10 border-primary text-primary"
                               : "bg-card border-border hover:border-primary/50";
-                          }
+}
                           return (
                             <button
                               key={oIndex}
@@ -298,7 +298,7 @@ const Reading = () => {
                               </div>{" "}
                             </button>
                           );
-                        })}{" "}
+})}{" "}
                       </div>{" "}
                     </div>
                   ))}{" "}
@@ -324,9 +324,9 @@ const Reading = () => {
                     className="mt-6"
                     onClick={() => {
                       setActiveLesson(null);
-                      setSelectedAnswers({});
-                      setShowResults(false);
-                    }}
+setSelectedAnswers({});
+setShowResults(false);
+}}
                   >
                     {" "}
                     Hoàn thành bài học{" "}
