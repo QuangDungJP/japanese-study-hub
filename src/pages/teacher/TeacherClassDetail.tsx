@@ -225,15 +225,14 @@ const TeacherClassDetail = () => {
           <Card><CardContent className="p-0">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Học viên</TableHead><TableHead>XP</TableHead><TableHead>Streak</TableHead>
+                <TableHead>Học viên</TableHead><TableHead>Streak</TableHead>
                 <TableHead>Bài hoàn thành</TableHead><TableHead>Tham gia</TableHead><TableHead className="text-right">Thao tác</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {students.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Chưa có học viên. Quay lại trang lớp học để thêm.</TableCell></TableRow> :
+                {students.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Chưa có học viên. Quay lại trang lớp học để thêm.</TableCell></TableRow> :
                   students.map(s => (
                     <TableRow key={s.id}>
                       <TableCell className="font-medium">{s.profile?.full_name || '—'}</TableCell>
-                      <TableCell><div className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500" />{s.progress?.total_xp || 0}</div></TableCell>
                       <TableCell><div className="flex items-center gap-1"><Flame className="w-3 h-3 text-orange-500" />{s.progress?.streak || 0}</div></TableCell>
                       <TableCell>{s.progress?.lessons_completed || 0}</TableCell>
                       <TableCell>{format(new Date(s.enrolled_at), 'dd/MM/yyyy')}</TableCell>

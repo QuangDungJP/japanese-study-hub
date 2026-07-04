@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 
 import FloatingChat from "./components/FloatingChat";
 import BackToTop from "./components/BackToTop";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -122,7 +123,8 @@ const App = () => {
               <Sonner />
 
               <BrowserRouter>
-              
+                <ScrollToTop />
+
                 <FloatingChat />
                 <BackToTop />
 
