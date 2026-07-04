@@ -1,0 +1,2 @@
+ALTER TABLE public.exercises DROP CONSTRAINT exercises_lesson_id_fkey, ADD CONSTRAINT exercises_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.lessons(id) ON DELETE CASCADE;
+ALTER TABLE public.completed_lessons DROP CONSTRAINT completed_lessons_lesson_id_fkey, ADD CONSTRAINT completed_lessons_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.lessons(id) ON DELETE CASCADE;
