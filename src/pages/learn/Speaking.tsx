@@ -39,8 +39,8 @@ fetchLessons();
 const currentPhrase = activeLesson?.content?.phrases?.[currentPhraseIndex];
 const dialogues = activeLesson?.content?.dialogues || [];
 const handleRecord = () => { setIsRecording(!isRecording);
-if (isRecording && currentPhrase) { // Simulate scoring after recording setTimeout(() => { const score = Math.floor(Math.random() * 30) + 70;
-// 70-100 setScores(prev => ({ ...prev, [currentPhraseIndex]: score }));
+if (isRecording && currentPhrase) { /* Simulate scoring after recording setTimeout(() => { const score = Math.floor(Math.random() * 30) + 70;*/
+/* 70-100 setScores(prev => ({ ...prev, [currentPhraseIndex]: score }));*/
 if (score >= 80 && !completedPhrases.includes(currentPhraseIndex)) { setCompletedPhrases(prev => [...prev, currentPhraseIndex]);
 addXp(10);
 toast({ title:`Xuất sắc!`, description:`Điểm phát âm: ${score}/100`, });

@@ -32,9 +32,9 @@ const [totalScore, setTotalScore] = useState(0);
 const [maxScore, setMaxScore] = useState(0);
 useEffect(() => { const fetchExercises = async () => { if (!lessonId) { setLoading(false);
 return;
-} // Fetch lesson info const { data: lessonData } = await supabase .from('lessons') .select('title, title_vi') .eq('id', lessonId) .single();
+} /* Fetch lesson info const { data: lessonData } = await supabase .from('lessons') .select('title, title_vi') .eq('id', lessonId) .single();*/
 if (lessonData) { setLessonTitle(lessonData.title_vi || lessonData.title);
-} // Fetch exercises via RPC (excludes correct_answers/explanation) const { data } = await supabase.rpc('get_lesson_exercises', { _lesson_id: lessonId });
+} /* Fetch exercises via RPC (excludes correct_answers/explanation) const { data } = await supabase.rpc('get_lesson_exercises', { _lesson_id: lessonId });*/
 if (data) { setExercises(data as any);
 } setLoading(false);
 };
@@ -44,9 +44,9 @@ const currentExercise = exercises[currentExerciseIndex];
 const handleExerciseComplete = (score: number) => { const exerciseMaxScore = getMaxScore(currentExercise);
 setTotalScore(prev => prev + score);
 setMaxScore(prev => prev + exerciseMaxScore);
-if (currentExerciseIndex < exercises.length - 1) { // Move to next exercise setTimeout(() => { setCurrentExerciseIndex(prev => prev + 1);
+if (currentExerciseIndex < exercises.length - 1) { /* Move to next exercise setTimeout(() => { setCurrentExerciseIndex(prev => prev + 1);*/
 }, 500);
-} else { // All exercises completed const finalTotalScore = totalScore + score;
+} else { /* All exercises completed const finalTotalScore = totalScore + score;*/
 const finalMaxScore = maxScore + exerciseMaxScore;
 const xpEarned = Math.round((finalTotalScore / finalMaxScore) * 50);
 addXp(xpEarned);
