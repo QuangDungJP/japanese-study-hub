@@ -47,7 +47,7 @@ const [duration, setDuration] = useState(0);
 const [playsUsed, setPlaysUsed] = useState(0);
 const audioRef = useRef<HTMLAudioElement | null>(null);
 const maxPlays = activeLesson?.content?.audio_max_plays ?? 0;
-/* 0 = unlimited const playsExhausted = maxPlays > 0 && playsUsed >= maxPlays;*/
+const playsExhausted = maxPlays > 0 && playsUsed >= maxPlays;
 useEffect(() => { const a = audioRef.current;
 if (!a) return;
 a.playbackRate = playbackSpeed;
