@@ -30,7 +30,7 @@ interface Achievement {
   requirement: number;
   current: number;
   unlocked: boolean;
-  category: 'streak' | 'lessons' | 'xp' | 'vocabulary';
+  category: 'streak' | 'lessons' | 'vocabulary';
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
