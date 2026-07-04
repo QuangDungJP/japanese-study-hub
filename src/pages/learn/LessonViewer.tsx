@@ -25,29 +25,29 @@ import {
 } from "lucide-react";
 interface Lesson {
   id: string;
-  title: string;
-  title_vi: string | null;
-  description: string | null;
-  description_vi: string | null;
-  content: any;
-  content_html: string | null;
-  video_url: string | null;
-  thumbnail_url: string | null;
-  level: string | null;
-  skill: string | null;
-  duration_minutes: number | null;
-  estimated_minutes: number | null;
-  xp_reward: number | null;
-  objectives: string | null;
-  prerequisites: string | null;
+title: string;
+title_vi: string | null;
+description: string | null;
+description_vi: string | null;
+content: any;
+content_html: string | null;
+video_url: string | null;
+thumbnail_url: string | null;
+level: string | null;
+skill: string | null;
+duration_minutes: number | null;
+estimated_minutes: number | null;
+xp_reward: number | null;
+objectives: string | null;
+prerequisites: string | null;
 }
 interface Material {
   id: string;
-  title: string;
-  description: string | null;
-  file_url: string;
-  file_type: string;
-  order_index: number;
+title: string;
+description: string | null;
+file_url: string;
+file_type: string;
+order_index: number;
 }
 const isPdf = (m: Material) =>
   m.file_type?.toLowerCase().includes("pdf") || /\.pdf($|\?)/i.test(m.file_url);
@@ -56,24 +56,24 @@ const isVideo = (m: Material) =>
   /\.(mp4|webm|mov)($|\?)/i.test(m.file_url);
 const LessonViewer = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { addXp } = useLearning();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [exerciseCount, setExerciseCount] = useState(0);
-  const [completed, setCompleted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [presenter, setPresenter] = useState<{
+const navigate = useNavigate();
+const { user } = useAuth();
+const { addXp } = useLearning();
+const [lesson, setLesson] = useState<Lesson | null>(null);
+const [materials, setMaterials] = useState<Material[]>([]);
+const [exerciseCount, setExerciseCount] = useState(0);
+const [completed, setCompleted] = useState(false);
+const [loading, setLoading] = useState(true);
+const [presenter, setPresenter] = useState<{
     url: string;
-    title: string;
-  } | null>(null);
-  useEffect(() => {
+title: string;
+} | null>(null);
+useEffect(() => {
     if (!id) return;
-    let cancelled = false;
-    (async () => {
+let cancelled = false;
+(async () => {
       setLoading(true);
-      const [{ data: l }, { data: mats }, { data: ex }] = await Promise.all([
+const [{ data: l }, { data: mats }, { data: ex }] = await Promise.all([
         supabase.from("lessons").select("*").eq("id", id).maybeSingle(),
         supabase
           .from("lesson_materials")
@@ -83,60 +83,60 @@ const LessonViewer = () => {
           .order("order_index", { ascending: true }),
         supabase.rpc("get_lesson_exercises", { _lesson_id: id }),
       ]);
-      if (cancelled) return;
-      setLesson(l as any);
-      setMaterials((mats || []) as Material[]);
-      setExerciseCount((ex || []).length);
-      if (user) {
+if (cancelled) return;
+setLesson(l as any);
+setMaterials((mats || []) as Material[]);
+setExerciseCount((ex || []).length);
+if (user) {
         const { data: c } = await supabase
           .from("completed_lessons")
           .select("id")
           .eq("user_id", user.id)
           .eq("lesson_id", id)
           .maybeSingle();
-        setCompleted(!!c);
-      }
+setCompleted(!!c);
+}
       setLoading(false);
-    })();
-    return () => {
+})();
+return () => {
       cancelled = true;
-    };
-  }, [id, user]);
-  const videoEmbed = useMemo(() => {
+};
+}, [id, user]);
+const videoEmbed = useMemo(() => {
     if (!lesson?.video_url) return null;
-    const url = lesson.video_url.trim();
-    const yt = url.match(
+const url = lesson.video_url.trim();
+const yt = url.match(
       /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{6,})/,
     );
-    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-    return url;
-  }, [lesson]);
-  const handleComplete = async () => {
+if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+return url;
+}, [lesson]);
+const handleComplete = async () => {
     if (!user || !lesson || completed) return;
-    const { error } = await supabase
+const { error } = await supabase
       .from("completed_lessons")
       .insert({ user_id: user.id, lesson_id: lesson.id, score: null });
-    if (error) {
+if (error) {
       toast({
         title: "Lỗi",
         description: error.message,
         variant: "destructive",
       });
-      return;
-    }
+return;
+}
     setCompleted(true);
-    const xp = lesson.xp_reward ?? 20;
-    addXp(xp);
-    toast({ title: ``, description: "Đã đánh dấu hoàn thành bài học." });
-  };
-  if (loading) {
+const xp = lesson.xp_reward ?? 20;
+addXp(xp);
+toast({ title: ``, description: "Đã đánh dấu hoàn thành bài học." });
+};
+if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
         {" "}
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />{" "}
       </div>
     );
-  }
+}
   if (!lesson) {
     return (
       <div className="max-w-xl mx-auto text-center py-20 space-y-4">
@@ -149,7 +149,7 @@ const LessonViewer = () => {
         </Button>{" "}
       </div>
     );
-  }
+}
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {" "}
@@ -270,7 +270,12 @@ const LessonViewer = () => {
               <iframe
                 src={videoEmbed}
                 title="Lesson video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer;
+autoplay;
+clipboard-write;
+encrypted-media;
+gyroscope;
+picture-in-picture"
                 allowFullScreen
                 className="w-full h-full"
               />{" "}
@@ -314,9 +319,9 @@ const LessonViewer = () => {
               {" "}
               {materials.map((m) => {
                 const pdf = isPdf(m);
-                const video = isVideo(m);
-                const Icon = pdf ? FileText : video ? Film : FileText;
-                return (
+const video = isVideo(m);
+const Icon = pdf ? FileText : video ? Film : FileText;
+return (
                   <div
                     key={m.id}
                     className="flex items-center gap-3 p-3 rounded-xl border bg-card hover:border-primary/40 transition-colors"
@@ -377,7 +382,7 @@ const LessonViewer = () => {
                     </div>{" "}
                   </div>
                 );
-              })}{" "}
+})}{" "}
             </div>{" "}
           </CardContent>{" "}
         </Card>

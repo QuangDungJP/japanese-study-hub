@@ -14,91 +14,91 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 interface VocabularyItem {
   id: string;
-  word: string;
-  meaning_vi: string;
-  pronunciation: string | null;
-  example: string | null;
-  example_vi: string | null;
-  category: string | null;
-  level: string;
+word: string;
+meaning_vi: string;
+pronunciation: string | null;
+example: string | null;
+example_vi: string | null;
+category: string | null;
+level: string;
 }
 const Vocabulary = () => {
   const { addXp, currentLanguage } = useLearning();
-  const [vocabularyData, setVocabularyData] = useState<VocabularyItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [masteredCards, setMasteredCards] = useState<string[]>([]);
-  const [mode, setMode] = useState<"review" | "quiz">("review");
-  const [quizAnswer, setQuizAnswer] = useState("");
-  const [showQuizResult, setShowQuizResult] = useState(false);
-  useEffect(() => {
+const [vocabularyData, setVocabularyData] = useState<VocabularyItem[]>([]);
+const [loading, setLoading] = useState(true);
+const [currentIndex, setCurrentIndex] = useState(0);
+const [isFlipped, setIsFlipped] = useState(false);
+const [masteredCards, setMasteredCards] = useState<string[]>([]);
+const [mode, setMode] = useState<"review" | "quiz">("review");
+const [quizAnswer, setQuizAnswer] = useState("");
+const [showQuizResult, setShowQuizResult] = useState(false);
+useEffect(() => {
     const fetchVocabulary = async () => {
       const { data } = await supabase
         .from("vocabulary")
         .select("*")
         .eq("language", currentLanguage)
         .order("created_at", { ascending: true });
-      if (data) {
+if (data) {
         setVocabularyData(data);
-      }
+}
       setLoading(false);
-    };
-    fetchVocabulary();
-  }, [currentLanguage]);
-  const currentCard = vocabularyData[currentIndex];
-  const progress =
+};
+fetchVocabulary();
+}, [currentLanguage]);
+const currentCard = vocabularyData[currentIndex];
+const progress =
     vocabularyData.length > 0
       ? ((currentIndex + 1) / vocabularyData.length) * 100
       : 0;
-  const handleNext = (mastered: boolean) => {
+const handleNext = (mastered: boolean) => {
     if (!currentCard) return;
-    if (mastered && !masteredCards.includes(currentCard.id)) {
+if (mastered && !masteredCards.includes(currentCard.id)) {
       setMasteredCards((prev) => [...prev, currentCard.id]);
-      addXp(5);
-      toast({ title: "", description: "Đã ghi nhớ từ vựng!" });
-    }
+addXp(5);
+toast({ title: "", description: "Đã ghi nhớ từ vựng!" });
+}
     setIsFlipped(false);
-    if (currentIndex < vocabularyData.length - 1) {
+if (currentIndex < vocabularyData.length - 1) {
       setCurrentIndex((prev) => prev + 1);
-    } else {
+} else {
       toast({
         title: "Hoàn thành!",
         description: `Bạn đã ghi nhớ ${masteredCards.length + (mastered ? 1 : 0)}/${vocabularyData.length} từ`,
       });
-      setCurrentIndex(0);
-    }
+setCurrentIndex(0);
+}
   };
-  const handleQuizSubmit = () => {
+const handleQuizSubmit = () => {
     if (!currentCard) return;
-    setShowQuizResult(true);
-    if (
+setShowQuizResult(true);
+if (
       quizAnswer.toLowerCase().trim() === currentCard.meaning_vi.toLowerCase()
     ) {
       addXp(10);
-      toast({
+toast({
         title: "Chính xác! ",
         description: `${currentCard.word} = ${currentCard.meaning_vi}`,
       });
-    }
+}
   };
-  const handleQuizNext = () => {
+const handleQuizNext = () => {
     setQuizAnswer("");
-    setShowQuizResult(false);
-    if (currentIndex < vocabularyData.length - 1) {
+setShowQuizResult(false);
+if (currentIndex < vocabularyData.length - 1) {
       setCurrentIndex((prev) => prev + 1);
-    } else {
+} else {
       setCurrentIndex(0);
-    }
+}
   };
-  if (loading) {
+if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         {" "}
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>{" "}
       </div>
     );
-  }
+}
   if (vocabularyData.length === 0) {
     return (
       <div className="space-y-6">
@@ -129,7 +129,7 @@ const Vocabulary = () => {
         </div>{" "}
       </div>
     );
-  }
+}
   return (
     <div className="space-y-6">
       {" "}
