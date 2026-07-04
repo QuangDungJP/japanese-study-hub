@@ -44,9 +44,10 @@ const currentExercise = exercises[currentExerciseIndex];
 const handleExerciseComplete = (score: number) => { const exerciseMaxScore = getMaxScore(currentExercise);
 setTotalScore(prev => prev + score);
 setMaxScore(prev => prev + exerciseMaxScore);
-if (currentExerciseIndex < exercises.length - 1) { /* Move to next exercise setTimeout(() => { setCurrentExerciseIndex(prev => prev + 1);*/
-}, 500);
-} else { /* All exercises completed const finalTotalScore = totalScore + score;*/
+if (currentExerciseIndex < exercises.length - 1) {
+  setTimeout(() => { setCurrentExerciseIndex(prev => prev + 1); }, 500);
+} else {
+const finalTotalScore = totalScore + score;
 const finalMaxScore = maxScore + exerciseMaxScore;
 const xpEarned = Math.round((finalTotalScore / finalMaxScore) * 50);
 addXp(xpEarned);
