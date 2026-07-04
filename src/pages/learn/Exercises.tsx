@@ -32,11 +32,12 @@ const [totalScore, setTotalScore] = useState(0);
 const [maxScore, setMaxScore] = useState(0);
 useEffect(() => { const fetchExercises = async () => { if (!lessonId) { setLoading(false);
 return;
-} /* Fetch lesson info const { data: lessonData } = await supabase .from('lessons') .select('title, title_vi') .eq('id', lessonId) .single();*/
-if (lessonData) { setLessonTitle(lessonData.title_vi || lessonData.title);
-} /* Fetch exercises via RPC (excludes correct_answers/explanation) const { data } = await supabase.rpc('get_lesson_exercises', { _lesson_id: lessonId });*/
-if (data) { setExercises(data as any);
-} setLoading(false);
+}
+const { data: lessonData } = await supabase.from('lessons').select('title, title_vi').eq('id', lessonId).single();
+if (lessonData) { setLessonTitle(lessonData.title_vi || lessonData.title); }
+const { data } = await supabase.rpc('get_lesson_exercises', { _lesson_id: lessonId });
+if (data) { setExercises(data as any); }
+setLoading(false);
 };
 fetchExercises();
 }, [lessonId]);
