@@ -788,7 +788,6 @@ const TeacherClasses = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Học viên</TableHead>
-                    <TableHead>XP</TableHead>
                     <TableHead>Streak</TableHead>
                     <TableHead>Bài học</TableHead>
                     <TableHead>Tiến độ hôm nay</TableHead>
@@ -814,12 +813,6 @@ const TeacherClasses = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-yellow-500" />
-                          <span className="font-medium">{student.progress?.total_xp || 0}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
                           <Flame className="w-4 h-4 text-orange-500" />
                           <span>{student.progress?.streak || 0}</span>
                         </div>
@@ -837,7 +830,7 @@ const TeacherClasses = () => {
                             className="h-2 flex-1"
                           />
                           <span className="text-xs text-muted-foreground">
-                            {student.progress?.daily_progress || 0}/{student.progress?.daily_goal || 50}
+                            {student.progress?.daily_progress || 0}/{student.progress?.daily_goal || 50} phút
                           </span>
                         </div>
                       </TableCell>
@@ -963,16 +956,6 @@ const TeacherClasses = () => {
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <Star className="w-5 h-5 text-yellow-500" />
-                      <span className="text-sm text-muted-foreground">Tổng XP</span>
-                    </div>
-                    <p className="text-2xl font-bold">{selectedStudent.progress?.total_xp || 0}</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2 mb-2">
                       <Flame className="w-5 h-5 text-orange-500" />
                       <span className="text-sm text-muted-foreground">Streak</span>
                     </div>
@@ -1009,7 +992,7 @@ const TeacherClasses = () => {
                       <span className="text-sm text-muted-foreground">Tiến độ hôm nay</span>
                     </div>
                     <span className="text-sm font-medium">
-                      {selectedStudent.progress?.daily_progress || 0} / {selectedStudent.progress?.daily_goal || 50} XP
+                      {selectedStudent.progress?.daily_progress || 0} / {selectedStudent.progress?.daily_goal || 50} phút
                     </span>
                   </div>
                   <Progress 
