@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import PdfPresenter from "@/components/teacher/PdfPresenter";
+import BlockRenderer from "@/components/lesson-viewer/BlockRenderer";
+import { isBlockArray } from "@/lib/lessonBlocks";
 import {
   ArrowLeft,
   BookOpen,
@@ -21,7 +23,6 @@ import {
   Sparkles,
   Target,
   Trophy,
-  Zap,
 } from "lucide-react";
 interface Lesson {
   id: string;
@@ -58,7 +59,7 @@ const LessonViewer = () => {
   const { id } = useParams<{ id: string }>();
 const navigate = useNavigate();
 const { user } = useAuth();
-const { addXp } = useLearning();
+useLearning();
 const [lesson, setLesson] = useState<Lesson | null>(null);
 const [materials, setMaterials] = useState<Material[]>([]);
 const [exerciseCount, setExerciseCount] = useState(0);
@@ -125,9 +126,7 @@ if (error) {
 return;
 }
     setCompleted(true);
-const xp = lesson.xp_reward ?? 20;
-addXp(xp);
-toast({ title: ``, description: "Đã đánh dấu hoàn thành bài học." });
+toast({ title: "🎉 Hoàn thành!", description: "Đã đánh dấu hoàn thành bài học." });
 };
 if (loading) {
     return (
@@ -206,10 +205,6 @@ if (loading) {
               {lesson.duration_minutes || lesson.estimated_minutes || 15}{" "}
               phút{" "}
             </span>{" "}
-            <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-              {" "}
-              <Zap className="w-3.5 h-3.5" />{" "}
-            </span>{" "}
           </div>{" "}
           <div>
             {" "}
@@ -284,9 +279,25 @@ picture-in-picture"
         </Card>
       )}{" "}
       {/* HTML / text content */}{" "}
+      {(() => {
+        const blocks = (lesson.content && typeof lesson.content === 'object' && Array.isArray((lesson.content as any).blocks))
+          ? (lesson.content as any).blocks
+          : null;
+        if (blocks && isBlockArray(blocks) && blocks.length > 0) {
+          return (
+            <Card>
+              <CardContent className="p-5 sm:p-7">
+                <BlockRenderer blocks={blocks} />
+              </CardContent>
+            </Card>
+          );
+        }
+        return null;
+      })()}
       {(lesson.content_html ||
         (lesson.content &&
           typeof lesson.content === "object" &&
+          !Array.isArray((lesson.content as any).blocks) &&
           (lesson.content as any).text)) && (
         <Card>
           {" "}

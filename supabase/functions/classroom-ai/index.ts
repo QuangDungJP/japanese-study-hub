@@ -2,6 +2,25 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
+async function callAI(key: string, systemPrompt: string, userPrompt: string) {
+  const res = await fetch(GATEWAY, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      response_format: { type: 'json_object' },
+    }),
+  });
+  if (!res.ok) throw new Error(`AI gateway ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content || '{}';
+  try { return JSON.parse(content); } catch { return { raw: content }; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -61,6 +80,40 @@ Deno.serve(async (req) => {
       let parsed: any = {};
       try { parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}'); } catch {}
       return json(parsed);
+    }
+
+    // ============ LESSON EDITOR AI COPILOT ============
+
+    if (action === 'lesson_outline') {
+      const topic = String(body.topic || '').slice(0, 200);
+      const level = String(body.level || '').slice(0, 50);
+      const sys = 'Bạn là chuyên gia thiết kế bài học tiếng Nhật. Trả về CHỈ JSON, không markdown.';
+      const prompt = `Thiết kế outline bài học "${topic}"${level ? ` (trình độ ${level})` : ''}.\nTrả JSON:\n{ "sections": [ { "heading": "Tên phần", "intro": "Đoạn giới thiệu 2-3 câu tiếng Việt" } ] }\nCó 4-6 sections đi từ khởi động → nội dung chính → luyện tập → tổng kết.`;
+      return json(await callAI(key, sys, prompt));
+    }
+
+    if (action === 'lesson_vocab') {
+      const topic = String(body.topic || '').slice(0, 200);
+      const level = String(body.level || 'N5').slice(0, 50);
+      const sys = 'Bạn là giáo viên tiếng Nhật. Trả CHỈ JSON.';
+      const prompt = `Sinh 10-12 từ vựng tiếng Nhật chủ đề "${topic}" trình độ ${level}.\nJSON:\n{ "items": [ { "term": "kanji/kana", "reading": "hiragana", "meaning": "nghĩa tiếng Việt" } ] }`;
+      return json(await callAI(key, sys, prompt));
+    }
+
+    if (action === 'lesson_quiz') {
+      const topic = String(body.topic || '').slice(0, 200);
+      const level = String(body.level || 'N5').slice(0, 50);
+      const sys = 'Bạn là giáo viên tiếng Nhật. Trả CHỈ JSON.';
+      const prompt = `Sinh 4 câu trắc nghiệm ôn tập chủ đề "${topic}" trình độ ${level}.\nJSON:\n{ "questions": [ { "question": "…", "choices": ["A","B","C","D"], "answer": 0, "explanation": "giải thích ngắn tiếng Việt" } ] }\nĐáp án đa dạng, không luôn A.`;
+      return json(await callAI(key, sys, prompt));
+    }
+
+    if (action === 'lesson_rewrite') {
+      const source = String(body.source || '').slice(0, 2000);
+      if (!source.trim()) return json({ error: 'Cần nội dung nguồn' }, 400);
+      const sys = 'Bạn là biên tập viên. Trả CHỈ JSON.';
+      const prompt = `Viết lại đoạn sau cho dễ hiểu, giữ nguyên ý:\n"""${source}"""\nJSON: { "text": "đoạn đã viết lại" }`;
+      return json(await callAI(key, sys, prompt));
     }
 
     return json({ error: 'unknown action' }, 400);
