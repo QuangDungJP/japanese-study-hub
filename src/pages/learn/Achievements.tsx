@@ -258,7 +258,7 @@ const Achievements = () => {
       case 'lessons':
         return 'Bài học';
       case 'xp':
-        return 'Điểm XP';
+        return 'Điểm học tập';
       case 'vocabulary':
         return 'Từ vựng';
       default:
