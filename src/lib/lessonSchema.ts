@@ -31,6 +31,9 @@ export interface LessonFormData {
   objectives?: string;
   prerequisites?: string;
   difficulty?: string;
+
+  /** Block-based lesson content (Notion-style). Saved to `lessons.content` (jsonb). */
+  content?: { version: number; blocks: any[] } | null;
 }
 
 export const EMPTY_LESSON: LessonFormData = {
@@ -54,6 +57,7 @@ export const EMPTY_LESSON: LessonFormData = {
   objectives: '',
   prerequisites: '',
   difficulty: '',
+  content: { version: 1, blocks: [] },
 };
 
 /** Map a DB row → form state. */
@@ -78,6 +82,9 @@ export const parseLessonRow = (row: any): LessonFormData => ({
   objectives: row?.objectives || '',
   prerequisites: row?.prerequisites || '',
   difficulty: row?.difficulty || '',
+  content: (row?.content && typeof row.content === 'object' && Array.isArray(row.content.blocks))
+    ? row.content
+    : { version: 1, blocks: [] },
 });
 
 interface BuildOpts {
@@ -122,6 +129,7 @@ export const buildLessonPayload = (form: LessonFormData, opts: BuildOpts = {}) =
     prerequisites: form.prerequisites || null,
     difficulty: form.difficulty || null,
     language: opts.language || 'japanese',
+    content: form.content && Array.isArray(form.content.blocks) ? form.content : null,
   };
 
   if (typeof opts.isPublished === 'boolean') {
