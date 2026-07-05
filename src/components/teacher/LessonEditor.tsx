@@ -25,6 +25,8 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LessonFormData, EMPTY_LESSON } from '@/lib/lessonSchema';
+import BlockEditor from '@/components/lesson-editor/BlockEditor';
+import { LessonBlock } from '@/lib/lessonBlocks';
 
 interface LessonEditorProps {
   initialData?: LessonFormData;
@@ -454,10 +456,21 @@ const LessonEditor = ({ initialData, lessonId, onSubmit, onCancel, isEditing }: 
 
             <TabsContent value="content" className="space-y-4 mt-4">
               <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Sparkles className="w-4 h-4" />Nội dung bài học</CardTitle></CardHeader>
-                <CardContent>
-                  <Textarea value={formData.content_html} onChange={(e) => updateField('content_html', e.target.value)} placeholder="Nội dung chi tiết (HTML/Markdown)..." rows={12} className="font-mono text-sm" />
-                  <p className="text-xs text-muted-foreground mt-2">💡 Sau khi tạo bài học, có thể thêm bài tập (flashcard, trắc nghiệm, điền từ...) ở tab Module bài tập.</p>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2"><Sparkles className="w-4 h-4" />Nội dung bài học (Block editor)</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Xây bài học kiểu Notion — thêm tiêu đề, đoạn văn, hình ảnh, video, từ vựng, quiz… và dùng AI Copilot để sinh nhanh.</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <BlockEditor
+                    value={(formData.content?.blocks as LessonBlock[]) || []}
+                    onChange={(blocks) => updateField('content', { version: 1, blocks })}
+                    lessonTitle={formData.title_vi || formData.title}
+                    lessonLevel={formData.level}
+                  />
+                  <details className="rounded-lg border p-3 text-sm bg-muted/30">
+                    <summary className="cursor-pointer font-medium text-muted-foreground">Nội dung HTML (tùy chọn / legacy)</summary>
+                    <Textarea value={formData.content_html} onChange={(e) => updateField('content_html', e.target.value)} placeholder="HTML/Markdown thô (tùy chọn)…" rows={8} className="font-mono text-xs mt-2" />
+                  </details>
                 </CardContent>
               </Card>
             </TabsContent>
