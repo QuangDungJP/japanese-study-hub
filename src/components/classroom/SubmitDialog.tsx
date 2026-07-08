@@ -28,6 +28,8 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
   const isReturned = existing?.status === 'graded' && existing?.returned_at;
   const rubric: Array<{ title: string; max: number }> = Array.isArray(assignment?.rubric) ? assignment.rubric : [];
   const rubricScores: Record<string, number> = existing?.rubric_scores || {};
+  const questions: Array<{ prompt: string; hint?: string }> = Array.isArray(assignment?.assigned_to?.questions) ? assignment.assigned_to.questions : [];
+  const attachmentsIn: Array<{ url: string; name: string; kind?: string }> = Array.isArray(assignment?.attachments) ? assignment.attachments : [];
 
   useEffect(() => {
     if (open) {
@@ -106,6 +108,40 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
           </div>
         )}
         <div className="space-y-4">
+          {(assignment?.instructions || assignment?.description) && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Hướng dẫn</div>
+              <p className="text-sm whitespace-pre-wrap">{assignment.instructions || assignment.description}</p>
+            </div>
+          )}
+          {attachmentsIn.length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tài liệu từ giáo viên</Label>
+              {attachmentsIn.map((a, i) => (
+                <a key={i} href={a.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 rounded border hover:bg-muted/40 text-sm">
+                  <FileText className="w-4 h-4 text-primary" /><span className="flex-1 truncate">{a.name}</span>
+                </a>
+              ))}
+            </div>
+          )}
+          {questions.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Câu hỏi</Label>
+              <ol className="space-y-2">
+                {questions.map((q, i) => (
+                  <li key={i} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-start gap-2">
+                      <span className="w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                      <div className="flex-1">
+                        <p className="text-sm whitespace-pre-wrap font-medium">{q.prompt}</p>
+                        {q.hint && <p className="text-xs text-muted-foreground italic mt-1">💡 {q.hint}</p>}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
           <div>
             <Label>Nội dung bài làm</Label>
             <Textarea value={content} onChange={e => setContent(e.target.value)} rows={4} placeholder="Nhập câu trả lời hoặc mô tả bài làm…" />
