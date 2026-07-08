@@ -116,6 +116,31 @@ Deno.serve(async (req) => {
       return json(await callAI(key, sys, prompt));
     }
 
+    if (action === 'assignment_questions') {
+      const title = String(body.title || '').slice(0, 200);
+      const instructions = String(body.instructions || '').slice(0, 1000);
+      const count = Math.min(Math.max(parseInt(body.count) || 5, 1), 10);
+      const sys = 'Bạn là giáo viên tiếng Nhật. Trả CHỈ JSON hợp lệ.';
+      const prompt = `Tạo ${count} câu hỏi/nhiệm vụ cho bài tập "${title}".\nHướng dẫn: ${instructions || '(không có)'}\nJSON:\n{ "questions": [ { "prompt": "nội dung câu hỏi tiếng Việt hoặc tiếng Nhật", "hint": "gợi ý ngắn (có thể để trống)" } ] }`;
+      return json(await callAI(key, sys, prompt));
+    }
+
+    if (action === 'assignment_rubric') {
+      const title = String(body.title || '').slice(0, 200);
+      const instructions = String(body.instructions || '').slice(0, 1000);
+      const sys = 'Bạn là giáo viên tiếng Nhật. Trả CHỈ JSON.';
+      const prompt = `Đề xuất rubric chấm điểm cho bài tập "${title}".\nMô tả: ${instructions || '(không có)'}\nJSON:\n{ "rubric": [ { "title": "Tiêu chí", "max": số_điểm } ] }\n4-5 tiêu chí, tổng ~100 điểm.`;
+      return json(await callAI(key, sys, prompt));
+    }
+
+    if (action === 'assignment_full') {
+      const title = String(body.title || '').slice(0, 200);
+      const level = String(body.level || 'N5').slice(0, 50);
+      const sys = 'Bạn là giáo viên tiếng Nhật. Trả CHỈ JSON.';
+      const prompt = `Thiết kế bài tập hoàn chỉnh "${title}" trình độ ${level}.\nJSON:\n{\n  "instructions": "hướng dẫn 4-6 câu tiếng Việt",\n  "questions": [ { "prompt": "...", "hint": "..." } ],\n  "rubric": [ { "title": "...", "max": 20 } ]\n}\n5 câu hỏi, 4 tiêu chí rubric, tổng ~100.`;
+      return json(await callAI(key, sys, prompt));
+    }
+
     return json({ error: 'unknown action' }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
