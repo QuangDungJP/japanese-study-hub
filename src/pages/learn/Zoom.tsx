@@ -143,7 +143,7 @@ const Zoom = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 p-5 sm:p-8 md:p-12">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 p-8 md:p-12">
         <div className="absolute inset-0 bg-grid-pattern opacity-5" />
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1">
@@ -151,10 +151,10 @@ const Zoom = () => {
               <Video className="w-3 h-3 mr-1" />
               Học Online với Zoom
             </Badge>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Kết nối trực tiếp với giáo viên bản ngữ
             </h1>
-            <p className="text-muted-foreground text-base sm:text-lg mb-6 max-w-xl">
+            <p className="text-muted-foreground text-lg mb-6 max-w-xl">
               Trải nghiệm lớp học trực tuyến chất lượng cao, tương tác trực tiếp như học offline.
               Công nghệ Zoom HD đảm bảo hình ảnh và âm thanh sắc nét.
             </p>
@@ -230,7 +230,7 @@ const Zoom = () => {
 
       {/* Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-auto lg:inline-grid h-auto">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview">Tổng quan</TabsTrigger>
           <TabsTrigger value="teachers">Giáo viên</TabsTrigger>
           <TabsTrigger value="schedule">Lịch học</TabsTrigger>

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { formatWithJST, formatTimeWithJST } from "@/lib/dateUtils";
 import { Calendar, Clock, User, Trash2, Loader2, Video, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -161,15 +160,13 @@ export const MyBookings = () => {
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       <span>
-                        {format(new Date(booking.booking_date), "EEEE, dd/MM/yyyy", {
-                          locale: vi,
-                        })}
+                        {formatWithJST(booking.booking_date, false)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
                       <span>
-                        {booking.booking_time} ({booking.duration_minutes} phút)
+                        {formatTimeWithJST(booking.booking_time)} ({booking.duration_minutes} phút)
                       </span>
                     </div>
                   </div>
@@ -223,8 +220,8 @@ export const MyBookings = () => {
                         <AlertDialogTitle>Huỷ lịch học?</AlertDialogTitle>
                         <AlertDialogDescription>
                           Bạn có chắc muốn huỷ buổi học với {booking.teacher_name} vào{" "}
-                          {format(new Date(booking.booking_date), "dd/MM/yyyy")} lúc{" "}
-                          {booking.booking_time}?
+                          {formatWithJST(booking.booking_date, false)} lúc{" "}
+                          {formatTimeWithJST(booking.booking_time)}?
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

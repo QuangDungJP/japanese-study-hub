@@ -12,32 +12,20 @@ import { vi } from 'date-fns/locale';
 import { useBlogCategories } from '@/components/admin/BlogCategoryManager';
 import { useToast } from '@/hooks/use-toast';
 import ScrollReveal from '@/components/ScrollReveal';
-import { BRAND } from '@/config/brand';
 
 const RelatedPosts = ({ category, currentId }: { category: string | null; currentId: string }) => {
   const { data: posts = [] } = useQuery({
     queryKey: ['related-posts', category, currentId],
     queryFn: async () => {
-      const base = supabase
+      let query = supabase
         .from('blog_posts')
         .select('id, title_vi, slug, thumbnail_url, excerpt_vi, published_at, view_count')
         .eq('is_published', true)
         .neq('id', currentId)
         .order('published_at', { ascending: false })
         .limit(3);
-      if (category) {
-        const { data, error } = await base.eq('category', category);
-        if (error) throw error;
-        if (data && data.length > 0) return data;
-      }
-      // Fallback: latest other posts regardless of category
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('id, title_vi, slug, thumbnail_url, excerpt_vi, published_at, view_count')
-        .eq('is_published', true)
-        .neq('id', currentId)
-        .order('published_at', { ascending: false })
-        .limit(3);
+      if (category) query = query.eq('category', category);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -49,7 +37,7 @@ const RelatedPosts = ({ category, currentId }: { category: string | null; curren
   return (
     <ScrollReveal delay={300}>
       <div className="mt-16 pt-10 border-t border-border">
-        <h2 className="text-2xl font-bold text-foreground mb-6">Bài viết khác</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-6">Bài viết liên quan</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map(post => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="group block rounded-2xl border border-border bg-card overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -119,7 +107,7 @@ const BlogDetail = () => {
       if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    document.title = `${post.title_vi} | ${BRAND.name} Blog`;
+    document.title = `${post.title_vi} | TNQDO Blog`;
     setMeta('og:title', post.title_vi);
     setMeta('og:description', post.excerpt_vi || post.title_vi);
     setMeta('og:type', 'article');
@@ -129,7 +117,7 @@ const BlogDetail = () => {
     setNameMeta('twitter:title', post.title_vi);
     setNameMeta('twitter:description', post.excerpt_vi || post.title_vi);
     if (post.thumbnail_url) setNameMeta('twitter:image', post.thumbnail_url);
-    return () => { document.title = BRAND.name; };
+    return () => { document.title = 'TNQDO'; };
   }, [post]);
 
   const handleShare = async () => {
@@ -251,7 +239,7 @@ const BlogDetail = () => {
           <ScrollReveal delay={200}>
             <div className="mt-12 p-6 md:p-8 rounded-2xl bg-card border border-border text-center">
               <h3 className="text-xl font-bold text-foreground mb-2">Bạn thấy bài viết hữu ích?</h3>
-              <p className="text-muted-foreground mb-4">{BRAND.blogExploreLabel}</p>
+              <p className="text-muted-foreground mb-4">Khám phá thêm nhiều bài viết hay trên Blog của TNQDO</p>
               <Button asChild className="rounded-xl">
                 <Link to="/blog">Xem thêm bài viết <ArrowRight className="w-4 h-4 ml-2" /></Link>
               </Button>

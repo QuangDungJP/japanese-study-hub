@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Video, FileText, Clock, UserX, GraduationCap } from 'lucide-react';
+import { formatTimeWithJST } from '@/lib/dateUtils';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Video, FileText, Clock, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,7 @@ interface CalendarEvent {
   title: string;
   start_time: string;
   end_time: string;
-  event_type: 'booking' | 'exam' | 'leave' | 'reminder' | 'class';
+  event_type: 'booking' | 'exam' | 'leave' | 'reminder';
   description?: string;
   color?: string;
   meet_link?: string;
@@ -23,7 +24,7 @@ interface CalendarEvent {
 
 interface CalendarViewProps {
   onEventClick?: (event: CalendarEvent) => void;
-  showEventTypes?: ('booking' | 'exam' | 'leave' | 'reminder' | 'class')[];
+  showEventTypes?: ('booking' | 'exam' | 'leave' | 'reminder')[];
 }
 
 const eventColors: Record<string, string> = {
@@ -31,7 +32,6 @@ const eventColors: Record<string, string> = {
   exam: 'bg-red-500',
   leave: 'bg-yellow-500',
   reminder: 'bg-green-500',
-  class: 'bg-purple-500',
 };
 
 const eventIcons: Record<string, React.ElementType> = {
@@ -39,10 +39,9 @@ const eventIcons: Record<string, React.ElementType> = {
   exam: FileText,
   leave: UserX,
   reminder: Clock,
-  class: GraduationCap,
 };
 
-export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam', 'leave', 'reminder', 'class'] }: CalendarViewProps) => {
+export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam', 'leave', 'reminder'] }: CalendarViewProps) => {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -161,37 +160,6 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
         })));
       }
 
-      // Map class sessions (visible to admin/teacher of class & enrolled students via RLS)
-      if (showEventTypes.includes('class')) {
-        const { data: sessions } = await (supabase as any)
-          .from('class_sessions')
-          .select('*, classes(name_vi, name, teacher_id)')
-          .gte('session_date', startDate)
-          .lte('session_date', endDate);
-        if (sessions && sessions.length) {
-          const teacherIds = [...new Set(sessions.map((s: any) => s.classes?.teacher_id).filter(Boolean))] as string[];
-          let teacherMap = new Map<string, string>();
-          if (teacherIds.length) {
-            const { data: profs } = await supabase.from('profiles').select('user_id, full_name').in('user_id', teacherIds);
-            teacherMap = new Map((profs || []).map((p: any) => [p.user_id, p.full_name || '']));
-          }
-          sessions.forEach((s: any) => {
-            const cls = s.classes;
-            const teacherName = cls?.teacher_id ? teacherMap.get(cls.teacher_id) : '';
-            allEvents.push({
-              id: `class-${s.id}`,
-              title: `${cls?.name_vi || cls?.name || 'Lớp'}${s.topic ? ` · ${s.topic}` : ''}`,
-              start_time: `${s.session_date}T${s.start_time}`,
-              end_time: `${s.session_date}T${s.end_time || s.start_time}`,
-              event_type: 'class' as const,
-              description: [teacherName && `GV: ${teacherName}`, s.location, s.notes].filter(Boolean).join(' • '),
-              meet_link: s.meet_link || undefined,
-              reference_id: s.class_id,
-            });
-          });
-        }
-      }
-
       setEvents(allEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -244,7 +212,7 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
             <div key={type} className="flex items-center gap-1.5">
               <div className={cn('w-3 h-3 rounded-full', eventColors[type])} />
               <span className="text-muted-foreground capitalize">
-                {type === 'booking' ? 'Lịch 1-1' : type === 'exam' ? 'Kiểm tra' : type === 'leave' ? 'Nghỉ phép' : type === 'class' ? 'Lớp học' : 'Nhắc nhở'}
+                {type === 'booking' ? 'Lịch học' : type === 'exam' ? 'Kiểm tra' : type === 'leave' ? 'Nghỉ phép' : 'Nhắc nhở'}
               </span>
             </div>
           );
@@ -350,7 +318,7 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{event.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(event.start_time), 'HH:mm')}
+                          {formatTimeWithJST(format(new Date(event.start_time), 'HH:mm'))}
                         </p>
                         {event.description && (
                           <p className="text-sm text-muted-foreground truncate mt-1">

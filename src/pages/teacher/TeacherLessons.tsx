@@ -20,16 +20,12 @@ import {
 } from '@/components/ui/table';
 import { 
   BookOpen, Plus, Edit, Clock, Send, Dumbbell, 
-  Image, Film, MoreHorizontal, Eye, Layers, FileText, GraduationCap, FolderOpen, ArrowRight
+  Image, Film, MoreHorizontal, Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import LessonEditor from '@/components/teacher/LessonEditor';
 import LessonExercises from '@/components/admin/LessonExercises';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import MaterialsManager from '@/components/teacher/MaterialsManager';
-import { buildLessonPayload, parseLessonRow } from '@/lib/lessonSchema';
-import { Link } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,10 +49,6 @@ interface Lesson {
   thumbnail_url?: string;
   video_url?: string;
   content_html?: string;
-  class_id?: string | null;
-  start_at?: string | null;
-  end_at?: string | null;
-  order_index?: number;
 }
 
 interface TeacherContext {
@@ -88,7 +80,6 @@ const TeacherLessons = () => {
         .from('lessons')
         .select('*')
         .eq('teacher_id', user?.id)
-        .order('order_index', { ascending: true })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -102,23 +93,24 @@ const TeacherLessons = () => {
 
   const handleSubmit = async (formData: any) => {
     try {
-      const lessonData = buildLessonPayload(formData, {
+      const lessonData = {
+        ...formData,
+        teacher_id: user?.id,
         language: 'japanese',
-        teacherId: user?.id || null,
-        isPublished: editingLesson ? undefined as any : false,
-      });
+        is_published: false,
+      };
 
       if (editingLesson) {
-        const { error } = await (supabase
-          .from('lessons') as any)
+        const { error } = await supabase
+          .from('lessons')
           .update(lessonData)
           .eq('id', editingLesson.id);
 
         if (error) throw error;
         toast({ title: 'Thành công', description: 'Đã cập nhật bài học' });
       } else {
-        const { error } = await (supabase
-          .from('lessons') as any)
+        const { error } = await supabase
+          .from('lessons')
           .insert(lessonData);
 
         if (error) throw error;
@@ -171,18 +163,27 @@ const TeacherLessons = () => {
     setIsEditorOpen(true);
   };
 
-  const getSkillInfo = (skill: string) => ({
-    label: skill || 'Khác',
-    color: 'bg-primary/10 text-primary border-primary/20',
-  });
+  const getSkillInfo = (skill: string) => {
+    const info: Record<string, { label: string; icon: string; color: string }> = {
+      reading: { label: 'Đọc hiểu', icon: '📖', color: 'bg-blue-500/10 text-blue-600' },
+      listening: { label: 'Nghe', icon: '🎧', color: 'bg-purple-500/10 text-purple-600' },
+      speaking: { label: 'Nói', icon: '🗣️', color: 'bg-green-500/10 text-green-600' },
+      writing: { label: 'Viết', icon: '✍️', color: 'bg-orange-500/10 text-orange-600' },
+      vocabulary: { label: 'Từ vựng', icon: '📚', color: 'bg-pink-500/10 text-pink-600' },
+      grammar: { label: 'Ngữ pháp', icon: '📝', color: 'bg-cyan-500/10 text-cyan-600' },
+    };
+    return info[skill] || { label: skill, icon: '📖', color: 'bg-muted text-muted-foreground' };
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Không gian giảng dạy</h1>
+          <h1 className="text-3xl font-bold text-foreground">Bài học của tôi</h1>
           <p className="text-muted-foreground mt-1">
-            Tạo bài học, quản lý module bài tập và bài kiểm tra ở cùng một nơi
+            {isSeniorTeacher 
+              ? 'Bạn có thể tự xuất bản bài học' 
+              : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
           </p>
         </div>
         <Button onClick={() => openEditor()} variant="hero">
@@ -191,34 +192,12 @@ const TeacherLessons = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="lessons" className="space-y-4">
-        <TabsList className="flex-wrap h-auto justify-start">
-          <TabsTrigger value="lessons" className="gap-2">
-            <BookOpen className="w-4 h-4" />Bài học
-          </TabsTrigger>
-          <TabsTrigger value="modules" className="gap-2">
-            <Layers className="w-4 h-4" />Module bài tập
-          </TabsTrigger>
-          <TabsTrigger value="materials" className="gap-2">
-            <FolderOpen className="w-4 h-4" />Tài liệu
-          </TabsTrigger>
-          <TabsTrigger value="exams" className="gap-2">
-            <GraduationCap className="w-4 h-4" />Bài kiểm tra
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="lessons" className="space-y-4 mt-4">
-          <Card>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5" />
             Danh sách bài học ({lessons.length})
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {isSeniorTeacher
-              ? 'Bạn có thể tự xuất bản bài học'
-              : 'Bài học cần Admin phê duyệt trước khi xuất bản'}
-          </p>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -278,10 +257,12 @@ const TeacherLessons = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={skillInfo.color}>{skillInfo.label}</Badge>
+                        <Badge className={skillInfo.color}>
+                          {skillInfo.icon} {skillInfo.label}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        {lesson.level ? <Badge variant="outline">{lesson.level}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+                        <Badge variant="outline">{lesson.level}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-muted-foreground">
@@ -335,88 +316,24 @@ const TeacherLessons = () => {
           )}
         </CardContent>
       </Card>
-        </TabsContent>
-
-        <TabsContent value="modules" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Layers className="w-5 h-5" />
-                Module bài tập theo bài học
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">Chọn một bài học để quản lý các module / bài tập bên trong.</p>
-            </CardHeader>
-            <CardContent>
-              {lessons.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Layers className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p>Chưa có bài học nào. Hãy tạo bài học trước khi thêm module.</p>
-                </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {lessons.map((l) => {
-                    const skill = getSkillInfo(l.skill);
-                    return (
-                      <button
-                        key={l.id}
-                        onClick={() => setExercisesLesson(l)}
-                        className="text-left rounded-xl border border-border/60 bg-card hover:border-primary/50 hover:shadow-md transition-all p-4 space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className={skill.color}>{skill.label}</Badge>
-                          {l.level && <Badge variant="outline">{l.level}</Badge>}
-                        </div>
-                        <h4 className="font-semibold line-clamp-2">{l.title_vi || l.title}</h4>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />{l.duration_minutes} phút
-                          <span>•</span>
-                          <span>{l.is_published ? 'Đã xuất bản' : 'Nháp'}</span>
-                        </div>
-                        <div className="pt-1 text-primary text-sm font-medium flex items-center gap-1">
-                          <Dumbbell className="w-3 h-3" />Mở module bài tập →
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="exams" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5" />
-                Bài kiểm tra
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Bài kiểm tra (Exam) được quản lý ở mục riêng — tách bạch với Bài học và Bài tập.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="hero">
-                <Link to="/teacher/exams">
-                  <GraduationCap className="w-4 h-4 mr-2" />
-                  Mở trang Bài kiểm tra <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="materials" className="mt-4">
-          <MaterialsManager lessons={lessons.map(l => ({ id: l.id, title: l.title, title_vi: l.title_vi }))} />
-        </TabsContent>
-      </Tabs>
 
       {/* Lesson Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-6">
           <LessonEditor
-            lessonId={editingLesson?.id}
-            initialData={editingLesson ? parseLessonRow(editingLesson) : undefined}
+            initialData={editingLesson ? {
+              title: editingLesson.title,
+              title_vi: editingLesson.title_vi,
+              description: editingLesson.description || '',
+              description_vi: editingLesson.description_vi || '',
+              skill: editingLesson.skill,
+              level: editingLesson.level,
+              duration_minutes: editingLesson.duration_minutes,
+              xp_reward: editingLesson.xp_reward,
+              thumbnail_url: editingLesson.thumbnail_url || '',
+              video_url: editingLesson.video_url || '',
+              content_html: editingLesson.content_html || '',
+            } : undefined}
             onSubmit={handleSubmit}
             onCancel={() => setIsEditorOpen(false)}
             isEditing={!!editingLesson}

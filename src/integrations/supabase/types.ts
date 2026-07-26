@@ -284,7 +284,6 @@ export type Database = {
       class_assignment_submissions: {
         Row: {
           assignment_id: string
-          attachments: Json | null
           content: string | null
           feedback: string | null
           file_url: string | null
@@ -292,8 +291,6 @@ export type Database = {
           graded_by: string | null
           id: string
           link_url: string | null
-          returned_at: string | null
-          rubric_scores: Json | null
           score: number | null
           status: string
           student_id: string
@@ -302,7 +299,6 @@ export type Database = {
         }
         Insert: {
           assignment_id: string
-          attachments?: Json | null
           content?: string | null
           feedback?: string | null
           file_url?: string | null
@@ -310,8 +306,6 @@ export type Database = {
           graded_by?: string | null
           id?: string
           link_url?: string | null
-          returned_at?: string | null
-          rubric_scores?: Json | null
           score?: number | null
           status?: string
           student_id: string
@@ -320,7 +314,6 @@ export type Database = {
         }
         Update: {
           assignment_id?: string
-          attachments?: Json | null
           content?: string | null
           feedback?: string | null
           file_url?: string | null
@@ -328,8 +321,6 @@ export type Database = {
           graded_by?: string | null
           id?: string
           link_url?: string | null
-          returned_at?: string | null
-          rubric_scores?: Json | null
           score?: number | null
           status?: string
           student_id?: string
@@ -340,8 +331,6 @@ export type Database = {
       }
       class_assignments: {
         Row: {
-          assigned_to: Json | null
-          attachments: Json | null
           class_id: string
           created_at: string
           created_by: string
@@ -350,21 +339,13 @@ export type Database = {
           exercise_id: string | null
           file_url: string | null
           id: string
-          instructions: string | null
-          kind: string | null
           lesson_id: string | null
           link_url: string | null
-          order_index: number | null
-          points: number | null
-          rubric: Json | null
           start_at: string | null
           title: string
-          topic_id: string | null
           updated_at: string
         }
         Insert: {
-          assigned_to?: Json | null
-          attachments?: Json | null
           class_id: string
           created_at?: string
           created_by: string
@@ -373,21 +354,13 @@ export type Database = {
           exercise_id?: string | null
           file_url?: string | null
           id?: string
-          instructions?: string | null
-          kind?: string | null
           lesson_id?: string | null
           link_url?: string | null
-          order_index?: number | null
-          points?: number | null
-          rubric?: Json | null
           start_at?: string | null
           title: string
-          topic_id?: string | null
           updated_at?: string
         }
         Update: {
-          assigned_to?: Json | null
-          attachments?: Json | null
           class_id?: string
           created_at?: string
           created_by?: string
@@ -396,81 +369,13 @@ export type Database = {
           exercise_id?: string | null
           file_url?: string | null
           id?: string
-          instructions?: string | null
-          kind?: string | null
           lesson_id?: string | null
           link_url?: string | null
-          order_index?: number | null
-          points?: number | null
-          rubric?: Json | null
           start_at?: string | null
           title?: string
-          topic_id?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "class_assignments_topic_fk"
-            columns: ["topic_id"]
-            isOneToOne: false
-            referencedRelation: "class_topics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      class_materials: {
-        Row: {
-          attachments: Json
-          class_id: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          order_index: number
-          title: string
-          topic_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          attachments?: Json
-          class_id: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          order_index?: number
-          title: string
-          topic_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          attachments?: Json
-          class_id?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          order_index?: number
-          title?: string
-          topic_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_materials_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "class_materials_topic_id_fkey"
-            columns: ["topic_id"]
-            isOneToOne: false
-            referencedRelation: "class_topics"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       class_sessions: {
         Row: {
@@ -528,160 +433,6 @@ export type Database = {
           },
         ]
       }
-      class_stream_comments: {
-        Row: {
-          author_id: string
-          body: string
-          created_at: string
-          id: string
-          parent_id: string | null
-          post_id: string
-          updated_at: string
-        }
-        Insert: {
-          author_id: string
-          body: string
-          created_at?: string
-          id?: string
-          parent_id?: string | null
-          post_id: string
-          updated_at?: string
-        }
-        Update: {
-          author_id?: string
-          body?: string
-          created_at?: string
-          id?: string
-          parent_id?: string | null
-          post_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_stream_comments_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "class_stream_comments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "class_stream_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "class_stream_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      class_stream_posts: {
-        Row: {
-          assignment_id: string | null
-          attachments: Json
-          author_id: string
-          body: string | null
-          class_id: string
-          created_at: string
-          id: string
-          kind: string
-          material_id: string | null
-          pinned: boolean
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          assignment_id?: string | null
-          attachments?: Json
-          author_id: string
-          body?: string | null
-          class_id: string
-          created_at?: string
-          id?: string
-          kind?: string
-          material_id?: string | null
-          pinned?: boolean
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          assignment_id?: string | null
-          attachments?: Json
-          author_id?: string
-          body?: string | null
-          class_id?: string
-          created_at?: string
-          id?: string
-          kind?: string
-          material_id?: string | null
-          pinned?: boolean
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_stream_posts_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "class_assignments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "class_stream_posts_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "class_stream_posts_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "class_materials"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      class_stream_reactions: {
-        Row: {
-          comment_id: string | null
-          created_at: string
-          emoji: string
-          id: string
-          post_id: string | null
-          user_id: string
-        }
-        Insert: {
-          comment_id?: string | null
-          created_at?: string
-          emoji?: string
-          id?: string
-          post_id?: string | null
-          user_id: string
-        }
-        Update: {
-          comment_id?: string | null
-          created_at?: string
-          emoji?: string
-          id?: string
-          post_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_stream_reactions_comment_id_fkey"
-            columns: ["comment_id"]
-            isOneToOne: false
-            referencedRelation: "class_stream_comments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "class_stream_reactions_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "class_stream_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       class_students: {
         Row: {
           class_id: string
@@ -714,48 +465,11 @@ export type Database = {
           },
         ]
       }
-      class_topics: {
-        Row: {
-          class_id: string
-          created_at: string
-          id: string
-          name: string
-          order_index: number
-          updated_at: string
-        }
-        Insert: {
-          class_id: string
-          created_at?: string
-          id?: string
-          name: string
-          order_index?: number
-          updated_at?: string
-        }
-        Update: {
-          class_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          order_index?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_topics_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       classes: {
         Row: {
           approval_status: string
           approved_at: string | null
           approved_by: string | null
-          banner_url: string | null
-          color: string | null
           course_id: string | null
           created_at: string
           custom_fields: Json
@@ -764,7 +478,6 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean | null
-          join_code: string | null
           max_students: number | null
           name: string
           name_vi: string
@@ -779,8 +492,6 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          banner_url?: string | null
-          color?: string | null
           course_id?: string | null
           created_at?: string
           custom_fields?: Json
@@ -789,7 +500,6 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
-          join_code?: string | null
           max_students?: number | null
           name: string
           name_vi: string
@@ -804,8 +514,6 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
-          banner_url?: string | null
-          color?: string | null
           course_id?: string | null
           created_at?: string
           custom_fields?: Json
@@ -814,7 +522,6 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
-          join_code?: string | null
           max_students?: number | null
           name?: string
           name_vi?: string
@@ -1026,10 +733,8 @@ export type Database = {
           features: Json | null
           gallery_urls: Json
           highlights: Json
-          homepage_order: number
           id: string
           intro_video_url: string | null
-          is_featured: boolean
           is_published: boolean | null
           language: string
           level: string
@@ -1044,7 +749,6 @@ export type Database = {
           schedule_text: string | null
           schedule_text_vi: string | null
           section_visibility: Json
-          show_on_homepage: boolean
           slug: string | null
           start_date: string | null
           subtitle: string | null
@@ -1070,10 +774,8 @@ export type Database = {
           features?: Json | null
           gallery_urls?: Json
           highlights?: Json
-          homepage_order?: number
           id?: string
           intro_video_url?: string | null
-          is_featured?: boolean
           is_published?: boolean | null
           language?: string
           level?: string
@@ -1088,7 +790,6 @@ export type Database = {
           schedule_text?: string | null
           schedule_text_vi?: string | null
           section_visibility?: Json
-          show_on_homepage?: boolean
           slug?: string | null
           start_date?: string | null
           subtitle?: string | null
@@ -1114,10 +815,8 @@ export type Database = {
           features?: Json | null
           gallery_urls?: Json
           highlights?: Json
-          homepage_order?: number
           id?: string
           intro_video_url?: string | null
-          is_featured?: boolean
           is_published?: boolean | null
           language?: string
           level?: string
@@ -1132,7 +831,6 @@ export type Database = {
           schedule_text?: string | null
           schedule_text_vi?: string | null
           section_visibility?: Json
-          show_on_homepage?: boolean
           slug?: string | null
           start_date?: string | null
           subtitle?: string | null
@@ -1351,80 +1049,6 @@ export type Database = {
         }
         Relationships: []
       }
-      exam_attempts: {
-        Row: {
-          answers: Json
-          attachment_name: string | null
-          attachment_url: string | null
-          created_at: string
-          exam_id: string
-          id: string
-          review_status: string
-          reviewed_at: string | null
-          score: number | null
-          started_at: string
-          status: string
-          student_comment: string | null
-          student_id: string
-          submitted_at: string | null
-          teacher_feedback: string | null
-          time_spent_seconds: number
-          total: number | null
-          updated_at: string
-          video_url: string | null
-        }
-        Insert: {
-          answers?: Json
-          attachment_name?: string | null
-          attachment_url?: string | null
-          created_at?: string
-          exam_id: string
-          id?: string
-          review_status?: string
-          reviewed_at?: string | null
-          score?: number | null
-          started_at?: string
-          status?: string
-          student_comment?: string | null
-          student_id: string
-          submitted_at?: string | null
-          teacher_feedback?: string | null
-          time_spent_seconds?: number
-          total?: number | null
-          updated_at?: string
-          video_url?: string | null
-        }
-        Update: {
-          answers?: Json
-          attachment_name?: string | null
-          attachment_url?: string | null
-          created_at?: string
-          exam_id?: string
-          id?: string
-          review_status?: string
-          reviewed_at?: string | null
-          score?: number | null
-          started_at?: string
-          status?: string
-          student_comment?: string | null
-          student_id?: string
-          submitted_at?: string | null
-          teacher_feedback?: string | null
-          time_spent_seconds?: number
-          total?: number | null
-          updated_at?: string
-          video_url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exam_attempts_exam_id_fkey"
-            columns: ["exam_id"]
-            isOneToOne: false
-            referencedRelation: "exams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       exam_registrations: {
         Row: {
           created_at: string
@@ -1468,27 +1092,19 @@ export type Database = {
           description_vi: string | null
           duration_minutes: number
           end_time: string | null
-          ends_at: string | null
           exam_date: string
           exam_type: string
           id: string
-          instructions: string | null
           is_published: boolean | null
           location: string | null
-          lock_after_end: boolean
-          max_attempts: number
           max_score: number | null
           meet_link: string | null
           passing_score: number | null
-          questions: Json
-          shuffle_questions: boolean
           start_time: string
-          starts_at: string | null
           teacher_id: string
           title: string
           title_vi: string
           updated_at: string
-          video_url: string | null
         }
         Insert: {
           class_id?: string | null
@@ -1497,27 +1113,19 @@ export type Database = {
           description_vi?: string | null
           duration_minutes?: number
           end_time?: string | null
-          ends_at?: string | null
           exam_date: string
           exam_type?: string
           id?: string
-          instructions?: string | null
           is_published?: boolean | null
           location?: string | null
-          lock_after_end?: boolean
-          max_attempts?: number
           max_score?: number | null
           meet_link?: string | null
           passing_score?: number | null
-          questions?: Json
-          shuffle_questions?: boolean
           start_time: string
-          starts_at?: string | null
           teacher_id: string
           title: string
           title_vi: string
           updated_at?: string
-          video_url?: string | null
         }
         Update: {
           class_id?: string | null
@@ -1526,27 +1134,19 @@ export type Database = {
           description_vi?: string | null
           duration_minutes?: number
           end_time?: string | null
-          ends_at?: string | null
           exam_date?: string
           exam_type?: string
           id?: string
-          instructions?: string | null
           is_published?: boolean | null
           location?: string | null
-          lock_after_end?: boolean
-          max_attempts?: number
           max_score?: number | null
           meet_link?: string | null
           passing_score?: number | null
-          questions?: Json
-          shuffle_questions?: boolean
           start_time?: string
-          starts_at?: string | null
           teacher_id?: string
           title?: string
           title_vi?: string
           updated_at?: string
-          video_url?: string | null
         }
         Relationships: [
           {
@@ -1695,69 +1295,6 @@ export type Database = {
         }
         Relationships: []
       }
-      lesson_materials: {
-        Row: {
-          class_id: string | null
-          created_at: string
-          description: string | null
-          file_size: number | null
-          file_type: string
-          file_url: string
-          id: string
-          is_published: boolean
-          lesson_id: string | null
-          order_index: number
-          teacher_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          class_id?: string | null
-          created_at?: string
-          description?: string | null
-          file_size?: number | null
-          file_type?: string
-          file_url: string
-          id?: string
-          is_published?: boolean
-          lesson_id?: string | null
-          order_index?: number
-          teacher_id: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          class_id?: string | null
-          created_at?: string
-          description?: string | null
-          file_size?: number | null
-          file_type?: string
-          file_url?: string
-          id?: string
-          is_published?: boolean
-          lesson_id?: string | null
-          order_index?: number
-          teacher_id?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lesson_materials_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lesson_materials_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       lessons: {
         Row: {
           class_id: string | null
@@ -1766,20 +1303,15 @@ export type Database = {
           created_at: string | null
           description: string | null
           description_vi: string | null
-          difficulty: string | null
           duration_minutes: number | null
           end_at: string | null
-          estimated_minutes: number | null
           id: string
           is_published: boolean | null
           language: string
           level: string
-          objectives: string | null
           order_index: number | null
-          prerequisites: string | null
           skill: string
           start_at: string | null
-          tags: string[] | null
           teacher_id: string | null
           thumbnail_url: string | null
           title: string
@@ -1795,20 +1327,15 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_vi?: string | null
-          difficulty?: string | null
           duration_minutes?: number | null
           end_at?: string | null
-          estimated_minutes?: number | null
           id?: string
           is_published?: boolean | null
           language: string
           level: string
-          objectives?: string | null
           order_index?: number | null
-          prerequisites?: string | null
           skill: string
           start_at?: string | null
-          tags?: string[] | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -1824,20 +1351,15 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_vi?: string | null
-          difficulty?: string | null
           duration_minutes?: number | null
           end_at?: string | null
-          estimated_minutes?: number | null
           id?: string
           is_published?: boolean | null
           language?: string
           level?: string
-          objectives?: string | null
           order_index?: number | null
-          prerequisites?: string | null
           skill?: string
           start_at?: string | null
-          tags?: string[] | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -1974,13 +1496,6 @@ export type Database = {
           created_at: string
           display_name: string
           display_name_vi: string
-          hero_badge_vi: string | null
-          hero_cta_primary_label: string | null
-          hero_cta_primary_url: string | null
-          hero_cta_secondary_label: string | null
-          hero_cta_secondary_url: string | null
-          hero_image_url: string | null
-          hero_overlay: number | null
           hero_subtitle: string | null
           hero_subtitle_vi: string | null
           hero_title: string | null
@@ -1999,13 +1514,6 @@ export type Database = {
           created_at?: string
           display_name: string
           display_name_vi: string
-          hero_badge_vi?: string | null
-          hero_cta_primary_label?: string | null
-          hero_cta_primary_url?: string | null
-          hero_cta_secondary_label?: string | null
-          hero_cta_secondary_url?: string | null
-          hero_image_url?: string | null
-          hero_overlay?: number | null
           hero_subtitle?: string | null
           hero_subtitle_vi?: string | null
           hero_title?: string | null
@@ -2024,13 +1532,6 @@ export type Database = {
           created_at?: string
           display_name?: string
           display_name_vi?: string
-          hero_badge_vi?: string | null
-          hero_cta_primary_label?: string | null
-          hero_cta_primary_url?: string | null
-          hero_cta_secondary_label?: string | null
-          hero_cta_secondary_url?: string | null
-          hero_image_url?: string | null
-          hero_overlay?: number | null
           hero_subtitle?: string | null
           hero_subtitle_vi?: string | null
           hero_title?: string | null
@@ -2044,30 +1545,6 @@ export type Database = {
           route_path?: string
           show_in_nav?: boolean | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      pdf_presenter_state: {
-        Row: {
-          file_url: string
-          page: number
-          updated_at: string
-          user_id: string
-          zoom: number
-        }
-        Insert: {
-          file_url: string
-          page?: number
-          updated_at?: string
-          user_id: string
-          zoom?: number
-        }
-        Update: {
-          file_url?: string
-          page?: number
-          updated_at?: string
-          user_id?: string
-          zoom?: number
         }
         Relationships: []
       }

@@ -17,9 +17,8 @@ import SectionEditorFields from '@/components/admin/SectionEditorFields';
 import { 
   Layout, Image, Video, Eye, EyeOff, Save, Upload, Trash2, 
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
-  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, Home, Plus
+  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal
 } from 'lucide-react';
-import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 
 interface WebsiteContent {
   id: string;
@@ -52,7 +51,7 @@ const sectionLabels: Record<string, string> = {
   'hero': 'Trang chủ (Hero)',
   'skills': 'Kỹ năng',
   'languages': 'Ngôn ngữ',
-  'teachers': 'Giáo viên',
+  'teachers': 'Giảng viên',
   'zoom': 'Lớp học Zoom',
   'features': 'Tính năng',
   'cta': 'Kêu gọi hành động',
@@ -76,9 +75,6 @@ const AdminWebsiteCMS = () => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [creatingTeachersSection, setCreatingTeachersSection] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newSection, setNewSection] = useState({ section_key: '', title_vi: '', subtitle_vi: '', description_vi: '' });
-  const [creating, setCreating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -149,8 +145,8 @@ const AdminWebsiteCMS = () => {
         .from('website_content')
         .insert({
           section_key: 'teachers',
-          title_vi: 'Đội ngũ giáo viên xuất sắc',
-          subtitle_vi: 'Giáo viên',
+          title_vi: 'Đội ngũ giảng viên xuất sắc',
+          subtitle_vi: 'Giảng viên',
           description_vi: 'Danh sách giáo viên được tuyển chọn để đồng hành cùng bạn',
           is_active: true,
           order_index: orderIndex,
@@ -158,64 +154,17 @@ const AdminWebsiteCMS = () => {
         });
 
       if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã tạo mục Giáo viên' });
+      toast({ title: 'Thành công', description: 'Đã tạo mục Giảng viên' });
       await fetchSections();
     } catch (error) {
       console.error('Error creating teachers section:', error);
       toast({
         title: 'Lỗi',
-        description: 'Không thể tạo mục Giáo viên',
+        description: 'Không thể tạo mục Giảng viên',
         variant: 'destructive'
       });
     } finally {
       setCreatingTeachersSection(false);
-    }
-  };
-
-  const handleCreateSection = async () => {
-    const key = newSection.section_key.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
-    if (!key) {
-      toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập mã section', variant: 'destructive' });
-      return;
-    }
-    if (sections.some(s => s.section_key === key)) {
-      toast({ title: 'Trùng', description: 'Mã section đã tồn tại', variant: 'destructive' });
-      return;
-    }
-    setCreating(true);
-    try {
-      const { error } = await supabase.from('website_content').insert({
-        section_key: key,
-        title_vi: newSection.title_vi || null,
-        subtitle_vi: newSection.subtitle_vi || null,
-        description_vi: newSection.description_vi || null,
-        is_active: true,
-        order_index: sections.length,
-        content: {},
-      });
-      if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã tạo section mới' });
-      setIsCreateOpen(false);
-      setNewSection({ section_key: '', title_vi: '', subtitle_vi: '', description_vi: '' });
-      fetchSections();
-    } catch (e) {
-      console.error(e);
-      toast({ title: 'Lỗi', description: 'Không thể tạo section', variant: 'destructive' });
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleDeleteSection = async (section: WebsiteContent) => {
-    if (!confirm(`Xóa section "${sectionLabels[section.section_key] || section.section_key}"?`)) return;
-    try {
-      const { error } = await supabase.from('website_content').delete().eq('id', section.id);
-      if (error) throw error;
-      toast({ title: 'Đã xóa', description: 'Section đã được xóa' });
-      fetchSections();
-    } catch (e) {
-      console.error(e);
-      toast({ title: 'Lỗi', description: 'Không thể xóa section', variant: 'destructive' });
     }
   };
 
@@ -475,15 +424,11 @@ const AdminWebsiteCMS = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="order" className="space-y-4">
+      <Tabs defaultValue="sections" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="order" className="gap-2">
-            <Home className="w-4 h-4" />
-            Sắp xếp trang chủ
-          </TabsTrigger>
           <TabsTrigger value="sections" className="gap-2">
             <Layout className="w-4 h-4" />
-            Nội dung Sections
+            Sections
           </TabsTrigger>
           <TabsTrigger value="pricing" className="gap-2">
             <DollarSign className="w-4 h-4" />
@@ -495,43 +440,31 @@ const AdminWebsiteCMS = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="order" className="space-y-4">
-          <HomepageSectionOrder />
-        </TabsContent>
-
-
         {/* Sections Tab */}
         <TabsContent value="sections" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="w-5 h-5" />
-                    Các section trên trang chủ
-                  </CardTitle>
-                  <CardDescription>
-                    Kéo thả để sắp xếp thứ tự, chỉnh sửa nội dung cho từng phần
-                  </CardDescription>
-                </div>
-                <Button onClick={() => setIsCreateOpen(true)} size="sm">
-                  <Plus className="w-4 h-4 mr-1" /> Tạo section mới
-                </Button>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                Các section trên trang chủ
+              </CardTitle>
+              <CardDescription>
+                Kéo thả để sắp xếp thứ tự, chỉnh sửa nội dung cho từng phần
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {!sections.some((s) => s.section_key === 'teachers') && (
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-xl border border-border bg-muted/40">
                     <div>
-                      <p className="text-sm font-medium">Mục "Giáo viên" chưa tồn tại.</p>
-                      <p className="text-xs text-muted-foreground">Tạo mục này để quản lý danh sách giáo viên hiển thị trên trang chủ.</p>
+                      <p className="text-sm font-medium">Mục "Giảng viên" chưa tồn tại.</p>
+                      <p className="text-xs text-muted-foreground">Tạo mục này để quản lý danh sách giảng viên hiển thị trên trang chủ.</p>
                     </div>
                     <Button
                       onClick={createTeachersSection}
                       disabled={creatingTeachersSection}
                     >
-                      {creatingTeachersSection ? 'Đang tạo...' : 'Tạo mục Giáo viên'}
+                      {creatingTeachersSection ? 'Đang tạo...' : 'Tạo mục Giảng viên'}
                     </Button>
                   </div>
                 )}
@@ -644,14 +577,6 @@ const AdminWebsiteCMS = () => {
                           >
                             <Edit className="w-3.5 h-3.5 mr-1" />
                             Sửa
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteSection(section)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>
@@ -964,7 +889,7 @@ const AdminWebsiteCMS = () => {
                 </div>
 
                 {/* Section-specific editor fields */}
-                {editingSection && ['hero', 'teachers', 'cta', 'zoom'].includes(editingSection.section_key) ? (
+                {editingSection && ['hero', 'teachers', 'cta'].includes(editingSection.section_key) ? (
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <FileText className="w-4 h-4" />
@@ -1034,43 +959,6 @@ const AdminWebsiteCMS = () => {
             <Button onClick={handleSaveSection} disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create New Section Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tạo section mới</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Mã section (key, không dấu)</Label>
-              <Input
-                value={newSection.section_key}
-                onChange={(e) => setNewSection(p => ({ ...p, section_key: e.target.value }))}
-                placeholder="vd: testimonials"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Tiêu đề (Tiếng Việt)</Label>
-              <Input value={newSection.title_vi} onChange={(e) => setNewSection(p => ({ ...p, title_vi: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Phụ đề (Tiếng Việt)</Label>
-              <Input value={newSection.subtitle_vi} onChange={(e) => setNewSection(p => ({ ...p, subtitle_vi: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Mô tả (Tiếng Việt)</Label>
-              <Textarea rows={3} value={newSection.description_vi} onChange={(e) => setNewSection(p => ({ ...p, description_vi: e.target.value }))} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Hủy</Button>
-            <Button onClick={handleCreateSection} disabled={creating}>
-              {creating ? 'Đang tạo...' : 'Tạo'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,8 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Video, Users, Calendar, Clock, MessageCircle, Award } from "lucide-react";
 import { useAllWebsiteContent } from "@/hooks/useWebsiteContent";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link as RouterLink } from "react-router-dom";
-import { BRAND } from "@/config/brand";
 
 const defaultFeatures = [
   { icon: Video, title: "Lớp học 1-1", description: "Học riêng với giáo viên, tập trung vào điểm yếu của bạn" },
@@ -30,10 +28,6 @@ const ZoomSection = () => {
     features?: Array<{ icon: string; title: string; description: string }>;
     teacherName?: string;
     teacherRole?: string;
-    primaryButton?: string;
-    primaryButtonUrl?: string;
-    secondaryButton?: string;
-    secondaryButtonUrl?: string;
   } | null;
 
   const title = zoomContent?.title_vi || "Kết nối trực tiếp với giáo viên bản ngữ";
@@ -48,11 +42,6 @@ const ZoomSection = () => {
 
   const teacherName = zoomData?.teacherName || "Ms. Sarah Johnson";
   const teacherRole = zoomData?.teacherRole || "IELTS Instructor";
-  const primaryButton = zoomData?.primaryButton || "Đăng ký học thử miễn phí";
-  const primaryButtonUrl = zoomData?.primaryButtonUrl || "/contact";
-  const secondaryButton = zoomData?.secondaryButton || "Xem lịch học";
-  const secondaryButtonUrl = zoomData?.secondaryButtonUrl || "/learn/calendar";
-  const isExternal = (u: string) => /^https?:\/\//i.test(u);
 
   if (isLoading) {
     return (
@@ -108,25 +97,12 @@ const ZoomSection = () => {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <Button variant="hero" size="lg" asChild>
-                {isExternal(primaryButtonUrl) ? (
-                  <a href={primaryButtonUrl} target="_blank" rel="noopener noreferrer">
-                    <Video className="w-5 h-5" />
-                    {primaryButton}
-                  </a>
-                ) : (
-                  <RouterLink to={primaryButtonUrl}>
-                    <Video className="w-5 h-5" />
-                    {primaryButton}
-                  </RouterLink>
-                )}
+              <Button variant="hero" size="lg">
+                <Video className="w-5 h-5" />
+                Đăng ký học thử miễn phí
               </Button>
-              <Button variant="outline" size="lg" asChild>
-                {isExternal(secondaryButtonUrl) ? (
-                  <a href={secondaryButtonUrl} target="_blank" rel="noopener noreferrer">{secondaryButton}</a>
-                ) : (
-                  <RouterLink to={secondaryButtonUrl}>{secondaryButton}</RouterLink>
-                )}
+              <Button variant="outline" size="lg">
+                Xem lịch học
               </Button>
             </div>
           </div>
@@ -141,7 +117,7 @@ const ZoomSection = () => {
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">{BRAND.zoomLabel}</span>
+                <span className="text-sm font-medium text-muted-foreground">TNQDO - Class</span>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="w-4 h-4" />
                   <span>45:23</span>

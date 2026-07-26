@@ -1,12 +1,11 @@
-import { Search } from 'lucide-react';
+import { Search, Flame, Zap } from 'lucide-react';
 import { useLearning } from '@/contexts/LearningContext';
 import NotificationDropdown from './NotificationDropdown';
 import UserDropdown from './UserDropdown';
 import DarkModeToggle from '@/components/theme/DarkModeToggle';
 
 const TopBar = () => {
-  const { currentLanguage } = useLearning();
-  void currentLanguage;
+  const { userProgress, currentLanguage, setCurrentLanguage } = useLearning();
 
   return (
     <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
@@ -30,6 +29,18 @@ const TopBar = () => {
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-japanese/10 border border-japanese/20">
             <span className="text-xl">🇯🇵</span>
             <span className="font-semibold text-foreground">Tiếng Nhật</span>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-orange-500">
+              <Flame className="w-5 h-5" />
+              <span className="font-bold">{userProgress.streak}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-accent">
+              <Zap className="w-5 h-5" />
+              <span className="font-bold">{userProgress.totalXp}</span>
+            </div>
           </div>
 
           {/* Notifications */}

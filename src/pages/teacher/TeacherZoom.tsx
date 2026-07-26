@@ -15,8 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Video, Clock, Calendar, ExternalLink, Link } from 'lucide-react';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 
 interface Booking {
   id: string;
@@ -137,7 +136,7 @@ const TeacherZoom = () => {
       await supabase.from('notifications').insert({
         user_id: selectedBooking.user_id,
         title: 'Link Zoom đã được thêm',
-        message: `Giáo viên đã thêm link cho buổi học ngày ${format(new Date(selectedBooking.booking_date), 'dd/MM/yyyy', { locale: vi })} lúc ${selectedBooking.booking_time}`,
+        message: `Giảng viên đã thêm link cho buổi học ngày ${formatWithJST(selectedBooking.booking_date, false)} lúc ${formatTimeWithJST(selectedBooking.booking_time)}`,
         type: 'info',
         link: '/learn/zoom'
       });
@@ -204,11 +203,11 @@ const TeacherZoom = () => {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          {format(new Date(booking.booking_date), 'EEEE, dd/MM/yyyy', { locale: vi })}
+                        {formatWithJST(booking.booking_date, false)}
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {booking.booking_time} ({booking.duration_minutes} phút)
+                          {formatTimeWithJST(booking.booking_time)} ({booking.duration_minutes} phút)
                         </div>
                       </div>
                       {booking.notes && (
@@ -258,7 +257,7 @@ const TeacherZoom = () => {
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="font-medium">{selectedBooking.profiles?.full_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(selectedBooking.booking_date), 'dd/MM/yyyy', { locale: vi })} - {selectedBooking.booking_time}
+                  {formatWithJST(selectedBooking.booking_date, false)} — {formatTimeWithJST(selectedBooking.booking_time)}
                 </p>
               </div>
             )}

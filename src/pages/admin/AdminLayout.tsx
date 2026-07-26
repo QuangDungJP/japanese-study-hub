@@ -1,91 +1,86 @@
-import { Outlet, Link, Navigate } from 'react-router-dom';
-import {
-  LayoutDashboard, BookOpen, Users, Settings,
-  FileText, Bell,
-  Library, ShoppingCart, Globe, Newspaper, MessageSquareText, GraduationCap,
-  HelpCircle, DollarSign, CalendarDays
+import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, BookOpen, BookText, Users, Settings,
+  ChevronRight, LogOut, FileText, Bell, Building,
+  Library, ShoppingCart, Globe, Newspaper, MessageSquareText,GraduationCap,
+  HelpCircle, DollarSign, CalendarDays, ChevronDown, Menu
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import SidebarModule, { SidebarSection } from '@/components/shared/SidebarModule';
-import { BRAND } from '@/config/brand';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useState } from 'react';
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import DarkModeToggle from '@/components/theme/DarkModeToggle';
 
-const buildNavSections = (isAdmin: boolean): SidebarSection[] => {
-  const adminSections: SidebarSection[] = [
-    {
-      label: 'Tổng quan',
-      items: [
-        { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Xem tổng quan hệ thống' },
-      ],
-      collapsible: true,
-      defaultOpen: true,
-    },
-    {
-      label: 'Nội dung',
-      items: [
-        { name: 'Website CMS', href: '/admin/website', icon: Globe, description: 'Quản lý nội dung trang' },
-        { name: 'Blog', href: '/admin/blog', icon: Newspaper, description: 'Quản lý bài viết blog' },
-        { name: 'Hỏi & Đáp', href: '/admin/faq', icon: HelpCircle, description: 'Quản lý FAQ' },
-      ],
-      collapsible: true,
-      defaultOpen: true,
-    },
-    {
-      label: 'Đào tạo',
-      items: [
-        { name: 'Giáo viên', href: '/admin/teachers', icon: GraduationCap, description: 'Quản lý giáo viên' },
-        { name: 'Khóa học', href: '/admin/courses', icon: Library, description: 'Quản lý khóa học' },
-        { name: 'Lớp học', href: '/admin/classes', icon: Users, description: 'Quản lý lớp học' },
-        { name: 'Bài học', href: '/admin/lessons', icon: BookOpen, description: 'Duyệt bài học' },
-        { name: 'Bài kiểm tra', href: '/admin/exams', icon: GraduationCap, description: 'Quản lý bài kiểm tra' },
-        { name: 'Bài nộp', href: '/admin/submissions', icon: FileText, description: 'Xem bài nộp' },
-      ],
-      collapsible: true,
-      defaultOpen: true,
-    },
-  ];
-
-  if (isAdmin) {
-    adminSections.push(
-      {
-        label: 'Kinh doanh',
-        items: [
-          { name: 'Tài chính', href: '/admin/finance', icon: DollarSign, description: 'Xem báo cáo tài chính' },
-          { name: 'Đơn hàng', href: '/admin/orders', icon: ShoppingCart, description: 'Quản lý đơn hàng' },
-          { name: 'Đặt lịch', href: '/admin/bookings', icon: CalendarDays, description: 'Quản lý lịch đặt' },
-        ],
-        collapsible: true,
-        defaultOpen: false,
-      },
-      {
-        label: 'Sự kiện & Liên hệ',
-        items: [
-          { name: 'Sự kiện', href: '/admin/events', icon: CalendarDays, description: 'Quản lý sự kiện' },
-          { name: 'Form liên hệ', href: '/admin/contact', icon: MessageSquareText, description: 'Xem form liên hệ' },
-        ],
-        collapsible: true,
-        defaultOpen: false,
-      },
-      {
-        label: 'Hệ thống',
-        items: [
-          { name: 'Thông báo', href: '/admin/notifications', icon: Bell, description: 'Gửi thông báo' },
-          { name: 'Người dùng', href: '/admin/users', icon: Users, description: 'Quản lý người dùng' },
-          { name: 'Cài đặt', href: '/admin/settings', icon: Settings, description: 'Cấu hình hệ thống' },
-        ],
-        collapsible: true,
-        defaultOpen: false,
-      }
-    );
-  }
-
-  return adminSections;
-};
+const navSections = [
+  {
+    label: 'Tổng quan',
+    roles: ['admin', 'moderator'],
+    items: [
+      { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, roles: ['admin', 'moderator'] },
+    ],
+  },
+  {
+    label: 'Nội dung',
+    roles: ['admin', 'moderator'],
+    items: [
+      { name: 'Website CMS', href: '/admin/website', icon: Globe, roles: ['admin'] },
+      { name: 'Blog', href: '/admin/blog', icon: Newspaper, roles: ['admin', 'moderator'] },
+      { name: 'Hỏi & Đáp', href: '/admin/faq', icon: HelpCircle, roles: ['admin'] },
+    ],
+  },
+  {
+    label: 'Đào tạo',
+    roles: ['admin', 'moderator'],
+    items: [
+      { name: 'Giảng viên', href: '/admin/teachers', icon: GraduationCap, roles: ['admin', 'moderator'] },
+      { name: 'Khóa học', href: '/admin/courses', icon: Library, roles: ['admin', 'moderator'] },
+      { name: 'Lớp học', href: '/admin/classes', icon: Building, roles: ['admin', 'moderator'] },
+      { name: 'Bài học', href: '/admin/lessons', icon: BookOpen, roles: ['admin', 'moderator'] },
+      { name: 'Từ vựng', href: '/admin/vocabulary', icon: BookText, roles: ['admin', 'moderator'] },
+      { name: 'Bài nộp', href: '/admin/submissions', icon: FileText, roles: ['admin', 'moderator'] },
+    ],
+  },
+  {
+    label: 'Kinh doanh',
+    roles: ['admin'],
+    items: [
+      { name: 'Tài chính', href: '/admin/finance', icon: DollarSign, roles: ['admin'] },
+      { name: 'Đơn hàng', href: '/admin/orders', icon: ShoppingCart, roles: ['admin'] },
+      { name: 'Đặt lịch Google Meet', href: '/admin/bookings', icon: CalendarDays, roles: ['admin', 'moderator'] },
+    ],
+  },
+  {
+    label: 'Sự kiện & Liên hệ',
+    roles: ['admin'],
+    items: [
+      { name: 'Sự kiện', href: '/admin/events', icon: CalendarDays, roles: ['admin'] },
+      { name: 'Form liên hệ', href: '/admin/contact', icon: MessageSquareText, roles: ['admin'] },
+    ],
+  },
+  {
+    label: 'Hệ thống',
+    roles: ['admin'],
+    items: [
+      { name: 'Thông báo', href: '/admin/notifications', icon: Bell, roles: ['admin'] },
+      { name: 'Người dùng', href: '/admin/users', icon: Users, roles: ['admin'] },
+      { name: 'Cài đặt', href: '/admin/settings', icon: Settings, roles: ['admin'] },
+    ],
+  },
+];
 
 const AdminLayout = () => {
+  const location = useLocation();
   const { user, isAdmin, isModeratorOrAdmin, loading, signOut } = useAuth();
-
-  const roleDisplay = isAdmin ? 'Quản trị viên' : 'Kiểm duyệt viên';
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    navSections.forEach(s => { init[s.label] = true; });
+    return init;
+  });
 
   if (loading) {
     return (
@@ -109,56 +104,120 @@ const AdminLayout = () => {
     );
   }
 
-  const sections = buildNavSections(isAdmin);
+  const userRole = isAdmin ? 'admin' : 'moderator';
 
-  const logoContent = (
-    <Link to="/admin" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-      <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
-        <img src="/logo.jpg" alt={BRAND.logoAlt} className="w-5 h-5 rounded-lg object-cover" />
-      </div>
-      <div>
-        <span className="text-base font-bold text-sidebar-foreground">{BRAND.name}</span>
-        <p className="text-[10px] text-sidebar-foreground/60 leading-none">{roleDisplay}</p>
-      </div>
-    </Link>
-  );
+  const toggleSection = (label: string) => {
+    setOpenSections(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
-  const footerContent = (
-    <div className="space-y-2 w-full">
-      <Link 
-        to="/teacher" 
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-primary/10 transition-all w-full"
-      >
-        <GraduationCap className="w-4 h-4" />
-        Teacher Panel
-      </Link>
-      <Link 
-        to="/learn" 
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-primary/10 transition-all w-full"
-      >
-        <BookOpen className="w-4 h-4" />
-        Về trang học
-      </Link>
-    </div>
+  const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => (
+    <>
+      {/* Logo */}
+      <div className="p-3 border-b border-border">
+        <Link to="/admin" className="flex items-center gap-2" onClick={onNavigate}>
+          <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center">
+            <img src="/logo.jpg" alt="TNQDO" className="w-5 h-5 rounded-lg object-cover" />
+          </div>
+          <div>
+            <span className="text-base font-bold text-foreground">TNQDO</span>
+            <p className="text-[10px] text-muted-foreground leading-none">{isAdmin ? 'Admin' : 'Moderator'}</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 py-2 px-2 overflow-y-auto space-y-0.5">
+        {navSections
+          .filter(section => section.roles.includes(userRole))
+          .map((section) => {
+            const visibleItems = section.items.filter(item => item.roles.includes(userRole));
+            if (visibleItems.length === 0) return null;
+            const isOpen = openSections[section.label] !== false;
+
+            return (
+              <Collapsible key={section.label} open={isOpen} onOpenChange={() => toggleSection(section.label)}>
+                <CollapsibleTrigger className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 hover:text-muted-foreground transition-colors">
+                  {section.label}
+                  <ChevronDown className={cn("w-3 h-3 transition-transform", !isOpen && "-rotate-90")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-0.5">
+                  {visibleItems.map((item) => {
+                    const isActive = location.pathname === item.href || 
+                      (item.href !== '/admin' && location.pathname.startsWith(item.href));
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        onClick={onNavigate}
+                        className={cn(
+                          'flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all',
+                          isActive 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        )}
+                      >
+                        <item.icon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{item.name}</span>
+                        {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto shrink-0" />}
+                      </Link>
+                    );
+                  })}
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
+      </nav>
+
+      {/* Footer links */}
+      <div className="p-2 border-t border-border space-y-0.5">
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Chế độ hiển thị</span>
+          <DarkModeToggle variant="compact" />
+        </div>
+        <Link to="/teacher" onClick={onNavigate} className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+          <GraduationCap className="w-4 h-4" />Teacher Panel
+        </Link>
+        <Link to="/learn" onClick={onNavigate} className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+          <BookOpen className="w-4 h-4" />Về trang học
+        </Link>
+        <button onClick={() => { onNavigate?.(); signOut(); }} className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-destructive hover:bg-destructive/10 transition-all w-full">
+          <LogOut className="w-4 h-4" />Đăng xuất
+        </button>
+      </div>
+    </>
   );
 
   return (
     <div className="min-h-screen bg-background flex">
-      <SidebarModule
-        sections={sections}
-        logo={logoContent}
-        footer={footerContent}
-        onNavigate={() => {}}
-        showDarkMode={true}
-        showLogout={true}
-        onLogout={() => signOut()}
-        userRole={isAdmin ? 'admin' : 'moderator'}
-        userName={user?.user_metadata?.full_name || 'Quản trị viên'}
-      />
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-60 bg-card border-r border-border flex-col z-40">
+        <SidebarContent />
+      </aside>
 
-      <main className="flex-1 p-4 pt-24 lg:pt-6 lg:p-6 xl:p-8 relative z-10">
-        <Outlet />
-      </main>
+      {/* Mobile header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border flex items-center px-4 z-40">
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="shrink-0">
+              <Menu className="w-5 h-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-60 p-0 flex flex-col">
+            <SidebarContent onNavigate={() => setMobileOpen(false)} />
+          </SheetContent>
+        </Sheet>
+        <div className="flex items-center gap-2 ml-2">
+          <div className="w-7 h-7 rounded-md bg-gradient-primary flex items-center justify-center">
+            <img src="/logo.jpg" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
+          </div>
+          <span className="text-sm font-bold text-foreground">TNQDO Admin</span>
+        </div>
+        <div className="ml-auto">
+          <DarkModeToggle variant="compact" />
+        </div>
+      </header>
+
+      <main className="flex-1 lg:ml-60 p-4 pt-18 lg:pt-6 lg:p-6 xl:p-8"><Outlet /></main>
     </div>
   );
 };

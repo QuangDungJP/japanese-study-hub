@@ -110,11 +110,10 @@ const Leaderboard = () => {
               </span>
             </div>
 
-            {/* Lessons completed */}
+            {/* XP */}
             <div className="flex items-center gap-1 text-sm">
-              <Flame className="w-4 h-4 text-orange-500" />
-              <span className="font-bold text-primary">{entry.streak}</span>
-              <span className="text-muted-foreground text-xs">ngày</span>
+              <Zap className="w-4 h-4 text-accent" />
+              <span className="font-bold text-primary">{entry.total_xp.toLocaleString()}</span>
             </div>
           </div>
         ))}

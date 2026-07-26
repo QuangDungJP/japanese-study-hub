@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,19 +31,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Users, Plus, Edit, Eye, Calendar, UserPlus, Trash2, 
   BookOpen, Star, Trophy, TrendingUp, Search, X,
-  GraduationCap, Target, Flame
+  GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
+  FileText, CheckCircle2, MessageSquare, Play
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
-interface CustomField {
-  key: string;
-  label: string;
-  value: string;
-}
+// New imports
+import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
+import { ExamManager } from '@/components/calendar/ExamManager';
+import { ClassLessonPresentation } from '@/components/teacher/ClassLessonPresentation';
+import LessonEditor from '@/components/teacher/LessonEditor';
 
 interface ClassData {
   id: string;
@@ -57,9 +59,6 @@ interface ClassData {
   end_date: string | null;
   is_active: boolean;
   created_at: string;
-  approval_status?: string;
-  rejection_reason?: string | null;
-  custom_fields?: any;
   student_count?: number;
   courses?: { title_vi: string };
 }
@@ -90,8 +89,54 @@ interface AvailableUser {
   full_name: string | null;
 }
 
+interface Lesson {
+  id: string;
+  title: string;
+  title_vi: string;
+  description_vi: string | null;
+  skill: string;
+  level: string;
+  duration_minutes: number;
+  xp_reward: number;
+  is_published: boolean;
+  class_id?: string | null;
+  content_html?: string | null;
+}
+
+interface ClassSession {
+  id: string;
+  session_date: string;
+  start_time: string;
+  end_time: string | null;
+  topic: string | null;
+  meet_link: string | null;
+  status: string;
+}
+
+interface Submission {
+  id: string;
+  user_id: string;
+  exercise_id: string;
+  content: string;
+  score: number | null;
+  feedback: string | null;
+  status: string;
+  submitted_at: string;
+  exercise?: {
+    title_vi: string;
+    exercise_type: string;
+    correct_answers: any;
+  };
+  lesson?: {
+    title_vi: string;
+  };
+  profile?: {
+    full_name: string;
+  };
+}
+
 const TeacherClasses = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,9 +160,42 @@ const TeacherClasses = () => {
     course_id: '',
     max_students: 30,
     start_date: '',
-    end_date: '',
-    custom_fields: [] as CustomField[],
+    end_date: ''
   });
+
+  // --- GOOGLE CLASSROOM INTEGRATION STATE ---
+  const [classDetailLessons, setClassDetailLessons] = useState<Lesson[]>([]);
+  const [unassignedLessons, setUnassignedLessons] = useState<Lesson[]>([]);
+  const [classSessions, setClassSessions] = useState<ClassSession[]>([]);
+  const [classSubmissions, setClassSubmissions] = useState<Submission[]>([]);
+  
+  // Link lesson dialog
+  const [isLinkLessonOpen, setIsLinkLessonOpen] = useState(false);
+  const [selectedLessonToLink, setSelectedLessonToLink] = useState('');
+
+  // Create lesson dialog
+  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
+
+  // Present lesson state
+  const [presentingLesson, setPresentingLesson] = useState<Lesson | null>(null);
+
+  // Session dialog
+  const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
+  const [sessionFormData, setSessionFormData] = useState({
+    topic: '',
+    session_date: '',
+    start_time: '18:00',
+    meet_link: ''
+  });
+
+  // Submission grading modal
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [gradingScore, setGradingScore] = useState('');
+  const [gradingFeedback, setGradingFeedback] = useState('');
+  const [isGradingSubmitting, setIsGradingSubmitting] = useState(false);
+
+  // Active tab for classroom detail view
+  const [activeTab, setActiveTab] = useState('stream');
 
   useEffect(() => {
     if (user) {
@@ -128,14 +206,19 @@ const TeacherClasses = () => {
 
   const fetchClasses = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      let query = supabase
         .from('classes')
         .select(`
           *,
           courses:course_id (title_vi)
-        `)
-        .eq('teacher_id', user?.id)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (!isAdmin && user?.id) {
+        query = query.eq('teacher_id', user.id);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -167,7 +250,8 @@ const TeacherClasses = () => {
       const { data } = await supabase
         .from('courses')
         .select('id, title_vi')
-        .eq('is_published', true);
+        .eq('is_published', true)
+        .eq('language', 'japanese');
 
       setCourses(data || []);
     } catch (error) {
@@ -223,7 +307,6 @@ const TeacherClasses = () => {
 
   const fetchAvailableUsers = async (classId: string) => {
     try {
-      // Get existing student IDs in this class
       const { data: existingStudents } = await supabase
         .from('class_students')
         .select('student_id')
@@ -231,7 +314,6 @@ const TeacherClasses = () => {
 
       const existingIds = existingStudents?.map(s => s.student_id) || [];
 
-      // Get all users with 'user' role who are not in this class
       const { data: userRoles } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -244,7 +326,6 @@ const TeacherClasses = () => {
         return;
       }
 
-      // Get profiles for these users
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
@@ -253,6 +334,184 @@ const TeacherClasses = () => {
       setAvailableUsers(profiles || []);
     } catch (error) {
       console.error('Error fetching available users:', error);
+    }
+  };
+
+  // Fetch Classroom detail tabs data
+  const fetchClassroomDetails = async (clsId: string) => {
+    try {
+      // 1. Fetch lessons
+      const { data: lessonsData } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('class_id', clsId)
+        .order('created_at', { ascending: false });
+      setClassDetailLessons(lessonsData || []);
+
+      // 2. Fetch unassigned lessons
+      let unassignedQuery = supabase
+        .from('lessons')
+        .select('id, title_vi')
+        .is('class_id', null);
+
+      if (!isAdmin && user?.id) {
+        unassignedQuery = unassignedQuery.eq('teacher_id', user.id);
+      }
+
+      const { data: unassignedData } = await unassignedQuery;
+      setUnassignedLessons(unassignedData || []);
+
+      // 3. Fetch sessions
+      const { data: sessionsData } = await supabase
+        .from('class_sessions')
+        .select('*')
+        .eq('class_id', clsId)
+        .order('session_date', { ascending: true });
+      setClassSessions(sessionsData || []);
+
+      // 4. Fetch students
+      fetchStudents(clsId);
+
+      // 5. Fetch submissions
+      fetchClassSubmissions(clsId);
+    } catch (err) {
+      console.error('Error fetching classroom details:', err);
+    }
+  };
+
+  // Fetch submissions from students in this class for exercises of lessons in this class
+  const fetchClassSubmissions = async (clsId: string) => {
+    try {
+      const { data: classStuds } = await supabase
+        .from('class_students')
+        .select('student_id')
+        .eq('class_id', clsId);
+      
+      if (!classStuds || classStuds.length === 0) {
+        setClassSubmissions([]);
+        return;
+      }
+      const studentIds = classStuds.map(s => s.student_id);
+
+      const { data: classLes } = await supabase
+        .from('lessons')
+        .select('id')
+        .eq('class_id', clsId);
+        
+      if (!classLes || classLes.length === 0) {
+        setClassSubmissions([]);
+        return;
+      }
+      const lessonIds = classLes.map(l => l.id);
+
+      const { data: exercises } = await supabase
+        .from('exercises')
+        .select('id, title, title_vi, exercise_type, correct_answers, lesson_id')
+        .in('lesson_id', lessonIds)
+        .eq('requires_grading', true);
+
+      if (!exercises || exercises.length === 0) {
+        setClassSubmissions([]);
+        return;
+      }
+      const exerciseIds = exercises.map(e => e.id);
+
+      const { data: subsData, error } = await supabase
+        .from('student_submissions')
+        .select('*')
+        .in('user_id', studentIds)
+        .in('exercise_id', exerciseIds)
+        .order('submitted_at', { ascending: false });
+
+      if (error) throw error;
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', studentIds);
+
+      const { data: lessonsInfo } = await supabase
+        .from('lessons')
+        .select('id, title_vi')
+        .in('id', lessonIds);
+
+      const mapped: Submission[] = (subsData || []).map(sub => {
+        const exercise = exercises.find(e => e.id === sub.exercise_id);
+        const lesson = lessonsInfo?.find(l => l.id === exercise?.lesson_id);
+        const profile = profiles?.find(p => p.user_id === sub.user_id);
+        return {
+          ...sub,
+          exercise: exercise ? { title_vi: exercise.title_vi, exercise_type: exercise.exercise_type, correct_answers: exercise.correct_answers } : undefined,
+          lesson: lesson ? { title_vi: lesson.title_vi } : undefined,
+          profile: profile ? { full_name: profile.full_name || 'Học viên' } : undefined
+        };
+      }) as any;
+
+      setClassSubmissions(mapped);
+    } catch (err) {
+      console.error('Error fetching class submissions:', err);
+    }
+  };
+
+  const handleLinkLesson = async () => {
+    if (!selectedLessonToLink || !selectedClass) return;
+    try {
+      const { error } = await supabase
+        .from('lessons')
+        .update({ class_id: selectedClass.id })
+        .eq('id', selectedLessonToLink);
+
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã thêm bài học vào lớp' });
+      setIsLinkLessonOpen(false);
+      setSelectedLessonToLink('');
+      fetchClassroomDetails(selectedClass.id);
+    } catch (err) {
+      toast({ title: 'Lỗi', description: 'Không thể thêm bài học', variant: 'destructive' });
+    }
+  };
+
+  const handleUnlinkLesson = async (lessonId: string) => {
+    if (!selectedClass || !confirm('Bạn có chắc muốn gỡ bài học này khỏi lớp?')) return;
+    try {
+      const { error } = await supabase
+        .from('lessons')
+        .update({ class_id: null })
+        .eq('id', lessonId);
+
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã gỡ bài học khỏi lớp' });
+      fetchClassroomDetails(selectedClass.id);
+    } catch (err) {
+      toast({ title: 'Lỗi', description: 'Không thể gỡ bài học', variant: 'destructive' });
+    }
+  };
+
+  const handleCreateLessonSubmit = async (formData: any) => {
+    try {
+      const lessonData = {
+        ...formData,
+        teacher_id: user?.id,
+        class_id: selectedClass?.id,
+        language: 'japanese',
+        is_published: true
+      };
+
+      const { error } = await supabase
+        .from('lessons')
+        .insert(lessonData);
+
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã tạo bài học mới cho lớp' });
+      setIsCreateLessonOpen(false);
+      if (selectedClass) fetchClassroomDetails(selectedClass.id);
+    } catch (error: any) {
+      console.error('Error saving lesson:', error);
+      toast({ 
+        title: 'Lỗi', 
+        description: error.message || 'Không thể lưu bài học', 
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -319,23 +578,16 @@ const TeacherClasses = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name_vi.trim()) {
-      toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập tên lớp', variant: 'destructive' });
-      return;
-    }
     try {
-      const classData: any = {
-        name: formData.name || formData.name_vi,
+      const classData = {
+        ...formData,
+        name: formData.name || formData.name_vi || 'Class',
         name_vi: formData.name_vi,
-        description: formData.description,
-        description_vi: formData.description_vi,
-        max_students: formData.max_students,
-        custom_fields: formData.custom_fields as any,
         teacher_id: user?.id,
-        course_id: formData.course_id || null,
+        course_id: formData.course_id === 'none' || !formData.course_id ? null : formData.course_id,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        is_active: true,
+        is_active: true
       };
 
       if (editingClass) {
@@ -349,22 +601,87 @@ const TeacherClasses = () => {
       } else {
         const { error } = await supabase
           .from('classes')
-          .insert({ ...classData, approval_status: 'pending' });
+          .insert(classData);
 
         if (error) throw error;
-        toast({ title: 'Đã gửi duyệt', description: 'Lớp học sẽ hoạt động sau khi admin duyệt' });
+        toast({ title: 'Thành công', description: 'Đã tạo lớp học mới' });
       }
 
       setIsDialogOpen(false);
       resetForm();
       fetchClasses();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving class:', error);
       toast({ 
         title: 'Lỗi', 
-        description: error?.message || 'Không thể lưu lớp học', 
+        description: 'Không thể lưu lớp học', 
         variant: 'destructive' 
       });
+    }
+  };
+
+  const handleCreateSession = async () => {
+    if (!selectedClass) return;
+    try {
+      const { error } = await supabase
+        .from('class_sessions')
+        .insert({
+          class_id: selectedClass.id,
+          topic: sessionFormData.topic,
+          session_date: sessionFormData.session_date,
+          start_time: sessionFormData.start_time,
+          meet_link: sessionFormData.meet_link || null,
+          status: 'scheduled'
+        });
+
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã tạo lịch học Zoom mới' });
+      setIsSessionDialogOpen(false);
+      setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '' });
+      fetchClassroomDetails(selectedClass.id);
+    } catch (err) {
+      toast({ title: 'Lỗi', description: 'Không thể tạo lịch học', variant: 'destructive' });
+    }
+  };
+
+  const handleGradeSubmission = async () => {
+    if (!selectedSubmission || !selectedClass) return;
+    const scoreNum = parseInt(gradingScore);
+    if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+      toast({ title: 'Lỗi', description: 'Điểm phải từ 0 đến 100', variant: 'destructive' });
+      return;
+    }
+    try {
+      setIsGradingSubmitting(true);
+      const { error } = await supabase
+        .from('student_submissions')
+        .update({
+          score: scoreNum,
+          feedback: gradingFeedback.trim() || null,
+          status: 'graded',
+          graded_at: new Date().toISOString(),
+          graded_by: user?.id
+        })
+        .eq('id', selectedSubmission.id);
+
+      if (error) throw error;
+
+      // Send notification
+      await supabase.from('notifications').insert({
+        user_id: selectedSubmission.user_id,
+        title: 'Bài nộp đã được chấm',
+        message: `Bài "${selectedSubmission.exercise?.title_vi || 'Bài tập'}" đã được chấm: ${scoreNum}/100`,
+        type: scoreNum >= 80 ? 'success' : scoreNum >= 50 ? 'info' : 'warning',
+        link: '/learn/achievements'
+      });
+
+      toast({ title: 'Thành công', description: 'Đã chấm bài thành công' });
+      setSelectedSubmission(null);
+      fetchClassroomDetails(selectedClass.id);
+    } catch (err) {
+      toast({ title: 'Lỗi', description: 'Không thể lưu điểm chấm', variant: 'destructive' });
+    } finally {
+      setIsGradingSubmitting(false);
     }
   };
 
@@ -378,8 +695,7 @@ const TeacherClasses = () => {
       course_id: classItem.course_id || '',
       max_students: classItem.max_students,
       start_date: classItem.start_date || '',
-      end_date: classItem.end_date || '',
-      custom_fields: Array.isArray(classItem.custom_fields) ? classItem.custom_fields : [],
+      end_date: classItem.end_date || ''
     });
     setIsDialogOpen(true);
   };
@@ -413,8 +729,7 @@ const TeacherClasses = () => {
       course_id: '',
       max_students: 30,
       start_date: '',
-      end_date: '',
-      custom_fields: [],
+      end_date: ''
     });
   };
 
@@ -422,374 +737,494 @@ const TeacherClasses = () => {
     !searchUserTerm || u.full_name?.toLowerCase().includes(searchUserTerm.toLowerCase())
   );
 
-  const totalStudents = classes.reduce((sum, c) => sum + (c.student_count || 0), 0);
-  const approvedCount = classes.filter((c) => c.approval_status === 'approved').length;
-  const pendingCount = classes.filter((c) => !c.approval_status || c.approval_status === 'pending').length;
-  const accents = [
-    'from-japanese/20 via-japanese/5 to-transparent',
-    'from-primary/20 via-primary/5 to-transparent',
-    'from-accent/25 via-accent/5 to-transparent',
-    'from-emerald-500/20 via-emerald-500/5 to-transparent',
-    'from-violet-500/20 via-violet-500/5 to-transparent',
-    'from-amber-500/20 via-amber-500/5 to-transparent',
-  ];
+  const getSkillLabel = (skill: string) => {
+    const labels: Record<string, string> = {
+      reading: 'Đọc hiểu',
+      listening: 'Nghe',
+      speaking: 'Nói',
+      writing: 'Viết',
+      vocabulary: 'Từ vựng',
+      grammar: 'Ngữ pháp',
+    };
+    return labels[skill] || skill;
+  };
 
-  return (
-    <div className="space-y-8">
-      {/* Hero header */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-japanese/10 via-primary/5 to-transparent p-6 md:p-8">
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-japanese/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-japanese/10 text-japanese text-xs font-semibold">
-              <GraduationCap className="w-3.5 h-3.5" />
-              Khu vực giáo viên
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-              Quản lý lớp học
-            </h1>
-            <p className="text-muted-foreground max-w-xl">
-              Tạo lớp, theo dõi tiến độ và quản lý học viên — tất cả trong một nơi.
-            </p>
+  // --- 1. CLASS LIST DASHBOARD ---
+  if (!selectedClass) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Quản lý lớp học</h1>
+            <p className="text-muted-foreground mt-1">Tạo và quản lý các lớp học giảng dạy của bạn</p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="px-4 py-3 rounded-2xl bg-card/80 backdrop-blur border border-border min-w-[120px]">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" /> Lớp
+          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tạo lớp mới
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : classes.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">Chưa có lớp học nào</h3>
+              <p className="text-muted-foreground mb-4">Tạo lớp học đầu tiên để bắt đầu quản lý học viên</p>
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Tạo lớp học
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {classes.map((classItem) => (
+              <Card key={classItem.id} className="hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden border border-border">
+                <div className="h-1.5 bg-primary w-full" />
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <CardTitle className="text-lg font-bold line-clamp-1">{classItem.name_vi}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{classItem.name}</p>
+                    </div>
+                    <Badge className={classItem.is_active ? 'bg-green-500/10 text-green-600 border-green-200' : 'bg-muted text-muted-foreground'}>
+                      {classItem.is_active ? 'Đang hoạt động' : 'Đã kết thúc'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-4 flex-1 space-y-3">
+                  {classItem.courses && (
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Khóa học:</span>{' '}
+                      <span className="font-semibold text-foreground">{classItem.courses.title_vi}</span>
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      <span>{classItem.student_count}/{classItem.max_students} học viên</span>
+                    </div>
+                  </div>
+                  {classItem.start_date && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Bắt đầu: {formatWithJST(classItem.start_date, false)}</span>
+                    </div>
+                  )}
+                </CardContent>
+                <div className="p-4 bg-muted/30 border-t flex justify-between gap-2">
+                  <Button variant="outline" size="sm" onClick={() => openEditDialog(classItem)}>
+                    <Edit className="w-3.5 h-3.5 mr-1" /> Sửa thông tin
+                  </Button>
+                  <Button size="sm" onClick={() => { setSelectedClass(classItem); fetchClassroomDetails(classItem.id); }}>
+                    Vào lớp học →
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Create/Edit Class Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingClass ? 'Chỉnh sửa lớp học' : 'Tạo lớp học mới'}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tên lớp (Tiếng Anh - Không bắt buộc)</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Tự động lấy tên tiếng Việt nếu trống"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tên lớp học (Tiếng Việt)</Label>
+                  <Input
+                    value={formData.name_vi}
+                    onChange={(e) => setFormData({ ...formData, name_vi: e.target.value })}
+                    placeholder="Ví dụ: Lớp N5 Căn Bản T2-T4-T6"
+                  />
+                </div>
               </div>
-              <div className="text-2xl font-bold mt-1">{classes.length}</div>
-            </div>
-            <div className="px-4 py-3 rounded-2xl bg-card/80 backdrop-blur border border-border min-w-[120px]">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" /> Học viên
+
+              <div className="space-y-2">
+                <Label>Khóa học liên kết</Label>
+                <Select 
+                  value={formData.course_id} 
+                  onValueChange={(value) => setFormData({ ...formData, course_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn khóa học (không bắt buộc)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Không liên kết</SelectItem>
+                    {courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.title_vi}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="text-2xl font-bold text-japanese mt-1">{totalStudents}</div>
-            </div>
-            <div className="px-4 py-3 rounded-2xl bg-card/80 backdrop-blur border border-border min-w-[120px]">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Trophy className="w-3.5 h-3.5" /> Đã duyệt
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Mô tả (Tiếng Anh)</Label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Class description"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mô tả (Tiếng Việt)</Label>
+                  <Textarea
+                    value={formData.description_vi}
+                    onChange={(e) => setFormData({ ...formData, description_vi: e.target.value })}
+                    placeholder="Mô tả lớp học"
+                    rows={2}
+                  />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-emerald-600 mt-1">{approvedCount}</div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Sĩ số tối đa</Label>
+                  <Input
+                    type="number"
+                    value={formData.max_students}
+                    onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 30 })}
+                    min={1}
+                    max={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ngày bắt đầu</Label>
+                  <Input
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ngày kết thúc</Label>
+                  <Input
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
-            <Button
-              onClick={() => { resetForm(); setIsDialogOpen(true); }}
-              size="lg"
-              className="rounded-2xl shadow-md"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo lớp mới
-            </Button>
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
+              <Button onClick={handleSubmit}>{editingClass ? 'Cập nhật' : 'Tạo lớp'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // --- 2. CLASSROOM DETAIL VIEW (Google Classroom style) ---
+  return (
+    <div className="space-y-6">
+      {/* Back button */}
+      <Button 
+        variant="ghost" 
+        onClick={() => setSelectedClass(null)} 
+        className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Quay lại danh sách lớp
+      </Button>
+
+      {/* Classroom Banner Card */}
+      <div className="rounded-2xl bg-gradient-to-r from-primary/90 to-accent/90 p-6 md:p-8 text-white shadow-soft relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -mr-12 -mt-12 blur-lg pointer-events-none" />
+        <div className="relative z-10 space-y-3">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{selectedClass.name_vi}</h1>
+            <p className="text-white/80 font-medium text-sm md:text-base">{selectedClass.name}</p>
+          </div>
+          <p className="text-white/70 text-sm max-w-2xl line-clamp-2">
+            {selectedClass.description_vi || 'Lớp học trực quan, tương tác cao với học viên.'}
+          </p>
+          <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm pt-2 text-white/90">
+            <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
+              <Users className="w-4 h-4" />
+              Sĩ số: {selectedClass.student_count}/{selectedClass.max_students}
+            </span>
+            {selectedClass.start_date && (
+              <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
+                <Calendar className="w-4 h-4" />
+                Bắt đầu: {formatWithJST(selectedClass.start_date, false)}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-64 rounded-2xl bg-muted/40 animate-pulse" />
-          ))}
-        </div>
-      ) : classes.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-16 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-japanese/10 flex items-center justify-center">
-              <Users className="w-10 h-10 text-japanese" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Chưa có lớp học nào</h3>
-            <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Tạo lớp học đầu tiên để bắt đầu quản lý học viên và bài học.
-            </p>
-            <Button onClick={() => setIsDialogOpen(true)} size="lg" className="rounded-2xl">
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo lớp học
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {classes.map((classItem, idx) => {
-            const accent = accents[idx % accents.length];
-            const status = classItem.approval_status;
-            const fill = Math.min(100, Math.round(((classItem.student_count || 0) / Math.max(1, classItem.max_students)) * 100));
-            return (
-              <Card
-                key={classItem.id}
-                className="relative overflow-hidden border-border hover:border-japanese/40 hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 group"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br opacity-70 ${accent}`} />
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+      <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
+        <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto grid grid-cols-5">
+          <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
+          <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học</TabsTrigger>
+          <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Bài kiểm tra</TabsTrigger>
+          <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Chấm bài</TabsTrigger>
+          <TabsTrigger value="students" className="rounded-lg text-xs md:text-sm font-semibold">Học viên</TabsTrigger>
+        </TabsList>
 
-                <CardContent className="relative p-6 space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-card/90 backdrop-blur border border-border flex items-center justify-center shadow-sm">
-                      <BookOpen className="w-5 h-5 text-japanese" />
-                    </div>
-                    <Badge className={
-                      status === 'approved' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 rounded-full' :
-                      status === 'rejected' ? 'bg-red-500/15 text-red-600 border-red-500/20 rounded-full' :
-                      'bg-amber-500/15 text-amber-700 border-amber-500/20 rounded-full'
-                    }>
-                      {status === 'approved' ? '✓ Đã duyệt' :
-                       status === 'rejected' ? '✕ Từ chối' : '● Chờ duyệt'}
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-lg leading-snug line-clamp-2 group-hover:text-japanese transition-colors">
-                      {classItem.name_vi}
-                    </h3>
-                    {classItem.name && classItem.name !== classItem.name_vi && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{classItem.name}</p>
-                    )}
-                  </div>
-
-                  {classItem.courses && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium">
-                        {classItem.courses.title_vi}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Capacity bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Users className="w-3 h-3" /> Sĩ số
-                      </span>
-                      <span className="font-semibold text-foreground">
-                        {classItem.student_count}/{classItem.max_students}
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-japanese to-primary rounded-full transition-all"
-                        style={{ width: `${fill}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {classItem.start_date && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {format(new Date(classItem.start_date), 'dd MMM yyyy', { locale: vi })}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-2 pt-3 border-t border-border/60">
-                    <Button variant="default" size="sm" asChild className="rounded-full">
-                      <a href={`/teacher/classes/${classItem.id}`}>
-                        <Eye className="w-3.5 h-3.5 mr-1" />Mở lớp
-                      </a>
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => openStudentsDialog(classItem)} className="rounded-full">
-                      <Users className="w-3.5 h-3.5 mr-1" />Học viên
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(classItem)} className="rounded-full">
-                      <Edit className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Create/Edit Class Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingClass ? 'Chỉnh sửa lớp học' : 'Tạo lớp học mới'}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tên lớp (Tiếng Anh)</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Class name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Tên lớp (Tiếng Việt)</Label>
-                <Input
-                  value={formData.name_vi}
-                  onChange={(e) => setFormData({ ...formData, name_vi: e.target.value })}
-                  placeholder="Tên lớp học"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Khóa học liên kết</Label>
-              <Select 
-                value={formData.course_id || 'none'} 
-                onValueChange={(value) => setFormData({ ...formData, course_id: value === 'none' ? '' : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khóa học (không bắt buộc)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Không liên kết</SelectItem>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.title_vi}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Mô tả (Tiếng Anh)</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Class description"
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Mô tả (Tiếng Việt)</Label>
-                <Textarea
-                  value={formData.description_vi}
-                  onChange={(e) => setFormData({ ...formData, description_vi: e.target.value })}
-                  placeholder="Mô tả lớp học"
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Sĩ số tối đa</Label>
-                <Input
-                  type="number"
-                  value={formData.max_students}
-                  onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 30 })}
-                  min={1}
-                  max={100}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Ngày bắt đầu</Label>
-                <Input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Ngày kết thúc</Label>
-                <Input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Custom fields */}
-            <div className="space-y-2 border-t pt-4">
+        {/* Tab 1: Stream (Bảng tin) */}
+        <TabsContent value="stream" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Lịch dạy Zoom */}
+            <div className="lg:col-span-2 space-y-4">
               <div className="flex justify-between items-center">
-                <Label>Trường tùy chỉnh</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setFormData({
-                      ...formData,
-                      custom_fields: [...formData.custom_fields, { key: '', label: '', value: '' }],
-                    })
-                  }
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Thêm trường
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Video className="w-5 h-5 text-primary" /> Lịch Zoom lớp học
+                </h2>
+                <Button size="sm" onClick={() => setIsSessionDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-1" /> Lên lịch dạy
                 </Button>
               </div>
-              {formData.custom_fields.length === 0 && (
-                <p className="text-xs text-muted-foreground">Tạo các trường thông tin riêng cho lớp (ví dụ: Phòng học, Học phí, Link tài liệu...)</p>
-              )}
-              {formData.custom_fields.map((cf, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_2fr_auto] gap-2 items-center">
-                  <Input
-                    placeholder="Tên trường"
-                    value={cf.label}
-                    onChange={(e) => {
-                      const next = [...formData.custom_fields];
-                      next[idx] = { ...next[idx], label: e.target.value, key: e.target.value };
-                      setFormData({ ...formData, custom_fields: next });
-                    }}
-                  />
-                  <Input
-                    placeholder="Giá trị"
-                    value={cf.value}
-                    onChange={(e) => {
-                      const next = [...formData.custom_fields];
-                      next[idx] = { ...next[idx], value: e.target.value };
-                      setFormData({ ...formData, custom_fields: next });
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        custom_fields: formData.custom_fields.filter((_, i) => i !== idx),
-                      })
-                    }
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+
+              {classSessions.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground text-sm">
+                    Lớp học chưa được lên lịch dạy Zoom trực tuyến nào.
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {classSessions.map((session) => (
+                    <Card key={session.id} className="hover:shadow-sm transition-shadow">
+                      <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="space-y-1">
+                          <p className="font-semibold text-sm md:text-base text-foreground">
+                            {session.topic || 'Buổi học Zoom trực tiếp'}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {formatWithJST(session.session_date, false)}
+                            </span>
+                            <span className="flex items-center gap-1 font-medium">
+                              <Clock className="w-3.5 h-3.5" />
+                              {formatTimeWithJST(session.start_time)}
+                            </span>
+                          </div>
+                        </div>
+                        {session.meet_link ? (
+                          <Button size="sm" variant="outline" className="gap-1.5 shrink-0 w-full md:w-auto" asChild>
+                            <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
+                              <Video className="w-4 h-4 text-primary" /> Vào phòng học Zoom
+                            </a>
+                          </Button>
+                        ) : (
+                          <Badge variant="outline">Chưa gắn link</Badge>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Thông tin nhanh lớp */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Mô tả lớp học</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground block text-xs">Tên hiển thị tiếng Anh</span>
+                    <span className="font-semibold">{selectedClass.name}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-xs">Mô tả chi tiết</span>
+                    <span className="text-foreground">{selectedClass.description_vi || 'Không có mô tả.'}</span>
+                  </div>
+                  {selectedClass.end_date && (
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Ngày kết thúc</span>
+                      <span>{formatWithJST(selectedClass.end_date, false)}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: Lessons (Bài học) */}
+        <TabsContent value="lessons" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-bold text-foreground">Bài giảng & Tài liệu lớp học</h2>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsLinkLessonOpen(true)}>
+                Gán bài học có sẵn
+              </Button>
+              <Button size="sm" onClick={() => setIsCreateLessonOpen(true)}>
+                <Plus className="w-4 h-4 mr-1" /> Tạo bài mới cho lớp
+              </Button>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
-            <Button onClick={handleSubmit}>{editingClass ? 'Cập nhật' : 'Tạo lớp'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Students Dialog */}
-      <Dialog open={isStudentsDialogOpen} onOpenChange={setIsStudentsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Học viên - {selectedClass?.name_vi}</span>
-              <Button size="sm" onClick={openAddStudentDialog}>
-                <UserPlus className="w-4 h-4 mr-1" />
-                Thêm học viên
-              </Button>
-            </DialogTitle>
-          </DialogHeader>
-
-          {students.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Chưa có học viên nào trong lớp</p>
-              <Button variant="outline" className="mt-4" onClick={openAddStudentDialog}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Thêm học viên đầu tiên
-              </Button>
-            </div>
+          {classDetailLessons.length === 0 ? (
+            <Card>
+              <CardContent className="py-16 text-center text-muted-foreground">
+                <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                Lớp học chưa có tài liệu hay bài giảng nào. Hãy nhấn Tạo bài mới hoặc Gán bài học có sẵn!
+              </CardContent>
+            </Card>
           ) : (
-            <div className="flex-1 overflow-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {classDetailLessons.map((lesson) => (
+                <Card key={lesson.id} className="hover:shadow-md transition-all duration-200">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex gap-2 items-center">
+                        <Badge className="bg-primary/10 text-primary uppercase text-xs">
+                          {getSkillLabel(lesson.skill)}
+                        </Badge>
+                        <Badge variant="outline">{lesson.level}</Badge>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-destructive h-8 w-8 hover:bg-destructive/10" 
+                        onClick={() => handleUnlinkLesson(lesson.id)}
+                        title="Gỡ khỏi lớp"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <CardTitle className="text-base font-bold pt-2">{lesson.title_vi}</CardTitle>
+                    <CardDescription className="text-xs line-clamp-1">{lesson.title}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pb-4 flex justify-between items-center text-xs text-muted-foreground border-t pt-3">
+                    <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {lesson.duration_minutes} phút</span>
+                    <Button size="sm" className="gap-1.5" variant="hero" onClick={() => setPresentingLesson(lesson)}>
+                      <Play className="w-3.5 h-3.5 fill-current" /> Trình chiếu
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab 3: Exams (Bài kiểm tra) */}
+        <TabsContent value="exams" className="space-y-4">
+          <ExamManager classId={selectedClass.id} />
+        </TabsContent>
+
+        {/* Tab 4: Submissions (Chấm bài) */}
+        <TabsContent value="submissions" className="space-y-4">
+          <h2 className="text-lg font-bold text-foreground">Chấm điểm bài làm của học viên thuộc lớp</h2>
+          
+          {classSubmissions.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                Học viên trong lớp chưa nộp bài tập nào chờ chấm.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="border rounded-xl overflow-hidden bg-card">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Học viên</TableHead>
-                    <TableHead>Streak</TableHead>
+                    <TableHead>Bài tập</TableHead>
                     <TableHead>Bài học</TableHead>
+                    <TableHead>Điểm số</TableHead>
+                    <TableHead>Thời gian nộp</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {classSubmissions.map((sub) => (
+                    <TableRow key={sub.id}>
+                      <TableCell className="font-semibold text-foreground">{sub.profile?.full_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="mr-2">
+                          {sub.exercise?.exercise_type === 'quiz' ? 'Trắc nghiệm' : 'Bài viết'}
+                        </Badge>
+                        {sub.exercise?.title_vi}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{sub.lesson?.title_vi}</TableCell>
+                      <TableCell>
+                        {sub.score !== null ? (
+                          <Badge className="bg-green-500/10 text-green-600 border-green-200">
+                            {sub.score}/100
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200">
+                            Chờ chấm
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatWithJST(sub.submitted_at, true)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          size="sm" 
+                          variant={sub.status === 'pending' ? 'default' : 'ghost'}
+                          onClick={() => {
+                            setSelectedSubmission(sub);
+                            setGradingScore(sub.score?.toString() || '');
+                            setGradingFeedback(sub.feedback || '');
+                          }}
+                        >
+                          {sub.status === 'pending' ? 'Chấm bài' : 'Xem & sửa'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab 5: Students (Học viên) */}
+        <TabsContent value="students" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-bold text-foreground">Học viên của lớp ({students.length})</h2>
+            <Button size="sm" onClick={openAddStudentDialog}>
+              <UserPlus className="w-4 h-4 mr-1.5" /> Thêm học viên
+            </Button>
+          </div>
+
+          {students.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>Chưa có học viên nào trong lớp. Hãy nhấn Thêm học viên để đưa học viên vào lớp.</p>
+            </div>
+          ) : (
+            <div className="border rounded-xl overflow-hidden bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Học viên</TableHead>
+                    <TableHead>XP tích lũy</TableHead>
+                    <TableHead>Streak học tập</TableHead>
+                    <TableHead>Số bài học</TableHead>
                     <TableHead>Tiến độ hôm nay</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead className="text-right">Thao tác</TableHead>
@@ -799,63 +1234,40 @@ const TeacherClasses = () => {
                   {students.map((student) => (
                     <TableRow key={student.id}>
                       <TableCell>
+                        <div>
+                          <p className="font-semibold">{student.profiles?.full_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Gia nhập: {formatWithJST(student.enrolled_at, false)}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-bold text-yellow-600">
+                        {student.progress?.total_xp || 0} XP
+                      </TableCell>
+                      <TableCell className="font-bold text-orange-500">
+                        🔥 {student.progress?.streak || 0} ngày
+                      </TableCell>
+                      <TableCell>{student.progress?.lessons_completed || 0} bài</TableCell>
+                      <TableCell className="min-w-[120px]">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <GraduationCap className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{student.profiles?.full_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(student.enrolled_at), 'dd/MM/yyyy', { locale: vi })}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Flame className="w-4 h-4 text-orange-500" />
-                          <span>{student.progress?.streak || 0}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="w-4 h-4 text-blue-500" />
-                          <span>{student.progress?.lessons_completed || 0}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 min-w-[120px]">
                           <Progress 
                             value={Math.min(100, ((student.progress?.daily_progress || 0) / (student.progress?.daily_goal || 50)) * 100)} 
                             className="h-2 flex-1"
                           />
                           <span className="text-xs text-muted-foreground">
-                            {student.progress?.daily_progress || 0}/{student.progress?.daily_goal || 50} phút
+                            {student.progress?.daily_progress || 0}/{student.progress?.daily_goal || 50}
                           </span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={student.status === 'active' ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'}>
-                          {student.status === 'active' ? 'Đang học' : student.status}
-                        </Badge>
+                        <Badge className="bg-green-500/10 text-green-600">Đang học</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => openProgressDialog(student)}
-                            title="Xem chi tiết"
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => openProgressDialog(student)}>
                             <TrendingUp className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleRemoveStudent(student.student_id)}
-                            title="Xóa khỏi lớp"
-                          >
+                          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleRemoveStudent(student.student_id)}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -866,64 +1278,171 @@ const TeacherClasses = () => {
               </Table>
             </div>
           )}
+        </TabsContent>
+      </Tabs>
 
+      {/* Presentation Mode overlay */}
+      <ClassLessonPresentation 
+        lesson={presentingLesson}
+        isOpen={!!presentingLesson}
+        onClose={() => setPresentingLesson(null)}
+      />
+
+      {/* Dialogue Link Lesson */}
+      <Dialog open={isLinkLessonOpen} onOpenChange={setIsLinkLessonOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gán bài giảng có sẵn vào lớp</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Chọn bài giảng</Label>
+              <Select value={selectedLessonToLink} onValueChange={setSelectedLessonToLink}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn bài học..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {unassignedLessons.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.title_vi}
+                    </SelectItem>
+                  ))}
+                  {unassignedLessons.length === 0 && (
+                    <SelectItem value="none" disabled>Không có bài giảng rảnh nào</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsStudentsDialogOpen(false)}>Đóng</Button>
+            <Button variant="ghost" onClick={() => setIsLinkLessonOpen(false)}>Hủy</Button>
+            <Button onClick={handleLinkLesson} disabled={!selectedLessonToLink}>Xác nhận gán</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Student Dialog */}
-      <Dialog open={isAddStudentDialogOpen} onOpenChange={setIsAddStudentDialogOpen}>
+      {/* Create new session/schedule dialouge */}
+      <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5" />
-              Thêm học viên vào lớp
-            </DialogTitle>
+            <DialogTitle>Lên lịch giảng dạy Zoom</DialogTitle>
           </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm theo tên..."
-                value={searchUserTerm}
-                onChange={(e) => setSearchUserTerm(e.target.value)}
-                className="pl-10"
+          <div className="space-y-4 py-3">
+            <div className="space-y-1">
+              <Label>Chủ đề / Bài giảng</Label>
+              <Input 
+                value={sessionFormData.topic} 
+                onChange={(e) => setSessionFormData({ ...sessionFormData, topic: e.target.value })}
+                placeholder="Ví dụ: Luyện từ vựng N5 bài 1"
               />
             </div>
-
-            <div className="max-h-[300px] overflow-y-auto space-y-2">
-              {filteredUsers.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Không tìm thấy học viên</p>
-                </div>
-              ) : (
-                filteredUsers.map((user) => (
-                  <div
-                    key={user.user_id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <GraduationCap className="w-5 h-5 text-primary" />
-                      </div>
-                      <span className="font-medium">{user.full_name || 'Không có tên'}</span>
-                    </div>
-                    <Button size="sm" onClick={() => handleAddStudent(user.user_id)}>
-                      <Plus className="w-4 h-4 mr-1" />
-                      Thêm
-                    </Button>
-                  </div>
-                ))
-              )}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Ngày học</Label>
+                <Input 
+                  type="date"
+                  value={sessionFormData.session_date} 
+                  onChange={(e) => setSessionFormData({ ...sessionFormData, session_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Giờ học (VN)</Label>
+                <Input 
+                  type="time"
+                  value={sessionFormData.start_time} 
+                  onChange={(e) => setSessionFormData({ ...sessionFormData, start_time: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Link phòng học Zoom</Label>
+              <Input 
+                value={sessionFormData.meet_link} 
+                onChange={(e) => setSessionFormData({ ...sessionFormData, meet_link: e.target.value })}
+                placeholder="https://zoom.us/j/..."
+              />
             </div>
           </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsSessionDialogOpen(false)}>Hủy</Button>
+            <Button onClick={handleCreateSession} disabled={!sessionFormData.topic || !sessionFormData.session_date}>Xác nhận lên lịch</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create lesson dialog */}
+      <Dialog open={isCreateLessonOpen} onOpenChange={setIsCreateLessonOpen}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-6">
+          <LessonEditor
+            onSubmit={handleCreateLessonSubmit}
+            onCancel={() => setIsCreateLessonOpen(false)}
+            isEditing={false}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Grading Dialog */}
+      <Dialog open={!!selectedSubmission} onOpenChange={(open) => !open && setSelectedSubmission(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chấm điểm bài tập học viên</DialogTitle>
+          </DialogHeader>
+          
+          {selectedSubmission && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-4 text-sm bg-muted/30 p-3 rounded-lg border">
+                <div>
+                  <span className="text-muted-foreground block text-xs">Học viên</span>
+                  <span className="font-semibold text-foreground">{selectedSubmission.profile?.full_name}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-xs">Bài học</span>
+                  <span className="font-semibold text-foreground">{selectedSubmission.lesson?.title_vi}</span>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 whitespace-pre-wrap text-sm">
+                <strong>Nội dung bài làm học viên:</strong>
+                <p className="mt-1 bg-background p-2.5 rounded border leading-relaxed">{selectedSubmission.content}</p>
+              </div>
+
+              {selectedSubmission.exercise?.correct_answers && (
+                <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/20 text-sm">
+                  <strong className="text-green-700">Đáp án tham khảo:</strong>
+                  <p className="mt-1 italic text-muted-foreground">{selectedSubmission.exercise.correct_answers}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label>Điểm số (0-100)</Label>
+                  <Input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={gradingScore}
+                    onChange={(e) => setGradingScore(e.target.value)}
+                    placeholder="Nhập điểm..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Phản hồi / Nhận xét</Label>
+                  <Textarea 
+                    value={gradingFeedback}
+                    onChange={(e) => setGradingFeedback(e.target.value)}
+                    placeholder="Viết nhận xét..."
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsAddStudentDialogOpen(false)}>Đóng</Button>
+            <Button variant="ghost" onClick={() => setSelectedSubmission(null)}>Hủy</Button>
+            <Button onClick={handleGradeSubmission} disabled={isGradingSubmitting || !gradingScore}>
+              {isGradingSubmitting ? 'Đang lưu...' : 'Lưu điểm'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -947,12 +1466,22 @@ const TeacherClasses = () => {
                 <div>
                   <h3 className="font-semibold text-lg">{selectedStudent.profiles?.full_name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Tham gia: {format(new Date(selectedStudent.enrolled_at), 'dd/MM/yyyy', { locale: vi })}
+                    Tham gia: {formatWithJST(selectedStudent.enrolled_at, false)}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Star className="w-5 h-5 text-yellow-500" />
+                      <span className="text-sm text-muted-foreground">Tổng XP</span>
+                    </div>
+                    <p className="text-2xl font-bold">{selectedStudent.progress?.total_xp || 0}</p>
+                  </CardContent>
+                </Card>
+
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -992,7 +1521,7 @@ const TeacherClasses = () => {
                       <span className="text-sm text-muted-foreground">Tiến độ hôm nay</span>
                     </div>
                     <span className="text-sm font-medium">
-                      {selectedStudent.progress?.daily_progress || 0} / {selectedStudent.progress?.daily_goal || 50} phút
+                      {selectedStudent.progress?.daily_progress || 0} / {selectedStudent.progress?.daily_goal || 50} XP
                     </span>
                   </div>
                   <Progress 
