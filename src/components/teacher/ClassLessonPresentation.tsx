@@ -13,10 +13,10 @@ interface Lesson {
   id: string;
   title: string;
   title_vi: string;
-  description_vi: string | null;
+  description_vi?: string | null;
   skill: string;
   level: string;
-  content_html: string | null;
+  content_html?: string | null;
 }
 
 interface Exercise {

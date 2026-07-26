@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -320,6 +322,9 @@ const TeacherLessons = () => {
       {/* Lesson Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-6">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{editingLesson ? 'Chỉnh sửa bài học' : 'Tạo bài học mới'}</DialogTitle>
+          </DialogHeader>
           <LessonEditor
             initialData={editingLesson ? {
               title: editingLesson.title,
@@ -344,6 +349,9 @@ const TeacherLessons = () => {
       {/* Exercises Dialog */}
       <Dialog open={!!exercisesLesson} onOpenChange={() => setExercisesLesson(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Quản lý bài tập</DialogTitle>
+          </DialogHeader>
           {exercisesLesson && (
             <LessonExercises
               lessonId={exercisesLesson.id}

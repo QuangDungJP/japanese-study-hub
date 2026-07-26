@@ -17,31 +17,29 @@ const navSections = [
   {
     label: 'Tổng quan',
     items: [
-      { name: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
+      { name: 'Bảng điều khiển', href: '/teacher', icon: LayoutDashboard },
     ],
   },
   {
-    label: 'Giảng dạy',
+    label: 'Quản lý Đào tạo',
     items: [
-      { name: 'Bài học', href: '/teacher/lessons', icon: BookOpen },
-      { name: 'Lớp học', href: '/teacher/classes', icon: Users },
-      { name: 'Chấm bài', href: '/teacher/submissions', icon: FileText },
-      { name: 'Điểm danh', href: '/teacher/attendance', icon: ClipboardCheck },
+      { name: 'Lớp học Classroom', href: '/teacher/classes', icon: Users },
+      { name: 'Kho bài giảng mẫu', href: '/teacher/lessons', icon: BookOpen },
     ],
   },
   {
-    label: 'Lịch trình',
+    label: 'Lịch trình & Giảng dạy',
     items: [
-      { name: 'Lịch Zoom', href: '/teacher/zoom', icon: Video },
-      { name: 'Lịch & Kiểm tra', href: '/teacher/calendar', icon: Calendar },
+      { name: 'Phòng học Zoom', href: '/teacher/zoom', icon: Video },
+      { name: 'Lịch giảng dạy & Thi', href: '/teacher/calendar', icon: Calendar },
     ],
   },
   {
-    label: 'Khác',
+    label: 'Hệ thống & Cá nhân',
     items: [
       { name: 'Thông báo', href: '/teacher/notifications', icon: Bell },
-      { name: 'Báo lỗi', href: '/teacher/bug-reports', icon: Bug },
-      { name: 'Hồ sơ', href: '/teacher/profile', icon: User },
+      { name: 'Báo lỗi hệ thống', href: '/teacher/bug-reports', icon: Bug },
+      { name: 'Hồ sơ cá nhân', href: '/teacher/profile', icon: User },
     ],
   },
 ];
