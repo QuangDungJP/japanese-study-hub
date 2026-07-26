@@ -41,6 +41,15 @@ const TeacherZoom = () => {
   useEffect(() => {
     if (user) {
       fetchBookings();
+      const channel = supabase
+        .channel('public:bookings-zoom-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchBookings)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, fetchBookings)
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

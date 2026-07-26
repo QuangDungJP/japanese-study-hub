@@ -834,111 +834,6 @@ const TeacherClasses = () => {
             ))}
           </div>
         )}
-
-        {/* Create/Edit Class Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingClass ? 'Chỉnh sửa lớp học' : 'Tạo lớp học mới'}</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tên lớp (Tiếng Anh - Không bắt buộc)</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Tự động lấy tên tiếng Việt nếu trống"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Tên lớp học (Tiếng Việt)</Label>
-                  <Input
-                    value={formData.name_vi}
-                    onChange={(e) => setFormData({ ...formData, name_vi: e.target.value })}
-                    placeholder="Ví dụ: Lớp N5 Căn Bản T2-T4-T6"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Khóa học liên kết</Label>
-                <Select 
-                  value={formData.course_id} 
-                  onValueChange={(value) => setFormData({ ...formData, course_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn khóa học (không bắt buộc)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Không liên kết</SelectItem>
-                    {courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.title_vi}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Mô tả (Tiếng Anh)</Label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Class description"
-                    rows={2}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mô tả (Tiếng Việt)</Label>
-                  <Textarea
-                    value={formData.description_vi}
-                    onChange={(e) => setFormData({ ...formData, description_vi: e.target.value })}
-                    placeholder="Mô tả lớp học"
-                    rows={2}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Sĩ số tối đa</Label>
-                  <Input
-                    type="number"
-                    value={formData.max_students}
-                    onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 30 })}
-                    min={1}
-                    max={100}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Ngày bắt đầu</Label>
-                  <Input
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Ngày kết thúc</Label>
-                  <Input
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
-              <Button onClick={handleSubmit}>{editingClass ? 'Cập nhật' : 'Tạo lớp'}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     );
   }
@@ -1497,6 +1392,111 @@ const TeacherClasses = () => {
       </Dialog>
 
       {/* Student Progress Dialog */}
+      {/* Create/Edit Class Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingClass ? 'Chỉnh sửa lớp học' : 'Tạo lớp học mới'}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tên lớp (Tiếng Anh - Không bắt buộc)</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Tự động lấy tên tiếng Việt nếu trống"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tên lớp học (Tiếng Việt)</Label>
+                <Input
+                  value={formData.name_vi}
+                  onChange={(e) => setFormData({ ...formData, name_vi: e.target.value })}
+                  placeholder="Ví dụ: Lớp N5 Căn Bản T2-T4-T6"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Khóa học liên kết</Label>
+              <Select 
+                value={formData.course_id} 
+                onValueChange={(value) => setFormData({ ...formData, course_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn khóa học (không bắt buộc)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Không liên kết</SelectItem>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.title_vi}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Mô tả (Tiếng Anh)</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Class description"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Mô tả (Tiếng Việt)</Label>
+                <Textarea
+                  value={formData.description_vi}
+                  onChange={(e) => setFormData({ ...formData, description_vi: e.target.value })}
+                  placeholder="Mô tả lớp học"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Sĩ số tối đa</Label>
+                <Input
+                  type="number"
+                  value={formData.max_students}
+                  onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 30 })}
+                  min={1}
+                  max={100}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ngày bắt đầu</Label>
+                <Input
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ngày kết thúc</Label>
+                <Input
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
+            <Button onClick={handleSubmit}>{editingClass ? 'Cập nhật' : 'Tạo lớp'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

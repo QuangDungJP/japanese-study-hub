@@ -57,6 +57,16 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
   useEffect(() => {
     if (user) {
       fetchEvents();
+      const channel = supabase
+        .channel('public:calendar-view-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchEvents)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, fetchEvents)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, fetchEvents)
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user, currentDate]);
 

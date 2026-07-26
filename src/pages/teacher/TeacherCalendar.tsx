@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, FileText, UserX, Video } from 'lucide-react';
+import { Calendar, UserX } from 'lucide-react';
 import { CalendarView } from '@/components/calendar/CalendarView';
-import { ExamManager } from '@/components/calendar/ExamManager';
 import { LeaveRequestManager } from '@/components/calendar/LeaveRequestManager';
 
 const TeacherCalendarPage = () => {
@@ -11,34 +10,26 @@ const TeacherCalendarPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Lịch giảng dạy</h1>
+        <h1 className="text-3xl font-bold text-foreground">Lịch giảng dạy & Zoom</h1>
         <p className="text-muted-foreground mt-1">
-          Quản lý lịch dạy, kiểm tra và yêu cầu nghỉ phép
+          Theo dõi thời khóa biểu giảng dạy, lịch Zoom và phê duyệt yêu cầu nghỉ phép
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="calendar" className="gap-2">
+        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="calendar" className="gap-2 font-semibold">
             <Calendar className="w-4 h-4" />
-            <span className="hidden sm:inline">Lịch</span>
+            <span>Lịch giảng dạy Zoom</span>
           </TabsTrigger>
-          <TabsTrigger value="exams" className="gap-2">
-            <FileText className="w-4 h-4" />
-            <span className="hidden sm:inline">Bài kiểm tra</span>
-          </TabsTrigger>
-          <TabsTrigger value="leaves" className="gap-2">
+          <TabsTrigger value="leaves" className="gap-2 font-semibold">
             <UserX className="w-4 h-4" />
-            <span className="hidden sm:inline">Duyệt nghỉ phép</span>
+            <span>Duyệt nghỉ phép học viên</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar">
-          <CalendarView showEventTypes={['booking', 'exam', 'leave']} />
-        </TabsContent>
-
-        <TabsContent value="exams">
-          <ExamManager />
+          <CalendarView showEventTypes={['booking', 'leave', 'reminder']} />
         </TabsContent>
 
         <TabsContent value="leaves">

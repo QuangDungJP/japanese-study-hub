@@ -46,6 +46,18 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchStats();
+    const channel = supabase
+      .channel('public:admin-dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'classes' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vocabulary' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchStats)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchStats = async () => {
