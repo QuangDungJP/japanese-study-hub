@@ -12,13 +12,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay';
+
 interface Question {
   id?: string;
+  type?: QuestionType;
   text: string;
   options: string[];
   correct_index: number;
+  accepted_answers?: string[];
+  explanation?: string;
   points?: number;
 }
+
+const qType = (q: Question): QuestionType => q.type || 'multiple_choice';
+const isAutoGraded = (q: Question) => qType(q) !== 'essay';
+const normalizeText = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
 interface Exam {
   id: string;
@@ -54,7 +63,7 @@ const ExamRunner = () => {
   const [exam, setExam] = useState<Exam | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [answers, setAnswers] = useState<Record<number, number | string>>({});
   const [remaining, setRemaining] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -114,8 +123,8 @@ const ExamRunner = () => {
         const { data: full } = await supabase.from("exam_attempts").select("*").eq("id", aid).maybeSingle();
         if (full?.started_at) start = new Date(full.started_at).getTime();
         if (full?.answers) {
-          const map: Record<number, number> = {};
-          (full.answers as any[]).forEach((v, i) => { if (typeof v === "number") map[i] = v; });
+          const map: Record<number, number | string> = {};
+          (full.answers as any[]).forEach((v, i) => { if (v !== null && v !== undefined) map[i] = v; });
           setAnswers(map);
         }
         if (full?.student_comment) setComment(full.student_comment);
@@ -157,12 +166,24 @@ const ExamRunner = () => {
     if (!exam || !attemptId || submittedRef.current) return;
     submittedRef.current = true;
     setSubmitting(true);
-    const total = orderedQuestions.length;
+    // total = sum of all question points; score = points earned on auto-graded questions.
+    const total = orderedQuestions.reduce((s, q) => s + (q.points || 1), 0);
     let score = 0;
-    const answersArr: (number | null)[] = orderedQuestions.map((q, i) => {
+    const answersArr: (number | string | null)[] = orderedQuestions.map((q, i) => {
       const a = answers[i];
-      if (typeof a === "number" && a === q.correct_index) score += (q.points || 1);
-      return typeof a === "number" ? a : null;
+      const pts = q.points || 1;
+      const type = qType(q);
+      if (type === "multiple_choice" || type === "true_false") {
+        if (typeof a === "number" && a === q.correct_index) score += pts;
+        return typeof a === "number" ? a : null;
+      }
+      if (type === "short_answer") {
+        const accepted = (q.accepted_answers || []).map(normalizeText).filter(Boolean);
+        if (typeof a === "string" && a.trim() && accepted.includes(normalizeText(a))) score += pts;
+        return typeof a === "string" ? a : null;
+      }
+      // essay: manual grading, no auto points
+      return typeof a === "string" ? a : null;
     });
     const time_spent = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
     await supabase.from("exam_attempts").update({
@@ -234,7 +255,12 @@ const ExamRunner = () => {
   }
 
   const total = orderedQuestions.length;
-  const answered = Object.keys(answers).length;
+  const answered = orderedQuestions.reduce((n, _q, i) => {
+    const a = answers[i];
+    if (typeof a === "number") return n + 1;
+    if (typeof a === "string" && a.trim()) return n + 1;
+    return n;
+  }, 0);
   const lowTime = remaining < 60;
 
   return (
@@ -272,36 +298,61 @@ const ExamRunner = () => {
           <Card><CardContent className="py-10 text-center text-muted-foreground">Bài kiểm tra chưa có câu hỏi.</CardContent></Card>
         )}
 
-        {orderedQuestions.map((q, i) => (
-          <Card key={i} className="border-2 hover:border-primary/30 transition">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex gap-2">
-                <span className="inline-flex w-7 h-7 rounded-full bg-primary text-primary-foreground items-center justify-center text-sm shrink-0">{i + 1}</span>
-                <span>{q.text}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {q.options.map((opt, oi) => {
-                const selected = answers[i] === oi;
-                return (
-                  <button
-                    key={oi}
-                    type="button"
-                    onClick={() => setAnswers((a) => ({ ...a, [i]: oi }))}
-                    className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${
-                      selected ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                  >
-                    <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${
-                      selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
-                    }`}>{String.fromCharCode(65 + oi)}</span>
-                    <span>{opt}</span>
-                  </button>
-                );
-              })}
-            </CardContent>
-          </Card>
-        ))}
+        {orderedQuestions.map((q, i) => {
+          const type = qType(q);
+          const pts = q.points || 1;
+          return (
+            <Card key={i} className="border-2 hover:border-primary/30 transition">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex gap-2 items-start">
+                  <span className="inline-flex w-7 h-7 rounded-full bg-primary text-primary-foreground items-center justify-center text-sm shrink-0">{i + 1}</span>
+                  <span className="flex-1">{q.text}</span>
+                  <Badge variant="outline" className="shrink-0 font-normal">{pts} điểm</Badge>
+                </CardTitle>
+                {!isAutoGraded(q) && (
+                  <p className="text-xs text-muted-foreground pl-9">Câu tự luận – giáo viên sẽ chấm tay.</p>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {(type === "multiple_choice" || type === "true_false") && q.options.map((opt, oi) => {
+                  const selected = answers[i] === oi;
+                  return (
+                    <button
+                      key={oi}
+                      type="button"
+                      onClick={() => setAnswers((a) => ({ ...a, [i]: oi }))}
+                      className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                        selected ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 hover:bg-muted/50"
+                      }`}
+                    >
+                      <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${
+                        selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+                      }`}>{String.fromCharCode(65 + oi)}</span>
+                      <span>{opt}</span>
+                    </button>
+                  );
+                })}
+
+                {type === "short_answer" && (
+                  <Input
+                    placeholder="Nhập câu trả lời của bạn…"
+                    value={typeof answers[i] === "string" ? (answers[i] as string) : ""}
+                    onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
+                  />
+                )}
+
+                {type === "essay" && (
+                  <Textarea
+                    rows={5}
+                    placeholder="Viết bài làm của bạn tại đây…"
+                    value={typeof answers[i] === "string" ? (answers[i] as string) : ""}
+                    onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
 
         <Card className="border-2 border-primary/20">
           <CardHeader className="pb-3">
