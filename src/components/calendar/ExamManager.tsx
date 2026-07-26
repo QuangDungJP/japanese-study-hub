@@ -1,61 +1,27 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
-  CalendarIcon, Plus, Loader2, Pencil, Trash2, Video, Users, Lock,
-  ListChecks, Trophy, Copy, X,
+  Plus, Loader2, Pencil, Trash2, Video, Users, Lock,
+  ListChecks, Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
-} from '@/components/ui/form';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-
-const formSchema = z.object({
-  title: z.string().min(1, 'Vui lòng nhập tiêu đề'),
-  title_vi: z.string().min(1, 'Vui lòng nhập tiêu đề tiếng Việt'),
-  description_vi: z.string().optional(),
-  instructions: z.string().optional(),
-  video_url: z.string().optional(),
-  exam_type: z.enum(['quiz', 'midterm', 'final', 'placement']),
-  exam_date: z.date({ required_error: 'Vui lòng chọn ngày' }),
-  start_time: z.string().min(1, 'Chọn giờ'),
-  duration_minutes: z.number().min(1),
-  meet_link: z.string().optional(),
-  max_score: z.number().min(1).default(100),
-  passing_score: z.number().min(0).default(50),
-  is_published: z.boolean().default(false),
-  class_id: z.string().optional(),
-  starts_at: z.string().optional(),
-  ends_at: z.string().optional(),
-  lock_after_end: z.boolean().default(true),
-  shuffle_questions: z.boolean().default(false),
-  max_attempts: z.number().min(1).default(1),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import ExamBuilder from './ExamBuilder';
 
 interface Question {
+  type?: string;
   text: string;
   options: string[];
   correct_index: number;
@@ -94,26 +60,14 @@ export const ExamManager = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingExam, setEditingExam] = useState<Exam | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderInitial, setBuilderInitial] = useState<Exam | null>(null);
   const [attemptsExam, setAttemptsExam] = useState<Exam | null>(null);
   const [attempts, setAttempts] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'upcoming' | 'open' | 'closed'>('all');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'reviewed' | 'needs_revision'>('all');
   const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({});
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '', title_vi: '', description_vi: '', instructions: '', video_url: '',
-      exam_type: 'quiz', start_time: '09:00', duration_minutes: 60,
-      meet_link: '', max_score: 100, passing_score: 50, is_published: false, class_id: '',
-      starts_at: '', ends_at: '', lock_after_end: true, shuffle_questions: false, max_attempts: 1,
-    },
-  });
 
   useEffect(() => { if (user) fetchData(); }, [user]);
 
@@ -126,84 +80,8 @@ export const ExamManager = () => {
     } finally { setLoading(false); }
   };
 
-  const openCreate = () => {
-    setEditingExam(null);
-    setQuestions([]);
-    form.reset({
-      title: '', title_vi: '', description_vi: '', instructions: '', video_url: '',
-      exam_type: 'quiz', start_time: '09:00', duration_minutes: 60,
-      meet_link: '', max_score: 100, passing_score: 50, is_published: false, class_id: '',
-      starts_at: '', ends_at: '', lock_after_end: true, shuffle_questions: false, max_attempts: 1,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const openEdit = (exam: Exam) => {
-    setEditingExam(exam);
-    setQuestions(Array.isArray(exam.questions) ? exam.questions : []);
-    form.reset({
-      title: exam.title, title_vi: exam.title_vi,
-      description_vi: exam.description_vi || '',
-      instructions: exam.instructions || '',
-      video_url: exam.video_url || '',
-      exam_type: exam.exam_type as any,
-      exam_date: new Date(exam.exam_date),
-      start_time: exam.start_time,
-      duration_minutes: exam.duration_minutes,
-      meet_link: exam.meet_link || '',
-      max_score: exam.max_score || 100,
-      passing_score: exam.passing_score || 50,
-      is_published: exam.is_published,
-      class_id: exam.class_id || '',
-      starts_at: exam.starts_at ? exam.starts_at.slice(0, 16) : '',
-      ends_at: exam.ends_at ? exam.ends_at.slice(0, 16) : '',
-      lock_after_end: exam.lock_after_end ?? true,
-      shuffle_questions: exam.shuffle_questions ?? false,
-      max_attempts: exam.max_attempts ?? 1,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const onSubmit = async (values: FormValues) => {
-    if (!user) return;
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        title: values.title, title_vi: values.title_vi,
-        description_vi: values.description_vi || null,
-        instructions: values.instructions || null,
-        video_url: values.video_url || null,
-        exam_type: values.exam_type,
-        exam_date: format(values.exam_date, 'yyyy-MM-dd'),
-        start_time: values.start_time,
-        duration_minutes: values.duration_minutes,
-        meet_link: values.meet_link || null,
-        max_score: values.max_score, passing_score: values.passing_score,
-        is_published: values.is_published,
-        class_id: values.class_id || null,
-        teacher_id: user.id,
-        starts_at: values.starts_at ? new Date(values.starts_at).toISOString() : null,
-        ends_at: values.ends_at ? new Date(values.ends_at).toISOString() : null,
-        lock_after_end: values.lock_after_end,
-        shuffle_questions: values.shuffle_questions,
-        max_attempts: values.max_attempts,
-        questions: questions as any,
-      };
-      if (editingExam) {
-        const { error } = await supabase.from('exams').update(payload).eq('id', editingExam.id);
-        if (error) throw error;
-        toast.success('Đã cập nhật');
-      } else {
-        const { error } = await supabase.from('exams').insert(payload);
-        if (error) throw error;
-        toast.success('Đã tạo bài kiểm tra');
-      }
-      setIsDialogOpen(false);
-      fetchData();
-    } catch (e: any) {
-      toast.error('Lỗi', { description: e.message });
-    } finally { setIsSubmitting(false); }
-  };
+  const openCreate = () => { setBuilderInitial(null); setBuilderOpen(true); };
+  const openEdit = (exam: Exam) => { setBuilderInitial(exam); setBuilderOpen(true); };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Xóa bài kiểm tra này?')) return;
@@ -245,12 +123,6 @@ export const ExamManager = () => {
     if (s === 'needs_revision') return <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30">Cần sửa</Badge>;
     return <Badge variant="outline">Chưa chấm</Badge>;
   };
-
-  const updateQuestion = (i: number, patch: Partial<Question>) =>
-    setQuestions((arr) => arr.map((q, idx) => idx === i ? { ...q, ...patch } : q));
-  const addQuestion = () => setQuestions((a) => [...a, { text: '', options: ['', '', '', ''], correct_index: 0, points: 1 }]);
-  const removeQuestion = (i: number) => setQuestions((a) => a.filter((_, idx) => idx !== i));
-  const duplicateQuestion = (i: number) => setQuestions((a) => [...a.slice(0, i + 1), { ...a[i], options: [...a[i].options] }, ...a.slice(i + 1)]);
 
   const getExamTypeBadge = (type: string) => {
     const map: Record<string, JSX.Element> = {
@@ -294,7 +166,7 @@ export const ExamManager = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Quản lý bài kiểm tra</h2>
-          <p className="text-muted-foreground text-sm">Tạo bài kiểm tra có timer, khóa nộp, chấm điểm tự động.</p>
+          <p className="text-muted-foreground text-sm">Trình tạo đề nhiều loại câu hỏi, AI hỗ trợ, timer, khóa nộp, chấm điểm tự động.</p>
         </div>
         <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Tạo mới</Button>
       </div>
@@ -362,214 +234,16 @@ export const ExamManager = () => {
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editingExam ? 'Chỉnh sửa bài kiểm tra' : 'Tạo bài kiểm tra mới'}</DialogTitle></DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <Tabs defaultValue="basic">
-                <TabsList className="grid grid-cols-3 w-full">
-                  <TabsTrigger value="basic">Thông tin</TabsTrigger>
-                  <TabsTrigger value="timing">Lịch & Khóa</TabsTrigger>
-                  <TabsTrigger value="questions">Câu hỏi ({questions.length})</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="basic" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="title" render={({ field }) => (
-                      <FormItem><FormLabel>Tiêu đề (EN)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="title_vi" render={({ field }) => (
-                      <FormItem><FormLabel>Tiêu đề (VI)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="exam_type" render={({ field }) => (
-                      <FormItem><FormLabel>Loại</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="quiz">Quiz</SelectItem>
-                            <SelectItem value="midterm">Giữa kỳ</SelectItem>
-                            <SelectItem value="final">Cuối kỳ</SelectItem>
-                            <SelectItem value="placement">Xếp lớp</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="class_id" render={({ field }) => (
-                      <FormItem><FormLabel>Lớp</FormLabel>
-                        <Select onValueChange={(v) => field.onChange(v === 'all' ? '' : v)} value={field.value || 'all'}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="all">Tất cả</SelectItem>
-                            {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name_vi}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )} />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <FormField control={form.control} name="exam_date" render={({ field }) => (
-                      <FormItem className="flex flex-col"><FormLabel>Ngày</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button variant="outline" className={cn('pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}>
-                                {field.value ? format(field.value, 'dd/MM/yyyy') : 'Chọn...'}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus className="pointer-events-auto" />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="start_time" render={({ field }) => (
-                      <FormItem><FormLabel>Giờ</FormLabel><FormControl><Input type="time" {...field} /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="duration_minutes" render={({ field }) => (
-                      <FormItem><FormLabel>Thời lượng (phút)</FormLabel>
-                        <FormControl><Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} /></FormControl>
-                      </FormItem>
-                    )} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="max_score" render={({ field }) => (
-                      <FormItem><FormLabel>Điểm tối đa</FormLabel>
-                        <FormControl><Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} /></FormControl>
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="passing_score" render={({ field }) => (
-                      <FormItem><FormLabel>Điểm đạt</FormLabel>
-                        <FormControl><Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} /></FormControl>
-                      </FormItem>
-                    )} />
-                  </div>
-
-                  <FormField control={form.control} name="meet_link" render={({ field }) => (
-                    <FormItem><FormLabel>Link Google Meet</FormLabel><FormControl><Input placeholder="https://meet.google.com/..." {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="video_url" render={({ field }) => (
-                    <FormItem><FormLabel>Link Video (YouTube / MP4)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="instructions" render={({ field }) => (
-                    <FormItem><FormLabel>Hướng dẫn cho học viên</FormLabel><FormControl><Textarea rows={3} placeholder="Lưu ý khi làm bài..." {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="description_vi" render={({ field }) => (
-                    <FormItem><FormLabel>Mô tả</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="is_published" render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div><FormLabel className="text-base">Công bố</FormLabel>
-                        <p className="text-sm text-muted-foreground">Học viên có thể vào làm bài.</p>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                  )} />
-                </TabsContent>
-
-                <TabsContent value="timing" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="starts_at" render={({ field }) => (
-                      <FormItem><FormLabel>Mở vào lúc</FormLabel>
-                        <FormControl><Input type="datetime-local" {...field} /></FormControl>
-                        <p className="text-xs text-muted-foreground">Không vào được trước thời điểm này.</p>
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="ends_at" render={({ field }) => (
-                      <FormItem><FormLabel>Đóng vào lúc</FormLabel>
-                        <FormControl><Input type="datetime-local" {...field} /></FormControl>
-                        <p className="text-xs text-muted-foreground">Sau thời điểm này khóa nộp (nếu bật).</p>
-                      </FormItem>
-                    )} />
-                  </div>
-                  <FormField control={form.control} name="max_attempts" render={({ field }) => (
-                    <FormItem><FormLabel>Số lượt làm tối đa</FormLabel>
-                      <FormControl><Input type="number" min={1} {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 1)} /></FormControl>
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="lock_after_end" render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div><FormLabel className="text-base">Khóa nộp sau hạn</FormLabel>
-                        <p className="text-sm text-muted-foreground">Tự động chặn nộp khi quá giờ kết thúc.</p>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="shuffle_questions" render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div><FormLabel className="text-base">Xáo trộn câu hỏi</FormLabel>
-                        <p className="text-sm text-muted-foreground">Mỗi học viên thấy thứ tự câu khác nhau.</p>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                  )} />
-                </TabsContent>
-
-                <TabsContent value="questions" className="space-y-3 mt-4">
-                  {questions.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl">
-                      <ListChecks className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                      Chưa có câu hỏi nào.
-                    </div>
-                  )}
-                  {questions.map((q, i) => (
-                    <Card key={i} className="border-2">
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex items-start gap-2">
-                          <Badge className="mt-2">Câu {i + 1}</Badge>
-                          <Textarea rows={2} value={q.text} onChange={(e) => updateQuestion(i, { text: e.target.value })} placeholder="Nội dung câu hỏi..." className="flex-1" />
-                          <div className="flex flex-col gap-1">
-                            <Button type="button" size="icon" variant="ghost" onClick={() => duplicateQuestion(i)}><Copy className="w-4 h-4" /></Button>
-                            <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={() => removeQuestion(i)}><X className="w-4 h-4" /></Button>
-                          </div>
-                        </div>
-                        <div className="grid sm:grid-cols-2 gap-2">
-                          {q.options.map((opt, oi) => (
-                            <div key={oi} className="flex items-center gap-2">
-                              <button type="button" onClick={() => updateQuestion(i, { correct_index: oi })}
-                                className={cn('w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0',
-                                  q.correct_index === oi ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-muted-foreground/40')}>
-                                {String.fromCharCode(65 + oi)}
-                              </button>
-                              <Input value={opt} onChange={(e) => {
-                                const arr = [...q.options]; arr[oi] = e.target.value; updateQuestion(i, { options: arr });
-                              }} placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`} />
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Điểm:</span>
-                          <Input type="number" min={1} className="w-20 h-8" value={q.points || 1} onChange={(e) => updateQuestion(i, { points: parseInt(e.target.value) || 1 })} />
-                          <span className="text-xs text-emerald-600 ml-auto">Đáp án đúng: {String.fromCharCode(65 + q.correct_index)}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <Button type="button" variant="outline" onClick={addQuestion} className="w-full">
-                    <Plus className="w-4 h-4 mr-2" /> Thêm câu hỏi
-                  </Button>
-                </TabsContent>
-              </Tabs>
-
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : editingExam ? 'Cập nhật' : 'Tạo mới'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      {user && (
+        <ExamBuilder
+          open={builderOpen}
+          onOpenChange={setBuilderOpen}
+          classes={classes.map((c) => ({ id: c.id, name: c.name_vi }))}
+          teacherId={user.id}
+          initial={builderInitial}
+          onSaved={fetchData}
+        />
+      )}
 
       <Dialog open={!!attemptsExam} onOpenChange={() => setAttemptsExam(null)}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
