@@ -17,9 +17,7 @@ import {
   ClipboardCheck,
   UserCheck
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import EmptyState from '@/components/shared/EmptyState';
+import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 
 interface DashboardStats {
   totalLessons: number;
@@ -200,7 +198,7 @@ const TeacherDashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Xin chào, Giáo viên! 👋</h1>
+        <h1 className="text-3xl font-bold text-foreground">Xin chào, Giảng viên! 👋</h1>
         <p className="text-muted-foreground mt-1">Đây là tổng quan hoạt động của bạn</p>
       </div>
 
@@ -340,13 +338,9 @@ const TeacherDashboard = () => {
           </CardHeader>
           <CardContent>
             {upcomingBookings.length === 0 ? (
-              <EmptyState
-                icon={Calendar}
-                title="Chưa có lịch Zoom nào"
-                description="Khi học viên đặt lịch học với bạn, lịch sẽ hiển thị ở đây."
-                actionLabel="Mở lịch giảng dạy"
-                actionHref="/teacher/calendar"
-              />
+              <p className="text-center text-muted-foreground py-4">
+                Chưa có lịch Zoom nào
+              </p>
             ) : (
               <div className="space-y-3">
                 {upcomingBookings.map((booking) => (
@@ -363,7 +357,7 @@ const TeacherDashboard = () => {
                           {booking.profiles?.full_name}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(booking.booking_date), 'dd/MM/yyyy', { locale: vi })} - {booking.booking_time}
+                          {formatWithJST(booking.booking_date, false)} — {formatTimeWithJST(booking.booking_time)}
                         </p>
                       </div>
                     </div>

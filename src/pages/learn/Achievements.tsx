@@ -30,7 +30,7 @@ interface Achievement {
   requirement: number;
   current: number;
   unlocked: boolean;
-  category: 'streak' | 'lessons' | 'vocabulary';
+  category: 'streak' | 'lessons' | 'xp' | 'vocabulary';
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
@@ -159,6 +159,51 @@ const Achievements = () => {
       category: 'lessons',
       rarity: 'legendary',
     },
+    // XP achievements
+    {
+      id: 'xp-100',
+      title: 'Người mới bắt đầu',
+      description: 'Đạt 100 XP',
+      icon: <Star className="w-6 h-6" />,
+      requirement: 100,
+      current: progress?.total_xp || 0,
+      unlocked: (progress?.total_xp || 0) >= 100,
+      category: 'xp',
+      rarity: 'common',
+    },
+    {
+      id: 'xp-500',
+      title: 'Ngôi sao đang lên',
+      description: 'Đạt 500 XP',
+      icon: <Zap className="w-6 h-6" />,
+      requirement: 500,
+      current: progress?.total_xp || 0,
+      unlocked: (progress?.total_xp || 0) >= 500,
+      category: 'xp',
+      rarity: 'rare',
+    },
+    {
+      id: 'xp-2000',
+      title: 'Chiến binh ngôn ngữ',
+      description: 'Đạt 2000 XP',
+      icon: <Medal className="w-6 h-6" />,
+      requirement: 2000,
+      current: progress?.total_xp || 0,
+      unlocked: (progress?.total_xp || 0) >= 2000,
+      category: 'xp',
+      rarity: 'epic',
+    },
+    {
+      id: 'xp-10000',
+      title: 'Huyền thoại XP',
+      description: 'Đạt 10000 XP',
+      icon: <Gem className="w-6 h-6" />,
+      requirement: 10000,
+      current: progress?.total_xp || 0,
+      unlocked: (progress?.total_xp || 0) >= 10000,
+      category: 'xp',
+      rarity: 'legendary',
+    },
     // Vocabulary achievements
     {
       id: 'vocab-10',
@@ -258,7 +303,7 @@ const Achievements = () => {
       case 'lessons':
         return 'Bài học';
       case 'xp':
-        return 'Điểm học tập';
+        return 'Điểm XP';
       case 'vocabulary':
         return 'Từ vựng';
       default:

@@ -12,8 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { FileText, CheckCircle, Clock, AlertCircle, Star, User, BookOpen, Calendar, MessageSquare, Search, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { formatWithJST } from '@/lib/dateUtils';
 
 interface Submission {
   id: string;
@@ -436,7 +435,7 @@ const TeacherSubmissions = () => {
                         </TableCell>
                         <TableCell>{getScoreBadge(submission.score)}</TableCell>
                         <TableCell className="text-muted-foreground">
-                          {submission.graded_at && format(new Date(submission.graded_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                          {submission.graded_at && formatWithJST(submission.graded_at, true)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" onClick={() => openGradingDialog(submission)}>
@@ -476,7 +475,7 @@ const TeacherSubmissions = () => {
                       <TableCell>{getStatusBadge(submission.status)}</TableCell>
                       <TableCell>{submission.score !== null ? getScoreBadge(submission.score) : '-'}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(submission.submitted_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                        {formatWithJST(submission.submitted_at, true)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button 
@@ -520,7 +519,7 @@ const TeacherSubmissions = () => {
                     <p className="font-semibold">{selectedSubmission.profile?.full_name || 'Không rõ'}</p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                       <Calendar className="w-3 h-3" />
-                      Nộp lúc: {format(new Date(selectedSubmission.submitted_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                      Nộp lúc: {formatWithJST(selectedSubmission.submitted_at, true)}
                     </p>
                   </CardContent>
                 </Card>
@@ -667,7 +666,7 @@ const TeacherSubmissions = () => {
                       <strong>Đã chấm:</strong> {getScoreBadge(selectedSubmission.score)} 
                       {selectedSubmission.graded_at && (
                         <span className="ml-2">
-                          vào {format(new Date(selectedSubmission.graded_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                          vào {formatWithJST(selectedSubmission.graded_at, true)}
                         </span>
                       )}
                     </p>
@@ -716,7 +715,7 @@ const SubmissionCard = ({ submission, onGrade, getStatusBadge, getScoreBadge, ge
               <div>
                 <p className="font-semibold">{submission.profile?.full_name || 'Không rõ'}</p>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(submission.submitted_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                  {formatWithJST(submission.submitted_at, true)}
                 </p>
               </div>
             </div>

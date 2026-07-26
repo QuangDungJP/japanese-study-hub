@@ -87,9 +87,6 @@ const ExerciseEditor = ({ lessonId, exercise, onSave, onCancel }: ExerciseEditor
   const [sentenceOrderItems, setSentenceOrderItems] = useState<any[]>(exercise?.content?.items || []);
   const [audioTranscript, setAudioTranscript] = useState(exercise?.content?.transcript || '');
   const [audioTranscriptVi, setAudioTranscriptVi] = useState(exercise?.content?.transcript_vi || '');
-  const [audioMaxPlays, setAudioMaxPlays] = useState<number>(
-    typeof exercise?.content?.audio_max_plays === 'number' ? exercise.content.audio_max_plays : 0
-  );
 
   // Expanded states for collapsible items
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set([0]));
@@ -218,13 +215,7 @@ const ExerciseEditor = ({ lessonId, exercise, onSave, onCancel }: ExerciseEditor
       case 'reading':
         return { text: readingText, text_vi: readingTextVi, questions };
       case 'listening':
-        return {
-          audio_url: formData.audio_url,
-          transcript: audioTranscript,
-          transcript_vi: audioTranscriptVi,
-          audio_max_plays: audioMaxPlays, // 0 = unlimited
-          questions,
-        };
+        return { audio_url: formData.audio_url, transcript: audioTranscript, transcript_vi: audioTranscriptVi, questions };
       case 'writing':
         return { prompt: writingPrompt, prompt_vi: writingPromptVi, word_limit: wordLimit };
       case 'vocabulary':
@@ -447,9 +438,9 @@ const ExerciseEditor = ({ lessonId, exercise, onSave, onCancel }: ExerciseEditor
                     <MediaUploader
                       value={formData.audio_url}
                       onChange={(url) => setFormData({ ...formData, audio_url: url })}
-                      accept="audio"
+                      accept="both"
                       folder="lesson-audio"
-                      placeholder="Upload file MP3 cho bài nghe"
+                      placeholder="Upload file audio bài nghe"
                       aspectRatio="banner"
                     />
                     <div className="space-y-2">
@@ -461,26 +452,6 @@ const ExerciseEditor = ({ lessonId, exercise, onSave, onCancel }: ExerciseEditor
                         rows={4}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Số lần học viên được phát audio</Label>
-                      <div className="flex items-center gap-3">
-                        <Input
-                          type="number"
-                          min={0}
-                          value={audioMaxPlays}
-                          onChange={(e) => setAudioMaxPlays(Math.max(0, parseInt(e.target.value || '0', 10)))}
-                          className="w-32"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {audioMaxPlays === 0
-                            ? 'Không giới hạn — học viên có thể nghe lại tự do.'
-                            : `Học viên chỉ được phát tối đa ${audioMaxPlays} lần.`}
-                        </p>
-                      </div>
-                    </div>
-                    {formData.audio_url && (
-                      <audio src={formData.audio_url} controls className="w-full" preload="metadata" />
-                    )}
                   </CardContent>
                 </Card>
               )}

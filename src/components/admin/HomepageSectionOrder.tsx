@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { GripVertical, Save, Loader2, Home, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { BRAND } from '@/config/brand';
 
 interface SectionConfig {
   id: string;
@@ -17,31 +16,11 @@ const defaultSections: SectionConfig[] = [
   { id: 'hero', label: 'Hero Banner', visible: true },
   { id: 'skills', label: '4 Kỹ năng cốt lõi', visible: true },
   { id: 'courses', label: 'Khóa học JLPT', visible: true },
-  { id: 'features', label: `Tại sao chọn ${BRAND.name}?`, visible: true },
-  { id: 'zoom', label: 'Đặt lịch học', visible: true },
-  { id: 'teachers', label: 'Đội ngũ giáo viên', visible: true },
-  { id: 'blog', label: 'Blog nổi bật', visible: true },
+  { id: 'features', label: 'Tại sao chọn TNQDO?', visible: true },
+  { id: 'zoom', label: 'Học Online qua Zoom', visible: true },
+  { id: 'teachers', label: 'Đội ngũ giảng viên', visible: true },
   { id: 'cta', label: 'CTA - Đăng ký ngay', visible: true },
 ];
-
-const mergeSectionsWithDefaults = (saved: SectionConfig[]) => {
-  const merged = [...saved];
-  const defaultIds = defaultSections.map(section => section.id);
-
-  for (const section of defaultSections) {
-    if (merged.some(item => item.id === section.id)) continue;
-
-    const nextDefaults = defaultIds.slice(defaultIds.indexOf(section.id) + 1);
-    const nextIndex = merged.findIndex(item => nextDefaults.includes(item.id));
-    if (nextIndex >= 0) {
-      merged.splice(nextIndex, 0, section);
-    } else {
-      merged.push(section);
-    }
-  }
-
-  return merged;
-};
 
 export default function HomepageSectionOrder() {
   const { toast } = useToast();
@@ -65,7 +44,13 @@ export default function HomepageSectionOrder() {
     if (data?.content) {
       const saved = data.content as unknown as SectionConfig[];
       if (Array.isArray(saved) && saved.length > 0) {
-        setSections(mergeSectionsWithDefaults(saved));
+        // Merge with defaults for any new sections
+        const savedIds = saved.map(s => s.id);
+        const merged = [
+          ...saved,
+          ...defaultSections.filter(d => !savedIds.includes(d.id)),
+        ];
+        setSections(merged);
       }
     }
   };
@@ -94,19 +79,21 @@ export default function HomepageSectionOrder() {
     try {
       const { error } = await supabase
         .from('website_content')
-        .upsert({
+        .update({ content: sections as any, updated_at: new Date().toISOString() })
+        .eq('section_key', 'homepage_sections');
+
+      if (error) {
+        await supabase.from('website_content').insert({
           section_key: 'homepage_sections',
           title: 'Homepage Section Order',
           content: sections as any,
           is_active: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'section_key' });
-
-      if (error) throw error;
+        });
+      }
       toast({ title: 'Đã lưu thứ tự trang chủ ✓' });
       setChanged(false);
-    } catch (e: any) {
-      toast({ title: 'Lỗi khi lưu', description: e?.message, variant: 'destructive' });
+    } catch {
+      toast({ title: 'Lỗi khi lưu', variant: 'destructive' });
     }
     setSaving(false);
   };

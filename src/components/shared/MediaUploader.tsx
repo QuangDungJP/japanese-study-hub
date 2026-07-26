@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface MediaUploaderProps {
   value?: string;
   onChange: (url: string) => void;
-  accept?: 'image' | 'video' | 'audio' | 'both';
+  accept?: 'image' | 'video' | 'both';
   bucket?: string;
   folder?: string;
   maxSizeMB?: number;
@@ -37,13 +37,11 @@ const MediaUploader = ({
   const acceptTypes = {
     image: 'image/*',
     video: 'video/*',
-    audio: 'audio/*',
     both: 'image/*,video/*',
   };
 
   const isVideo = value?.match(/\.(mp4|webm|ogg|mov)$/i);
   const isImage = value?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
-  const isAudio = value?.match(/\.(mp3|wav|m4a|aac|ogg|oga|flac)$/i);
 
   const handleFile = async (file: File) => {
     setError(null);
@@ -51,7 +49,6 @@ const MediaUploader = ({
     // Validate file type
     const isValidImage = file.type.startsWith('image/');
     const isValidVideo = file.type.startsWith('video/');
-    const isValidAudio = file.type.startsWith('audio/');
 
     if (accept === 'image' && !isValidImage) {
       setError('Chỉ chấp nhận file hình ảnh');
@@ -59,10 +56,6 @@ const MediaUploader = ({
     }
     if (accept === 'video' && !isValidVideo) {
       setError('Chỉ chấp nhận file video');
-      return;
-    }
-    if (accept === 'audio' && !isValidAudio) {
-      setError('Chỉ chấp nhận file audio (MP3, WAV, M4A...)');
       return;
     }
     if (accept === 'both' && !isValidImage && !isValidVideo) {
@@ -156,13 +149,6 @@ const MediaUploader = ({
               controls
               className="w-full h-full object-contain"
             />
-          ) : isAudio || accept === 'audio' ? (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
-              <audio src={value} controls className="w-full max-w-md" preload="metadata" />
-              <a href={value} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:underline truncate max-w-full">
-                {value.split('/').pop()}
-              </a>
-            </div>
           ) : isImage ? (
             <img
               src={value}
@@ -221,8 +207,6 @@ const MediaUploader = ({
                   <Image className="w-8 h-8 text-muted-foreground" />
                 ) : accept === 'video' ? (
                   <Film className="w-8 h-8 text-muted-foreground" />
-                ) : accept === 'audio' ? (
-                  <Upload className="w-8 h-8 text-muted-foreground" />
                 ) : (
                   <>
                     <Image className="w-6 h-6 text-muted-foreground" />
@@ -235,7 +219,6 @@ const MediaUploader = ({
                 <p className="text-xs text-muted-foreground mt-1">
                   {accept === 'image' && 'JPG, PNG, GIF, WebP'}
                   {accept === 'video' && 'MP4, WebM, MOV'}
-                  {accept === 'audio' && 'MP3, WAV, M4A, AAC, OGG'}
                   {accept === 'both' && 'Hình ảnh hoặc Video'}
                   {' • '}Tối đa {maxSizeMB}MB
                 </p>

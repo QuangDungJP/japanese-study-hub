@@ -28,8 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ShoppingCart, Check, X, Clock, Eye, DollarSign, Users, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { formatWithJST } from '@/lib/dateUtils';
 
 interface Order {
   id: string;
@@ -369,7 +368,7 @@ const AdminOrders = () => {
                       {getStatusBadge(order.payment_status)}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                      {formatWithJST(order.created_at, true)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -425,7 +424,7 @@ const AdminOrders = () => {
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Ngày tạo</p>
-                  <p>{format(new Date(selectedOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</p>
+                  <p>{formatWithJST(selectedOrder.created_at, true)}</p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Mã giao dịch</p>

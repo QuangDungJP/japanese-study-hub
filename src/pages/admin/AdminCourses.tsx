@@ -11,8 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, BookOpen, Loader2, Clock, DollarSign, X, Users, Settings2 } from 'lucide-react';
-import RichTextEditor from '@/components/admin/RichTextEditor';
+import { Plus, Pencil, Trash2, BookOpen, Loader2, Clock, DollarSign, X, Users } from 'lucide-react';
 
 interface TimelineItem { week: string; title: string; description: string }
 interface FaqItem { q: string; a: string }
@@ -53,18 +52,14 @@ interface Course {
   faq: any; testimonials: any; custom_fields: any;
   section_visibility: any;
   created_at: string;
-  show_on_homepage?: boolean | null;
-  is_featured?: boolean | null;
-  homepage_order?: number | null;
 }
 
-interface JlptLevel { id: string; value: string; label: string; label_vi: string; order_index: number; is_active: boolean }
-const defaultJlptLevels: JlptLevel[] = [
-  { id: '1', value: 'N5', label: 'JLPT N5 - Beginner', label_vi: 'JLPT N5 - Cơ bản', order_index: 1, is_active: true },
-  { id: '2', value: 'N4', label: 'JLPT N4 - Elementary', label_vi: 'JLPT N4 - Sơ cấp', order_index: 2, is_active: true },
-  { id: '3', value: 'N3', label: 'JLPT N3 - Intermediate', label_vi: 'JLPT N3 - Trung cấp', order_index: 3, is_active: true },
-  { id: '4', value: 'N2', label: 'JLPT N2 - Upper Intermediate', label_vi: 'JLPT N2 - Cao cấp', order_index: 4, is_active: true },
-  { id: '5', value: 'N1', label: 'JLPT N1 - Advanced', label_vi: 'JLPT N1 - Thành thạo', order_index: 5, is_active: true },
+const jlptLevels = [
+  { value: 'N5', label: 'JLPT N5 - Cơ bản' },
+  { value: 'N4', label: 'JLPT N4 - Sơ cấp' },
+  { value: 'N3', label: 'JLPT N3 - Trung cấp' },
+  { value: 'N2', label: 'JLPT N2 - Cao cấp' },
+  { value: 'N1', label: 'JLPT N1 - Thành thạo' },
 ];
 
 const enrollmentStatuses = [
@@ -88,9 +83,6 @@ const AdminCourses = () => {
   const [saving, setSaving] = useState(false);
   const [allTeachers, setAllTeachers] = useState<TeacherOption[]>([]);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
-  const [jlptLevels, setJlptLevels] = useState<JlptLevel[]>(defaultJlptLevels);
-  const [levelsDialogOpen, setLevelsDialogOpen] = useState(false);
-  const [newLevel, setNewLevel] = useState({ value: '', label: '', label_vi: '' });
   const { toast } = useToast();
 
   const [form, setForm] = useState({
@@ -119,39 +111,9 @@ const AdminCourses = () => {
     testimonials: [] as Testimonial[],
     custom_fields: [] as CustomField[],
     section_visibility: { ...defaultVisibility },
-    show_on_homepage: false,
-    is_featured: false,
-    homepage_order: 0,
   });
 
-  useEffect(() => { fetchCourses(); fetchTeachers(); fetchLevels(); }, []);
-
-  const fetchLevels = async () => {
-    const { data } = await (supabase as any).from('course_levels').select('*').order('order_index');
-    if (data && data.length) setJlptLevels(data);
-  };
-
-  const addLevel = async () => {
-    if (!newLevel.value || !newLevel.label_vi) {
-      toast({ title: 'Thiếu thông tin', description: 'Cần mã và tên cấp độ', variant: 'destructive' });
-      return;
-    }
-    const { error } = await (supabase as any).from('course_levels').insert({
-      value: newLevel.value.trim(),
-      label: newLevel.label.trim() || newLevel.label_vi.trim(),
-      label_vi: newLevel.label_vi.trim(),
-      order_index: jlptLevels.length + 1,
-    });
-    if (error) { toast({ title: 'Lỗi', description: error.message, variant: 'destructive' }); return; }
-    setNewLevel({ value: '', label: '', label_vi: '' });
-    fetchLevels();
-    toast({ title: 'Đã thêm cấp độ' });
-  };
-
-  const deleteLevel = async (id: string) => {
-    await (supabase as any).from('course_levels').delete().eq('id', id);
-    fetchLevels();
-  };
+  useEffect(() => { fetchCourses(); fetchTeachers(); }, []);
 
   const fetchTeachers = async () => {
     const { data } = await supabase
@@ -188,9 +150,6 @@ const AdminCourses = () => {
       featuresText: '', highlightsText: '', requirementsText: '', outcomesText: '',
       timeline: [], faq: [], testimonials: [], custom_fields: [],
       section_visibility: { ...defaultVisibility },
-      show_on_homepage: false,
-      is_featured: false,
-      homepage_order: 0,
     });
     setSelectedTeacherIds([]);
     setEditingCourse(null);
@@ -226,9 +185,6 @@ const AdminCourses = () => {
       testimonials: Array.isArray(c.testimonials) ? c.testimonials : [],
       custom_fields: Array.isArray(c.custom_fields) ? c.custom_fields : [],
       section_visibility: { ...defaultVisibility, ...(c.section_visibility || {}) },
-      show_on_homepage: !!(c as any).show_on_homepage,
-      is_featured: !!(c as any).is_featured,
-      homepage_order: (c as any).homepage_order || 0,
     });
     const { data: ct } = await (supabase as any).from('course_teachers').select('teacher_id').eq('course_id', c.id);
     setSelectedTeacherIds((ct || []).map((x: any) => x.teacher_id));
@@ -279,9 +235,6 @@ const AdminCourses = () => {
         testimonials: form.testimonials,
         custom_fields: form.custom_fields,
         section_visibility: form.section_visibility,
-        show_on_homepage: form.show_on_homepage,
-        is_featured: form.is_featured,
-        homepage_order: form.homepage_order || 0,
       };
 
       let courseId: string | null = null;
@@ -354,7 +307,7 @@ const AdminCourses = () => {
     outcomes: 'Kết quả đạt được',
     features: 'Tính năng / module',
     timeline: 'Lộ trình timeline',
-    teachers: 'Giáo viên',
+    teachers: 'Giảng viên',
     gallery: 'Thư viện ảnh',
     testimonials: 'Đánh giá học viên',
     faq: 'Câu hỏi thường gặp',
@@ -436,15 +389,10 @@ const AdminCourses = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label>Cấp độ JLPT</Label>
-                        <Button type="button" variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => setLevelsDialogOpen(true)}>
-                          <Settings2 className="w-3 h-3" /> Quản lý
-                        </Button>
-                      </div>
+                      <Label>Cấp độ JLPT</Label>
                       <Select value={form.level} onValueChange={v => setForm({ ...form, level: v })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{jlptLevels.map(l => <SelectItem key={l.value} value={l.value}>{l.label_vi || l.label}</SelectItem>)}</SelectContent>
+                        <SelectContent>{jlptLevels.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
@@ -461,31 +409,17 @@ const AdminCourses = () => {
                     <Switch checked={form.is_published} onCheckedChange={v => setForm({ ...form, is_published: v })} />
                     <Label>Xuất bản ngay</Label>
                   </div>
-                  <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
-                    <div className="flex items-center gap-2">
-                      <Switch checked={form.show_on_homepage} onCheckedChange={v => setForm({ ...form, show_on_homepage: v })} />
-                      <Label>Hiện ở trang chủ</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch checked={form.is_featured} onCheckedChange={v => setForm({ ...form, is_featured: v })} />
-                      <Label>Khóa học nổi bật (làm hero ở /khoa-hoc)</Label>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Thứ tự ưu tiên trang chủ</Label>
-                      <Input type="number" value={form.homepage_order} onChange={e => setForm({ ...form, homepage_order: parseInt(e.target.value) || 0 })} />
-                    </div>
-                  </div>
                 </TabsContent>
 
                 {/* === CONTENT === */}
                 <TabsContent value="content" className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Nội dung chi tiết khóa học (VI) — chèn ảnh, video, định dạng tự do</Label>
-                    <RichTextEditor value={form.long_description_vi} onChange={v => setForm({ ...form, long_description_vi: v })} placeholder="Viết bài giới thiệu chi tiết, chèn ảnh và video..." minHeight="320px" />
+                    <Label>Mô tả dài / Giới thiệu chi tiết (VI)</Label>
+                    <Textarea rows={6} value={form.long_description_vi} onChange={e => setForm({ ...form, long_description_vi: e.target.value })} placeholder="Giới thiệu chi tiết về khóa học, phương pháp giảng dạy..." />
                   </div>
                   <div className="space-y-2">
-                    <Label>Detailed content (EN)</Label>
-                    <RichTextEditor value={form.long_description} onChange={v => setForm({ ...form, long_description: v })} minHeight="240px" />
+                    <Label>Mô tả dài (EN)</Label>
+                    <Textarea rows={4} value={form.long_description} onChange={e => setForm({ ...form, long_description: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label>Tính năng / Module (mỗi dòng một mục)</Label>
@@ -568,17 +502,17 @@ const AdminCourses = () => {
                   </div>
 
                   <div className="space-y-2 pt-4 border-t">
-                    <Label className="flex items-center gap-2"><Users className="w-4 h-4" /> Giáo viên phụ trách ({selectedTeacherIds.length} đã chọn)</Label>
+                    <Label className="flex items-center gap-2"><Users className="w-4 h-4" /> Giảng viên phụ trách ({selectedTeacherIds.length} đã chọn)</Label>
                     <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
                       {allTeachers.length === 0
-                        ? <p className="text-sm text-muted-foreground">Chưa có giáo viên.</p>
+                        ? <p className="text-sm text-muted-foreground">Chưa có giảng viên.</p>
                         : allTeachers.map(t => (
                           <label key={t.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
                             <input type="checkbox" checked={selectedTeacherIds.includes(t.id)} onChange={() => toggleTeacher(t.id)} className="w-4 h-4" />
                             {t.image_url
                               ? <img src={t.image_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                               : <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs">👩‍🏫</div>}
-                            <span className="text-sm font-medium">{t.display_name || 'Giáo viên'}</span>
+                            <span className="text-sm font-medium">{t.display_name || 'Giảng viên'}</span>
                           </label>
                         ))}
                     </div>
@@ -724,40 +658,6 @@ const AdminCourses = () => {
           ))}
         </div>
       )}
-
-      {/* Manage JLPT Levels Dialog */}
-      <Dialog open={levelsDialogOpen} onOpenChange={setLevelsDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Quản lý cấp độ JLPT</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              {jlptLevels.map(l => (
-                <div key={l.id} className="flex items-center gap-2 p-2 border rounded-md">
-                  <Badge variant="secondary">{l.value}</Badge>
-                  <div className="flex-1 text-sm">
-                    <div className="font-medium">{l.label_vi}</div>
-                    <div className="text-xs text-muted-foreground">{l.label}</div>
-                  </div>
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteLevel(l.id)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <div className="border-t pt-3 space-y-2">
-              <Label className="text-sm">Thêm cấp độ mới</Label>
-              <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="Mã (vd N0)" value={newLevel.value} onChange={e => setNewLevel({ ...newLevel, value: e.target.value })} />
-                <Input placeholder="Tên VI" value={newLevel.label_vi} onChange={e => setNewLevel({ ...newLevel, label_vi: e.target.value })} />
-                <Input placeholder="Tên EN" value={newLevel.label} onChange={e => setNewLevel({ ...newLevel, label: e.target.value })} />
-              </div>
-              <Button type="button" size="sm" onClick={addLevel} className="w-full">
-                <Plus className="w-3.5 h-3.5 mr-1" /> Thêm cấp độ
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

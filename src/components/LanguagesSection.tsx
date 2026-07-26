@@ -17,7 +17,7 @@ const defaultCourses = [
 const defaultFeatures = [
   { icon: BookOpen, title: "1000+ Bài học", description: "Từ Hiragana, Katakana đến Kanji nâng cao" },
   { icon: Users, title: "Giáo viên Nhật Bản", description: "100% giáo viên bản ngữ có chứng chỉ" },
-  { icon: Video, title: "Đặt lịch học", description: "Lớp học trực tuyến 1-1 và nhóm nhỏ" },
+  { icon: Video, title: "Zoom Class", description: "Lớp học trực tuyến 1-1 và nhóm nhỏ" },
   { icon: Trophy, title: "Chứng chỉ JLPT", description: "Lộ trình luyện thi N5 đến N1" },
 ];
 

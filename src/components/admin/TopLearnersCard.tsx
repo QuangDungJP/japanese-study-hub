@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Flame, BookOpen } from 'lucide-react';
+import { Trophy, Flame, Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,6 +7,7 @@ interface Learner {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  total_xp: number;
   streak: number;
   lessons_completed: number;
 }
@@ -23,8 +24,8 @@ const TopLearnersCard = () => {
     try {
       const { data: progress } = await supabase
         .from('user_progress')
-        .select('user_id, streak, lessons_completed')
-        .order('lessons_completed', { ascending: false })
+        .select('user_id, total_xp, streak, lessons_completed')
+        .order('total_xp', { ascending: false })
         .limit(5);
 
       if (progress && progress.length > 0) {
@@ -40,6 +41,7 @@ const TopLearnersCard = () => {
             id: p.user_id,
             full_name: profile?.full_name || 'Unknown',
             avatar_url: profile?.avatar_url,
+            total_xp: p.total_xp || 0,
             streak: p.streak || 0,
             lessons_completed: p.lessons_completed || 0,
           };
@@ -80,7 +82,7 @@ const TopLearnersCard = () => {
   return (
     <div className="bg-card rounded-2xl p-6 border border-border shadow-soft h-full">
       <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-yellow-500" />
+        <Star className="w-5 h-5 text-yellow-500" />
         Top học viên
       </h2>
       
@@ -108,8 +110,8 @@ const TopLearnersCard = () => {
                 <p className="font-medium text-foreground truncate">{learner.full_name}</p>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <BookOpen className="w-3 h-3 text-primary" />
-                    {learner.lessons_completed} bài
+                    <Star className="w-3 h-3 text-yellow-500" />
+                    {learner.total_xp} XP
                   </span>
                   <span className="flex items-center gap-1">
                     <Flame className="w-3 h-3 text-orange-500" />

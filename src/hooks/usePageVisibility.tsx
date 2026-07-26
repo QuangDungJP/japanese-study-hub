@@ -18,7 +18,7 @@ const defaultSettings: PageVisibilitySettings = {
   },
   learn_sidebar: {
     dashboard: true, lessons: true, exercises: true, zoom: true,
-    calendar: true, achievements: true, settings: true,
+    calendar: true, achievements: true, settings: true, my_classes: true,
   },
 };
 

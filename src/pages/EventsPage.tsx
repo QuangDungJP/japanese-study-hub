@@ -12,9 +12,6 @@ import { Input } from '@/components/ui/input';
 import { CalendarDays, Clock, MapPin, Users, Video, ArrowRight, Loader2, Search, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { usePageSetting } from '@/hooks/usePageSettings';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Filter } from 'lucide-react';
 
 const EVENTS_PER_PAGE = 9;
 
@@ -22,12 +19,6 @@ const EventsPage = () => {
   const [filter, setFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const { data: pageCfg } = usePageSetting('events');
-  const heroBadge = pageCfg?.hero_badge_vi || 'Sự kiện & Workshop';
-  const heroTitleText = pageCfg?.hero_title_vi || 'Sự kiện hấp dẫn đang chờ bạn';
-  const heroSubtitle = pageCfg?.hero_subtitle_vi || 'Khám phá workshop, hội thảo và sự kiện học tập thú vị cùng đội ngũ chuyên gia';
-  const heroImage = pageCfg?.hero_image_url;
-  const heroOverlay = Math.max(0, Math.min(100, Number(pageCfg?.hero_overlay ?? 50))) / 100;
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events-public'],
@@ -77,70 +68,61 @@ const EventsPage = () => {
 
       {/* Hero */}
       <section className="relative pt-28 pb-16 overflow-hidden">
-        {heroImage ? (
-          <>
-            <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-background" style={{ opacity: heroOverlay }} />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-background to-primary/5">
-            <div className="absolute top-20 right-20 w-72 h-72 bg-accent/8 rounded-full blur-3xl animate-float" />
-            <div className="absolute bottom-10 left-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float animation-delay-200" />
-          </div>
-        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-background to-primary/5">
+          <div className="absolute top-20 right-20 w-72 h-72 bg-accent/8 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-10 left-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float animation-delay-200" />
+        </div>
         <div className="container mx-auto px-4 relative z-10">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-6 border border-accent/20">
                 <Sparkles className="w-4 h-4" />
-                {heroBadge}
+                Sự kiện & Workshop
               </div>
               <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-5 leading-tight">
-                {heroTitleText}
+                Sự kiện <span className="text-primary">hấp dẫn</span> đang chờ bạn
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground">
-                {heroSubtitle}
+                Khám phá workshop, hội thảo và sự kiện học tập thú vị cùng đội ngũ chuyên gia
               </p>
-              {(pageCfg?.hero_cta_primary_label || pageCfg?.hero_cta_secondary_label) && (
-                <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
-                  {pageCfg?.hero_cta_primary_label && (
-                    <Button variant="hero" size="lg" asChild>
-                      <Link to={pageCfg.hero_cta_primary_url || '#'}>{pageCfg.hero_cta_primary_label}</Link>
-                    </Button>
-                  )}
-                  {pageCfg?.hero_cta_secondary_label && (
-                    <Button variant="outline" size="lg" asChild>
-                      <Link to={pageCfg.hero_cta_secondary_url || '#'}>{pageCfg.hero_cta_secondary_label}</Link>
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
           </ScrollReveal>
 
-          {/* Compact Search + Filter */}
+          {/* Search */}
           <ScrollReveal delay={100}>
-            <div className="max-w-2xl mx-auto mt-10 flex flex-col sm:flex-row gap-2 items-stretch bg-card/70 backdrop-blur border border-border/60 rounded-2xl p-1.5 shadow-sm">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="max-w-xl mx-auto mt-8">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   placeholder="Tìm sự kiện..."
                   value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-11 h-11 border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm"
+                  className="pl-12 h-12 rounded-2xl border-border/50 bg-card text-base shadow-sm"
                 />
               </div>
-              <Select value={filter} onValueChange={(v) => handleFilterChange(v as typeof filter)}>
-                <SelectTrigger className="h-11 sm:w-52 border-0 bg-muted/50 rounded-xl">
-                  <Filter className="w-4 h-4 mr-1 text-muted-foreground" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="upcoming">Sắp diễn ra ({upcomingCount})</SelectItem>
-                  <SelectItem value="past">Đã qua ({pastCount})</SelectItem>
-                  <SelectItem value="all">Tất cả ({events.length})</SelectItem>
-                </SelectContent>
-              </Select>
+            </div>
+          </ScrollReveal>
+
+          {/* Filter Chips */}
+          <ScrollReveal delay={200}>
+            <div className="flex flex-wrap justify-center gap-2 mt-6">
+              {[
+                { key: 'upcoming' as const, label: 'Sắp diễn ra', count: upcomingCount, icon: Sparkles },
+                { key: 'past' as const, label: 'Đã qua', count: pastCount, icon: CalendarDays },
+                { key: 'all' as const, label: 'Tất cả', count: events.length, icon: CalendarDays },
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => handleFilterChange(f.key)}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    filter === f.key
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {f.label} ({f.count})
+                </button>
+              ))}
             </div>
           </ScrollReveal>
         </div>

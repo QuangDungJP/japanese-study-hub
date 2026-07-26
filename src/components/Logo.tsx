@@ -1,6 +1,5 @@
 import { Link, type LinkProps } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { BRAND } from "@/config/brand";
 
 type LogoProps = Omit<LinkProps, "to"> & {
   imgClassName?: string;
@@ -14,8 +13,8 @@ const Logo = ({
   className,
   imgClassName,
   showText = false,
-  text = BRAND.name,
-  alt = BRAND.logoAlt,
+  text = "TNQDO",
+  alt = "TNQDO",
   to = "/",
   ...props
 }: LogoProps) => (

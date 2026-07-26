@@ -9,33 +9,12 @@ import {
   Zap, Award, ChevronRight
 } from "lucide-react";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
-import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
-import courseDefaultImg from "@/assets/course-default-jp.webp";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useHomepageSections } from "@/hooks/useHomepageSections";
-import { BRAND } from "@/config/brand";
-import BlogHighlightsSection from "@/components/BlogHighlightsSection";
-import TestimonialsSection from "@/components/about/TestimonialsSection";
-import { useTestimonialsSettings } from "@/hooks/useTestimonials";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
   const { data: sectionOrder } = useHomepageSections();
-  const { data: testimonialsSettings } = useTestimonialsSettings();
-  const [homepageCourses, setHomepageCourses] = useState<any[]>([]);
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("courses")
-        .select("id, title_vi, description_vi, thumbnail_url, level, slug, price, original_price, duration_weeks, show_on_homepage, homepage_order")
-        .eq("is_published", true)
-        .eq("show_on_homepage", true)
-        .order("homepage_order", { ascending: true })
-        .limit(6);
-      setHomepageCourses(data || []);
-    })();
-  }, []);
   const heroContent = null;
   const statsContent = {
     students: "50K+",
@@ -48,8 +27,8 @@ const Index = () => {
   const featuredTeachers = (teachers || []).filter((t) => t.is_featured).slice(0, 4);
   const teacherList = (featuredTeachers.length ? featuredTeachers : teachers || []).map((t) => ({
     id: t.id,
-    name: t.display_name || t.profile?.full_name || "Giáo viên",
-    headline: t.headline || "Giáo viên",
+    name: t.display_name || t.profile?.full_name || "Giảng viên",
+    headline: t.headline || "Giảng viên",
     avatar_url: t.image_url || t.profile?.avatar_url || "",
     rating: t.rating || 0,
   }));
@@ -63,17 +42,9 @@ const Index = () => {
   }, []);
 
   const visibleSections = useMemo(() => {
-    const base = sectionOrder
-      ? sectionOrder.filter(s => s.visible).map(s => s.id)
-      : ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'blog', 'cta'];
-    if (testimonialsSettings?.show_on_homepage && !base.includes('feedback')) {
-      // Insert feedback before cta if present, else append
-      const idx = base.indexOf('cta');
-      if (idx >= 0) return [...base.slice(0, idx), 'feedback', ...base.slice(idx)];
-      return [...base, 'feedback'];
-    }
-    return base;
-  }, [sectionOrder, testimonialsSettings]);
+    if (!sectionOrder) return ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
+    return sectionOrder.filter(s => s.visible).map(s => s.id);
+  }, [sectionOrder]);
 
   const heroSection = (
       <section key="hero" className="relative min-h-[90vh] pt-20 overflow-hidden">
@@ -117,7 +88,7 @@ const Index = () => {
                     <path d="M2 10C50 4 100 2 150 6C200 10 250 4 298 8" stroke="hsl(0, 76%, 50%)" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                 </span>
-                {" "}{BRAND.homepageCTA}
+                {" "}cùng TNQDO
               </h1>
               
               <p className="text-xl text-muted-foreground mb-10 animate-slide-up animation-delay-200 leading-relaxed">
@@ -286,45 +257,6 @@ const Index = () => {
             ))}
           </div>
 
-          {homepageCourses.length > 0 && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {homepageCourses.map((c, i) => (
-                <ScrollReveal key={c.id} delay={i * 80} direction="up">
-                  <Link
-                    to={`/khoa-hoc/${c.slug || c.id}`}
-                    className="group bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col"
-                  >
-                    <div className="relative aspect-video overflow-hidden bg-muted">
-                      <img
-                        src={c.thumbnail_url || courseDefaultImg}
-                        alt={c.title_vi}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <Badge className="absolute top-3 left-3 bg-japanese text-white border-0">JLPT {c.level}</Badge>
-                    </div>
-                    <div className="p-5 flex-1 flex flex-col">
-                      <h3 className="font-bold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-japanese transition-colors">
-                        {c.title_vi}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
-                        {c.description_vi || "Khóa học toàn diện chuẩn JLPT."}
-                      </p>
-                      <div className="flex items-center justify-between pt-3 border-t border-border">
-                        <span className="font-extrabold text-foreground">
-                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(c.price || 0)}
-                        </span>
-                        <span className="text-xs text-japanese font-semibold flex items-center gap-1">
-                          Xem chi tiết <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </ScrollReveal>
-              ))}
-            </div>
-          )}
-
           <ScrollReveal delay={500}>
             <div className="text-center">
               <Button size="lg" className="rounded-2xl h-14 px-10 text-base" asChild>
@@ -345,7 +277,7 @@ const Index = () => {
             <ScrollReveal direction="left">
               <div>
                 <span className="inline-block px-5 py-2.5 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-6 border border-accent/20">
-                  {BRAND.whyChooseLabel}
+                  Tại sao chọn TNQDO?
                 </span>
                 <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
                   Công nghệ học tập{" "}
@@ -404,7 +336,7 @@ const Index = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="h-14 px-8 bg-white text-primary hover:bg-white/90 rounded-2xl text-base" asChild>
-                  <Link to="/gioi-thieu#zoom">
+                  <Link to="/zoom">
                     <Video className="w-5 h-5 mr-2" />
                     Đăng ký học thử
                   </Link>
@@ -429,10 +361,10 @@ const Index = () => {
             <div className="text-center max-w-3xl mx-auto mb-16">
               <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-japanese/10 text-japanese text-sm font-semibold mb-4 border border-japanese/20">
                 <Award className="w-4 h-4" />
-                Đội ngũ giáo viên
+                Đội ngũ giảng viên
               </span>
               <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-5">
-                Giáo viên xuất sắc, tận tâm
+                Giảng viên xuất sắc, tận tâm
               </h2>
               <p className="text-lg text-muted-foreground">
                 Giáo viên bản ngữ và giáo viên Việt Nam giàu kinh nghiệm
@@ -443,7 +375,7 @@ const Index = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
             {teacherList.length === 0 ? (
               <div className="col-span-full py-14 text-center text-muted-foreground">
-                Đang cập nhật danh sách giáo viên. Vui lòng quay lại sau.
+                Đang cập nhật danh sách giảng viên. Vui lòng quay lại sau.
               </div>
             ) : (
               teacherList.map((t, i) => (
@@ -530,15 +462,6 @@ const Index = () => {
     features: featuresSection,
     zoom: zoomSection,
     teachers: teachersSection,
-    blog: <BlogHighlightsSection key="blog" />,
-    feedback: (
-      <TestimonialsSection
-        key="feedback"
-        limit={testimonialsSettings?.homepage_limit ?? 6}
-        showTabs={false}
-        homepageOnly
-      />
-    ),
     cta: ctaSection,
   };
 

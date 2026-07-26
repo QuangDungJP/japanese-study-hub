@@ -15,38 +15,19 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop, Image as ImageIcon, Film, Layers, Sparkles, ChevronUp, ChevronDown, ExternalLink,
+  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
 import ImageCropModal from "@/components/shared/ImageCropModal";
-import RichTextEditor from "@/components/admin/RichTextEditor";
 import { Database } from "@/integrations/supabase/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 type TeacherRow = Database["public"]["Tables"]["teacher_profiles"]["Row"];
 
-interface CustomSection {
-  title: string;
-  body: string;
-  image_url?: string;
-  video_url?: string;
-}
-interface VideoItem { title: string; url: string; }
-
-type SectionKey =
-  | "hero" | "stats" | "bio" | "specializations" | "certifications"
-  | "languages" | "gallery" | "videos" | "custom" | "extra" | "social" | "cta";
-
-const DEFAULT_VISIBILITY: Record<SectionKey, boolean> = {
-  hero: true, stats: true, bio: true, specializations: true, certifications: true,
-  languages: true, gallery: true, videos: true, custom: true, extra: true, social: true, cta: true,
-};
-
 interface FormData {
   display_name: string;
   headline: string;
-  subtitle: string;
   bio: string;
   bio_vi: string;
   image_url: string;
@@ -66,26 +47,19 @@ interface FormData {
   specializations: string[];
   certifications: string[];
   languages: string[];
-  achievements: string[];
   social_links: Record<string, string>;
   extra_fields: { key: string; value: string }[];
-  gallery_urls: string[];
-  videos: VideoItem[];
-  custom_sections: CustomSection[];
-  section_visibility: Record<SectionKey, boolean>;
 }
 
 const emptyForm: FormData = {
-  display_name: "", headline: "", subtitle: "", bio: "", bio_vi: "",
+  display_name: "", headline: "", bio: "", bio_vi: "",
   image_url: "", cover_image_url: "", intro_video_url: "",
   experience_years: 0, rating: 0, total_reviews: 0, total_students: 0,
   total_lessons: 0, total_hours: 0, hourly_rate: 0,
   location: "", slug: "",
   is_available: true, is_featured: false,
-  specializations: [], certifications: [], languages: [], achievements: [],
+  specializations: [], certifications: [], languages: [],
   social_links: {}, extra_fields: [],
-  gallery_urls: [], videos: [], custom_sections: [],
-  section_visibility: { ...DEFAULT_VISIBILITY },
 };
 
 function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder: string }) {
@@ -173,7 +147,7 @@ export default function AdminTeachers() {
       .select("*")
       .order("order_index", { ascending: true })
       .order("created_at", { ascending: false });
-    if (error) toast({ title: "Không tải được giáo viên", variant: "destructive" });
+    if (error) toast({ title: "Không tải được giảng viên", variant: "destructive" });
     setTeachers(data || []);
     setLoading(false);
     setOrderChanged(false);
@@ -224,7 +198,7 @@ export default function AdminTeachers() {
         supabase.from("teacher_profiles").update({ order_index: i } as any).eq("id", t.id)
       );
       await Promise.all(updates);
-      toast({ title: "Đã lưu thứ tự giáo viên ✓" });
+      toast({ title: "Đã lưu thứ tự giảng viên ✓" });
       setOrderChanged(false);
     } catch {
       toast({ title: "Lỗi khi lưu thứ tự", variant: "destructive" });
@@ -236,11 +210,9 @@ export default function AdminTeachers() {
 
   const openEdit = (teacher: TeacherRow) => {
     setEditingTeacher(teacher);
-    const t = teacher as any;
     setFormData({
       display_name: teacher.display_name || "",
       headline: teacher.headline || "",
-      subtitle: t.subtitle || "",
       bio: teacher.bio || "",
       bio_vi: teacher.bio_vi || "",
       image_url: teacher.image_url || "",
@@ -260,13 +232,8 @@ export default function AdminTeachers() {
       specializations: parseJsonArray(teacher.specializations),
       certifications: parseJsonArray(teacher.certifications),
       languages: parseJsonArray(teacher.languages),
-      achievements: parseJsonArray(t.achievements),
       social_links: parseSocialLinks(teacher.social_links),
       extra_fields: parseExtraData(teacher.extra_data),
-      gallery_urls: parseJsonArray(t.gallery_urls),
-      videos: Array.isArray(t.videos) ? t.videos.filter((v: any) => v && typeof v === "object").map((v: any) => ({ title: String(v.title || ""), url: String(v.url || "") })) : [],
-      custom_sections: Array.isArray(t.custom_sections) ? t.custom_sections.filter((s: any) => s && typeof s === "object").map((s: any) => ({ title: String(s.title || ""), body: String(s.body || ""), image_url: s.image_url || "", video_url: s.video_url || "" })) : [],
-      section_visibility: { ...DEFAULT_VISIBILITY, ...(t.section_visibility && typeof t.section_visibility === "object" ? t.section_visibility : {}) },
     });
     setDialogOpen(true);
   };
@@ -276,16 +243,16 @@ export default function AdminTeachers() {
 
   const handleToggleVisibility = async (teacher: TeacherRow, field: "is_available" | "is_featured") => {
     const newVal = !(teacher[field] ?? false);
-    const { error } = await supabase.from("teacher_profiles").update({ [field]: newVal } as never).eq("id", teacher.id);
+    const { error } = await supabase.from("teacher_profiles").update({ [field]: newVal }).eq("id", teacher.id);
     if (!error) {
       setTeachers((prev) => prev.map((t) => (t.id === teacher.id ? { ...t, [field]: newVal } : t)));
-      toast({ title: field === "is_available" ? (newVal ? "Đã hiện giáo viên" : "Đã ẩn giáo viên") : (newVal ? "Đã ghim trang chủ" : "Đã bỏ ghim trang chủ") });
+      toast({ title: field === "is_available" ? (newVal ? "Đã hiện giảng viên" : "Đã ẩn giảng viên") : (newVal ? "Đã ghim trang chủ" : "Đã bỏ ghim trang chủ") });
     }
   };
 
   const handleSave = async () => {
     if (!formData.display_name.trim()) {
-      toast({ title: "Vui lòng nhập tên giáo viên", variant: "destructive" });
+      toast({ title: "Vui lòng nhập tên giảng viên", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -296,7 +263,6 @@ export default function AdminTeachers() {
     const payload: any = {
       display_name: formData.display_name,
       headline: formData.headline || null,
-      subtitle: formData.subtitle || null,
       bio: formData.bio || null,
       bio_vi: formData.bio_vi || null,
       image_url: formData.image_url || null,
@@ -316,25 +282,20 @@ export default function AdminTeachers() {
       specializations: formData.specializations,
       certifications: formData.certifications,
       languages: formData.languages,
-      achievements: formData.achievements,
       social_links: formData.social_links,
       extra_data: extraData,
-      gallery_urls: formData.gallery_urls,
-      videos: formData.videos.filter((v) => v.url),
-      custom_sections: formData.custom_sections.filter((s) => s.title || s.body || s.image_url || s.video_url),
-      section_visibility: formData.section_visibility,
     };
 
     try {
       if (editingTeacher) {
         const { error } = await supabase.from("teacher_profiles").update(payload).eq("id", editingTeacher.id);
         if (error) throw error;
-        toast({ title: "Đã cập nhật giáo viên ✓" });
+        toast({ title: "Đã cập nhật giảng viên ✓" });
       } else {
         payload.order_index = teachers.length;
         const { error } = await supabase.from("teacher_profiles").insert(payload);
         if (error) throw error;
-        toast({ title: "Đã tạo giáo viên mới ✓" });
+        toast({ title: "Đã tạo giảng viên mới ✓" });
       }
       setDialogOpen(false);
       fetchTeachers();
@@ -345,9 +306,9 @@ export default function AdminTeachers() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Xóa giáo viên này?")) return;
+    if (!confirm("Xóa giảng viên này?")) return;
     const { error } = await supabase.from("teacher_profiles").delete().eq("id", id);
-    if (!error) { toast({ title: "Đã xóa giáo viên" }); fetchTeachers(); }
+    if (!error) { toast({ title: "Đã xóa giảng viên" }); fetchTeachers(); }
   };
 
   const getDisplayName = (t: TeacherRow) => t.display_name || "Chưa đặt tên";
@@ -357,7 +318,7 @@ export default function AdminTeachers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Quản lý giáo viên</h1>
+          <h1 className="text-2xl font-bold">Quản lý giảng viên</h1>
           <p className="text-muted-foreground text-sm">Kéo thả để sắp xếp thứ tự • Toggle để hiện/ẩn</p>
         </div>
         <div className="flex gap-2 self-start">
@@ -368,7 +329,7 @@ export default function AdminTeachers() {
             </Button>
           )}
           <Button onClick={openNew}>
-            <Plus className="w-4 h-4 mr-2" /> Thêm giáo viên
+            <Plus className="w-4 h-4 mr-2" /> Thêm giảng viên
           </Button>
         </div>
       </div>
@@ -376,7 +337,7 @@ export default function AdminTeachers() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Tổng giáo viên", value: teachers.length, icon: Users },
+          { label: "Tổng giảng viên", value: teachers.length, icon: Users },
           { label: "Đang hiển thị", value: teachers.filter((t) => t.is_available).length, icon: Eye },
           { label: "Trang chủ", value: teachers.filter((t) => t.is_featured).length, icon: Star },
           { label: "Đang ẩn", value: teachers.filter((t) => !t.is_available).length, icon: EyeOff },
@@ -401,15 +362,15 @@ export default function AdminTeachers() {
           ) : teachers.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Chưa có giáo viên nào</p>
-              <Button variant="link" onClick={openNew}>Thêm giáo viên đầu tiên</Button>
+              <p>Chưa có giảng viên nào</p>
+              <Button variant="link" onClick={openNew}>Thêm giảng viên đầu tiên</Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10"></TableHead>
-                  <TableHead>Giáo viên</TableHead>
+                  <TableHead>Giảng viên</TableHead>
                   <TableHead className="hidden md:table-cell">Chuyên môn</TableHead>
                   <TableHead className="text-center">Website</TableHead>
                   <TableHead className="text-center">Trang chủ</TableHead>
@@ -477,19 +438,15 @@ export default function AdminTeachers() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] p-0">
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-xl">{editingTeacher ? "Chỉnh sửa giáo viên" : "Thêm giáo viên mới"}</DialogTitle>
+            <DialogTitle className="text-xl">{editingTeacher ? "Chỉnh sửa giảng viên" : "Thêm giảng viên mới"}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[calc(90vh-140px)]">
             <div className="p-6 pt-4">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="w-full grid grid-cols-4 md:grid-cols-8 mb-6 h-auto">
+                <TabsList className="w-full grid grid-cols-4 mb-6">
                   <TabsTrigger value="basic">Cơ bản</TabsTrigger>
                   <TabsTrigger value="details">Chi tiết</TabsTrigger>
                   <TabsTrigger value="media">Media</TabsTrigger>
-                  <TabsTrigger value="gallery">Gallery</TabsTrigger>
-                  <TabsTrigger value="videos">Videos</TabsTrigger>
-                  <TabsTrigger value="custom">Sections</TabsTrigger>
-                  <TabsTrigger value="visibility">Hiển thị</TabsTrigger>
                   <TabsTrigger value="extra">Tùy chỉnh</TabsTrigger>
                 </TabsList>
 
@@ -497,24 +454,20 @@ export default function AdminTeachers() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Headline / Chức danh</Label>
-                      <Input value={formData.headline} onChange={(e) => set("headline", e.target.value)} placeholder="VD: Giáo viên JLPT N1" />
+                      <Input value={formData.headline} onChange={(e) => set("headline", e.target.value)} placeholder="VD: Giảng viên JLPT N1" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="flex items-center gap-1">Tên giáo viên <span className="text-destructive">*</span></Label>
+                      <Label className="flex items-center gap-1">Tên giảng viên <span className="text-destructive">*</span></Label>
                       <Input value={formData.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="VD: Tanaka Yuki" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Phụ đề (Subtitle)</Label>
-                    <Input value={formData.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Một câu nổi bật về giáo viên" />
-                  </div>
-                  <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Việt)</Label>
-                    <RichTextEditor value={formData.bio_vi} onChange={(v) => set("bio_vi", v)} placeholder="Mô tả ngắn về giáo viên..." minHeight="160px" />
+                    <Textarea value={formData.bio_vi} onChange={(e) => set("bio_vi", e.target.value)} rows={3} placeholder="Mô tả ngắn về giảng viên..." />
                   </div>
                   <div className="space-y-2">
                     <Label>Giới thiệu (Tiếng Nhật / English)</Label>
-                    <RichTextEditor value={formData.bio} onChange={(v) => set("bio", v)} minHeight="160px" />
+                    <Textarea value={formData.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -535,7 +488,7 @@ export default function AdminTeachers() {
                       <Switch checked={formData.is_available} onCheckedChange={(v) => set("is_available", v)} />
                       <div>
                         <Label className="flex items-center gap-1.5"><Eye className="w-4 h-4" />Hiện trên website</Label>
-                        <p className="text-xs text-muted-foreground">Trang giáo viên</p>
+                        <p className="text-xs text-muted-foreground">Trang giảng viên</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-lg border">
@@ -576,10 +529,6 @@ export default function AdminTeachers() {
                     <Label className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" />Ngôn ngữ</Label>
                     <TagInput value={formData.languages} onChange={(v) => set("languages", v)} placeholder="VD: 日本語, Tiếng Việt..." />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" />Thành tích nổi bật</Label>
-                    <TagInput value={formData.achievements} onChange={(v) => set("achievements", v)} placeholder="VD: Giải nhất Speech Contest 2022..." />
-                  </div>
                 </TabsContent>
 
                 <TabsContent value="media" className="space-y-5">
@@ -606,139 +555,7 @@ export default function AdminTeachers() {
                   </div>
                   <div className="space-y-2">
                     <Label>Video giới thiệu (URL)</Label>
-                    <MediaUploader value={formData.intro_video_url} onChange={(u) => set("intro_video_url", u)} folder="teachers/videos" aspectRatio="video" accept="video" maxSizeMB={200} placeholder="Tải video giới thiệu hoặc dán URL bên dưới" />
                     <Input value={formData.intro_video_url} onChange={(e) => set("intro_video_url", e.target.value)} placeholder="https://youtube.com/..." />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="gallery" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="flex items-center gap-1"><ImageIcon className="w-4 h-4" />Thư viện ảnh</Label>
-                      <p className="text-xs text-muted-foreground">Thêm nhiều ảnh để hiển thị trong gallery</p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => set("gallery_urls", [...formData.gallery_urls, ""])}>
-                      <Plus className="w-4 h-4 mr-1" /> Thêm ảnh
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {formData.gallery_urls.map((url, i) => (
-                      <div key={i} className="border rounded-lg p-3 space-y-2 relative">
-                        <Button size="icon" variant="ghost" className="absolute top-1 right-1 h-7 w-7 text-destructive" onClick={() => set("gallery_urls", formData.gallery_urls.filter((_, j) => j !== i))}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                        <MediaUploader value={url} onChange={(u) => { const arr = [...formData.gallery_urls]; arr[i] = u; set("gallery_urls", arr); }} folder="teachers/gallery" aspectRatio="square" accept="image" />
-                        <Input value={url} onChange={(e) => { const arr = [...formData.gallery_urls]; arr[i] = e.target.value; set("gallery_urls", arr); }} placeholder="URL ảnh" className="text-xs" />
-                      </div>
-                    ))}
-                  </div>
-                  {formData.gallery_urls.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-6 border rounded-lg border-dashed">Chưa có ảnh nào trong thư viện</p>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="videos" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="flex items-center gap-1"><Film className="w-4 h-4" />Videos</Label>
-                      <p className="text-xs text-muted-foreground">Thêm nhiều video YouTube/Vimeo/MP4</p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => set("videos", [...formData.videos, { title: "", url: "" }])}>
-                      <Plus className="w-4 h-4 mr-1" /> Thêm video
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    {formData.videos.map((v, i) => (
-                      <div key={i} className="border rounded-lg p-3 space-y-2">
-                        <div className="flex gap-2">
-                          <Input placeholder="Tiêu đề video" value={v.title} onChange={(e) => { const arr = [...formData.videos]; arr[i] = { ...arr[i], title: e.target.value }; set("videos", arr); }} />
-                          <Button size="icon" variant="ghost" className="text-destructive shrink-0" onClick={() => set("videos", formData.videos.filter((_, j) => j !== i))}>
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <MediaUploader value={v.url} onChange={(u) => { const arr = [...formData.videos]; arr[i] = { ...arr[i], url: u }; set("videos", arr); }} folder="teachers/videos" aspectRatio="video" accept="video" maxSizeMB={200} placeholder="Tải video lên hoặc dán URL bên dưới" />
-                        <Input placeholder="https://youtube.com/watch?v=..." value={v.url} onChange={(e) => { const arr = [...formData.videos]; arr[i] = { ...arr[i], url: e.target.value }; set("videos", arr); }} />
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="custom" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="flex items-center gap-1"><Layers className="w-4 h-4" />Sections tự tạo</Label>
-                      <p className="text-xs text-muted-foreground">Thêm các phần nội dung tùy ý: tiêu đề, mô tả, ảnh, video</p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => set("custom_sections", [...formData.custom_sections, { title: "", body: "", image_url: "", video_url: "" }])}>
-                      <Plus className="w-4 h-4 mr-1" /> Thêm section
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    {formData.custom_sections.map((s, i) => {
-                      const move = (dir: -1 | 1) => {
-                        const j = i + dir;
-                        if (j < 0 || j >= formData.custom_sections.length) return;
-                        const arr = [...formData.custom_sections];
-                        [arr[i], arr[j]] = [arr[j], arr[i]];
-                        set("custom_sections", arr);
-                      };
-                      const upd = (k: keyof CustomSection, val: string) => { const arr = [...formData.custom_sections]; arr[i] = { ...arr[i], [k]: val }; set("custom_sections", arr); };
-                      return (
-                        <div key={i} className="border rounded-lg p-3 space-y-2 bg-muted/20">
-                          <div className="flex items-center gap-1">
-                            <Input placeholder="Tiêu đề section" value={s.title} onChange={(e) => upd("title", e.target.value)} className="font-medium" />
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => move(-1)}><ChevronUp className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => move(1)}><ChevronDown className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => set("custom_sections", formData.custom_sections.filter((_, j) => j !== i))}><X className="w-4 h-4" /></Button>
-                          </div>
-                          <RichTextEditor value={s.body} onChange={(v) => upd("body", v)} placeholder="Nội dung..." minHeight="140px" />
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Ảnh (tuỳ chọn)</Label>
-                              <MediaUploader value={s.image_url} onChange={(u) => upd("image_url", u)} folder="teachers/sections" aspectRatio="banner" accept="image" />
-                              <Input value={s.image_url} onChange={(e) => upd("image_url", e.target.value)} placeholder="URL ảnh" className="text-xs" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Video (tuỳ chọn)</Label>
-                              <MediaUploader value={s.video_url || ""} onChange={(u) => upd("video_url", u)} folder="teachers/sections" aspectRatio="video" accept="video" maxSizeMB={200} placeholder="Tải video hoặc dán URL bên dưới" />
-                              <Input value={s.video_url} onChange={(e) => upd("video_url", e.target.value)} placeholder="https://youtube.com/..." className="text-xs" />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="visibility" className="space-y-3">
-                  <div>
-                    <Label className="flex items-center gap-1"><Eye className="w-4 h-4" />Hiển thị từng phần</Label>
-                    <p className="text-xs text-muted-foreground">Bật/tắt từng section trên trang chi tiết giáo viên</p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {(Object.keys(DEFAULT_VISIBILITY) as SectionKey[]).map((k) => (
-                      <div key={k} className="flex items-center justify-between border rounded-lg p-3">
-                        <span className="text-sm capitalize">{k}</span>
-                        <Switch checked={formData.section_visibility[k] ?? true} onCheckedChange={(v) => set("section_visibility", { ...formData.section_visibility, [k]: v })} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="border-t pt-4">
-                    <Label className="flex items-center gap-1 mb-2"><Eye className="w-4 h-4" />Preview nhanh</Label>
-                    <div className="border rounded-xl overflow-hidden">
-                      {formData.cover_image_url && <img src={formData.cover_image_url} className="w-full h-32 object-cover" alt="" />}
-                      <div className="p-4 flex gap-4">
-                        {formData.image_url && <img src={formData.image_url} className="w-20 h-20 rounded-xl object-cover border" alt="" />}
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg">{formData.display_name || "Tên giáo viên"}</h3>
-                          <p className="text-sm text-primary">{formData.headline}</p>
-                          {formData.subtitle && <p className="text-xs text-muted-foreground mt-1">{formData.subtitle}</p>}
-                          <div className="flex gap-2 flex-wrap mt-2">
-                            {formData.specializations.slice(0, 4).map((s, i) => (<Badge key={i} variant="secondary" className="text-xs">{s}</Badge>))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </TabsContent>
 
@@ -782,7 +599,7 @@ export default function AdminTeachers() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Hủy</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="animate-spin w-4 h-4 mr-2" />}
-              {editingTeacher ? "Cập nhật" : "Tạo giáo viên"}
+              {editingTeacher ? "Cập nhật" : "Tạo giảng viên"}
             </Button>
           </DialogFooter>
         </DialogContent>

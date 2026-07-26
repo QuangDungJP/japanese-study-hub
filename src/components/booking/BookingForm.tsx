@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,12 +33,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-interface TeacherOption {
-  id: string;
-  user_id: string | null;
-  name: string;
-  specialty: string;
-}
+const teachers = [
+  { id: "sarah", name: "Ms. Sarah Johnson", specialty: "IELTS & Business English" },
+  { id: "david", name: "Mr. David Chen", specialty: "Conversation & Pronunciation" },
+  { id: "emily", name: "Ms. Emily Watson", specialty: "TOEFL & Academic English" },
+];
 
 const timeSlots = [
   "08:00", "09:00", "10:00", "11:00",
@@ -69,34 +68,6 @@ interface BookingFormProps {
 export const BookingForm = ({ onSuccess }: BookingFormProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
-  const [loadingTeachers, setLoadingTeachers] = useState(true);
-
-  useEffect(() => {
-    const loadTeachers = async () => {
-      const { data } = await supabase
-        .from("teacher_profiles")
-        .select("id, user_id, display_name, headline, specializations")
-        .eq("is_available", true)
-        .order("is_featured", { ascending: false })
-        .order("rating", { ascending: false });
-
-      if (data) {
-        const opts: TeacherOption[] = data.map((t: any) => {
-          const specs = Array.isArray(t.specializations) ? t.specializations : [];
-          return {
-            id: t.id,
-            user_id: t.user_id,
-            name: t.display_name || "Giáo viên",
-            specialty: t.headline || specs.slice(0, 2).join(", ") || "Giáo viên",
-          };
-        });
-        setTeachers(opts);
-      }
-      setLoadingTeachers(false);
-    };
-    loadTeachers();
-  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -121,7 +92,6 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
 
       const { error } = await supabase.from("bookings").insert({
         user_id: user.id,
-        teacher_id: selectedTeacher?.user_id || null,
         teacher_name: selectedTeacher?.name || values.teacher,
         booking_date: format(values.date, "yyyy-MM-dd"),
         booking_time: values.time,
@@ -164,15 +134,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        loadingTeachers
-                          ? "Đang tải giáo viên..."
-                          : teachers.length === 0
-                          ? "Chưa có giáo viên khả dụng"
-                          : "Chọn giáo viên..."
-                      }
-                    />
+                    <SelectValue placeholder="Chọn giáo viên..." />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
