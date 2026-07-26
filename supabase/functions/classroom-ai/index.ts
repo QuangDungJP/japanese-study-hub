@@ -141,6 +141,35 @@ Deno.serve(async (req) => {
       return json(await callAI(key, sys, prompt));
     }
 
+    // ============ EXAM BUILDER v2 AI ============
+
+    if (action === 'exam_generate' || action === 'exam_questions') {
+      const title = String(body.title || '').slice(0, 200);
+      const level = String(body.level || 'N5').slice(0, 50);
+      const examType = String(body.exam_type || 'quiz').slice(0, 30);
+      const count = Math.min(Math.max(parseInt(body.count) || 5, 1), 15);
+      const sys = 'Bạn là giáo viên tiếng Nhật ra đề kiểm tra. Trả về CHỈ JSON hợp lệ, không markdown.';
+      const questionSchema = `Mỗi câu hỏi là object:
+{
+  "type": "multiple_choice" | "true_false" | "short_answer" | "essay",
+  "text": "nội dung câu hỏi (tiếng Nhật và/hoặc tiếng Việt)",
+  "options": ["A","B","C","D"],        // chỉ cho multiple_choice (4 lựa chọn) hoặc true_false (["Đúng","Sai"]); [] cho loại khác
+  "correct_index": 0,                    // chỉ số đáp án đúng cho multiple_choice/true_false
+  "accepted_answers": ["đáp án đúng"],  // chỉ cho short_answer, liệt kê các cách viết đúng
+  "explanation": "giải thích ngắn tiếng Việt",
+  "points": 1
+}`;
+      const mix = `Trộn các loại câu: đa số multiple_choice, thêm 1-2 câu true_false và 1 câu short_answer. Đáp án đúng phải đa dạng vị trí, không luôn là A.`;
+
+      if (action === 'exam_questions') {
+        const prompt = `Tạo ${count} câu hỏi kiểm tra cho đề "${title}" (${examType}, trình độ ${level}).\n${mix}\n${questionSchema}\nTrả JSON: { "questions": [ ... ] }`;
+        return json(await callAI(key, sys, prompt));
+      }
+
+      const prompt = `Thiết kế đề kiểm tra hoàn chỉnh "${title}" (${examType}, trình độ ${level}).\n${mix}\n${questionSchema}\nTrả JSON:\n{\n  "instructions": "hướng dẫn làm bài 3-5 câu tiếng Việt",\n  "questions": [ ... ${count} câu ... ]\n}`;
+      return json(await callAI(key, sys, prompt));
+    }
+
     return json({ error: 'unknown action' }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
