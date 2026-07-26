@@ -100,6 +100,16 @@ const Dashboard = () => {
     };
 
     fetchData();
+    const channel = supabase
+      .channel('public:student-dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'completed_lessons' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_progress' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, fetchData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [currentLanguage, user]);
 
   if (loading) {

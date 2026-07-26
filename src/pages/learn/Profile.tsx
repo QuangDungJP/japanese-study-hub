@@ -87,35 +87,57 @@ const ProfilePage = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'Lỗi', description: 'Ảnh không được vượt quá 2MB', variant: 'destructive' });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Lỗi', description: 'Ảnh không được vượt quá 5MB', variant: 'destructive' });
       return;
     }
 
     try {
       setUploading(true);
-      const ext = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${ext}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
+      let finalUrl = '';
+      try {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const filePath = `${user.id}/avatar_${Date.now()}.${ext}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, { upsert: true });
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+          finalUrl = `${publicUrl}?t=${Date.now()}`;
+        }
+      } catch (e) {
+        console.warn('Supabase storage fallback:', e);
+      }
 
-      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+      // Base64 fallback if storage failed or return empty
+      if (!finalUrl) {
+        finalUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
 
-      await supabase
+      // Try update profile by user_id or id
+      const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: avatarUrl })
+        .update({ avatar_url: finalUrl })
         .eq('user_id', user.id);
 
-      setProfile(prev => ({ ...prev, avatar_url: avatarUrl }));
-      toast({ title: 'Thành công', description: 'Đã cập nhật ảnh đại diện' });
+      if (updateError) {
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: finalUrl })
+          .eq('id', user.id);
+      }
+
+      setProfile(prev => ({ ...prev, avatar_url: finalUrl }));
+      toast({ title: 'Thành công', description: 'Đã cập nhật ảnh đại diện!' });
     } catch (error) {
       console.error('Upload error:', error);
       toast({ title: 'Lỗi', description: 'Không thể tải ảnh lên', variant: 'destructive' });
@@ -127,10 +149,17 @@ const ProfilePage = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ full_name: profile.full_name })
         .eq('user_id', user!.id);
+
+      if (updateError) {
+        await supabase
+          .from('profiles')
+          .update({ full_name: profile.full_name })
+          .eq('id', user!.id);
+      }
 
       if (isTeacherOrAbove) {
         const { error } = await supabase
@@ -147,7 +176,7 @@ const ProfilePage = () => {
         if (error) throw error;
       }
 
-      toast({ title: 'Thành công', description: 'Đã cập nhật hồ sơ' });
+      toast({ title: 'Thành công', description: 'Đã cập nhật thông tin hồ sơ' });
     } catch (error) {
       console.error('Error saving:', error);
       toast({ title: 'Lỗi', description: 'Không thể lưu hồ sơ', variant: 'destructive' });

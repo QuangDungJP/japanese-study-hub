@@ -58,6 +58,17 @@ const TeacherDashboard = () => {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      const channel = supabase
+        .channel('public:teacher-dashboard-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, fetchDashboardData)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'classes' }, fetchDashboardData)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchDashboardData)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'student_submissions' }, fetchDashboardData)
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
