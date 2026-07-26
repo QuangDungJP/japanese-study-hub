@@ -33,7 +33,7 @@ const Blog = () => {
         .eq('is_published', true)
         .order('published_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -49,26 +49,31 @@ const Blog = () => {
         .from('blog_posts')
         .select('*', { count: 'exact', head: true })
         .eq('is_published', true);
+      if (showFeatured && featuredPost?.id) {
+        countQuery = countQuery.neq('id', featuredPost.id);
+      }
       if (category !== 'all') countQuery = countQuery.eq('category', category);
       if (search) countQuery = countQuery.or(`title_vi.ilike.%${search}%,title.ilike.%${search}%`);
 
       const { count } = await countQuery;
 
-      // Data query with pagination (fetch +1 if featured to fill 9 items)
-      const fetchLimit = showFeatured ? POSTS_PER_PAGE + 1 : POSTS_PER_PAGE;
+      // Data query with pagination
       const from = (page - 1) * POSTS_PER_PAGE;
-      const to = from + fetchLimit - 1;
+      const to = from + POSTS_PER_PAGE - 1;
 
       let dataQuery = supabase
         .from('blog_posts')
         .select('*')
         .eq('is_published', true)
-        .order('published_at', { ascending: false })
-        .range(from, to);
+        .order('published_at', { ascending: false });
+      
+      if (showFeatured && featuredPost?.id) {
+        dataQuery = dataQuery.neq('id', featuredPost.id);
+      }
       if (category !== 'all') dataQuery = dataQuery.eq('category', category);
       if (search) dataQuery = dataQuery.or(`title_vi.ilike.%${search}%,title.ilike.%${search}%`);
 
-      const { data: posts, error } = await dataQuery;
+      const { data: posts, error } = await dataQuery.range(from, to);
       if (error) throw error;
 
       return { posts: posts || [], total: count || 0 };
@@ -98,16 +103,9 @@ const Blog = () => {
     return counts;
   }, [allPosts]);
 
-  const rawPosts = data?.posts || [];
+  const posts = data?.posts || [];
   const totalCount = data?.total || 0;
   const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
-
-  const posts = useMemo(() => {
-    if (showFeatured && featuredPost) {
-      return rawPosts.filter(p => p.id !== featuredPost.id).slice(0, POSTS_PER_PAGE);
-    }
-    return rawPosts.slice(0, POSTS_PER_PAGE);
-  }, [rawPosts, showFeatured, featuredPost]);
 
   const getCategoryLabel = (value: string | null) =>
     categories.find(c => c.value === value)?.label || value || 'Chung';
@@ -141,23 +139,23 @@ const Blog = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative pt-28 pb-16 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/8 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-10 right-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float animation-delay-200" />
+      <section className="relative pt-28 pb-12 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+          <div className="absolute top-20 left-10 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-10 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float animation-delay-200" />
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6 border border-primary/20">
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-bold mb-6 border border-primary/20 backdrop-blur-md shadow-sm">
                 <Newspaper className="w-4 h-4" />
-                Blog & Kiến thức
+                TNQDO Blog & Kiến thức
               </div>
-              <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-5 leading-tight">
-                Khám phá <span className="text-primary">kiến thức</span> Tiếng Nhật
+              <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-5 leading-tight tracking-tight">
+                Khám phá <span className="text-primary bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">kiến thức</span> Tiếng Nhật
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Chia sẻ mẹo học, ngữ pháp, từ vựng và văn hóa Nhật Bản từ đội ngũ chuyên gia
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-medium">
+                Chia sẻ kinh nghiệm luyện thi JLPT, ngữ pháp, từ vựng và văn hóa Nhật Bản từ đội ngũ chuyên gia
               </p>
             </div>
           </ScrollReveal>
@@ -168,10 +166,10 @@ const Blog = () => {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm bài viết..."
+                  placeholder="Tìm kiếm bài viết, chủ đề tiếng Nhật..."
                   value={search}
                   onChange={e => handleSearchChange(e.target.value)}
-                  className="pl-12 h-12 rounded-2xl border-border/50 bg-card text-base shadow-sm focus:shadow-md transition-shadow"
+                  className="pl-12 h-14 rounded-2xl border-border/60 bg-card/80 text-base shadow-sm focus:shadow-md transition-all backdrop-blur-md"
                 />
               </div>
             </div>
@@ -182,10 +180,10 @@ const Blog = () => {
             <div className="flex flex-wrap justify-center gap-2 mt-6">
               <button
                 onClick={() => handleCategoryChange('all')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                   category === 'all'
-                    ? 'bg-primary text-primary-foreground shadow-md'
-                    : 'bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-md scale-105'
+                    : 'bg-card/80 border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
                 Tất cả ({categoryCounts.all || 0})
@@ -194,10 +192,10 @@ const Blog = () => {
                 <button
                   key={c.value}
                   onClick={() => handleCategoryChange(c.value)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                     category === c.value
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-md scale-105'
+                      : 'bg-card/80 border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
                   {c.label} ({categoryCounts[c.value] || 0})
@@ -208,21 +206,23 @@ const Blog = () => {
         </div>
       </section>
 
-      {/* Featured Post Banner */}
+      {/* Featured Pinned Post Section */}
       {showFeatured && featuredPost && (
-        <section className="pb-10">
+        <section className="pb-12">
           <div className="container mx-auto px-4">
             <ScrollReveal>
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1 px-3 py-1">
-                  <Sparkles className="w-3.5 h-3.5" /> Bài viết được ghim
-                </Badge>
-                <span className="text-xs text-muted-foreground">Nội dung chọn lọc từ ban biên tập</span>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1.5 px-3 py-1.5 font-bold text-xs">
+                    <Sparkles className="w-4 h-4" /> BÀI VIẾT NỔI BẬT ĐƯỢC GHIM
+                  </Badge>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">Nội dung chọn lọc đặc biệt từ ban biên tập</span>
+                </div>
               </div>
               <Link to={`/blog/${featuredPost.slug}`}>
-                <div className="group relative rounded-3xl overflow-hidden bg-card border border-border/80 shadow-lg hover:shadow-2xl transition-all duration-500">
+                <div className="group relative rounded-3xl overflow-hidden bg-card border border-border/80 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-                    <div className="lg:col-span-7 aspect-video lg:aspect-auto lg:min-h-[360px] overflow-hidden bg-muted relative">
+                    <div className="lg:col-span-7 aspect-video lg:aspect-auto lg:min-h-[400px] overflow-hidden bg-muted relative">
                       {featuredPost.thumbnail_url ? (
                         <img
                           src={featuredPost.thumbnail_url}
@@ -235,37 +235,37 @@ const Blog = () => {
                         </div>
                       )}
                       <div className="absolute top-4 left-4">
-                        <Badge className="bg-primary text-primary-foreground font-bold shadow-md">
-                          📌 Ghim
+                        <Badge className="bg-primary text-primary-foreground font-bold shadow-lg px-3 py-1 text-xs">
+                          📌 Ghim trang chủ
                         </Badge>
                       </div>
                     </div>
                     <div className="lg:col-span-5 p-6 md:p-10 flex flex-col justify-between bg-card">
                       <div className="space-y-4">
-                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-semibold">
                           {getCategoryLabel(featuredPost.category)}
                         </Badge>
                         <h2 className="text-2xl md:text-3xl font-extrabold text-foreground group-hover:text-primary transition-colors leading-tight">
                           {featuredPost.title_vi}
                         </h2>
                         {featuredPost.excerpt_vi && (
-                          <p className="text-muted-foreground line-clamp-3 text-sm md:text-base leading-relaxed">
+                          <p className="text-muted-foreground line-clamp-3 text-sm md:text-base leading-relaxed font-normal">
                             {featuredPost.excerpt_vi}
                           </p>
                         )}
                       </div>
                       <div className="flex items-center justify-between pt-6 border-t border-border/60 mt-6">
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5" />
                             {featuredPost.published_at ? format(new Date(featuredPost.published_at), 'dd/MM/yyyy', { locale: vi }) : ''}
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <Eye className="w-3.5 h-3.5" />{featuredPost.view_count}
+                            <Eye className="w-3.5 h-3.5" />{featuredPost.view_count} lượt xem
                           </span>
                         </div>
                         <span className="flex items-center gap-1 text-primary font-bold text-sm group-hover:translate-x-1 transition-transform">
-                          Đọc thêm <ArrowRight className="w-4 h-4" />
+                          Đọc ngay <ArrowRight className="w-4 h-4" />
                         </span>
                       </div>
                     </div>

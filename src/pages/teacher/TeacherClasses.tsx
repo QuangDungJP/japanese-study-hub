@@ -93,7 +93,7 @@ interface Lesson {
   id: string;
   title: string;
   title_vi: string;
-  description_vi: string | null;
+  description_vi?: string | null;
   skill: string;
   level: string;
   duration_minutes: number;
@@ -101,6 +101,11 @@ interface Lesson {
   is_published: boolean;
   class_id?: string | null;
   content_html?: string | null;
+}
+
+interface UnassignedLesson {
+  id: string;
+  title_vi: string;
 }
 
 interface ClassSession {
@@ -165,7 +170,7 @@ const TeacherClasses = () => {
 
   // --- GOOGLE CLASSROOM INTEGRATION STATE ---
   const [classDetailLessons, setClassDetailLessons] = useState<Lesson[]>([]);
-  const [unassignedLessons, setUnassignedLessons] = useState<Lesson[]>([]);
+  const [unassignedLessons, setUnassignedLessons] = useState<UnassignedLesson[]>([]);
   const [classSessions, setClassSessions] = useState<ClassSession[]>([]);
   const [classSubmissions, setClassSubmissions] = useState<Submission[]>([]);
   
@@ -583,7 +588,7 @@ const TeacherClasses = () => {
         ...formData,
         name: formData.name || formData.name_vi || 'Class',
         name_vi: formData.name_vi,
-        teacher_id: user?.id,
+        teacher_id: editingClass?.teacher_id || user?.id,
         course_id: formData.course_id === 'none' || !formData.course_id ? null : formData.course_id,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
@@ -688,12 +693,12 @@ const TeacherClasses = () => {
   const openEditDialog = (classItem: ClassData) => {
     setEditingClass(classItem);
     setFormData({
-      name: classItem.name,
-      name_vi: classItem.name_vi,
+      name: classItem.name || '',
+      name_vi: classItem.name_vi || '',
       description: classItem.description || '',
       description_vi: classItem.description_vi || '',
-      course_id: classItem.course_id || '',
-      max_students: classItem.max_students,
+      course_id: classItem.course_id || 'none',
+      max_students: classItem.max_students || 30,
       start_date: classItem.start_date || '',
       end_date: classItem.end_date || ''
     });
@@ -726,7 +731,7 @@ const TeacherClasses = () => {
       name_vi: '',
       description: '',
       description_vi: '',
-      course_id: '',
+      course_id: 'none',
       max_students: 30,
       start_date: '',
       end_date: ''
@@ -941,15 +946,56 @@ const TeacherClasses = () => {
   // --- 2. CLASSROOM DETAIL VIEW (Google Classroom style) ---
   return (
     <div className="space-y-6">
-      {/* Back button */}
-      <Button 
-        variant="ghost" 
-        onClick={() => setSelectedClass(null)} 
-        className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Quay lại danh sách lớp
-      </Button>
+      {/* Class Switcher Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedClass(null)}
+            className="gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" /> Tất cả lớp học
+          </Button>
+          <div className="h-6 w-px bg-border hidden sm:block shrink-0" />
+          <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+            <GraduationCap className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <Label className="text-xs text-muted-foreground block mb-1 font-medium">Đang chọn Lớp học (Google Classroom)</Label>
+            <Select 
+              value={selectedClass.id} 
+              onValueChange={(classId) => {
+                const found = classes.find(c => c.id === classId);
+                if (found) {
+                  setSelectedClass(found);
+                  fetchClassroomDetails(found.id);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full max-w-md font-bold text-base h-10 border-primary/30">
+                <SelectValue placeholder="Chọn lớp..." />
+              </SelectTrigger>
+              <SelectContent>
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.name_vi} ({cls.student_count || 0} học viên)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedClass)}>
+            <Edit className="w-4 h-4 mr-1.5" /> Sửa lớp này
+          </Button>
+          <Button size="sm" onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+            <Plus className="w-4 h-4 mr-1.5" /> Tạo lớp mới
+          </Button>
+        </div>
+      </div>
 
       {/* Classroom Banner Card */}
       <div className="rounded-2xl bg-gradient-to-r from-primary/90 to-accent/90 p-6 md:p-8 text-white shadow-soft relative overflow-hidden">
@@ -1373,6 +1419,9 @@ const TeacherClasses = () => {
       {/* Create lesson dialog */}
       <Dialog open={isCreateLessonOpen} onOpenChange={setIsCreateLessonOpen}>
         <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-6">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Tạo bài học mới cho lớp</DialogTitle>
+          </DialogHeader>
           <LessonEditor
             onSubmit={handleCreateLessonSubmit}
             onCancel={() => setIsCreateLessonOpen(false)}

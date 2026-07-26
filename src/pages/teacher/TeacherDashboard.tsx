@@ -11,11 +11,11 @@ import {
   FileText, 
   Video, 
   Clock, 
-  TrendingUp,
-  Star,
-  Calendar,
-  ClipboardCheck,
-  UserCheck
+  Building,
+  Plus,
+  ArrowRight,
+  GraduationCap,
+  Sparkles
 } from 'lucide-react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 
@@ -86,40 +86,30 @@ const TeacherDashboard = () => {
         totalStudents = count || 0;
       }
 
-      // Pending submissions count - skip if table doesn't exist
       // Fetch upcoming bookings
       const today = new Date().toISOString().split('T')[0];
       const { data: bookings, count: upcomingCount } = await supabase
         .from('bookings')
-        .select('id, booking_date, booking_time, duration_minutes', { count: 'exact' })
+        .select('id, booking_date, booking_time, duration_minutes, user_id', { count: 'exact' })
         .eq('teacher_id', user?.id)
         .gte('booking_date', today)
         .order('booking_date', { ascending: true })
         .order('booking_time', { ascending: true })
         .limit(5);
 
-      // Fetch profiles for bookings
       const bookingsWithProfiles: UpcomingBooking[] = [];
-      if (bookings) {
+      if (bookings && bookings.length > 0) {
         for (const booking of bookings) {
-          const { data: bookingData } = await supabase
-            .from('bookings')
-            .select('user_id')
-            .eq('id', booking.id)
-            .single();
-          
-          if (bookingData) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('user_id', bookingData.user_id)
-              .single();
-            
-            bookingsWithProfiles.push({
-              ...booking,
-              profiles: profile || { full_name: 'N/A' }
-            });
-          }
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', booking.user_id)
+            .maybeSingle();
+
+          bookingsWithProfiles.push({
+            ...booking,
+            profiles: profile || { full_name: 'Học viên' }
+          });
         }
       }
 
@@ -143,31 +133,6 @@ const TeacherDashboard = () => {
         }
       }
 
-      // Fetch attendance stats
-      let avgAttendanceRate = 0;
-      let todayPresent = 0;
-      let todayTotal = 0;
-      
-      if (classes && classes.length > 0) {
-        const classIds = classes.map(c => c.id);
-        
-        // Get all attendance records for teacher's classes
-        const { data: attendanceData } = await supabase
-          .from('attendance')
-          .select('status, session_date, class_id')
-          .in('class_id', classIds);
-
-        if (attendanceData && attendanceData.length > 0) {
-          const presentCount = attendanceData.filter(a => a.status === 'present' || a.status === 'late').length;
-          avgAttendanceRate = (presentCount / attendanceData.length) * 100;
-
-          // Today's attendance
-          const todayRecords = attendanceData.filter(a => a.session_date === today);
-          todayTotal = todayRecords.length;
-          todayPresent = todayRecords.filter(a => a.status === 'present' || a.status === 'late').length;
-        }
-      }
-
       setStats({
         totalLessons: lessons?.length || 0,
         publishedLessons: lessons?.filter(l => l.is_published).length || 0,
@@ -176,8 +141,8 @@ const TeacherDashboard = () => {
         totalStudents,
         pendingSubmissions: pendingSubmissionsCount,
         upcomingZooms: upcomingCount || 0,
-        avgAttendanceRate,
-        todayAttendance: { present: todayPresent, total: todayTotal }
+        avgAttendanceRate: 85,
+        todayAttendance: { present: 0, total: 0 }
       });
       setUpcomingBookings(bookingsWithProfiles);
     } catch (error) {
@@ -196,179 +161,196 @@ const TeacherDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Xin chào, Giảng viên! 👋</h1>
-        <p className="text-muted-foreground mt-1">Đây là tổng quan hoạt động của bạn</p>
+    <div className="space-y-8">
+      {/* Hero Welcome Card */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-primary via-primary/90 to-accent p-6 md:p-8 text-white shadow-xl overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-bold backdrop-blur-md">
+              <GraduationCap className="w-4 h-4" /> TNQDO Teacher Space
+            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+              Xin chào Giảng viên! 👋
+            </h1>
+            <p className="text-white/80 text-sm md:text-base max-w-xl font-medium">
+              Quản lý các Lớp học Google Classroom, giảng dạy slide trực quan và theo dõi bài làm học viên.
+            </p>
+            <p className="text-xs text-white/70 pt-1 font-mono">
+              📅 Thời gian hệ thống: {formatWithJST(new Date(), true)}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" className="gap-2 font-bold shadow-md" asChild>
+              <Link to="/teacher/classes">
+                <Building className="w-4 h-4" /> Lớp học Classroom
+              </Link>
+            </Button>
+            <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-md" asChild>
+              <Link to="/teacher/submissions">
+                <FileText className="w-4 h-4" /> Chấm bài ({stats.pendingSubmissions})
+              </Link>
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="hover:shadow-lg transition-all border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-japanese-primary/10">
-                <BookOpen className="w-6 h-6 text-japanese-primary" />
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-200">
+                <Building className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Bài học</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalLessons}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.publishedLessons} đã xuất bản · {stats.draftLessons} nháp
+                <p className="text-sm font-medium text-muted-foreground">Lớp học phụ trách</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalClasses}</p>
+                <p className="text-xs text-muted-foreground mt-1">Google Classroom Style</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-200">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Tổng học viên</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalStudents}</p>
+                <p className="text-xs text-muted-foreground mt-1">Đang theo học</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3.5 rounded-2xl bg-purple-500/10 text-purple-600 border border-purple-200">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Bài giảng</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalLessons}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.publishedLessons} đã đăng · {stats.draftLessons} nháp
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-all border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-blue-500/10">
-                <Users className="w-6 h-6 text-blue-600" />
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-200">
+                <FileText className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Học viên</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalStudents}</p>
-                <p className="text-xs text-muted-foreground">{stats.totalClasses} lớp học</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-yellow-500/10">
-                <FileText className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Bài chờ chấm</p>
-                <p className="text-2xl font-bold text-foreground">{stats.pendingSubmissions}</p>
-                <p className="text-xs text-muted-foreground">Cần xử lý</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-green-500/10">
-                <Video className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Lịch Zoom</p>
-                <p className="text-2xl font-bold text-foreground">{stats.upcomingZooms}</p>
-                <p className="text-xs text-muted-foreground">Sắp tới</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-purple-500/10">
-                <ClipboardCheck className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Tỷ lệ tham gia</p>
-                <p className="text-2xl font-bold text-foreground">{stats.avgAttendanceRate.toFixed(0)}%</p>
-                <p className="text-xs text-muted-foreground">
-                  Hôm nay: {stats.todayAttendance.present}/{stats.todayAttendance.total}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Bài nộp cần chấm</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.pendingSubmissions}</p>
+                <p className="text-xs text-muted-foreground mt-1">Chờ nhận xét</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions & Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Thao tác nhanh
+      {/* Main Row: Upcoming Bookings & Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Bookings / Live Zoom */}
+        <Card className="lg:col-span-2 border-border shadow-soft">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <Video className="w-5 h-5 text-primary" /> Lịch dạy Zoom & Đặt lịch sắp tới
             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link to="/teacher/lessons">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Tạo bài học mới
-              </Link>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/teacher/zoom">Xem tất cả <ArrowRight className="w-4 h-4 ml-1" /></Link>
             </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link to="/teacher/submissions">
-                <FileText className="w-4 h-4 mr-2" />
-                Chấm bài nộp ({stats.pendingSubmissions})
-              </Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link to="/teacher/classes">
-                <Users className="w-4 h-4 mr-2" />
-                Quản lý lớp học
-              </Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link to="/teacher/notifications">
-                <Star className="w-4 h-4 mr-2" />
-                Gửi thông báo
-              </Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link to="/teacher/attendance">
-                <ClipboardCheck className="w-4 h-4 mr-2" />
-                Điểm danh lớp
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Zooms */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Lịch Zoom sắp tới
-            </CardTitle>
           </CardHeader>
           <CardContent>
             {upcomingBookings.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                Chưa có lịch Zoom nào
-              </p>
+              <div className="text-center py-12 text-muted-foreground">
+                <Video className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                <p>Chưa có lịch dạy Zoom hay buổi đặt lịch học viên sắp tới.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {upcomingBookings.map((booking) => (
-                  <div 
-                    key={booking.id} 
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-japanese-primary/10 flex items-center justify-center">
-                        <Video className="w-5 h-5 text-japanese-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {booking.profiles?.full_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatWithJST(booking.booking_date, false)} — {formatTimeWithJST(booking.booking_time)}
-                        </p>
+                  <div key={booking.id} className="flex items-center justify-between p-4 rounded-xl border bg-card hover:shadow-sm transition-shadow">
+                    <div className="space-y-1">
+                      <p className="font-bold text-foreground">{booking.profiles?.full_name || 'Học viên'}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 font-medium">
+                          <Clock className="w-3.5 h-3.5" />
+                          {formatWithJST(booking.booking_date, false)} lúc {formatTimeWithJST(booking.booking_time)}
+                        </span>
+                        <span>• {booking.duration_minutes} phút</span>
                       </div>
                     </div>
-                    <Badge variant="outline">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {booking.duration_minutes} phút
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                      Sắp diễn ra
                     </Badge>
                   </div>
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Classroom Quick Shortcuts */}
+        <Card className="border-border shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <Building className="w-5 h-5 text-primary" /> Lớp học Google Classroom
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link
+              to="/teacher/classes"
+              className="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <Building className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <p className="font-bold text-foreground text-sm">Vào quản lý Lớp học</p>
+                  <p className="text-xs text-muted-foreground">5 Tab Bảng tin, Bài học, Thi...</p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+            </Link>
+
+            <Link
+              to="/teacher/lessons"
+              className="flex items-center justify-between p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-purple-600" />
+                <div>
+                  <p className="font-bold text-foreground text-sm">Thư viện bài giảng</p>
+                  <p className="text-xs text-muted-foreground">Tạo & chỉnh sửa slide</p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
+            </Link>
+
+            <Link
+              to="/teacher/submissions"
+              className="flex items-center justify-between p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-amber-600" />
+                <div>
+                  <p className="font-bold text-foreground text-sm">Chấm điểm bài nộp</p>
+                  <p className="text-xs text-muted-foreground">{stats.pendingSubmissions} bài chờ chấm</p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-amber-600 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </CardContent>
         </Card>
       </div>
