@@ -497,17 +497,39 @@ const TeacherClasses = () => {
 
   const handleCreateLessonSubmit = async (formData: any) => {
     try {
-      const lessonData = {
+      let contentHtml = formData.content_html || '';
+      if (formData.slide_url && !contentHtml.includes(formData.slide_url)) {
+        contentHtml += `\n<div class="slide-link my-3 bg-primary/5 p-3 rounded-lg border border-primary/20"><a href="${formData.slide_url}" target="_blank" rel="noopener noreferrer" class="text-primary font-bold hover:underline">🔗 Slide trình chiếu: ${formData.slide_url}</a></div>`;
+      }
+      if (formData.document_url && !contentHtml.includes(formData.document_url)) {
+        const docName = formData.document_url.split('/').pop() || 'Tài liệu đính kèm';
+        contentHtml += `\n<div class="doc-link my-3 bg-blue-500/5 p-3 rounded-lg border border-blue-500/20"><a href="${formData.document_url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold hover:underline">📄 File PDF/Tài liệu đính kèm: ${docName}</a></div>`;
+      }
+
+      const lessonData: any = {
         ...formData,
+        content_html: contentHtml,
         teacher_id: user?.id,
         class_id: selectedClass?.id,
         language: 'japanese',
         is_published: true
       };
 
-      const { error } = await supabase
+      // Try inserting with full payload
+      let { error } = await supabase
         .from('lessons')
         .insert(lessonData);
+
+      // If missing column error (e.g. document_url or slide_url column not in DB schema cache)
+      if (error && (error.message?.includes('document_url') || error.message?.includes('slide_url') || error.message?.includes('schema cache'))) {
+        const safeData = { ...lessonData };
+        delete safeData.document_url;
+        delete safeData.slide_url;
+        const retryResult = await supabase
+          .from('lessons')
+          .insert(safeData);
+        error = retryResult.error;
+      }
 
       if (error) throw error;
       toast({ title: 'Thành công', description: 'Đã tạo bài học mới cho lớp' });
@@ -1316,7 +1338,7 @@ const TeacherClasses = () => {
 
       {/* Create lesson dialog */}
       <Dialog open={isCreateLessonOpen} onOpenChange={setIsCreateLessonOpen}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-6">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6">
           <DialogHeader className="sr-only">
             <DialogTitle>Tạo bài học mới cho lớp</DialogTitle>
           </DialogHeader>

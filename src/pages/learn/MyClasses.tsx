@@ -51,6 +51,8 @@ interface Lesson {
   duration_minutes: number;
   xp_reward: number;
   content_html?: string;
+  slide_url?: string;
+  document_url?: string;
 }
 
 interface Exam {
@@ -475,13 +477,49 @@ const MyClasses = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* External Slide / Google Drive Link if any */}
+                  {activeLesson.slide_url && (
+                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <BookOpen className="w-6 h-6 text-primary" />
+                        <div>
+                          <p className="font-bold text-sm text-foreground">Slide bài giảng / Link trình chiếu</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{activeLesson.slide_url}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="hero" asChild className="shrink-0 font-semibold gap-1.5">
+                        <a href={activeLesson.slide_url} target="_blank" rel="noopener noreferrer">
+                          Xem Slide
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Attached Document PDF/DOCX file if any */}
+                  {activeLesson.document_url && (
+                    <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-xl flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        <div>
+                          <p className="font-bold text-sm text-foreground">Tệp tài liệu đính kèm (PDF/Word/PPTX)</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{activeLesson.document_url.split('/').pop()}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" asChild className="shrink-0 font-semibold gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50">
+                        <a href={activeLesson.document_url} target="_blank" rel="noopener noreferrer">
+                          Tải tài liệu
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Video Lesson if any */}
                   {/* Lesson text content rendered */}
                   {activeLesson.content_html ? (
                     <div className="border rounded-xl p-6 bg-card prose prose-indigo dark:prose-invert max-w-none leading-relaxed">
                       <div dangerouslySetInnerHTML={{ __html: activeLesson.content_html }} />
                     </div>
-                  ) : (
+                  ) : !activeLesson.slide_url && !activeLesson.document_url && (
                     <div className="text-center py-8 text-muted-foreground text-sm">
                       Bài học này chưa cập nhật nội dung chi tiết.
                     </div>
