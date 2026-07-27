@@ -159,16 +159,32 @@ const TeacherBugReports = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Báo lỗi</h1>
-          <p className="text-muted-foreground mt-1">Gửi báo cáo lỗi hoặc yêu cầu hỗ trợ</p>
-        </div>
-        <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo báo lỗi
-        </Button>
-      </div>
+      {/* IT Support Banner */}
+      <Card className="bg-gradient-to-r from-blue-600 via-indigo-600 to-primary text-white shadow-md border-none overflow-hidden relative">
+        <CardContent className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1.5 z-10">
+            <Badge className="bg-white/20 text-white hover:bg-white/30 border-none font-semibold mb-1">
+              👨‍💻 Bộ phận Kỹ thuật & IT
+            </Badge>
+            <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Hỗ trợ Kỹ thuật & Sự cố Hệ thống</h2>
+            <p className="text-white/80 text-sm">
+              Phụ trách IT: <strong>Quách Thành Long</strong> · Hotline/Zalo: <strong>0979137018</strong> · Mail: <strong>stephensouth1307@gmail.com</strong>
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 shrink-0 z-10">
+            <Button size="sm" variant="secondary" className="font-bold gap-2" asChild>
+              <a href="mailto:stephensouth1307@gmail.com?subject=Y%EA%C0U%20C%C0U%20H%D6%20TR%D6%20K%DD%20THU%C2T%20TNQDO">
+                ✉️ Gửi Mail Cho IT
+              </a>
+            </Button>
+            <Button size="sm" variant="outline" className="bg-white/10 text-white hover:bg-white/20 border-white/30 font-bold gap-2" asChild>
+              <a href="tel:0979137018">
+                📞 Hotline: 0979137018
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="flex justify-center py-12">
