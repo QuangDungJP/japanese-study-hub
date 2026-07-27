@@ -42,7 +42,7 @@ const UserGuide = () => {
       title: 'Tham gia Lớp học Google Classroom',
       description: 'Truy cập mục "Lớp học của tôi" để xem toàn bộ các lớp bạn đang theo học tại TNQDO.',
       details: [
-        'Xem Thông báo, lịch học Zoom và tài liệu tại Bảng tin Stream',
+        'Xem Thông báo, lịch học Meeting và tài liệu tại Bảng tin Stream',
         'Theo dõi tiến độ bài học và xem slide giảng dạy trực quan',
         'Làm bài tập rèn luyện và nộp bài trực tiếp cho giảng viên'
       ]
@@ -69,12 +69,12 @@ const UserGuide = () => {
     },
     {
       step: '04',
-      title: 'Đặt lịch học Zoom 1:1 với Giảng viên',
+      title: 'Đặt lịch học Meeting 1:1 với Giảng viên',
       description: 'Chọn khung giờ rảnh và đặt lịch luyện nói trực tiếp cùng thầy cô.',
       details: [
         'Xem danh sách giảng viên chất lượng tại mục Giảng viên',
-        'Chọn ngày và khung giờ học Zoom 1:1',
-        'Tham gia phòng học Zoom khi đến giờ hẹn'
+        'Chọn ngày và khung giờ học Meeting 1:1',
+        'Tham gia phòng học Meeting khi đến giờ hẹn'
       ]
     }
   ];
@@ -85,7 +85,7 @@ const UserGuide = () => {
       title: 'Quản lý Lớp học Google Classroom',
       description: 'Không gian quản lý lớp học toàn diện 5 Tab chuyên nghiệp cho giảng viên.',
       details: [
-        'Bảng tin: Đăng thông báo, lịch Zoom và thảo luận với lớp',
+        'Bảng tin: Đăng thông báo, lịch Meeting và thảo luận với lớp',
         'Bài học: Đưa bài giảng vào lớp và kích hoạt Chế độ Trình chiếu slide',
         'Bài kiểm tra & Bài nộp: Chấm điểm bài làm học viên trực tiếp'
       ]
@@ -93,10 +93,10 @@ const UserGuide = () => {
     {
       step: '02',
       title: 'Sử dụng Chế độ Trình chiếu bài giảng',
-      description: 'Trình chiếu slide tương tác trực quan khi dạy học trên lớp hoặc qua Zoom.',
+      description: 'Trình chiếu slide tương tác trực quan khi dạy học trên lớp hoặc qua Meeting.',
       details: [
         'Nhấp nút "Trình chiếu" tại bất kỳ bài học nào trong Lớp học',
-        'Màn hình hiển thị chữ to rõ, chuẩn máy chiếu và chia sẻ màn hình Zoom',
+        'Màn hình hiển thị chữ to rõ, chuẩn máy chiếu và chia sẻ màn hình Meeting',
         'Hỗ trợ công cụ chuyển slide mượt mà'
       ]
     },
@@ -112,11 +112,11 @@ const UserGuide = () => {
     },
     {
       step: '04',
-      title: 'Điểm danh & Theo dõi lịch Zoom',
-      description: 'Quản lý sĩ số lớp học và tạo liên kết phòng học Zoom.',
+      title: 'Điểm danh & Theo dõi lịch Meeting',
+      description: 'Quản lý sĩ số lớp học và tạo liên kết phòng học Meeting.',
       details: [
         'Điểm danh nhanh học viên có mặt, vắng mặt hoặc đi muộn',
-        'Tạo lịch học Zoom và gửi link cho học viên trong lớp',
+        'Tạo lịch học Meeting và gửi link cho học viên trong lớp',
         'Phê duyệt các yêu cầu xin nghỉ phép của học viên'
       ]
     }
@@ -172,11 +172,11 @@ const UserGuide = () => {
     },
     {
       q: 'Làm thế nào để học viên vào Lớp học Google Classroom?',
-      a: 'Sau khi đăng ký lớp, học viên truy cập vào mục "Lớp học của tôi" trên menu chính. Tại đây bạn sẽ thấy danh sách tất cả các lớp học mình đã đăng ký và có thể bấm "Vào lớp học" để xem bài giảng, bài tập và lịch Zoom.'
+      a: 'Sau khi đăng ký lớp, học viên truy cập vào mục "Lớp học của tôi" trên menu chính. Tại đây bạn sẽ thấy danh sách tất cả các lớp học mình đã đăng ký và có thể bấm "Vào lớp học" để xem bài giảng, bài tập và lịch Meeting.'
     },
     {
       q: 'Giảng viên sử dụng Chế độ Trình chiếu slide như thế nào?',
-      a: 'Trong trang chi tiết Lớp học của giảng viên, tại Tab "Bài học", giảng viên nhấp vào nút "Trình chiếu" bên cạnh bài giảng. Màn hình trình chiếu sẽ mở ra với giao diện tối ưu hóa cho màn hình máy chiếu hoặc chia sẻ qua Zoom.'
+      a: 'Trong trang chi tiết Lớp học của giảng viên, tại Tab "Bài học", giảng viên nhấp vào nút "Trình chiếu" bên cạnh bài giảng. Màn hình trình chiếu sẽ mở ra với giao diện tối ưu hóa cho màn hình máy chiếu hoặc chia sẻ qua Meeting.'
     },
     {
       q: 'Điểm XP và Chuỗi Streak được tính như thế nào?',

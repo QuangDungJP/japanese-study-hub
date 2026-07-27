@@ -17,7 +17,7 @@ import DarkModeToggle from '@/components/theme/DarkModeToggle';
 const allNavigation = [
   { name: 'Bảng điều khiển', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
   { name: 'Lớp học của tôi', href: '/learn/my-classes', icon: Building, key: 'my_classes' },
-  { name: 'Phòng học Zoom', href: '/learn/zoom', icon: Video, key: 'zoom' },
+  { name: 'Phòng học Meeting', href: '/learn/zoom', icon: Video, key: 'zoom' },
   { name: 'Lịch học', href: '/learn/calendar', icon: Calendar, key: 'calendar' },
   { name: 'Thành tích & BXH', href: '/learn/achievements', icon: Trophy, key: 'achievements' },
   { name: 'Hướng dẫn học viên', href: '/learn/guide', icon: BookOpen, key: 'guide' },

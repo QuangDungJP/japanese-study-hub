@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -158,12 +159,12 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
             <div key={s.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30">
               <div className="text-center min-w-[56px]">
                 <div className="text-xs text-muted-foreground">{format(new Date(s.session_date), 'EEE')}</div>
-                <div className="font-bold">{format(new Date(s.session_date), 'dd/MM')}</div>
+                <div className="font-bold">{formatWithJST(s.session_date, false)}</div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{s.topic || 'Buổi học'}</div>
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{s.start_time?.slice(0,5)}{s.end_time && ` - ${s.end_time.slice(0,5)}`}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatTimeWithJST(s.start_time)}{s.end_time && ` - ${s.end_time.slice(0,5)}`}</span>
                   {s.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{s.location}</span>}
                   {s.meet_link && (
                     <a href={s.meet_link} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-primary hover:underline">
@@ -201,7 +202,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
               <div><Label>Kết thúc</Label><Input type="time" value={editing.end_time || ''} onChange={e => setEditing({ ...editing, end_time: e.target.value })} /></div>
             </div>
             <div><Label>Địa điểm</Label><Input value={editing.location || ''} onChange={e => setEditing({ ...editing, location: e.target.value })} /></div>
-            <div><Label>Link Zoom/Meet</Label><Input value={editing.meet_link || ''} onChange={e => setEditing({ ...editing, meet_link: e.target.value })} /></div>
+            <div><Label>Link Meeting</Label><Input value={editing.meet_link || ''} onChange={e => setEditing({ ...editing, meet_link: e.target.value })} /></div>
             <div><Label>Trạng thái</Label>
               <select className="w-full h-9 rounded-md border bg-background px-2" value={editing.status || 'scheduled'} onChange={e => setEditing({ ...editing, status: e.target.value })}>
                 <option value="scheduled">Sắp tới</option>
@@ -246,7 +247,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
             </div>
             <div><Label>Chủ đề mặc định</Label><Input value={bulk.topic} onChange={e => setBulk({ ...bulk, topic: e.target.value })} /></div>
             <div><Label>Địa điểm</Label><Input value={bulk.location} onChange={e => setBulk({ ...bulk, location: e.target.value })} /></div>
-            <div><Label>Link Zoom/Meet</Label><Input value={bulk.meet_link} onChange={e => setBulk({ ...bulk, meet_link: e.target.value })} /></div>
+            <div><Label>Link Meeting</Label><Input value={bulk.meet_link} onChange={e => setBulk({ ...bulk, meet_link: e.target.value })} /></div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setBulkOpen(false)}>Hủy</Button>

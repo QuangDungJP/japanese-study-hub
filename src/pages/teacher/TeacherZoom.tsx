@@ -144,7 +144,7 @@ const TeacherZoom = () => {
       // Send notification
       await supabase.from('notifications').insert({
         user_id: selectedBooking.user_id,
-        title: 'Link Zoom đã được thêm',
+        title: 'Link Meeting đã được thêm',
         message: `Giảng viên đã thêm link cho buổi học ngày ${formatWithJST(selectedBooking.booking_date, false)} lúc ${formatTimeWithJST(selectedBooking.booking_time)}`,
         type: 'info',
         link: '/learn/zoom'
@@ -181,7 +181,7 @@ const TeacherZoom = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Lịch Zoom của tôi</h1>
+        <h1 className="text-3xl font-bold text-foreground">Lịch Meeting của tôi</h1>
         <p className="text-muted-foreground mt-1">Quản lý các buổi học trực tuyến được giao</p>
       </div>
 
@@ -193,7 +193,7 @@ const TeacherZoom = () => {
         <Card>
           <CardContent className="py-12 text-center">
             <Video className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">Chưa có lịch Zoom nào</h3>
+            <h3 className="text-lg font-semibold mb-2">Chưa có lịch Meeting nào</h3>
             <p className="text-muted-foreground">Các buổi học sẽ hiển thị ở đây khi được Admin giao cho bạn</p>
           </CardContent>
         </Card>

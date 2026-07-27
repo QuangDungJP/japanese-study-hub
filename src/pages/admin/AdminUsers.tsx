@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
+import { formatWithJST } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 import StudentProgressModal from '@/components/admin/StudentProgressModal';
 
@@ -335,7 +336,7 @@ const AdminUsers = () => {
                           <span className="text-sm text-muted-foreground">{user.progress?.lessons_completed || 0}</span>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground hidden xl:table-cell">
-                          {new Date(user.created_at).toLocaleDateString('vi-VN')}
+                          {formatWithJST(user.created_at, false)}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>

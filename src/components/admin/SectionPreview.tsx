@@ -144,7 +144,7 @@ const ZoomPreview = ({ data }: SectionPreviewProps) => {
   return (
     <div className="bg-background p-6 rounded-xl">
       <span className="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-3">
-        {data.subtitle_vi || "Học Online với Zoom"}
+        {data.subtitle_vi || "Học Online với Meeting"}
       </span>
       <h2 className="text-lg font-bold text-foreground mb-2">
         {data.title_vi || "Kết nối trực tiếp với giáo viên"}
@@ -162,7 +162,7 @@ const ZoomPreview = ({ data }: SectionPreviewProps) => {
         </div>
         <div className="aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative">
           {data.image_url ? (
-            <img src={data.image_url} alt="Zoom Preview" className="w-full h-full object-cover" />
+            <img src={data.image_url} alt="Meeting Preview" className="w-full h-full object-cover" />
           ) : (
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-card mx-auto mb-2 flex items-center justify-center shadow">

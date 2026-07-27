@@ -17,7 +17,7 @@ const defaultSections: SectionConfig[] = [
   { id: 'skills', label: '4 Kỹ năng cốt lõi', visible: true },
   { id: 'courses', label: 'Khóa học JLPT', visible: true },
   { id: 'features', label: 'Tại sao chọn TNQDO?', visible: true },
-  { id: 'zoom', label: 'Học Online qua Zoom', visible: true },
+  { id: 'zoom', label: 'Học Online qua Meeting', visible: true },
   { id: 'teachers', label: 'Đội ngũ giảng viên', visible: true },
   { id: 'cta', label: 'CTA - Đăng ký ngay', visible: true },
 ];

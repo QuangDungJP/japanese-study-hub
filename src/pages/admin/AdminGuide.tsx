@@ -133,7 +133,7 @@ const AdminGuide = () => {
             <p className="text-sm text-muted-foreground mb-4">Dưới đây là hướng dẫn hiển thị cho tài khoản Giảng viên:</p>
             <div className="space-y-3 text-sm">
               <div className="p-3 bg-muted/40 rounded-xl">1. Quản lý Lớp học 5 Tab (Stream, Bài học, Bài kiểm tra, Bài nộp, Học viên)</div>
-              <div className="p-3 bg-muted/40 rounded-xl">2. Sử dụng Chế độ Trình chiếu slide tương tác khi dạy học/Zoom</div>
+              <div className="p-3 bg-muted/40 rounded-xl">2. Sử dụng Chế độ Trình chiếu slide tương tác khi dạy học/Meeting</div>
               <div className="p-3 bg-muted/40 rounded-xl">3. Chấm bài nộp, cho điểm (0-100) và viết nhận xét chi tiết</div>
               <div className="p-3 bg-muted/40 rounded-xl">4. Điểm danh học viên và phê duyệt yêu cầu xin nghỉ phép</div>
             </div>
@@ -144,10 +144,10 @@ const AdminGuide = () => {
           <div className="p-4 bg-card rounded-2xl border border-border">
             <p className="text-sm text-muted-foreground mb-4">Dưới đây là hướng dẫn hiển thị cho tài khoản Học viên:</p>
             <div className="space-y-3 text-sm">
-              <div className="p-3 bg-muted/40 rounded-xl">1. Vào Lớp học Google Classroom để xem slide bài giảng, bài tập & link Zoom</div>
+              <div className="p-3 bg-muted/40 rounded-xl">1. Vào Lớp học Google Classroom để xem slide bài giảng, bài tập & link Meeting</div>
               <div className="p-3 bg-muted/40 rounded-xl">2. Học 4 kỹ năng Tiếng Nhật (Đọc hiểu, Luyện nghe, Luyện nói, Luyện viết)</div>
               <div className="p-3 bg-muted/40 rounded-xl">3. Tích lũy điểm XP, duy trì Chuỗi Streak ngọn lửa 🔥 hàng ngày</div>
-              <div className="p-3 bg-muted/40 rounded-xl">4. Đặt lịch học Zoom 1:1 và vào phòng học đúng giờ</div>
+              <div className="p-3 bg-muted/40 rounded-xl">4. Đặt lịch học Meeting 1:1 và vào phòng học đúng giờ</div>
             </div>
           </div>
         </TabsContent>

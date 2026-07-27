@@ -4,9 +4,9 @@ export const BRAND = {
   fullName: 'TNQDO Education',
   tagline: 'Trung tâm đào tạo Tiếng Nhật cho người Việt',
   description:
-    'Trung tâm đào tạo Tiếng Nhật hàng đầu. Chinh phục JLPT N5-N1 với 4 kỹ năng Đọc - Nói - Viết - Nghe. Học online qua Zoom với giáo viên bản ngữ Nhật.',
+    'Trung tâm đào tạo Tiếng Nhật hàng đầu. Chinh phục JLPT N5-N1 với 4 kỹ năng Đọc - Nói - Viết - Nghe. Học online qua Meeting với giáo viên bản ngữ Nhật.',
   keywords:
-    'học tiếng Nhật, JLPT, N5, N4, N3, N2, N1, Kanji, Hiragana, Katakana, học online, Zoom',
+    'học tiếng Nhật, JLPT, N5, N4, N3, N2, N1, Kanji, Hiragana, Katakana, học online, Meeting',
   author: 'TNQDO',
   year: 2026,
   logoAlt: 'TNQDO',

@@ -277,7 +277,7 @@ const TeacherDashboard = () => {
         <Card className="lg:col-span-2 border-border shadow-soft">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <Video className="w-5 h-5 text-primary" /> Lịch dạy Zoom & Đặt lịch sắp tới
+              <Video className="w-5 h-5 text-primary" /> Lịch dạy Meeting & Đặt lịch sắp tới
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/teacher/zoom">Xem tất cả <ArrowRight className="w-4 h-4 ml-1" /></Link>
@@ -287,7 +287,7 @@ const TeacherDashboard = () => {
             {upcomingBookings.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Video className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>Chưa có lịch dạy Zoom hay buổi đặt lịch học viên sắp tới.</p>
+                <p>Chưa có lịch dạy Meeting hay buổi đặt lịch học viên sắp tới.</p>
               </div>
             ) : (
               <div className="space-y-3">

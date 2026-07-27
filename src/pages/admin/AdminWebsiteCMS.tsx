@@ -52,7 +52,7 @@ const sectionLabels: Record<string, string> = {
   'skills': 'Kỹ năng',
   'languages': 'Ngôn ngữ',
   'teachers': 'Giảng viên',
-  'zoom': 'Lớp học Zoom',
+  'zoom': 'Lớp học Meeting',
   'features': 'Tính năng',
   'cta': 'Kêu gọi hành động',
   'pricing': 'Bảng giá',

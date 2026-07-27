@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { formatWithJST } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -191,7 +192,7 @@ const CourseDetail = () => {
                   {course.start_date && (
                     <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-japanese" />
-                      <div><p className="text-xs text-muted-foreground">Khai giảng</p><p className="text-sm font-semibold">{new Date(course.start_date).toLocaleDateString("vi-VN")}</p></div>
+                      <div><p className="text-xs text-muted-foreground">Khai giảng</p><p className="text-sm font-semibold">{formatWithJST(course.start_date, false)}</p></div>
                     </div>
                   )}
                   {course.schedule_text_vi && (

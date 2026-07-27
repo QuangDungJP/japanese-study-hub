@@ -104,7 +104,7 @@ const StudentCalendarPage = () => {
         <TabsContent value="bookings" className="space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Lịch học Zoom</CardTitle>
+              <CardTitle>Lịch học Meeting</CardTitle>
               <Button size="sm" onClick={() => setBookingDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-1" />
                 Đặt lịch mới

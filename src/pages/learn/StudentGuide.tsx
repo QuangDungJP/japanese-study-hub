@@ -20,7 +20,7 @@ const StudentGuide = () => {
       title: 'Vào Lớp học Google Classroom',
       description: 'Truy cập mục "Lớp học của tôi" để xem toàn bộ các lớp bạn đang theo học tại TNQDO.',
       details: [
-        'Bảng tin Stream: Xem thông báo, trao đổi và nhận link Zoom học trực tuyến',
+        'Bảng tin Stream: Xem thông báo, trao đổi và nhận link Meeting học trực tuyến',
         'Tab Bài học: Xem bài giảng slide tương tác trực quan được sắp xếp theo lộ trình',
         'Tab Bài tập & Thi: Làm bài tập rèn luyện và nộp bài trực tiếp cho thầy cô'
       ]
@@ -47,11 +47,11 @@ const StudentGuide = () => {
     },
     {
       step: '04',
-      title: 'Tham gia Phòng học Zoom 1:1',
-      description: 'Tham gia học trực tuyến cùng giảng viên qua Zoom / Google Meet.',
+      title: 'Tham gia Phòng học Meeting 1:1',
+      description: 'Tham gia học trực tuyến cùng giảng viên qua Meeting / Google Meet.',
       details: [
-        'Truy cập mục "Phòng học Zoom" để xem lịch học sắp diễn ra',
-        'Nhấp nút "Vào phòng học Zoom" trước 5 phút để chuẩn bị',
+        'Truy cập mục "Phòng học Meeting" để xem lịch học sắp diễn ra',
+        'Nhấp nút "Vào phòng học Meeting" trước 5 phút để chuẩn bị',
         'Gửi đơn xin nghỉ phép nếu có lý do đột xuất'
       ]
     }
