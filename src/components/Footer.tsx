@@ -44,7 +44,6 @@ const Footer = () => {
             <ul className="space-y-3">
               <li><Link to="/faq" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Hỏi & Đáp</Link></li>
               <li><Link to="/lien-he" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Liên hệ</Link></li>
-              <li><Link to="/huong-dan" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Hướng dẫn sử dụng</Link></li>
               <li><Link to="/chinh-sach-bao-mat" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Chính sách bảo mật</Link></li>
               <li><Link to="/dieu-khoan" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Điều khoản sử dụng</Link></li>
             </ul>

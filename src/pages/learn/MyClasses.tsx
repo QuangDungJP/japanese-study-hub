@@ -20,6 +20,7 @@ interface ClassData {
   name_vi: string;
   description: string | null;
   description_vi: string | null;
+  course_id?: string | null;
   start_date: string | null;
   end_date: string | null;
   is_active: boolean;
@@ -163,12 +164,14 @@ const MyClasses = () => {
         .order('session_date', { ascending: true });
       setSessions(sessionsData || []);
 
-      // 2. Fetch class lessons (lessons linked to this class)
-      const { data: lessonsData } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('class_id', cls.id)
-        .order('created_at', { ascending: true });
+      // 2. Fetch class lessons (lessons linked to this class or linked course)
+      let lessonQuery = supabase.from('lessons').select('*');
+      if (cls.course_id) {
+        lessonQuery = lessonQuery.or(`class_id.eq.${cls.id},course_id.eq.${cls.course_id}`);
+      } else {
+        lessonQuery = lessonQuery.eq('class_id', cls.id);
+      }
+      const { data: lessonsData } = await lessonQuery.order('created_at', { ascending: true });
       setLessons(lessonsData || []);
 
       // 3. Fetch exams for this class

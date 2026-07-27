@@ -9,7 +9,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CalendarDays, Clock, MapPin, Users, Video, ArrowRight, Loader2, Search, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { CalendarDays, Clock, MapPin, Users, Video, ArrowRight, Loader2, Search, Sparkles, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -88,41 +95,47 @@ const EventsPage = () => {
             </div>
           </ScrollReveal>
 
-          {/* Search */}
+          {/* Compact Single-line Search & Funnel Filter Control */}
           <ScrollReveal delay={100}>
-            <div className="max-w-xl mx-auto mt-8">
-              <div className="relative">
+            <div className="max-w-2xl mx-auto mt-8 flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm sự kiện..."
+                  placeholder="Tìm sự kiện, workshop..."
                   value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-12 h-12 rounded-2xl border-border/50 bg-card text-base shadow-sm"
+                  className="pl-12 pr-10 h-13 rounded-2xl border-border/60 bg-card text-base shadow-sm"
                 />
+                {search && (
+                  <button
+                    onClick={() => { setSearch(''); setPage(1); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm font-bold p-1"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-            </div>
-          </ScrollReveal>
 
-          {/* Filter Chips */}
-          <ScrollReveal delay={200}>
-            <div className="flex flex-wrap justify-center gap-2 mt-6">
-              {[
-                { key: 'upcoming' as const, label: 'Sắp diễn ra', count: upcomingCount, icon: Sparkles },
-                { key: 'past' as const, label: 'Đã qua', count: pastCount, icon: CalendarDays },
-                { key: 'all' as const, label: 'Tất cả', count: events.length, icon: CalendarDays },
-              ].map(f => (
-                <button
-                  key={f.key}
-                  onClick={() => handleFilterChange(f.key)}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                    filter === f.key
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {f.label} ({f.count})
-                </button>
-              ))}
+              {/* Funnel Filter Dropdown */}
+              <Select value={filter} onValueChange={(val: any) => handleFilterChange(val)}>
+                <SelectTrigger className="w-full sm:w-56 h-13 rounded-2xl border-border/60 bg-card px-4 font-bold text-sm shadow-sm gap-2 shrink-0 border">
+                  <div className="flex items-center gap-2 truncate">
+                    <SlidersHorizontal className="w-4 h-4 text-primary shrink-0" />
+                    <SelectValue placeholder="Lọc sự kiện" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="upcoming" className="font-bold">
+                    Sắp diễn ra ({upcomingCount})
+                  </SelectItem>
+                  <SelectItem value="past">
+                    Đã qua ({pastCount})
+                  </SelectItem>
+                  <SelectItem value="all">
+                    Tất cả sự kiện ({events.length})
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </ScrollReveal>
         </div>

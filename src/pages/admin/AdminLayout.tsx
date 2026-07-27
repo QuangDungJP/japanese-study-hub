@@ -33,15 +33,13 @@ const navSections = [
     ],
   },
   {
-    label: 'Đào tạo',
+    label: 'Đào tạo & Lớp học',
     roles: ['admin', 'moderator'],
     items: [
-      { name: 'Giảng viên', href: '/admin/teachers', icon: GraduationCap, roles: ['admin', 'moderator'] },
+      { name: 'Lớp học Classroom', href: '/admin/classes', icon: Building, roles: ['admin', 'moderator'] },
       { name: 'Khóa học', href: '/admin/courses', icon: Library, roles: ['admin', 'moderator'] },
-      { name: 'Lớp học', href: '/admin/classes', icon: Building, roles: ['admin', 'moderator'] },
-      { name: 'Bài học', href: '/admin/lessons', icon: BookOpen, roles: ['admin', 'moderator'] },
-      { name: 'Từ vựng', href: '/admin/vocabulary', icon: BookText, roles: ['admin', 'moderator'] },
-      { name: 'Bài nộp', href: '/admin/submissions', icon: FileText, roles: ['admin', 'moderator'] },
+      { name: 'Kho bài giảng mẫu', href: '/admin/lessons', icon: BookOpen, roles: ['admin', 'moderator'] },
+      { name: 'Giảng viên', href: '/admin/teachers', icon: GraduationCap, roles: ['admin', 'moderator'] },
     ],
   },
   {
@@ -62,9 +60,10 @@ const navSections = [
     ],
   },
   {
-    label: 'Hệ thống',
-    roles: ['admin'],
+    label: 'Hệ thống & Hướng dẫn',
+    roles: ['admin', 'moderator'],
     items: [
+      { name: 'Hướng dẫn sử dụng', href: '/admin/guide', icon: BookOpen, roles: ['admin', 'moderator'] },
       { name: 'Thông báo', href: '/admin/notifications', icon: Bell, roles: ['admin'] },
       { name: 'Người dùng', href: '/admin/users', icon: Users, roles: ['admin'] },
       { name: 'Cài đặt', href: '/admin/settings', icon: Settings, roles: ['admin'] },

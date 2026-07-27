@@ -1,211 +1,396 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { BookOpen, Target, Trophy, Zap, Headphones, MessageSquare, PenTool, BookMarked, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import ScrollReveal from '@/components/ScrollReveal';
+import { 
+  BookOpen, 
+  GraduationCap, 
+  Shield, 
+  Video, 
+  FileText, 
+  CheckCircle2, 
+  ArrowRight,
+  Sparkles,
+  Users,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Building,
+  Target,
+  Flame,
+  Award,
+  BookMarked,
+  MessageSquare
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const UserGuide = () => {
-  const steps = [
+  const [activeRole, setActiveRole] = useState('student');
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
+  const studentSteps = [
     {
-      icon: BookOpen,
-      title: "Đăng ký tài khoản",
-      description: "Tạo tài khoản miễn phí để bắt đầu hành trình học ngôn ngữ của bạn.",
+      step: '01',
+      title: 'Tham gia Lớp học Google Classroom',
+      description: 'Truy cập mục "Lớp học của tôi" để xem toàn bộ các lớp bạn đang theo học tại TNQDO.',
       details: [
-        "Nhấn nút 'Bắt đầu miễn phí' trên trang chủ",
-        "Điền thông tin email và mật khẩu",
-        "Xác nhận email để kích hoạt tài khoản"
+        'Xem Thông báo, lịch học Zoom và tài liệu tại Bảng tin Stream',
+        'Theo dõi tiến độ bài học và xem slide giảng dạy trực quan',
+        'Làm bài tập rèn luyện và nộp bài trực tiếp cho giảng viên'
       ]
     },
     {
-      icon: Target,
-      title: "Chọn ngôn ngữ & cấp độ",
-      description: "Lựa chọn ngôn ngữ bạn muốn học và đánh giá trình độ hiện tại.",
+      step: '02',
+      title: 'Rèn luyện 4 Kỹ năng Tiếng Nhật',
+      description: 'Luyện tập chuyên sâu từng kỹ năng (Đọc hiểu, Luyện nghe, Luyện nói, Luyện viết).',
       details: [
-        "Chọn từ 6+ ngôn ngữ phổ biến",
-        "Làm bài test đánh giá trình độ (không bắt buộc)",
-        "Hệ thống tự động đề xuất lộ trình phù hợp"
+        'Đọc hiểu: Bài đọc chuẩn JLPT kèm từ vựng dịch nghĩa',
+        'Luyện nghe: File âm thanh chuẩn giọng bản xứ Nhật Bản',
+        'Luyện nói & Viết: Thực hành đặt câu và luyện phản xạ'
       ]
     },
     {
-      icon: Zap,
-      title: "Học theo lộ trình",
-      description: "Theo dõi lộ trình học tập được cá nhân hóa với các bài học tương tác.",
+      step: '03',
+      title: 'Tích lũy Streak & Điểm thưởng XP',
+      description: 'Duy trì thói quen học tập hàng ngày để thăng hạng trên Bảng xếp hạng.',
       details: [
-        "Hoàn thành các bài học theo thứ tự",
-        "Luyện tập với nhiều dạng bài tập khác nhau",
-        "Nhận phản hồi tức thì sau mỗi câu trả lời"
+        'Mỗi bài học hoàn thành sẽ cộng ngay điểm XP tương ứng',
+        'Học liên tục mỗi ngày để duy trì Chuỗi Streak ngọn lửa 🔥',
+        'Hoàn thành chỉ tiêu mục tiêu XP trong ngày'
       ]
     },
     {
-      icon: Trophy,
-      title: "Nhận phần thưởng",
-      description: "Tích lũy XP, duy trì streak và mở khóa các thành tích.",
+      step: '04',
+      title: 'Đặt lịch học Zoom 1:1 với Giảng viên',
+      description: 'Chọn khung giờ rảnh và đặt lịch luyện nói trực tiếp cùng thầy cô.',
       details: [
-        "Kiếm XP qua mỗi bài học hoàn thành",
-        "Duy trì streak học tập hàng ngày",
-        "Cạnh tranh trên bảng xếp hạng"
+        'Xem danh sách giảng viên chất lượng tại mục Giảng viên',
+        'Chọn ngày và khung giờ học Zoom 1:1',
+        'Tham gia phòng học Zoom khi đến giờ hẹn'
       ]
     }
   ];
 
-  const skills = [
+  const teacherSteps = [
     {
-      icon: BookMarked,
-      title: "Đọc hiểu",
-      color: "from-blue-500 to-cyan-500",
-      description: "Cải thiện kỹ năng đọc với các bài đọc đa dạng từ cơ bản đến nâng cao."
+      step: '01',
+      title: 'Quản lý Lớp học Google Classroom',
+      description: 'Không gian quản lý lớp học toàn diện 5 Tab chuyên nghiệp cho giảng viên.',
+      details: [
+        'Bảng tin: Đăng thông báo, lịch Zoom và thảo luận với lớp',
+        'Bài học: Đưa bài giảng vào lớp và kích hoạt Chế độ Trình chiếu slide',
+        'Bài kiểm tra & Bài nộp: Chấm điểm bài làm học viên trực tiếp'
+      ]
     },
     {
-      icon: Headphones,
-      title: "Nghe hiểu",
-      color: "from-purple-500 to-pink-500",
-      description: "Luyện nghe với người bản xứ, podcast và video thực tế."
+      step: '02',
+      title: 'Sử dụng Chế độ Trình chiếu bài giảng',
+      description: 'Trình chiếu slide tương tác trực quan khi dạy học trên lớp hoặc qua Zoom.',
+      details: [
+        'Nhấp nút "Trình chiếu" tại bất kỳ bài học nào trong Lớp học',
+        'Màn hình hiển thị chữ to rõ, chuẩn máy chiếu và chia sẻ màn hình Zoom',
+        'Hỗ trợ công cụ chuyển slide mượt mà'
+      ]
     },
     {
-      icon: MessageSquare,
-      title: "Nói",
-      color: "from-orange-500 to-red-500",
-      description: "Thực hành phát âm với công nghệ nhận diện giọng nói AI."
+      step: '03',
+      title: 'Chấm điểm & Gửi nhận xét Bài nộp',
+      description: 'Theo dõi bài làm học viên gửi lên và cho điểm chi tiết.',
+      details: [
+        'Nhận thông báo khi có bài tập mới học viên nộp',
+        'Xem đáp án tham khảo và bài làm của từng học viên',
+        'Nhập điểm số (0-100) và viết nhận xét chi tiết gửi cho học viên'
+      ]
     },
     {
-      icon: PenTool,
-      title: "Viết",
-      color: "from-green-500 to-emerald-500",
-      description: "Rèn luyện kỹ năng viết từ câu đơn giản đến đoạn văn phức tạp."
+      step: '04',
+      title: 'Điểm danh & Theo dõi lịch Zoom',
+      description: 'Quản lý sĩ số lớp học và tạo liên kết phòng học Zoom.',
+      details: [
+        'Điểm danh nhanh học viên có mặt, vắng mặt hoặc đi muộn',
+        'Tạo lịch học Zoom và gửi link cho học viên trong lớp',
+        'Phê duyệt các yêu cầu xin nghỉ phép của học viên'
+      ]
     }
   ];
 
-  const tips = [
-    "Học ít nhất 15 phút mỗi ngày để duy trì tiến độ",
-    "Sử dụng tính năng ôn tập để củng cố kiến thức",
-    "Tham gia cộng đồng để trao đổi với người học khác",
-    "Đặt mục tiêu cụ thể và theo dõi tiến trình",
-    "Kết hợp học với xem phim, nghe nhạc bằng ngôn ngữ đích"
+  const adminSteps = [
+    {
+      step: '01',
+      title: 'Quản trị Người dùng & Giảng viên',
+      description: 'Quản lý toàn bộ danh sách học viên, phân quyền giảng viên và xét duyệt tài khoản.',
+      details: [
+        'Xem danh sách người dùng và tiến độ học tập',
+        'Cấp quyền Giảng viên (Teacher / Senior Teacher)',
+        'Cập nhật hồ sơ chuyên môn và chứng chỉ cho giáo viên'
+      ]
+    },
+    {
+      step: '02',
+      title: 'Quản lý Lớp học & Bài học',
+      description: 'Tạo mới các lớp học, tạo ngân hàng bài giảng mẫu chuẩn JLPT.',
+      details: [
+        'Tạo lớp học mới và phân công giảng viên phụ trách',
+        'Tạo và phê duyệt các bài học mới cho 4 kỹ năng',
+        'Liên kết bài học và tài liệu vào từng khóa học'
+      ]
+    },
+    {
+      step: '03',
+      title: 'Quản trị Website CMS & Tin tức Blog',
+      description: 'Cập nhật giao diện trang chủ, bài viết blog và các sự kiện workshop.',
+      details: [
+        'Chỉnh sửa Banner trang chủ, khẩu hiệu và các phần giới thiệu',
+        'Đăng bài viết chia sẻ kinh nghiệm học và ghim bài nổi bật',
+        'Tạo sự kiện workshop luyện thi JLPT'
+      ]
+    },
+    {
+      step: '04',
+      title: 'Theo dõi Đơn hàng & Tài chính',
+      description: 'Xác nhận giao dịch thanh toán mua khóa học của học viên.',
+      details: [
+        'Xem danh sách đơn hàng đăng ký mua khóa học',
+        'Xác nhận thông tin chuyển khoản qua ngân hàng',
+        'Theo dõi báo cáo doanh thu tổng quan'
+      ]
+    }
+  ];
+
+  const faqs = [
+    {
+      q: 'TNQDO Japanese Study Hub hỗ trợ những cấp độ tiếng Nhật nào?',
+      a: 'Hệ thống cung cấp đầy đủ giáo trình và bài tập luyện thi từ trình độ N5 căn bản đến N1 cao cấp, bao gồm đầy đủ 4 kỹ năng Đọc, Nghe, Nói, Viết.'
+    },
+    {
+      q: 'Làm thế nào để học viên vào Lớp học Google Classroom?',
+      a: 'Sau khi đăng ký lớp, học viên truy cập vào mục "Lớp học của tôi" trên menu chính. Tại đây bạn sẽ thấy danh sách tất cả các lớp học mình đã đăng ký và có thể bấm "Vào lớp học" để xem bài giảng, bài tập và lịch Zoom.'
+    },
+    {
+      q: 'Giảng viên sử dụng Chế độ Trình chiếu slide như thế nào?',
+      a: 'Trong trang chi tiết Lớp học của giảng viên, tại Tab "Bài học", giảng viên nhấp vào nút "Trình chiếu" bên cạnh bài giảng. Màn hình trình chiếu sẽ mở ra với giao diện tối ưu hóa cho màn hình máy chiếu hoặc chia sẻ qua Zoom.'
+    },
+    {
+      q: 'Điểm XP và Chuỗi Streak được tính như thế nào?',
+      a: 'Khi bạn hoàn thành 1 bài học hoặc bài tập, hệ thống sẽ cộng điểm XP tương ứng vào tài khoản. Chuỗi Streak ghi nhận số ngày bạn học liên tục không ngắt quãng.'
+    }
   ];
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-50" />
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse animation-delay-200" />
-        
+
+      {/* Hero Header with TNQDO Logo */}
+      <section className="relative pt-28 pb-16 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+          <div className="absolute top-20 left-10 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-10 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float animation-delay-200" />
+        </div>
+
         <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-              <BookOpen className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Hướng dẫn sử dụng</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Bắt đầu học <span className="text-gradient">ngôn ngữ</span> như thế nào?
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Hướng dẫn chi tiết giúp bạn tận dụng tối đa nền tảng LinguaViet
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Steps Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">4 bước bắt đầu</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((step, index) => (
-              <Card key={index} className="group relative overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-glow">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-full" />
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <step.icon className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <div className="text-sm font-medium text-primary mb-2">Bước {index + 1}</div>
-                  <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                  <p className="text-muted-foreground mb-4">{step.description}</p>
-                  <ul className="space-y-2">
-                    {step.details.map((detail, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                        {detail}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Skills Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">4 kỹ năng ngôn ngữ</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Phát triển toàn diện cả 4 kỹ năng để sử dụng ngôn ngữ thành thạo
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {skills.map((skill, index) => (
-              <Card key={index} className="group overflow-hidden hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${skill.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <skill.icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{skill.title}</h3>
-                  <p className="text-muted-foreground">{skill.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Tips Section */}
-      <section className="py-20 bg-gradient-card">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Mẹo học hiệu quả</h2>
-              <p className="text-muted-foreground">
-                Những bí quyết giúp bạn tiến bộ nhanh hơn
+          <ScrollReveal>
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-card border border-border/80 shadow-sm mb-6 backdrop-blur-md">
+                <img src="/logo.jpg" alt="TNQDO Logo" className="w-7 h-7 rounded-lg object-cover" />
+                <span className="text-sm font-bold text-foreground">TNQDO Japanese Study Hub</span>
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4 tracking-tight leading-tight">
+                Cẩm nang & <span className="text-primary bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Hướng dẫn sử dụng</span>
+              </h1>
+              <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto font-medium">
+                Hướng dẫn chi tiết từng tính năng dành cho Học viên, Giảng viên và Quản trị viên trên hệ thống học tiếng Nhật TNQDO.
               </p>
             </div>
-            <div className="space-y-4">
-              {tips.map((tip, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center gap-4 p-4 rounded-xl bg-background/80 backdrop-blur border border-border/50 hover:border-primary/30 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-primary">{index + 1}</span>
-                  </div>
-                  <p className="text-foreground">{tip}</p>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* Main Guide Tabs */}
+      <section className="pb-20">
+        <div className="container mx-auto px-4">
+          <Tabs value={activeRole} onValueChange={setActiveRole} className="space-y-10">
+            <div className="flex justify-center">
+              <TabsList className="p-1.5 bg-card border border-border/80 rounded-2xl shadow-sm grid grid-cols-3 w-full max-w-xl">
+                <TabsTrigger value="student" className="rounded-xl gap-2 font-bold py-3 text-sm">
+                  <GraduationCap className="w-4 h-4" /> Học viên
+                </TabsTrigger>
+                <TabsTrigger value="teacher" className="rounded-xl gap-2 font-bold py-3 text-sm">
+                  <Users className="w-4 h-4" /> Giảng viên
+                </TabsTrigger>
+                <TabsTrigger value="admin" className="rounded-xl gap-2 font-bold py-3 text-sm">
+                  <Shield className="w-4 h-4" /> Quản trị viên
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* STUDENT GUIDE CONTENT */}
+            <TabsContent value="student" className="space-y-8">
+              <div className="text-center max-w-2xl mx-auto mb-8">
+                <Badge className="bg-primary/10 text-primary border-primary/20 mb-2 px-3 py-1 font-bold">
+                  Dành cho Học viên
+                </Badge>
+                <h2 className="text-2xl font-bold text-foreground">Quy trình học tập hiệu quả tại TNQDO</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {studentSteps.map((item) => (
+                  <Card key={item.step} className="border-border shadow-soft hover:shadow-xl transition-all rounded-3xl overflow-hidden group">
+                    <CardHeader className="pb-3 flex flex-row items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary font-black text-xl flex items-center justify-center shrink-0 border border-primary/20">
+                        {item.step}
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                          {item.title}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-2">
+                      <ul className="space-y-2.5">
+                        {item.details.map((detail, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5 text-sm text-muted-foreground font-medium">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <span>{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* TEACHER GUIDE CONTENT */}
+            <TabsContent value="teacher" className="space-y-8">
+              <div className="text-center max-w-2xl mx-auto mb-8">
+                <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 mb-2 px-3 py-1 font-bold">
+                  Dành cho Giảng viên
+                </Badge>
+                <h2 className="text-2xl font-bold text-foreground">Hướng dẫn công cụ giảng dạy & Quản lý lớp</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {teacherSteps.map((item) => (
+                  <Card key={item.step} className="border-border shadow-soft hover:shadow-xl transition-all rounded-3xl overflow-hidden group">
+                    <CardHeader className="pb-3 flex flex-row items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 font-black text-xl flex items-center justify-center shrink-0 border border-emerald-500/20">
+                        {item.step}
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-bold text-foreground group-hover:text-emerald-600 transition-colors">
+                          {item.title}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-2">
+                      <ul className="space-y-2.5">
+                        {item.details.map((detail, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5 text-sm text-muted-foreground font-medium">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <span>{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* ADMIN GUIDE CONTENT */}
+            <TabsContent value="admin" className="space-y-8">
+              <div className="text-center max-w-2xl mx-auto mb-8">
+                <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 mb-2 px-3 py-1 font-bold">
+                  Dành cho Quản trị viên
+                </Badge>
+                <h2 className="text-2xl font-bold text-foreground">Hướng dẫn vận hành & Quản trị hệ thống</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {adminSteps.map((item) => (
+                  <Card key={item.step} className="border-border shadow-soft hover:shadow-xl transition-all rounded-3xl overflow-hidden group">
+                    <CardHeader className="pb-3 flex flex-row items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 font-black text-xl flex items-center justify-center shrink-0 border border-purple-500/20">
+                        {item.step}
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-bold text-foreground group-hover:text-purple-600 transition-colors">
+                          {item.title}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-2">
+                      <ul className="space-y-2.5">
+                        {item.details.map((detail, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5 text-sm text-muted-foreground font-medium">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <span>{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* FAQ Section */}
+          <div className="max-w-3xl mx-auto mt-20">
+            <div className="text-center mb-10">
+              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 mb-2 px-3 py-1 font-bold">
+                Câu hỏi thường gặp
+              </Badge>
+              <h2 className="text-3xl font-extrabold text-foreground">Giải đáp thắc mắc người dùng</h2>
+            </div>
+
+            <div className="space-y-3">
+              {faqs.map((faq, index) => (
+                <div key={index} className="bg-card border border-border/80 rounded-2xl overflow-hidden transition-all shadow-sm">
+                  <button
+                    onClick={() => toggleFaq(index)}
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-foreground hover:text-primary transition-colors"
+                  >
+                    <span className="text-base">{faq.q}</span>
+                    {openFaqIndex === index ? (
+                      <ChevronUp className="w-5 h-5 text-primary shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
+                    )}
+                  </button>
+                  {openFaqIndex === index && (
+                    <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed border-t border-border/50 pt-3">
+                      {faq.a}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">Sẵn sàng bắt đầu?</h2>
-            <p className="text-muted-foreground mb-8">
-              Đăng ký ngay hôm nay và bắt đầu hành trình học ngôn ngữ của bạn
+          {/* CTA Banner */}
+          <div className="mt-16 text-center max-w-2xl mx-auto bg-gradient-to-r from-primary/10 via-background to-accent/10 p-8 rounded-3xl border border-primary/20">
+            <h3 className="text-2xl font-extrabold text-foreground mb-2">Bạn đã sẵn sàng học cùng TNQDO?</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Đăng ký tài khoản ngay hôm nay để trải nghiệm môi trường học tiếng Nhật hiệu quả và chuyên nghiệp.
             </p>
-            <Link 
-              to="/auth" 
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
-            >
-              Bắt đầu miễn phí
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            <Button size="lg" className="font-bold gap-2 shadow-md" asChild>
+              <Link to="/auth">
+                Bắt đầu học ngay <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>

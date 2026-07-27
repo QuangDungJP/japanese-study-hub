@@ -53,6 +53,7 @@ interface ClassData {
   name_vi: string;
   description: string | null;
   description_vi: string | null;
+  teacher_id?: string | null;
   course_id: string | null;
   max_students: number;
   start_date: string | null;
@@ -345,12 +346,14 @@ const TeacherClasses = () => {
   // Fetch Classroom detail tabs data
   const fetchClassroomDetails = async (clsId: string) => {
     try {
-      // 1. Fetch lessons
-      const { data: lessonsData } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('class_id', clsId)
-        .order('created_at', { ascending: false });
+      // 1. Fetch lessons (linked to class or linked course)
+      let lessonQuery = supabase.from('lessons').select('*');
+      if (selectedClass?.course_id) {
+        lessonQuery = lessonQuery.or(`class_id.eq.${clsId},course_id.eq.${selectedClass.course_id}`);
+      } else {
+        lessonQuery = lessonQuery.eq('class_id', clsId);
+      }
+      const { data: lessonsData } = await lessonQuery.order('created_at', { ascending: false });
       setClassDetailLessons(lessonsData || []);
 
       // 2. Fetch unassigned lessons
