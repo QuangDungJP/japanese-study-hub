@@ -72,12 +72,14 @@ export function formatTimeWithJST(timeStr: string | null | undefined): string {
   const hours = parseInt(parts[0], 10);
   const minutes = parseInt(parts[1], 10);
   if (isNaN(hours) || isNaN(minutes)) return timeStr;
-  
-  // Add 2 hours for Japan Time
+
+  const displayHoursVN = hours === 0 ? 24 : hours;
   const jpHours = (hours + 2) % 24;
+  const displayHoursJP = jpHours === 0 ? 24 : jpHours;
   
-  const formattedVN = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  const formattedJP = `${jpHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  const minStr = minutes.toString().padStart(2, '0');
+  const formattedVN = `${displayHoursVN.toString().padStart(2, '0')}h${minStr}`;
+  const formattedJP = `${displayHoursJP.toString().padStart(2, '0')}h${minStr}`;
   
   return `${formattedVN} (Nhật: ${formattedJP})`;
 }

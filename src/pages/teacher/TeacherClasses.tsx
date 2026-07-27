@@ -43,6 +43,7 @@ import { vi } from 'date-fns/locale';
 
 // New imports
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
+import { exportToGoogleSheetsCSV, exportToGoogleDocs } from '@/lib/exportUtils';
 import { ExamManager } from '@/components/calendar/ExamManager';
 import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 import LessonEditor from '@/components/teacher/LessonEditor';
@@ -919,12 +920,26 @@ const TeacherClasses = () => {
                     </div>
                   )}
                 </CardContent>
-                <div className="p-4 bg-muted/30 border-t flex justify-between gap-2">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(classItem)}>
-                    <Edit className="w-3.5 h-3.5 mr-1" /> Sửa thông tin
-                  </Button>
+                <div className="p-4 bg-muted/30 border-t flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex gap-1.5">
+                    <Button variant="outline" size="sm" onClick={() => openEditDialog(classItem)}>
+                      <Edit className="w-3.5 h-3.5 mr-1" /> Sửa
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-primary/30 text-primary hover:bg-primary/10"
+                      onClick={() => {
+                        setSelectedClass(classItem);
+                        fetchClassroomDetails(classItem.id);
+                        openAddStudentDialog();
+                      }}
+                    >
+                      <UserPlus className="w-3.5 h-3.5 mr-1" /> Thêm HV
+                    </Button>
+                  </div>
                   <Button size="sm" onClick={() => { setSelectedClass(classItem); fetchClassroomDetails(classItem.id); }}>
-                    Vào lớp học →
+                    Vào lớp →
                   </Button>
                 </div>
               </Card>
@@ -980,10 +995,13 @@ const TeacherClasses = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="hero" size="sm" onClick={openAddStudentDialog}>
+            <UserPlus className="w-4 h-4 mr-1.5" /> Thêm học viên
+          </Button>
           <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedClass)}>
             <Edit className="w-4 h-4 mr-1.5" /> Sửa lớp này
           </Button>
-          <Button size="sm" onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+          <Button size="sm" variant="ghost" onClick={() => { resetForm(); setIsDialogOpen(true); }}>
             <Plus className="w-4 h-4 mr-1.5" /> Tạo lớp mới
           </Button>
         </div>
@@ -1004,6 +1022,10 @@ const TeacherClasses = () => {
             <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
               <Users className="w-4 h-4" />
               Sĩ số: {selectedClass.student_count}/{selectedClass.max_students}
+            </span>
+            <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm font-semibold">
+              <Clock className="w-4 h-4" />
+              Tổng: {selectedClass.total_sessions || selectedClass.custom_fields?.total_sessions || 24} buổi học
             </span>
             {selectedClass.start_date && (
               <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
@@ -1293,11 +1315,35 @@ const TeacherClasses = () => {
 
         {/* Tab 5: Students (Học viên) */}
         <TabsContent value="students" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-2">
             <h2 className="text-lg font-bold text-foreground">Học viên của lớp ({students.length})</h2>
-            <Button size="sm" onClick={openAddStudentDialog}>
-              <UserPlus className="w-4 h-4 mr-1.5" /> Thêm học viên
-            </Button>
+            <div className="flex gap-2">
+              {students.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
+                  onClick={() => {
+                    if (!selectedClass) return;
+                    const headers = ['Họ và tên học viên', 'Ngày tham gia', 'Tổng XP', 'Streak', 'Bài học đã xong', 'Từ vựng đã thuộc'];
+                    const rows = students.map(s => [
+                      s.profiles?.full_name || 'N/A',
+                      formatWithJST(s.enrolled_at, false),
+                      s.progress?.total_xp || 0,
+                      s.progress?.streak || 0,
+                      s.progress?.lessons_completed || 0,
+                      s.progress?.vocabulary_mastered || 0,
+                    ]);
+                    exportToGoogleSheetsCSV(`Danh_Sach_Hoc_Vien_${selectedClass.name_vi}`, headers, rows);
+                  }}
+                >
+                  📊 Xuất Google Sheets / Excel
+                </Button>
+              )}
+              <Button size="sm" onClick={openAddStudentDialog}>
+                <UserPlus className="w-4 h-4 mr-1.5" /> Thêm học viên
+              </Button>
+            </div>
           </div>
 
           {students.length === 0 ? (
@@ -1370,12 +1416,7 @@ const TeacherClasses = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Presentation Mode overlay */}
-      <ClassLessonPresentation 
-        lesson={presentingLesson}
-        isOpen={!!presentingLesson}
-        onClose={() => setPresentingLesson(null)}
-      />
+
 
       {/* Dialogue Link Lesson */}
       <Dialog open={isLinkLessonOpen} onOpenChange={setIsLinkLessonOpen}>
@@ -1648,7 +1689,7 @@ const TeacherClasses = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>Sĩ số tối đa</Label>
                 <Input
@@ -1657,6 +1698,16 @@ const TeacherClasses = () => {
                   onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 30 })}
                   min={1}
                   max={100}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tổng số buổi học</Label>
+                <Input
+                  type="number"
+                  value={formData.total_sessions}
+                  onChange={(e) => setFormData({ ...formData, total_sessions: parseInt(e.target.value) || 24 })}
+                  min={1}
+                  max={200}
                 />
               </div>
               <div className="space-y-2">

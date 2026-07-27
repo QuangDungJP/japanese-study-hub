@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   BookOpen, Mic, PenTool, Headphones, LayoutDashboard,
   BookText, Trophy, Video, GraduationCap, Calendar,
-  ChevronDown, ChevronRight, Dumbbell, Settings, User, Building
+  ChevronDown, ChevronRight, Dumbbell, Settings, User, Building, Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
@@ -17,6 +17,7 @@ import DarkModeToggle from '@/components/theme/DarkModeToggle';
 const allNavigation = [
   { name: 'Bảng điều khiển', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
   { name: 'Lớp học của tôi', href: '/learn/my-classes', icon: Building, key: 'my_classes' },
+  { name: 'Thông báo', href: '/learn/notifications', icon: Bell, key: 'notifications' },
   { name: 'Phòng học Meeting', href: '/learn/zoom', icon: Video, key: 'zoom' },
   { name: 'Lịch học', href: '/learn/calendar', icon: Calendar, key: 'calendar' },
   { name: 'Thành tích & BXH', href: '/learn/achievements', icon: Trophy, key: 'achievements' },

@@ -33,6 +33,29 @@ const NotificationDropdown = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
+
+      // Listen for realtime notifications inserted for this user
+      const channel = supabase
+        .channel(`user-notifications-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const newNotif = payload.new as Notification;
+            setNotifications((prev) => [newNotif, ...prev.filter(n => n.id !== newNotif.id).slice(0, 9)]);
+            setUnreadCount((prev) => prev + 1);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
