@@ -183,8 +183,13 @@ const TeacherClasses = () => {
   // Create lesson dialog
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
 
-  // Present lesson state
+  // Present lesson state (inline in the lessons tab)
+  const [inlinePresentingLessonId, setInlinePresentingLessonId] = useState<string | null>(null);
   const [presentingLesson, setPresentingLesson] = useState<Lesson | null>(null);
+
+  // Edit lesson state
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [isEditLessonOpen, setIsEditLessonOpen] = useState(false);
 
   // Session dialog
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
@@ -545,6 +550,48 @@ const TeacherClasses = () => {
         description: error.message || 'Không thể lưu bài học', 
         variant: 'destructive' 
       });
+    }
+  };
+
+  const handleEditLessonSubmit = async (formData: any) => {
+    if (!editingLesson || !selectedClass) return;
+    try {
+      const lessonData: any = {
+        title: formData.title || formData.title_vi,
+        title_vi: formData.title_vi,
+        description: formData.description || formData.description_vi,
+        description_vi: formData.description_vi,
+        skill: formData.skill,
+        level: formData.level,
+        duration_minutes: formData.duration_minutes,
+        xp_reward: formData.xp_reward,
+        content_html: formData.content_html,
+        thumbnail_url: formData.thumbnail_url || null,
+        video_url: formData.video_url || null,
+        slide_url: formData.slide_url || null,
+        document_url: formData.document_url || null,
+      };
+
+      let { error } = await supabase
+        .from('lessons')
+        .update(lessonData)
+        .eq('id', editingLesson.id);
+
+      if (error && (error.message?.includes('document_url') || error.message?.includes('slide_url'))) {
+        const safeData = { ...lessonData };
+        delete safeData.document_url;
+        delete safeData.slide_url;
+        const retry = await supabase.from('lessons').update(safeData).eq('id', editingLesson.id);
+        error = retry.error;
+      }
+
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã cập nhật bài học' });
+      setIsEditLessonOpen(false);
+      setEditingLesson(null);
+      fetchClassroomDetails(selectedClass.id);
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message || 'Không thể cập nhật bài học', variant: 'destructive' });
     }
   };
 
@@ -1090,37 +1137,80 @@ const TeacherClasses = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               {classDetailLessons.map((lesson) => (
-                <Card key={lesson.id} className="hover:shadow-md transition-all duration-200">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex gap-2 items-center">
-                        <Badge className="bg-primary/10 text-primary uppercase text-xs">
-                          {getSkillLabel(lesson.skill)}
-                        </Badge>
-                        <Badge variant="outline">{lesson.level}</Badge>
+                <div key={lesson.id} className="space-y-0">
+                  <Card className={`hover:shadow-md transition-all duration-200 ${
+                    inlinePresentingLessonId === lesson.id ? 'border-primary/60 shadow-md' : ''
+                  }`}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <Badge className="bg-primary/10 text-primary uppercase text-xs">
+                            {getSkillLabel(lesson.skill)}
+                          </Badge>
+                          <Badge variant="outline">{lesson.level}</Badge>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-muted text-muted-foreground"
+                            title="Chỉnh sửa bài học"
+                            onClick={() => {
+                              setEditingLesson(lesson);
+                              setIsEditLessonOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-destructive h-8 w-8 hover:bg-destructive/10" 
+                            onClick={() => handleUnlinkLesson(lesson.id)}
+                            title="Gỡ khỏi lớp"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-destructive h-8 w-8 hover:bg-destructive/10" 
-                        onClick={() => handleUnlinkLesson(lesson.id)}
-                        title="Gỡ khỏi lớp"
+                      <CardTitle className="text-base font-bold pt-2">{lesson.title_vi}</CardTitle>
+                      <CardDescription className="text-xs line-clamp-1">{lesson.title}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-4 flex justify-between items-center text-xs text-muted-foreground border-t pt-3">
+                      <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {lesson.duration_minutes} phút</span>
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        variant={inlinePresentingLessonId === lesson.id ? 'outline' : 'hero'}
+                        onClick={() => {
+                          if (inlinePresentingLessonId === lesson.id) {
+                            setInlinePresentingLessonId(null);
+                            setPresentingLesson(null);
+                          } else {
+                            setInlinePresentingLessonId(lesson.id);
+                            setPresentingLesson(lesson);
+                          }
+                        }}
                       >
-                        <X className="w-4 h-4" />
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        {inlinePresentingLessonId === lesson.id ? 'Thu lại' : 'Trình chiếu'}
                       </Button>
-                    </div>
-                    <CardTitle className="text-base font-bold pt-2">{lesson.title_vi}</CardTitle>
-                    <CardDescription className="text-xs line-clamp-1">{lesson.title}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pb-4 flex justify-between items-center text-xs text-muted-foreground border-t pt-3">
-                    <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {lesson.duration_minutes} phút</span>
-                    <Button size="sm" className="gap-1.5" variant="hero" onClick={() => setPresentingLesson(lesson)}>
-                      <Play className="w-3.5 h-3.5 fill-current" /> Trình chiếu
-                    </Button>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+
+                  {/* Inline Presentation Panel */}
+                  {inlinePresentingLessonId === lesson.id && presentingLesson && (
+                    <InlineLessonPresentation
+                      lesson={presentingLesson}
+                      onClose={() => {
+                        setInlinePresentingLessonId(null);
+                        setPresentingLesson(null);
+                      }}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -1391,6 +1481,35 @@ const TeacherClasses = () => {
             onCancel={() => setIsCreateLessonOpen(false)}
             isEditing={false}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Lesson Dialog */}
+      <Dialog open={isEditLessonOpen} onOpenChange={(open) => { setIsEditLessonOpen(open); if (!open) setEditingLesson(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Chỉnh sửa bài học</DialogTitle>
+          </DialogHeader>
+          {editingLesson && (
+            <LessonEditor
+              initialData={{
+                title: editingLesson.title || '',
+                title_vi: editingLesson.title_vi || '',
+                description: '',
+                description_vi: editingLesson.description_vi || '',
+                skill: editingLesson.skill || 'reading',
+                level: editingLesson.level || 'N5',
+                duration_minutes: editingLesson.duration_minutes || 15,
+                xp_reward: editingLesson.xp_reward || 25,
+                content_html: editingLesson.content_html || '',
+                slide_url: (editingLesson as any).slide_url || '',
+                document_url: (editingLesson as any).document_url || '',
+              }}
+              onSubmit={handleEditLessonSubmit}
+              onCancel={() => { setIsEditLessonOpen(false); setEditingLesson(null); }}
+              isEditing={true}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
