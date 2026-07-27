@@ -171,7 +171,7 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[92vh] p-0 overflow-hidden gap-0 flex flex-col">
+      <DialogContent showCloseButton={false} className="max-w-4xl h-[92vh] p-0 overflow-hidden gap-0 flex flex-col">
         {/* Header + Stepper */}
         <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent space-y-3">
           <div className="flex items-center justify-between">
