@@ -29,6 +29,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ShoppingCart, Check, X, Clock, Eye, DollarSign, Users, TrendingUp } from 'lucide-react';
 import { formatWithJST } from '@/lib/dateUtils';
+import { exportToGoogleSheetsCSV } from '@/lib/exportUtils';
 
 interface Order {
   id: string;
@@ -237,11 +238,32 @@ const AdminOrders = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Quản lý đơn hàng</h1>
           <p className="text-muted-foreground mt-1">Xem và duyệt các đơn hàng mua khóa học</p>
         </div>
+        {orders.length > 0 && (
+          <Button
+            variant="outline"
+            className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50 font-semibold"
+            onClick={() => {
+              const headers = ['Mã đơn hàng', 'Khách hàng', 'Khóa học', 'Số tiền (VND)', 'Phương thức', 'Trạng thái', 'Ngày tạo'];
+              const rows = orders.map(o => [
+                o.id,
+                o.profiles?.full_name || 'N/A',
+                o.courses?.title_vi || 'N/A',
+                o.amount,
+                getPaymentMethodLabel(o.payment_method),
+                getStatusLabel(o.payment_status),
+                formatWithJST(o.created_at, true)
+              ]);
+              exportToGoogleSheetsCSV('Bao_Cao_Don_Hang_Tai_Chinh', headers, rows);
+            }}
+          >
+            📊 Xuất Báo Cáo (Google Sheets)
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}

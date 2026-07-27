@@ -20,6 +20,7 @@ import {
 import { Bell, Send, Users, User, Clock, CheckCircle, FileText, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { formatWithJST } from '@/lib/dateUtils';
 
 interface ClassData {
   id: string;
@@ -66,12 +67,49 @@ const TeacherNotifications = () => {
     targetStudents: [] as string[]
   });
 
+  const [receivedNotifications, setReceivedNotifications] = useState<any[]>([]);
+
   useEffect(() => {
     if (user) {
       fetchClassesAndStudents();
       fetchSentNotifications();
+      fetchReceivedNotifications();
+
+      const channel = supabase
+        .channel(`teacher-notifications-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const newNotif = payload.new;
+            setReceivedNotifications(prev => [newNotif, ...prev.filter(n => n.id !== newNotif.id)]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
+
+  const fetchReceivedNotifications = async () => {
+    try {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      setReceivedNotifications(data || []);
+    } catch (err) {
+      console.error('Error fetching received notifications:', err);
+    }
+  };
 
   const fetchClassesAndStudents = async () => {
     try {
@@ -295,6 +333,10 @@ const TeacherNotifications = () => {
 
       <Tabs defaultValue="compose" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="inbox" className="gap-2">
+            <Bell className="w-4 h-4" />
+            Hộp thư đến ({receivedNotifications.filter(n => !n.is_read).length})
+          </TabsTrigger>
           <TabsTrigger value="compose" className="gap-2">
             <Send className="w-4 h-4" />
             Soạn thông báo
@@ -575,6 +617,47 @@ const TeacherNotifications = () => {
               <p className="text-sm text-muted-foreground mt-4 text-center">
                 Click vào mẫu để sử dụng, sau đó chỉnh sửa nội dung theo ý muốn
               </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inbox">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-primary" />
+                Thông báo đến dành cho Giảng viên ({receivedNotifications.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {receivedNotifications.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Bell className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  Không có thông báo đến nào.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {receivedNotifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`p-4 rounded-xl border flex justify-between items-start gap-4 transition-all ${
+                        !n.is_read ? 'bg-primary/5 border-primary/30 shadow-sm' : 'bg-card border-border'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-foreground">{n.title}</span>
+                          {!n.is_read && <Badge className="bg-primary text-primary-foreground text-[10px]">Mới</Badge>}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{n.message}</p>
+                        <p className="text-xs text-muted-foreground pt-1">
+                          📅 {formatWithJST(n.created_at, true)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

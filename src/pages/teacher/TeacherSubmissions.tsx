@@ -13,6 +13,7 @@ import { FileText, CheckCircle, Clock, AlertCircle, Star, User, BookOpen, Calend
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatWithJST } from '@/lib/dateUtils';
+import { exportToGoogleSheetsCSV } from '@/lib/exportUtils';
 
 interface Submission {
   id: string;
@@ -291,6 +292,27 @@ const TeacherSubmissions = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {submissions.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                const headers = ['Họ và tên học viên', 'Tên bài tập', 'Bài học', 'Trạng thái', 'Điểm số', 'Thời gian nộp', 'Nhận xét của giáo viên'];
+                const rows = submissions.map(s => [
+                  s.profile?.full_name || 'Không rõ',
+                  s.exercise?.title_vi || s.exercise?.title || 'N/A',
+                  s.lesson?.title_vi || s.lesson?.title || 'N/A',
+                  s.status === 'graded' ? 'Đã chấm' : 'Chờ chấm',
+                  s.score !== null ? `${s.score}/100` : 'Chưa có',
+                  formatWithJST(s.submitted_at, true),
+                  s.feedback || ''
+                ]);
+                exportToGoogleSheetsCSV('Bang_Diem_Bai_Nop_Hoc_Vien', headers, rows);
+              }}
+              className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50 text-xs sm:text-sm font-semibold"
+            >
+              📊 Xuất Bảng Điểm (Google Sheets)
+            </Button>
+          )}
           <Button variant="outline" onClick={fetchSubmissions}>
             Làm mới
           </Button>

@@ -6,11 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { 
   Building, GraduationCap, Calendar, Video, Clock, 
-  BookOpen, FileText, CheckCircle2, MessageSquare, Star, ArrowLeft
+  BookOpen, FileText, CheckCircle2, MessageSquare, Star, ArrowLeft, UserX, AlertCircle
 } from 'lucide-react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
+import { sendAbsenceNotification } from '@/lib/emailService';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,6 +35,8 @@ interface ClassData {
   end_date: string | null;
   is_active: boolean;
   teacher_id: string;
+  total_sessions?: number | null;
+  custom_fields?: any;
   teacher?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -95,6 +107,61 @@ const MyClasses = () => {
   
   // Active lesson details inside classroom
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+
+  // Absence & Makeup state
+  const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = useState(false);
+  const [selectedSessionToAbsence, setSelectedSessionToAbsence] = useState<ClassSession | null>(null);
+  const [absenceReason, setAbsenceReason] = useState('');
+  const [submittingAbsence, setSubmittingAbsence] = useState(false);
+  const [studentAttendance, setStudentAttendance] = useState<any[]>([]);
+
+  const fetchAttendanceRecords = async (classId: string) => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('class_id', classId)
+      .eq('student_id', user.id);
+    setStudentAttendance(data || []);
+  };
+
+  const handleRequestAbsence = async () => {
+    if (!selectedSessionToAbsence || !selectedClass || !user) return;
+    try {
+      setSubmittingAbsence(true);
+      
+      await sendAbsenceNotification({
+        studentName: user.user_metadata?.full_name || user.email || 'Học viên',
+        studentEmail: user.email,
+        className: selectedClass.name_vi,
+        sessionDate: selectedSessionToAbsence.session_date,
+        reason: absenceReason.trim() || 'Có việc bận cá nhân',
+        teacherId: selectedClass.teacher_id
+      });
+
+      await supabase.from('attendance').insert({
+        class_id: selectedClass.id,
+        student_id: user.id,
+        session_date: selectedSessionToAbsence.session_date,
+        status: 'excused_absence',
+        notes: `Báo vắng: ${absenceReason.trim() || 'Có việc bận cá nhân'}`
+      });
+
+      toast({
+        title: 'Đã gửi thông báo vắng',
+        description: 'Thông báo vắng học đã được gửi tới giáo viên phụ trách.'
+      });
+
+      setIsAbsenceDialogOpen(false);
+      setAbsenceReason('');
+      setSelectedSessionToAbsence(null);
+      fetchAttendanceRecords(selectedClass.id);
+    } catch (err) {
+      toast({ title: 'Lỗi', description: 'Không thể gửi đơn xin nghỉ', variant: 'destructive' });
+    } finally {
+      setSubmittingAbsence(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -409,15 +476,35 @@ const MyClasses = () => {
                             <p className="text-xs text-muted-foreground italic line-clamp-2">📝 {session.notes}</p>
                           )}
                         </div>
-                        {session.meet_link ? (
-                          <Button size="sm" variant="hero" className="gap-2 w-full md:w-auto shrink-0" asChild>
-                            <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
-                              <Video className="w-4 h-4" /> Vào học Meeting
-                            </a>
-                          </Button>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">Chưa có link</Badge>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto">
+                          {studentAttendance.some(a => a.session_date === session.session_date && a.status === 'excused_absence') ? (
+                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">
+                              Đã báo vắng
+                            </Badge>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                setSelectedSessionToAbsence(session);
+                                setIsAbsenceDialogOpen(true);
+                              }}
+                            >
+                              <UserX className="w-3.5 h-3.5" /> Báo vắng
+                            </Button>
+                          )}
+
+                          {session.meet_link ? (
+                            <Button size="sm" variant="hero" className="gap-2 shrink-0" asChild>
+                              <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
+                                <Video className="w-4 h-4" /> Vào học Meeting
+                              </a>
+                            </Button>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">Chưa có link</Badge>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -683,6 +770,54 @@ const MyClasses = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Absence Request Dialog */}
+      <Dialog open={isAbsenceDialogOpen} onOpenChange={setIsAbsenceDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <UserX className="w-5 h-5" /> Báo vắng học / Xin nghỉ
+            </DialogTitle>
+          </DialogHeader>
+          {selectedSessionToAbsence && (
+            <div className="space-y-4 py-2">
+              <div className="bg-muted/40 p-3 rounded-lg border space-y-1 text-sm">
+                <p className="font-bold text-foreground">{selectedSessionToAbsence.topic || 'Buổi học trực tuyến'}</p>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>📅 {formatWithJST(selectedSessionToAbsence.session_date, false)}</span>
+                  <span>⏰ {formatTimeWithJST(selectedSessionToAbsence.start_time)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Lý do xin vắng học</Label>
+                <Textarea
+                  value={absenceReason}
+                  onChange={(e) => setAbsenceReason(e.target.value)}
+                  placeholder="Ví dụ: Có lịch bận đột xuất, bị ốm,..."
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg text-xs text-amber-800 dark:text-amber-400 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
+                <span>Thông báo vắng sẽ được tự động gửi tới giáo viên phụ trách để xếp lịch học bù cho bạn khi có lớp bù phù hợp.</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsAbsenceDialogOpen(false)}>Hủy</Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleRequestAbsence} 
+              disabled={submittingAbsence}
+            >
+              {submittingAbsence ? 'Đang gửi...' : 'Gửi thông báo vắng'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

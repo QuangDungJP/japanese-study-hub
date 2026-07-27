@@ -89,10 +89,20 @@ const NotificationsManager = () => {
     setSending(true);
 
     try {
-      if (formData.user_id === 'all') {
-        // Send to all users
-        const notifications = users.map(user => ({
-          user_id: user.user_id,
+      if (formData.user_id === 'all' || formData.user_id === 'teachers' || formData.user_id === 'students') {
+        let targetUsers = users;
+        if (formData.user_id === 'teachers') {
+          const { data: teacherRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'teacher');
+          const teacherIds = teacherRoles?.map(r => r.user_id) || [];
+          targetUsers = users.filter(u => teacherIds.includes(u.user_id));
+        } else if (formData.user_id === 'students') {
+          const { data: studentRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'user');
+          const studentIds = studentRoles?.map(r => r.user_id) || [];
+          targetUsers = users.filter(u => studentIds.includes(u.user_id));
+        }
+
+        const notifications = targetUsers.map(u => ({
+          user_id: u.user_id,
           title: formData.title,
           message: formData.message,
           type: formData.type,
@@ -102,7 +112,7 @@ const NotificationsManager = () => {
         const { error } = await supabase.from('notifications').insert(notifications);
         if (error) throw error;
         
-        toast({ title: 'Thành công', description: `Đã gửi thông báo đến ${users.length} người dùng` });
+        toast({ title: 'Thành công', description: `Đã gửi thông báo đến ${targetUsers.length} người dùng` });
       } else {
         // Send to specific user
         const { error } = await supabase.from('notifications').insert({
@@ -174,7 +184,19 @@ const NotificationsManager = () => {
                     <SelectItem value="all">
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4" />
-                        Tất cả học viên ({users.length})
+                        Tất cả người dùng ({users.length})
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="teachers">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-primary" />
+                        Tất cả Giảng viên
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="students">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-green-600" />
+                        Tất cả Học viên
                       </div>
                     </SelectItem>
                     {users.map(user => (
