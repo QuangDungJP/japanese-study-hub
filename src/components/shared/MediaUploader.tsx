@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, Image, Film, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Upload, X, Image, Film, Loader2, Check, AlertCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface MediaUploaderProps {
   value?: string;
   onChange: (url: string) => void;
-  accept?: 'image' | 'video' | 'both';
+  accept?: 'image' | 'video' | 'document' | 'both' | 'any';
   bucket?: string;
   folder?: string;
   maxSizeMB?: number;
@@ -37,36 +37,28 @@ const MediaUploader = ({
   const acceptTypes = {
     image: 'image/*',
     video: 'video/*',
+    document: '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt',
     both: 'image/*,video/*',
+    any: 'image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt',
   };
 
   const isVideo = value?.match(/\.(mp4|webm|ogg|mov)$/i);
   const isImage = value?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
+  const isDoc = value?.match(/\.(pdf|doc|docx|ppt|pptx|xls|xlsx|zip|txt)$/i);
 
   const handleFile = async (file: File) => {
     setError(null);
 
-    // Validate file type
-    const isValidImage = file.type.startsWith('image/');
-    const isValidVideo = file.type.startsWith('video/');
-
-    if (accept === 'image' && !isValidImage) {
-      setError('Chỉ chấp nhận file hình ảnh');
-      return;
-    }
-    if (accept === 'video' && !isValidVideo) {
-      setError('Chỉ chấp nhận file video');
-      return;
-    }
-    if (accept === 'both' && !isValidImage && !isValidVideo) {
-      setError('File không hợp lệ');
-      return;
-    }
-
     // Validate file size
     const sizeMB = file.size / (1024 * 1024);
     if (sizeMB > maxSizeMB) {
-      setError(`File quá lớn (tối đa ${maxSizeMB}MB)`);
+      const errMsg = `⚠️ Tệp "${file.name}" vượt dung lượng (${sizeMB.toFixed(1)}MB > ${maxSizeMB}MB). Vui lòng nén file hoặc chia sẻ link Google Drive!`;
+      setError(errMsg);
+      toast({
+        title: '⚠️ Tệp quá dung lượng cho phép',
+        description: `Tệp ${sizeMB.toFixed(1)}MB lớn hơn giới hạn ${maxSizeMB}MB. Hãy nén file PDF hoặc tải lên Google Drive rồi dán link!`,
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -116,13 +108,16 @@ const MediaUploader = ({
 
   const handleRemove = async () => {
     if (value) {
-      // Extract file path from URL
-      const url = new URL(value);
-      const pathParts = url.pathname.split('/');
-      const bucketIndex = pathParts.findIndex(p => p === bucket);
-      if (bucketIndex !== -1) {
-        const filePath = pathParts.slice(bucketIndex + 1).join('/');
-        await supabase.storage.from(bucket).remove([filePath]);
+      try {
+        const url = new URL(value);
+        const pathParts = url.pathname.split('/');
+        const bucketIndex = pathParts.findIndex(p => p === bucket);
+        if (bucketIndex !== -1) {
+          const filePath = pathParts.slice(bucketIndex + 1).join('/');
+          await supabase.storage.from(bucket).remove([filePath]);
+        }
+      } catch (e) {
+        // ignore if external url
       }
     }
     onChange('');
@@ -133,32 +128,33 @@ const MediaUploader = ({
     video: 'aspect-video',
     square: 'aspect-square',
     banner: 'aspect-[3/1]',
-    auto: 'min-h-[180px]',
+    auto: 'min-h-[140px]',
   };
 
   return (
     <div className={cn('space-y-2', className)}>
       {value ? (
         <div className={cn(
-          'relative border border-border overflow-hidden bg-muted/50',
+          'relative border border-border rounded-xl overflow-hidden bg-muted/50 p-2',
           aspectRatioClass[aspectRatio]
         )}>
           {isVideo ? (
             <video
               src={value}
               controls
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain max-h-[180px]"
             />
           ) : isImage ? (
             <img
               src={value}
               alt="Uploaded media"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain max-h-[180px]"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                Xem file đã upload
+            <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center space-y-2">
+              <FileText className="w-8 h-8 text-primary" />
+              <a href={value} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-primary hover:underline break-all">
+                {value.split('/').pop() || 'Xem tài liệu đính kèm'}
               </a>
             </div>
           )}
@@ -167,15 +163,15 @@ const MediaUploader = ({
             type="button"
             variant="destructive"
             size="icon"
-            className="absolute top-2 right-2 rounded-full shadow-lg"
+            className="absolute top-2 right-2 rounded-full shadow-lg h-7 w-7"
             onClick={handleRemove}
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </Button>
 
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs text-muted-foreground">
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-foreground border shadow-sm">
             <Check className="w-3 h-3 text-green-500" />
-            Đã upload
+            Đã tải lên
           </div>
         </div>
       ) : (
@@ -185,8 +181,8 @@ const MediaUploader = ({
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
           className={cn(
-            'relative rounded-xl border-2 border-dashed transition-all cursor-pointer',
-            'flex flex-col items-center justify-center gap-3 p-6',
+            'relative rounded-xl border-2 border-dashed transition-all cursor-pointer p-4',
+            'flex flex-col items-center justify-center gap-2',
             aspectRatioClass[aspectRatio],
             dragActive
               ? 'border-primary bg-primary/5'
@@ -197,34 +193,35 @@ const MediaUploader = ({
         >
           {uploading ? (
             <>
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">Đang upload...</span>
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="text-xs font-medium text-muted-foreground">Đang upload file...</span>
             </>
           ) : (
             <>
               <div className="flex items-center gap-2">
-                {accept === 'image' ? (
-                  <Image className="w-8 h-8 text-muted-foreground" />
-                ) : accept === 'video' ? (
-                  <Film className="w-8 h-8 text-muted-foreground" />
-                ) : (
+                {accept === 'image' && <Image className="w-6 h-6 text-muted-foreground" />}
+                {accept === 'video' && <Film className="w-6 h-6 text-muted-foreground" />}
+                {accept === 'document' && <FileText className="w-6 h-6 text-primary" />}
+                {(accept === 'both' || accept === 'any') && (
                   <>
-                    <Image className="w-6 h-6 text-muted-foreground" />
-                    <Film className="w-6 h-6 text-muted-foreground" />
+                    <Image className="w-5 h-5 text-muted-foreground" />
+                    <Film className="w-5 h-5 text-muted-foreground" />
+                    <FileText className="w-5 h-5 text-muted-foreground" />
                   </>
                 )}
               </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-foreground">{placeholder}</p>
-                <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-center space-y-0.5">
+                <p className="text-xs font-bold text-foreground">{placeholder}</p>
+                <p className="text-[11px] text-muted-foreground">
                   {accept === 'image' && 'JPG, PNG, GIF, WebP'}
                   {accept === 'video' && 'MP4, WebM, MOV'}
-                  {accept === 'both' && 'Hình ảnh hoặc Video'}
+                  {accept === 'document' && 'PDF, DOC, DOCX, PPTX, ZIP'}
+                  {(accept === 'both' || accept === 'any') && 'Hình ảnh, Video, PDF hoặc DOC'}
                   {' • '}Tối đa {maxSizeMB}MB
                 </p>
               </div>
-              <Button type="button" variant="outline" size="sm" className="mt-2">
-                <Upload className="w-4 h-4 mr-2" />
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs px-3 mt-1">
+                <Upload className="w-3.5 h-3.5 mr-1" />
                 Chọn file
               </Button>
             </>
@@ -241,8 +238,8 @@ const MediaUploader = ({
       )}
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-destructive">
-          <AlertCircle className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-xs text-destructive font-medium">
+          <AlertCircle className="w-3.5 h-3.5" />
           {error}
         </div>
       )}
