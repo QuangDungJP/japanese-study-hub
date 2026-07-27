@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, ArrowRight, Play, Eye, EyeOff,
-  CheckCircle2, RefreshCw, X 
+  CheckCircle2, RefreshCw, X, ExternalLink, FileText, BookOpen
 } from 'lucide-react';
 
 interface Lesson {
@@ -17,6 +17,8 @@ interface Lesson {
   skill: string;
   level: string;
   content_html?: string | null;
+  document_url?: string | null;
+  slide_url?: string | null;
 }
 
 interface Exercise {
@@ -40,12 +42,14 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [useGoogleEmbed, setUseGoogleEmbed] = useState(false);
 
   useEffect(() => {
     if (lesson && isOpen) {
       fetchExercises(lesson.id);
       setCurrentSlide(0);
       setShowAnswer(false);
+      setUseGoogleEmbed(false);
     }
   }, [lesson, isOpen]);
 
@@ -68,10 +72,10 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
 
   if (!lesson) return null;
 
-  // Slides:
-  // Slide 0: Cover / Intro
-  // Slide 1: Content html
-  // Slide 2 to (2 + exercises.length - 1): Exercises
+  // Helper url extractors
+  const pdfUrl = lesson.document_url || (lesson.content_html?.match(/(https?:[^\s<"']+\.pdf[^\s<"']*)/i)?.[1]) || null;
+  const slideUrl = lesson.slide_url || (lesson.content_html?.match(/(https?:\/\/(?:docs\.google\.com|canva\.com)[^\s<"']+)/i)?.[1]) || null;
+
   const totalSlides = 2 + exercises.length;
 
   const handleNext = () => {
@@ -121,7 +125,6 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
             </Card>
           )}
 
-          {/* Exercise content (options, etc.) */}
           {exercise.exercise_type === 'quiz' && options.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               {options.map((opt: string, oIdx: number) => (
@@ -182,24 +185,33 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-2 shadow-2xl rounded-3xl">
-        <DialogHeader className="px-6 py-4 border-b bg-muted/40 flex flex-row items-center justify-between">
+      <DialogContent className="max-w-7xl w-[98vw] h-[95vh] flex flex-col p-0 overflow-hidden bg-background border-2 shadow-2xl rounded-3xl">
+        <DialogHeader className="px-6 py-3 border-b bg-muted/40 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">
               📺
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold text-foreground">
-                Chế độ trình chiếu bài giảng
+              <DialogTitle className="text-lg font-bold text-foreground">
+                Chế độ Trình chiếu bài giảng Website
               </DialogTitle>
               <p className="text-xs text-muted-foreground">
-                Phù hợp để trình chiếu màn hình, máy chiếu hoặc Zoom
+                {lesson.title_vi}
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {(pdfUrl || slideUrl) && (
+              <Button size="sm" variant="outline" asChild className="gap-1.5 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10">
+                <a href={pdfUrl || slideUrl!} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-3.5 h-3.5" /> Mở link gốc (Backup)
+                </a>
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </DialogHeader>
 
         {loading ? (
@@ -208,7 +220,7 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
             <p className="text-muted-foreground font-medium">Đang tải học liệu...</p>
           </div>
         ) : (
-          <div className="flex-1 p-6 md:p-10 overflow-y-auto bg-card/50">
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-card/50 flex flex-col">
             {/* Slide 0: Cover */}
             {currentSlide === 0 && (
               <div className="h-full flex flex-col justify-center items-center text-center space-y-6 max-w-3xl mx-auto animate-fade-in">
@@ -225,28 +237,87 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   {lesson.description_vi || 'Bài học trực quan giúp nâng cao trình độ tiếng Nhật nhanh chóng.'}
                 </p>
+
+                {/* Direct PDF / Slide Preview Banner */}
+                {(pdfUrl || slideUrl) && (
+                  <div className="bg-primary/5 border border-primary/20 p-4 rounded-2xl w-full flex items-center justify-between text-left">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-7 h-7 text-primary shrink-0" />
+                      <div>
+                        <p className="font-bold text-sm text-foreground">Tài liệu / Slide đính kèm bài giảng</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{pdfUrl || slideUrl}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={handleNext} className="shrink-0 font-bold gap-1.5 shadow-md">
+                      Trình chiếu PDF / Slide ngay
+                    </Button>
+                  </div>
+                )}
+
                 <Button size="lg" onClick={handleNext} className="gap-2 text-lg py-6 px-8 rounded-full shadow-lg hover:shadow-xl transition-all">
                   <Play className="w-5 h-5 fill-current" /> Bắt đầu bài giảng
                 </Button>
               </div>
             )}
 
-            {/* Slide 1: Content HTML */}
+            {/* Slide 1: In-Browser Live PDF & Slide Presentation */}
             {currentSlide === 1 && (
-              <div className="space-y-6 animate-fade-in h-full flex flex-col justify-between">
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-extrabold text-primary border-b pb-3">{lesson.title_vi}</h2>
-                  {lesson.content_html ? (
-                    <div 
-                      className="prose prose-lg md:prose-xl dark:prose-invert max-w-none text-foreground leading-loose py-4 font-normal"
-                      dangerouslySetInnerHTML={{ __html: lesson.content_html }}
-                    />
-                  ) : (
-                    <div className="text-center py-16 text-muted-foreground text-xl">
-                      Chưa có nội dung lý thuyết chi tiết cho bài giảng này.
-                    </div>
-                  )}
+              <div className="space-y-4 animate-fade-in flex-1 flex flex-col">
+                {/* Top Backup Link Bar */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/60 border text-xs shrink-0">
+                  <div className="flex items-center gap-2 font-medium text-foreground">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    <span>Trình chiếu tài liệu trực tiếp trên Website</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {pdfUrl && (
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground hover:text-foreground" onClick={() => setUseGoogleEmbed(prev => !prev)}>
+                        {useGoogleEmbed ? 'Chuyển Native PDF' : 'Chuyển Google Viewer'}
+                      </Button>
+                    )}
+                    {(pdfUrl || slideUrl) && (
+                      <Button size="sm" variant="outline" asChild className="h-7 text-xs font-bold gap-1 border-primary/30 text-primary">
+                        <a href={pdfUrl || slideUrl!} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-3 h-3" /> Link gốc Backup
+                        </a>
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {/* PDF or Slide Embedder */}
+                {pdfUrl ? (
+                  <div className="flex-1 w-full min-h-[500px] rounded-2xl overflow-hidden border shadow-inner bg-card relative">
+                    <iframe
+                      src={useGoogleEmbed ? `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true` : pdfUrl}
+                      className="w-full h-full min-h-[550px]"
+                      title="Trình chiếu tài liệu PDF"
+                    />
+                  </div>
+                ) : slideUrl ? (
+                  <div className="flex-1 w-full min-h-[500px] rounded-2xl overflow-hidden border shadow-inner bg-card">
+                    <iframe
+                      src={slideUrl}
+                      className="w-full h-full min-h-[550px]"
+                      title="Trình chiếu Slide"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : (
+                  <div className="flex-1 space-y-4">
+                    <h2 className="text-2xl font-extrabold text-primary border-b pb-3">{lesson.title_vi}</h2>
+                    {lesson.content_html ? (
+                      <div 
+                        className="prose prose-lg dark:prose-invert max-w-none text-foreground leading-relaxed p-4 bg-card rounded-2xl border"
+                        dangerouslySetInnerHTML={{ __html: lesson.content_html }}
+                      />
+                    ) : (
+                      <div className="text-center py-16 text-muted-foreground text-xl">
+                        Chưa có nội dung lý thuyết chi tiết cho bài giảng này.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -256,7 +327,7 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
         )}
 
         {/* Footer controls */}
-        <div className="px-6 py-4 border-t bg-muted/40 flex justify-between items-center">
+        <div className="px-6 py-3 border-t bg-muted/40 flex justify-between items-center shrink-0">
           <span className="text-sm font-bold text-muted-foreground">
             Slide {currentSlide + 1} / {totalSlides}
           </span>
@@ -265,16 +336,16 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
               variant="outline" 
               onClick={handlePrev} 
               disabled={currentSlide === 0}
-              className="gap-2 font-bold px-5 py-5 rounded-full"
+              className="gap-2 font-bold px-5 py-4 rounded-full text-sm"
             >
-              <ArrowLeft className="w-5 h-5" /> Trang trước
+              <ArrowLeft className="w-4 h-4" /> Trang trước
             </Button>
             <Button 
               onClick={handleNext} 
               disabled={currentSlide === totalSlides - 1}
-              className="gap-2 font-bold px-5 py-5 rounded-full"
+              className="gap-2 font-bold px-5 py-4 rounded-full text-sm"
             >
-              Trang sau <ArrowRight className="w-5 h-5" />
+              Trang sau <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
