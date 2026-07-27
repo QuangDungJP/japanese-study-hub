@@ -39,6 +39,7 @@ interface ClassSession {
   topic: string | null;
   meet_link: string | null;
   status: string;
+  notes: string | null;
 }
 
 interface Lesson {
@@ -404,11 +405,14 @@ const MyClasses = () => {
                               {formatTimeWithJST(session.start_time)}
                             </span>
                           </div>
+                          {session.notes && (
+                            <p className="text-xs text-muted-foreground italic line-clamp-2">📝 {session.notes}</p>
+                          )}
                         </div>
                         {session.meet_link ? (
                           <Button size="sm" variant="hero" className="gap-2 w-full md:w-auto shrink-0" asChild>
                             <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
-                              <Video className="w-4 h-4" /> Vào học Zoom
+                              <Video className="w-4 h-4" /> Vào học Meeting
                             </a>
                           </Button>
                         ) : (

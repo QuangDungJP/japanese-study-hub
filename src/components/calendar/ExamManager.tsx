@@ -1,68 +1,13 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { CalendarIcon, Plus, Loader2, Pencil, Trash2, Video, Users } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Video, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-
-const formSchema = z.object({
-  title: z.string().optional(),
-  title_vi: z.string().min(1, 'Vui lòng nhập tiêu đề bài kiểm tra'),
-  description: z.string().optional(),
-  description_vi: z.string().optional(),
-  exam_type: z.enum(['quiz', 'midterm', 'final', 'placement']).default('quiz'),
-  exam_date: z.date({ required_error: 'Vui lòng chọn ngày thi' }),
-  start_time: z.string().min(1, 'Vui lòng chọn giờ thi').default('09:00'),
-  duration_minutes: z.number().min(1).default(60),
-  location: z.string().optional(),
-  meet_link: z.string().optional(),
-  max_score: z.number().default(100),
-  passing_score: z.number().default(50),
-  is_published: z.boolean().default(true),
-  class_id: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import ExamBuilder from './ExamBuilder';
 
 interface Exam {
   id: string;
@@ -95,26 +40,6 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '',
-      title_vi: '',
-      description: '',
-      description_vi: '',
-      exam_type: 'quiz',
-      start_time: '09:00',
-      duration_minutes: 60,
-      location: '',
-      meet_link: '',
-      max_score: 100,
-      passing_score: 50,
-      is_published: false,
-      class_id: classId || '',
-    },
-  });
 
   useEffect(() => {
     if (user) {
@@ -155,89 +80,12 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
 
   const openCreateDialog = () => {
     setEditingExam(null);
-    form.reset({
-      title: '',
-      title_vi: '',
-      description: '',
-      description_vi: '',
-      exam_type: 'quiz',
-      start_time: '09:00',
-      duration_minutes: 60,
-      location: '',
-      meet_link: '',
-      max_score: 100,
-      passing_score: 50,
-      is_published: true,
-      class_id: classId || '',
-    });
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (exam: Exam) => {
     setEditingExam(exam);
-    form.reset({
-      title: exam.title,
-      title_vi: exam.title_vi,
-      description: exam.description || '',
-      description_vi: exam.description_vi || '',
-      exam_type: exam.exam_type as 'quiz' | 'midterm' | 'final' | 'placement',
-      exam_date: new Date(exam.exam_date),
-      start_time: exam.start_time,
-      duration_minutes: exam.duration_minutes,
-      location: exam.location || '',
-      meet_link: exam.meet_link || '',
-      max_score: exam.max_score || 100,
-      passing_score: exam.passing_score || 50,
-      is_published: exam.is_published,
-      class_id: exam.class_id || '',
-    });
     setIsDialogOpen(true);
-  };
-
-  const onSubmit = async (values: FormValues) => {
-    if (!user) return;
-
-    setIsSubmitting(true);
-    try {
-      const examData = {
-        title: values.title || values.title_vi,
-        title_vi: values.title_vi,
-        description: values.description || null,
-        description_vi: values.description_vi || null,
-        exam_type: values.exam_type,
-        exam_date: format(values.exam_date, 'yyyy-MM-dd'),
-        start_time: values.start_time,
-        duration_minutes: values.duration_minutes,
-        location: values.location || null,
-        meet_link: values.meet_link || null,
-        max_score: values.max_score,
-        passing_score: values.passing_score,
-        is_published: values.is_published,
-        class_id: values.class_id === 'none' || !values.class_id ? null : values.class_id,
-        teacher_id: user.id,
-      };
-
-      if (editingExam) {
-        const { error } = await supabase
-          .from('exams')
-          .update(examData)
-          .eq('id', editingExam.id);
-        if (error) throw error;
-        toast.success('Đã cập nhật bài kiểm tra');
-      } else {
-        const { error } = await supabase.from('exams').insert(examData);
-        if (error) throw error;
-        toast.success('Đã tạo bài kiểm tra mới');
-      }
-
-      setIsDialogOpen(false);
-      fetchData();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Có lỗi xảy ra', { description: errorMessage });
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleDelete = async (id: string) => {
@@ -281,7 +129,7 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Quản lý bài kiểm tra</h2>
-          <p className="text-muted-foreground">Tạo và quản lý các bài kiểm tra, thi</p>
+          <p className="text-muted-foreground">Tạo và quản lý các bài kiểm tra, câu hỏi trắc nghiệm</p>
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="w-4 h-4 mr-2" />
@@ -341,266 +189,14 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingExam ? 'Chỉnh sửa bài kiểm tra' : 'Tạo bài kiểm tra mới'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tiêu đề EN / JP (Không bắt buộc)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Exam title (tự động lấy theo tiếng Việt nếu trống)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="title_vi"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tên bài kiểm tra (Bắt buộc)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ví dụ: Kiểm tra Từ vựng N5 Bài 1" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="exam_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Loại kiểm tra</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="quiz">Quiz</SelectItem>
-                          <SelectItem value="midterm">Giữa kỳ</SelectItem>
-                          <SelectItem value="final">Cuối kỳ</SelectItem>
-                          <SelectItem value="placement">Xếp lớp</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="class_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Lớp (tùy chọn)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn lớp..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">Tất cả</SelectItem>
-                          {classes.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name_vi}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="exam_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Ngày thi</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? format(field.value, 'dd/MM/yyyy') : 'Chọn...'}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="start_time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Giờ bắt đầu</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="duration_minutes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Thời gian (phút)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="max_score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Điểm tối đa</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="passing_score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Điểm đạt</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="meet_link"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Link Google Meet (tùy chọn)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://meet.google.com/..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description_vi"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mô tả</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Mô tả bài kiểm tra..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="is_published"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <FormLabel className="text-base">Công bố</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Học viên có thể xem và đăng ký
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
-                  Hủy
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : editingExam ? (
-                    'Cập nhật'
-                  ) : (
-                    'Tạo mới'
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <ExamBuilder
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        classes={classes.map((c) => ({ id: c.id, name: c.name_vi }))}
+        teacherId={user?.id || ''}
+        initial={editingExam ?? (classId ? { class_id: classId } : undefined)}
+        onSaved={fetchData}
+      />
     </div>
   );
 };

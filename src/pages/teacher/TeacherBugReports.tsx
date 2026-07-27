@@ -150,7 +150,7 @@ const TeacherBugReports = () => {
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
       lesson: 'Bài học',
-      zoom: 'Zoom',
+      zoom: 'Meeting',
       submission: 'Bài nộp',
       other: 'Khác'
     };
@@ -255,7 +255,7 @@ const TeacherBugReports = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="lesson">Bài học</SelectItem>
-                    <SelectItem value="zoom">Zoom</SelectItem>
+                    <SelectItem value="zoom">Meeting</SelectItem>
                     <SelectItem value="submission">Bài nộp</SelectItem>
                     <SelectItem value="other">Khác</SelectItem>
                   </SelectContent>

@@ -31,9 +31,9 @@ const ZoomSection = () => {
   } | null;
 
   const title = zoomContent?.title_vi || "Kết nối trực tiếp với giáo viên bản ngữ";
-  const subtitle = zoomContent?.subtitle_vi || "Học Online với Zoom";
+  const subtitle = zoomContent?.subtitle_vi || "Học Online với Meeting";
   const description = zoomContent?.description_vi || 
-    "Trải nghiệm lớp học trực tuyến chất lượng cao, tương tác trực tiếp như học offline. Công nghệ Zoom HD đảm bảo hình ảnh và âm thanh sắc nét.";
+    "Trải nghiệm lớp học trực tuyến chất lượng cao, tương tác trực tiếp như học offline. Công nghệ Meeting HD đảm bảo hình ảnh và âm thanh sắc nét.";
 
   const features = zoomData?.features?.map(f => ({
     ...f,

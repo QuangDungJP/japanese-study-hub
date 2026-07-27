@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { formatWithJST } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -645,7 +646,7 @@ const AdminCourses = () => {
                   <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                     <span className="flex items-center gap-1"><DollarSign className="w-4 h-4" /><span className="font-semibold text-foreground">{formatPrice(c.price)}</span></span>
                     {c.duration_weeks && <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {c.duration_weeks} tuần</span>}
-                    {c.start_date && <span>📅 {new Date(c.start_date).toLocaleDateString('vi-VN')}</span>}
+                    {c.start_date && <span>📅 {formatWithJST(c.start_date, false)}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

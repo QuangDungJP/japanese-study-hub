@@ -117,6 +117,7 @@ interface ClassSession {
   topic: string | null;
   meet_link: string | null;
   status: string;
+  notes: string | null;
 }
 
 interface Submission {
@@ -187,11 +188,13 @@ const TeacherClasses = () => {
 
   // Session dialog
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<ClassSession | null>(null);
   const [sessionFormData, setSessionFormData] = useState({
     topic: '',
     session_date: '',
     start_time: '18:00',
-    meet_link: ''
+    meet_link: '',
+    notes: ''
   });
 
   // Submission grading modal
@@ -650,27 +653,49 @@ const TeacherClasses = () => {
     }
   };
 
+  const openCreateSessionDialog = () => {
+    setEditingSession(null);
+    setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '' });
+    setIsSessionDialogOpen(true);
+  };
+
+  const openEditSessionDialog = (session: ClassSession) => {
+    setEditingSession(session);
+    setSessionFormData({
+      topic: session.topic || '',
+      session_date: session.session_date,
+      start_time: session.start_time,
+      meet_link: session.meet_link || '',
+      notes: session.notes || ''
+    });
+    setIsSessionDialogOpen(true);
+  };
+
   const handleCreateSession = async () => {
     if (!selectedClass) return;
     try {
-      const { error } = await supabase
-        .from('class_sessions')
-        .insert({
-          class_id: selectedClass.id,
-          topic: sessionFormData.topic,
-          session_date: sessionFormData.session_date,
-          start_time: sessionFormData.start_time,
-          meet_link: sessionFormData.meet_link || null,
-          status: 'scheduled'
-        });
+      const payload = {
+        class_id: selectedClass.id,
+        topic: sessionFormData.topic,
+        session_date: sessionFormData.session_date,
+        start_time: sessionFormData.start_time,
+        meet_link: sessionFormData.meet_link || null,
+        notes: sessionFormData.notes || null,
+        status: 'scheduled'
+      };
+
+      const { error } = editingSession
+        ? await supabase.from('class_sessions').update(payload).eq('id', editingSession.id)
+        : await supabase.from('class_sessions').insert(payload);
 
       if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã tạo lịch học Zoom mới' });
+      toast({ title: 'Thành công', description: editingSession ? 'Đã cập nhật buổi học' : 'Đã tạo lịch học Meeting mới' });
       setIsSessionDialogOpen(false);
-      setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '' });
+      setEditingSession(null);
+      setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '' });
       fetchClassroomDetails(selectedClass.id);
     } catch (err) {
-      toast({ title: 'Lỗi', description: 'Không thể tạo lịch học', variant: 'destructive' });
+      toast({ title: 'Lỗi', description: 'Không thể lưu lịch học', variant: 'destructive' });
     }
   };
 
@@ -955,13 +980,13 @@ const TeacherClasses = () => {
         {/* Tab 1: Stream (Bảng tin) */}
         <TabsContent value="stream" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Lịch dạy Zoom */}
+            {/* Lịch dạy Meeting */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Video className="w-5 h-5 text-primary" /> Lịch Zoom lớp học
+                  <Video className="w-5 h-5 text-primary" /> Lịch Meeting lớp học
                 </h2>
-                <Button size="sm" onClick={() => setIsSessionDialogOpen(true)}>
+                <Button size="sm" onClick={openCreateSessionDialog}>
                   <Plus className="w-4 h-4 mr-1" /> Lên lịch dạy
                 </Button>
               </div>
@@ -969,7 +994,7 @@ const TeacherClasses = () => {
               {classSessions.length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center text-muted-foreground text-sm">
-                    Lớp học chưa được lên lịch dạy Zoom trực tuyến nào.
+                    Lớp học chưa được lên lịch dạy Meeting trực tuyến nào.
                   </CardContent>
                 </Card>
               ) : (
@@ -979,7 +1004,7 @@ const TeacherClasses = () => {
                       <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="space-y-1">
                           <p className="font-semibold text-sm md:text-base text-foreground">
-                            {session.topic || 'Buổi học Zoom trực tiếp'}
+                            {session.topic || 'Buổi học Meeting trực tiếp'}
                           </p>
                           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
@@ -991,16 +1016,24 @@ const TeacherClasses = () => {
                               {formatTimeWithJST(session.start_time)}
                             </span>
                           </div>
+                          {session.notes && (
+                            <p className="text-xs text-muted-foreground italic line-clamp-2">📝 {session.notes}</p>
+                          )}
                         </div>
-                        {session.meet_link ? (
-                          <Button size="sm" variant="outline" className="gap-1.5 shrink-0 w-full md:w-auto" asChild>
-                            <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
-                              <Video className="w-4 h-4 text-primary" /> Vào phòng học Zoom
-                            </a>
+                        <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
+                          {session.meet_link ? (
+                            <Button size="sm" variant="outline" className="gap-1.5 flex-1 md:flex-none" asChild>
+                              <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
+                                <Video className="w-4 h-4 text-primary" /> Vào phòng học Meeting
+                              </a>
+                            </Button>
+                          ) : (
+                            <Badge variant="outline">Chưa gắn link</Badge>
+                          )}
+                          <Button size="icon" variant="ghost" onClick={() => openEditSessionDialog(session)}>
+                            <Edit className="w-4 h-4" />
                           </Button>
-                        ) : (
-                          <Badge variant="outline">Chưa gắn link</Badge>
-                        )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -1287,17 +1320,17 @@ const TeacherClasses = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Create new session/schedule dialouge */}
-      <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
+      {/* Create/edit session/schedule dialogue */}
+      <Dialog open={isSessionDialogOpen} onOpenChange={(open) => { setIsSessionDialogOpen(open); if (!open) setEditingSession(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Lên lịch giảng dạy Zoom</DialogTitle>
+            <DialogTitle>{editingSession ? 'Chỉnh sửa buổi học' : 'Lên lịch giảng dạy Meeting'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-3">
             <div className="space-y-1">
               <Label>Chủ đề / Bài giảng</Label>
-              <Input 
-                value={sessionFormData.topic} 
+              <Input
+                value={sessionFormData.topic}
                 onChange={(e) => setSessionFormData({ ...sessionFormData, topic: e.target.value })}
                 placeholder="Ví dụ: Luyện từ vựng N5 bài 1"
               />
@@ -1305,33 +1338,44 @@ const TeacherClasses = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Ngày học</Label>
-                <Input 
+                <Input
                   type="date"
-                  value={sessionFormData.session_date} 
+                  value={sessionFormData.session_date}
                   onChange={(e) => setSessionFormData({ ...sessionFormData, session_date: e.target.value })}
                 />
               </div>
               <div className="space-y-1">
                 <Label>Giờ học (VN)</Label>
-                <Input 
+                <Input
                   type="time"
-                  value={sessionFormData.start_time} 
+                  value={sessionFormData.start_time}
                   onChange={(e) => setSessionFormData({ ...sessionFormData, start_time: e.target.value })}
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <Label>Link phòng học Zoom</Label>
-              <Input 
-                value={sessionFormData.meet_link} 
+              <Label>Link phòng học Meeting</Label>
+              <Input
+                value={sessionFormData.meet_link}
                 onChange={(e) => setSessionFormData({ ...sessionFormData, meet_link: e.target.value })}
-                placeholder="https://zoom.us/j/..."
+                placeholder="https://meet.google.com/..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Ghi chú / tài liệu buổi học (tùy chọn)</Label>
+              <Textarea
+                value={sessionFormData.notes}
+                onChange={(e) => setSessionFormData({ ...sessionFormData, notes: e.target.value })}
+                placeholder="Ví dụ: link tài liệu, nội dung đã học, việc cần chuẩn bị cho buổi sau..."
+                rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsSessionDialogOpen(false)}>Hủy</Button>
-            <Button onClick={handleCreateSession} disabled={!sessionFormData.topic || !sessionFormData.session_date}>Xác nhận lên lịch</Button>
+            <Button onClick={handleCreateSession} disabled={!sessionFormData.topic || !sessionFormData.session_date}>
+              {editingSession ? 'Lưu thay đổi' : 'Xác nhận lên lịch'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

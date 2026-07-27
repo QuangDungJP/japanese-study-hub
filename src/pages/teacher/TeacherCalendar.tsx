@@ -10,9 +10,9 @@ const TeacherCalendarPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Lịch giảng dạy & Zoom</h1>
+        <h1 className="text-3xl font-bold text-foreground">Lịch giảng dạy & Meeting</h1>
         <p className="text-muted-foreground mt-1">
-          Theo dõi thời khóa biểu giảng dạy, lịch Zoom và phê duyệt yêu cầu nghỉ phép
+          Theo dõi thời khóa biểu giảng dạy, lịch Meeting và phê duyệt yêu cầu nghỉ phép
         </p>
       </div>
 
@@ -20,7 +20,7 @@ const TeacherCalendarPage = () => {
         <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
           <TabsTrigger value="calendar" className="gap-2 font-semibold">
             <Calendar className="w-4 h-4" />
-            <span>Lịch giảng dạy Zoom</span>
+            <span>Lịch giảng dạy Meeting</span>
           </TabsTrigger>
           <TabsTrigger value="leaves" className="gap-2 font-semibold">
             <UserX className="w-4 h-4" />

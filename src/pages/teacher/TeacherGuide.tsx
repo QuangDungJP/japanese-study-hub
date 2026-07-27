@@ -19,7 +19,7 @@ const TeacherGuide = () => {
       title: 'Quản lý Lớp học Google Classroom',
       description: 'Không gian quản lý lớp học toàn diện 5 Tab chuyên nghiệp cho giảng viên.',
       details: [
-        'Bảng tin Stream: Đăng thông báo, link Zoom và trao đổi trực tiếp với học viên',
+        'Bảng tin Stream: Đăng thông báo, link Meeting và trao đổi trực tiếp với học viên',
         'Tab Bài học: Thêm bài giảng vào lớp và kích hoạt Chế độ Trình chiếu slide',
         'Tab Bài kiểm tra & Bài nộp: Xem danh sách bài làm và chấm điểm cho học viên',
         'Tab Học viên: Quản lý danh sách học viên và sĩ số lớp'
@@ -28,10 +28,10 @@ const TeacherGuide = () => {
     {
       step: '02',
       title: 'Sử dụng Chế độ Trình chiếu bài giảng',
-      description: 'Trình chiếu slide tương tác trực quan khi đứng lớp hoặc học qua Zoom.',
+      description: 'Trình chiếu slide tương tác trực quan khi đứng lớp hoặc học qua Meeting.',
       details: [
         'Nhấp nút "Trình chiếu" tại bất kỳ bài học nào trong Lớp học',
-        'Màn hình hiển thị chữ to rõ, chuẩn máy chiếu và chia sẻ màn hình Zoom',
+        'Màn hình hiển thị chữ to rõ, chuẩn máy chiếu và chia sẻ màn hình Meeting',
         'Chuyển slide mượt mà kèm phần dịch nghĩa và âm thanh bài đọc'
       ]
     },
@@ -47,11 +47,11 @@ const TeacherGuide = () => {
     },
     {
       step: '04',
-      title: 'Điểm danh & Tạo phòng học Zoom',
+      title: 'Điểm danh & Tạo phòng học Meeting',
       description: 'Quản lý sĩ số lớp học và lên lịch giảng dạy trực tuyến.',
       details: [
         'Điểm danh nhanh học viên có mặt, vắng mặt hoặc đi muộn',
-        'Cập nhật link phòng học Zoom cho các buổi dạy tiếp theo',
+        'Cập nhật link phòng học Meeting cho các buổi dạy tiếp theo',
         'Phê duyệt các yêu cầu xin nghỉ phép của học viên trong lớp'
       ]
     }

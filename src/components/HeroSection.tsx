@@ -21,7 +21,7 @@ const HeroSection = () => {
   const title = heroContent?.title_vi || "Chinh phục Tiếng Nhật cùng chúng tôi";
   const subtitle = heroContent?.subtitle_vi || "Nền tảng học Tiếng Nhật #1 cho người Việt";
   const description = heroContent?.description_vi || 
-    "Phương pháp học toàn diện 4 kỹ năng: Đọc - Nói - Viết - Nghe. Từ N5 đến N1, luyện thi JLPT với giáo viên bản ngữ qua Zoom.";
+    "Phương pháp học toàn diện 4 kỹ năng: Đọc - Nói - Viết - Nghe. Từ N5 đến N1, luyện thi JLPT với giáo viên bản ngữ qua Meeting.";
   
   const students = statsContent?.students || "50K+";
   const teachers = statsContent?.teachers || "200+";

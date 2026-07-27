@@ -211,7 +211,7 @@ const AdminBookings = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Quản lý đặt lịch</h1>
-        <p className="text-muted-foreground mt-1">Xem và xác nhận các lịch học Zoom của học viên</p>
+        <p className="text-muted-foreground mt-1">Xem và xác nhận các lịch học Meeting của học viên</p>
       </div>
 
       {/* Stats */}

@@ -17,6 +17,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { formatWithJST } from '@/lib/dateUtils';
 
 interface StudentProgressModalProps {
   open: boolean;
@@ -122,7 +123,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
             <div>
               <p className="text-xl font-bold">{student.full_name || 'Chưa đặt tên'}</p>
               <p className="text-sm text-muted-foreground font-normal">
-                Tham gia từ {new Date(student.created_at).toLocaleDateString('vi-VN')}
+                Tham gia từ {formatWithJST(student.created_at, false)}
               </p>
             </div>
           </DialogTitle>
@@ -207,7 +208,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
                     <div>
                       <p className="font-medium text-sm">{cl.lesson?.title_vi || 'Bài học'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {skillLabels[cl.lesson?.skill || ''] || cl.lesson?.skill} • {new Date(cl.completed_at).toLocaleDateString('vi-VN')}
+                        {skillLabels[cl.lesson?.skill || ''] || cl.lesson?.skill} • {formatWithJST(cl.completed_at, false)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">

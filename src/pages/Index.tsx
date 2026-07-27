@@ -94,7 +94,7 @@ const Index = () => {
               <p className="text-xl text-muted-foreground mb-10 animate-slide-up animation-delay-200 leading-relaxed">
                 Phương pháp học toàn diện 4 kỹ năng: Đọc - Nói - Viết - Nghe.
                 <br className="hidden md:block" />
-                Từ N5 đến N1, luyện thi JLPT với giáo viên bản ngữ qua Zoom.
+                Từ N5 đến N1, luyện thi JLPT với giáo viên bản ngữ qua Meeting.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up animation-delay-300">
@@ -326,7 +326,7 @@ const Index = () => {
             <div className="relative z-10 max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 text-white mb-8 border border-white/20">
                 <Video className="w-4 h-4" />
-                <span className="text-sm font-semibold">Học Online qua Zoom</span>
+                <span className="text-sm font-semibold">Học Online qua Meeting</span>
               </div>
               <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
                 Kết nối trực tiếp với giáo viên bản ngữ

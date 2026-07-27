@@ -185,7 +185,7 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-7xl w-[98vw] h-[95vh] flex flex-col p-0 overflow-hidden bg-background border-2 shadow-2xl rounded-3xl">
+      <DialogContent showCloseButton={false} className="max-w-7xl w-[98vw] h-[95vh] flex flex-col p-0 overflow-hidden bg-background border-2 shadow-2xl rounded-3xl">
         <DialogHeader className="px-6 py-3 border-b bg-muted/40 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">

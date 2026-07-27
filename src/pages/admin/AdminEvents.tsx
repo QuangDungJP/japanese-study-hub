@@ -391,7 +391,7 @@ const AdminEvents = () => {
                   <label className="text-sm font-medium">Sự kiện Online</label>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Link Meet/Zoom</label>
+                  <label className="text-sm font-medium">Link Meeting</label>
                   <Input value={editEvent.meet_link || ''} onChange={e => setEditEvent({ ...editEvent, meet_link: e.target.value })} placeholder="https://" disabled={!editEvent.is_online} />
                 </div>
                 <div>

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookOpen, Clock, CalendarClock, Play, Search } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatWithJST } from '@/lib/dateUtils';
 
 const LearnerLessons = () => {
   const { user } = useAuth();
@@ -93,7 +93,7 @@ const LearnerLessons = () => {
                 <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{l.duration_minutes} phút</span>
                   {l.end_at && (
-                    <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />Hạn {format(new Date(l.end_at), 'dd/MM')}</span>
+                    <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />Hạn {formatWithJST(l.end_at, false)}</span>
                   )}
                 </div>
                 <Button asChild size="sm" className="w-full">

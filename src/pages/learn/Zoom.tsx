@@ -149,14 +149,14 @@ const Zoom = () => {
           <div className="flex-1">
             <Badge className="mb-4 bg-accent/20 text-accent border-accent/30">
               <Video className="w-3 h-3 mr-1" />
-              Học Online với Zoom
+              Học Online với Meeting
             </Badge>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Kết nối trực tiếp với giáo viên bản ngữ
             </h1>
             <p className="text-muted-foreground text-lg mb-6 max-w-xl">
               Trải nghiệm lớp học trực tuyến chất lượng cao, tương tác trực tiếp như học offline.
-              Công nghệ Zoom HD đảm bảo hình ảnh và âm thanh sắc nét.
+              Công nghệ Meeting HD đảm bảo hình ảnh và âm thanh sắc nét.
             </p>
             <div className="flex flex-wrap gap-4">
               <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
