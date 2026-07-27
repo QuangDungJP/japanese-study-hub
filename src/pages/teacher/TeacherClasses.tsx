@@ -44,7 +44,7 @@ import { vi } from 'date-fns/locale';
 // New imports
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 import { ExamManager } from '@/components/calendar/ExamManager';
-import { ClassLessonPresentation } from '@/components/teacher/ClassLessonPresentation';
+import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 import LessonEditor from '@/components/teacher/LessonEditor';
 
 interface ClassData {
