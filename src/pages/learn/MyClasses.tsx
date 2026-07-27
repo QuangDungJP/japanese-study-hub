@@ -681,29 +681,52 @@ const MyClasses = () => {
             </Card>
           ) : (
             <div className="space-y-3">
-              {exams.map((exam) => (
-                <Card key={exam.id}>
-                  <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="secondary" className="capitalize">{exam.exam_type}</Badge>
-                        <p className="font-semibold text-sm sm:text-base text-foreground">{exam.title_vi}</p>
+              {exams.map((exam) => {
+                const examDateTime = new Date(`${exam.exam_date}T${exam.start_time}`);
+                const isLocked = new Date() < examDateTime;
+                return (
+                  <Card key={exam.id} className={isLocked ? 'opacity-90 bg-muted/20' : ''}>
+                    <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="capitalize">{exam.exam_type}</Badge>
+                          <p className="font-semibold text-sm sm:text-base text-foreground">{exam.title_vi}</p>
+                          {isLocked ? (
+                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">
+                              🔒 Đúng giờ thi mới mở phòng
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 text-xs">
+                              🟢 Đã mở xem & vào thi
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                          <span>Lịch thi: {formatWithJST(`${exam.exam_date}T${exam.start_time}`, true)}</span>
+                          <span>Thời gian: {exam.duration_minutes} phút</span>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                        <span>Lịch thi: {formatWithJST(`${exam.exam_date}T${exam.start_time}`, true)}</span>
-                        <span>Thời gian: {exam.duration_minutes} phút</span>
-                      </div>
-                    </div>
-                    {exam.meet_link && (
-                      <Button size="sm" variant="outline" className="gap-2 shrink-0 w-full sm:w-auto" asChild>
-                        <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
-                          <Video className="w-4 h-4 text-primary" /> Phòng thi Online
-                        </a>
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      {exam.meet_link && (
+                        <Button 
+                          size="sm" 
+                          variant={isLocked ? "outline" : "hero"} 
+                          className="gap-2 shrink-0 w-full sm:w-auto font-semibold"
+                          disabled={isLocked}
+                          asChild={!isLocked}
+                        >
+                          {isLocked ? (
+                            <span>🔒 Chưa đến giờ thi</span>
+                          ) : (
+                            <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
+                              <Video className="w-4 h-4 text-primary" /> Phòng thi Online
+                            </a>
+                          )}
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>

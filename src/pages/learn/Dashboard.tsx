@@ -122,128 +122,124 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Hero Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-primary via-primary/90 to-accent p-6 md:p-8 text-white shadow-xl overflow-hidden">
+      {/* Welcome Hero Banner with Japanese Motif */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-primary via-indigo-600 to-accent p-6 md:p-8 text-white shadow-2xl overflow-hidden border border-white/20">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-accent/20 rounded-full blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-bold backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5" /> TNQDO Japanese Study Hub
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/15 text-xs font-bold backdrop-blur-md border border-white/20">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> TNQDO Japanese Learning Platform · 日本語学習
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Xin chào {userName || 'Bạn'}! 👋
+              Konnichiwa, {userName || 'Học viên'}! 🌸
             </h1>
-            <p className="text-white/80 text-sm md:text-base max-w-xl font-medium">
-              Chào mừng bạn trở lại. Hãy cùng duy trì chuỗi Streak và hoàn thành mục tiêu Tiếng Nhật hôm nay nhé!
+            <p className="text-white/90 text-sm md:text-base max-w-xl font-medium leading-relaxed">
+              Chào mừng bạn trở lại! Hãy giữ vững ngọn lửa Streak 🔥, hoàn thành bài học và đạt mục tiêu JLPT hôm nay.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" className="gap-2 font-bold shadow-md" asChild>
+            <Button variant="secondary" className="gap-2 font-bold shadow-lg hover:scale-105 transition-transform" asChild>
               <Link to="/learn/my-classes">
-                <Building className="w-4 h-4" /> Lớp học của tôi
+                <Building className="w-4 h-4 text-primary" /> Lớp học của tôi
               </Link>
             </Button>
-            <Button variant="outline" className="bg-white/15 hover:bg-white/25 border-white/30 text-white gap-2 font-bold shadow-md" asChild>
-              <Link to="/learn/guide">
-                <BookOpen className="w-4 h-4" /> Hướng dẫn
-              </Link>
-            </Button>
-            <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-md" asChild>
+            <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-lg hover:scale-105 transition-transform" asChild>
               <Link to="/learn/my-classes">
-                <Play className="w-4 h-4 fill-current" /> Vào lớp học
+                <Play className="w-4 h-4 fill-current text-primary" /> Vào học ngay
               </Link>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Modern Glassmorphic Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-orange-500/20 bg-gradient-to-br from-card to-orange-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-orange-500/10 text-orange-500 border border-orange-200">
-                <Flame className="w-6 h-6 fill-current" />
+              <div className="p-3.5 rounded-2xl bg-orange-500/15 text-orange-500 border border-orange-300/40 shadow-inner">
+                <Flame className="w-7 h-7 fill-current animate-bounce" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Chuỗi Streak</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.streak} ngày</p>
-                <p className="text-xs text-orange-600 font-semibold mt-1">🔥 Giữ vững phong độ!</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-orange-600">Chuỗi Streak</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.streak} <span className="text-sm font-normal text-muted-foreground">ngày</span></p>
+                <p className="text-xs text-orange-600 font-semibold mt-1">🔥 Giữ lửa mỗi ngày!</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-amber-500/20 bg-gradient-to-br from-card to-amber-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-200">
-                <Zap className="w-6 h-6 fill-current" />
+              <div className="p-3.5 rounded-2xl bg-amber-500/15 text-amber-500 border border-amber-300/40 shadow-inner">
+                <Zap className="w-7 h-7 fill-current text-amber-500" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tổng điểm XP</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.totalXp.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">Tích lũy từ bài học</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-600">Điểm XP Tích lũy</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.totalXp.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
+                <p className="text-xs text-amber-600 font-semibold mt-1">⚡ Đạt cấp độ cao hơn</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-emerald-500/20 bg-gradient-to-br from-card to-emerald-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-200">
-                <Target className="w-6 h-6" />
+              <div className="p-3.5 rounded-2xl bg-emerald-500/15 text-emerald-500 border border-emerald-300/40 shadow-inner">
+                <Target className="w-7 h-7 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Bài học đã xong</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.lessonsCompleted}</p>
-                <p className="text-xs text-emerald-600 font-semibold mt-1">Tiến độ tốt</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Bài học hoàn thành</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.lessonsCompleted} <span className="text-sm font-normal text-muted-foreground">bài</span></p>
+                <p className="text-xs text-emerald-600 font-semibold mt-1">🎯 Tiếp tục phát huy</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-purple-500/20 bg-gradient-to-br from-card to-purple-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-purple-500/10 text-purple-500 border border-purple-200">
-                <TrendingUp className="w-6 h-6" />
+              <div className="p-3.5 rounded-2xl bg-purple-500/15 text-purple-600 border border-purple-300/40 shadow-inner">
+                <TrendingUp className="w-7 h-7 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Từ vựng đã thuộc</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.vocabularyMastered}</p>
-                <p className="text-xs text-muted-foreground mt-1">JLPT Flashcard</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-purple-600">Từ vựng đã thuộc</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{userProgress.vocabularyMastered} <span className="text-sm font-normal text-muted-foreground">từ</span></p>
+                <p className="text-xs text-purple-600 font-semibold mt-1">📚 JLPT Mastered</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Daily Goal Card */}
-      <Card className="border-border shadow-soft">
+      {/* Daily Goal Interactive Card */}
+      <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-accent/5 shadow-md overflow-hidden">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <h3 className="text-lg font-extrabold text-foreground flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" /> Mục tiêu học tập hôm nay
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Tích lũy XP để hoàn thành chỉ tiêu hàng ngày</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Tích lũy điểm XP thông qua bài giảng và làm bài tập</p>
             </div>
-            <Badge variant="hero" className="font-bold text-xs px-3 py-1">
+            <Badge variant="hero" className="font-bold text-xs px-4 py-1.5 self-start md:self-auto shadow-sm">
               {userProgress.dailyProgress} / {userProgress.dailyGoal} XP
             </Badge>
           </div>
-          <div className="h-4 bg-muted rounded-full overflow-hidden">
+          <div className="h-4 bg-muted rounded-full overflow-hidden p-0.5 border border-border">
             <div 
-              className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-primary via-indigo-500 to-accent rounded-full transition-all duration-700 shadow-sm"
               style={{ width: `${Math.min((userProgress.dailyProgress / userProgress.dailyGoal) * 100, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-3 font-medium">
+          <p className="text-xs text-muted-foreground mt-3 font-semibold flex items-center gap-1.5">
             {userProgress.dailyProgress >= userProgress.dailyGoal 
-              ? '🎉 Tuyệt vời! Bạn đã hoàn thành xuất sắc mục tiêu hôm nay!'
-              : `💡 Bạn cần thêm ${userProgress.dailyGoal - userProgress.dailyProgress} XP nữa để hoàn thành mục tiêu!`
+              ? '🎉 Tuyệt vời! Bạn đã hoàn thành xuất sắc mục tiêu XP hôm nay!'
+              : `💡 Bạn cần tích lũy thêm ${userProgress.dailyGoal - userProgress.dailyProgress} XP nữa để hoàn thành!`
             }
           </p>
         </CardContent>

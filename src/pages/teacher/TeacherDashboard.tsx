@@ -173,98 +173,98 @@ const TeacherDashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Welcome Card */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-primary via-primary/90 to-accent p-6 md:p-8 text-white shadow-xl overflow-hidden">
+      {/* Hero Welcome Card with Japanese Gradient Motif */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-primary via-indigo-600 to-accent p-6 md:p-8 text-white shadow-2xl overflow-hidden border border-white/20">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-bold backdrop-blur-md">
-              <GraduationCap className="w-4 h-4" /> TNQDO Teacher Space
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/15 text-xs font-bold backdrop-blur-md border border-white/20">
+              <GraduationCap className="w-4 h-4 text-yellow-300" /> TNQDO Teacher Management Portal · 講師ポータル
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Xin chào Giảng viên! 👋
+              Xin chào Giảng viên! 👨‍🏫
             </h1>
-            <p className="text-white/80 text-sm md:text-base max-w-xl font-medium">
-              Quản lý các Lớp học Google Classroom, giảng dạy slide trực quan và theo dõi bài làm học viên.
+            <p className="text-white/90 text-sm md:text-base max-w-xl font-medium leading-relaxed">
+              Quản lý các Lớp học Google Classroom, giảng dạy slide bài học trực quan, duyệt đơn báo vắng & chấm điểm bài nộp.
             </p>
-            <p className="text-xs text-white/70 pt-1 font-mono">
-              📅 Thời gian hệ thống: {formatWithJST(new Date(), true)}
+            <p className="text-xs text-white/80 pt-1 font-mono font-semibold">
+              📅 Giờ Việt Nam (VN): {formatWithJST(new Date(), true)}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" className="gap-2 font-bold shadow-md" asChild>
+            <Button variant="secondary" className="gap-2 font-bold shadow-lg hover:scale-105 transition-transform" asChild>
               <Link to="/teacher/classes">
-                <Building className="w-4 h-4" /> Lớp học Classroom
+                <Building className="w-4 h-4 text-primary" /> Lớp học Classroom
               </Link>
             </Button>
-            <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-md" asChild>
+            <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-lg hover:scale-105 transition-transform" asChild>
               <Link to="/teacher/submissions">
-                <FileText className="w-4 h-4" /> Chấm bài ({stats.pendingSubmissions})
+                <FileText className="w-4 h-4 text-primary" /> Chấm bài ({stats.pendingSubmissions})
               </Link>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Modern Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-emerald-500/20 bg-gradient-to-br from-card to-emerald-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-200">
-                <Building className="w-6 h-6" />
+              <div className="p-3.5 rounded-2xl bg-emerald-500/15 text-emerald-600 border border-emerald-300/40 shadow-inner">
+                <Building className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Lớp học phụ trách</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalClasses}</p>
-                <p className="text-xs text-muted-foreground mt-1">Google Classroom Style</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Lớp học phụ trách</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalClasses} <span className="text-sm font-normal text-muted-foreground">lớp</span></p>
+                <p className="text-xs text-emerald-600 font-semibold mt-1">Google Classroom Active</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-blue-500/20 bg-gradient-to-br from-card to-blue-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-200">
-                <Users className="w-6 h-6" />
+              <div className="p-3.5 rounded-2xl bg-blue-500/15 text-blue-600 border border-blue-300/40 shadow-inner">
+                <Users className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tổng học viên</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalStudents}</p>
-                <p className="text-xs text-muted-foreground mt-1">Đang theo học</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-600">Tổng số học viên</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalStudents} <span className="text-sm font-normal text-muted-foreground">bạn</span></p>
+                <p className="text-xs text-blue-600 font-semibold mt-1">Sĩ số theo học</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-purple-500/20 bg-gradient-to-br from-card to-purple-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-purple-500/10 text-purple-600 border border-purple-200">
-                <BookOpen className="w-6 h-6" />
+              <div className="p-3.5 rounded-2xl bg-purple-500/15 text-purple-600 border border-purple-300/40 shadow-inner">
+                <BookOpen className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Bài giảng</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalLessons}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.publishedLessons} đã đăng · {stats.draftLessons} nháp
+                <p className="text-xs font-bold uppercase tracking-wider text-purple-600">Bài giảng đã soạn</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.totalLessons} <span className="text-sm font-normal text-muted-foreground">bài</span></p>
+                <p className="text-xs text-purple-600 font-semibold mt-1">
+                  {stats.publishedLessons} đã xuất bản · {stats.draftLessons} nháp
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-all border-border">
+        <Card className="hover:shadow-xl transition-all duration-300 border border-amber-500/20 bg-gradient-to-br from-card to-amber-500/5 hover:-translate-y-1">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-200">
-                <FileText className="w-6 h-6" />
+              <div className="p-3.5 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-300/40 shadow-inner">
+                <FileText className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Bài nộp cần chấm</p>
-                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.pendingSubmissions}</p>
-                <p className="text-xs text-muted-foreground mt-1">Chờ nhận xét</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-600">Bài nộp chờ chấm</p>
+                <p className="text-3xl font-extrabold text-foreground mt-0.5">{stats.pendingSubmissions} <span className="text-sm font-normal text-muted-foreground">bài</span></p>
+                <p className="text-xs text-amber-600 font-semibold mt-1">Cần cho điểm & nhận xét</p>
               </div>
             </div>
           </CardContent>

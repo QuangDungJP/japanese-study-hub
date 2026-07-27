@@ -504,6 +504,8 @@ const TeacherClasses = () => {
     }
   };
 
+
+
   const handleCreateLessonSubmit = async (formData: any) => {
     try {
       let contentHtml = formData.content_html || '';
@@ -1823,6 +1825,49 @@ const TeacherClasses = () => {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsProgressDialogOpen(false)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Student Dialog */}
+      <Dialog open={isAddStudentDialogOpen} onOpenChange={setIsAddStudentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" /> Thêm học viên vào lớp {selectedClass?.name_vi}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm học viên theo tên..."
+                value={searchUserTerm}
+                onChange={(e) => setSearchUserTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="border rounded-xl p-2 max-h-64 overflow-y-auto space-y-1">
+              {availableUsers
+                .filter(u => !searchUserTerm || u.full_name?.toLowerCase().includes(searchUserTerm.toLowerCase()))
+                .map(u => (
+                  <div key={u.user_id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div>
+                      <p className="font-semibold text-sm">{u.full_name || 'Học viên'}</p>
+                      <p className="text-xs text-muted-foreground">{u.user_id.slice(0, 8)}...</p>
+                    </div>
+                    <Button size="sm" onClick={() => handleAddStudent(u.user_id)}>
+                      Thêm vào lớp
+                    </Button>
+                  </div>
+                ))}
+              {availableUsers.length === 0 && (
+                <p className="text-center py-6 text-xs text-muted-foreground">Tất cả học viên khả dụng đã ở trong lớp này.</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsAddStudentDialogOpen(false)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

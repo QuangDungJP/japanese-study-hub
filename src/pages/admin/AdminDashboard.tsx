@@ -99,55 +99,55 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Welcome Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-primary via-primary/90 to-accent p-6 md:p-8 text-white shadow-xl overflow-hidden">
+      {/* Hero Welcome Banner with Japanese Gradient Theme */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-primary via-indigo-600 to-accent p-6 md:p-8 text-white shadow-2xl overflow-hidden border border-white/20">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-bold backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5" /> TNQDO Admin Portal
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/15 text-xs font-bold backdrop-blur-md border border-white/20">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> TNQDO Master Admin Console · 管理ポータル
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Bảng điều khiển Quản trị viên
+              Bảng điều khiển Quản trị viên 🛡️
             </h1>
-            <p className="text-white/80 text-sm md:text-base max-w-xl font-medium">
-              Theo dõi tình hình đào tạo, lớp học Google Classroom, bài học và hoạt động của toàn bộ hệ thống.
+            <p className="text-white/90 text-sm md:text-base max-w-xl font-medium leading-relaxed">
+              Quản lý toàn bộ hệ thống đào tạo, lớp học Google Classroom, doanh thu đơn hàng & người dùng.
             </p>
-            <p className="text-xs text-white/70 pt-1 font-mono">
-              📅 {formatWithJST(new Date(), true)}
+            <p className="text-xs text-white/80 pt-1 font-mono font-semibold">
+              📅 Ngày hệ thống: {formatWithJST(new Date(), true)}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" className="gap-2 font-bold shadow-md" asChild>
+            <Button variant="secondary" className="gap-2 font-bold shadow-lg hover:scale-105 transition-transform" asChild>
               <Link to="/admin/classes">
-                <Building className="w-4 h-4" /> Quản lý Lớp học
+                <Building className="w-4 h-4 text-primary" /> Quản lý Lớp học
               </Link>
             </Button>
-            <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-md" asChild>
+            <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-lg hover:scale-105 transition-transform" asChild>
               <Link to="/admin/lessons">
-                <Plus className="w-4 h-4" /> Thêm bài học mới
+                <Plus className="w-4 h-4 text-primary" /> Thêm bài học mới
               </Link>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Glassmorphic Stat Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat) => (
           <Link
             key={stat.name}
             to={stat.href}
-            className="bg-card rounded-2xl p-6 border border-border/80 shadow-soft hover:shadow-xl transition-all duration-300 group hover:-translate-y-1"
+            className="bg-card rounded-3xl p-6 border border-border/80 shadow-soft hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden"
           >
             <div className="flex items-center justify-between">
-              <div className={`p-3.5 rounded-2xl border ${stat.color}`}>
+              <div className={`p-3.5 rounded-2xl border ${stat.color} shadow-sm`}>
                 <stat.icon className="w-6 h-6" />
               </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+              <ArrowRight className="w-5 h-5 text-muted-foreground opacity-40 group-hover:opacity-100 transition-all group-hover:translate-x-1 group-hover:text-primary" />
             </div>
             <div className="mt-5">
-              <p className="text-sm font-medium text-muted-foreground">{stat.name}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{stat.name}</p>
               <p className="text-3xl font-extrabold text-foreground mt-1">
                 {loading ? '...' : stat.value.toLocaleString()}
               </p>
