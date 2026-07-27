@@ -65,6 +65,10 @@ import TeacherCalendar from "./pages/teacher/TeacherCalendar";
 import TeacherAttendance from "./pages/teacher/TeacherAttendance";
 import UserGuide from "./pages/UserGuide";
 
+import StudentGuide from "./pages/learn/StudentGuide";
+import TeacherGuide from "./pages/teacher/TeacherGuide";
+import AdminGuide from "./pages/admin/AdminGuide";
+
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import EventsPage from "./pages/EventsPage";
@@ -94,7 +98,6 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/huong-dan" element={<UserGuide />} />
               <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />
               <Route path="/dieu-khoan" element={<Terms />} />
               <Route path="/blog" element={<Blog />} />
@@ -114,6 +117,7 @@ const App = () => (
                 <Route path="calendar" element={<StudentCalendar />} />
                 <Route path="achievements" element={<Achievements />} />
                 <Route path="courses" element={<Courses />} />
+                <Route path="guide" element={<StudentGuide />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
@@ -135,6 +139,7 @@ const App = () => (
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="events" element={<AdminEvents />} />
+                <Route path="guide" element={<AdminGuide />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
               <Route path="/teacher" element={<TeacherLayout />}>
@@ -147,6 +152,7 @@ const App = () => (
                 <Route path="attendance" element={<TeacherAttendance />} />
                 <Route path="notifications" element={<TeacherNotifications />} />
                 <Route path="bug-reports" element={<TeacherBugReports />} />
+                <Route path="guide" element={<TeacherGuide />} />
                 <Route path="profile" element={<TeacherProfile />} />
               </Route>
               <Route path="*" element={<NotFound />} />

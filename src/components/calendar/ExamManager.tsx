@@ -167,7 +167,7 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
       meet_link: '',
       max_score: 100,
       passing_score: 50,
-      is_published: false,
+      is_published: true,
       class_id: classId || '',
     });
     setIsDialogOpen(true);

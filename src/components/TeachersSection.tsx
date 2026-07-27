@@ -1,4 +1,4 @@
-import { Star, Award, BookOpen, Globe, Play } from "lucide-react";
+import { Star, Award, BookOpen, Globe, Play, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
@@ -6,6 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Teacher {
   id: string;
@@ -25,6 +32,8 @@ interface Teacher {
 const TeachersSection = () => {
   const { data: teachers, isLoading } = useTeacherProfiles();
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [selectedSpec, setSelectedSpec] = useState('all');
 
   const teacherList: Teacher[] = (teachers || []).map((t) => {
     const specializations = Array.isArray(t.specializations)
@@ -51,6 +60,21 @@ const TeachersSection = () => {
     };
   });
 
+  // Extract all unique specializations
+  const allSpecs = Array.from(
+    new Set(teacherList.flatMap(t => t.specializations))
+  ).filter(Boolean);
+
+  const filteredTeachers = teacherList.filter(t => {
+    const matchesSearch = !search || 
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.bio.toLowerCase().includes(search.toLowerCase()) ||
+      t.specializations.some(s => s.toLowerCase().includes(search.toLowerCase()));
+    
+    const matchesSpec = selectedSpec === 'all' || t.specializations.includes(selectedSpec);
+    return matchesSearch && matchesSpec;
+  });
+
   const title = "Đội ngũ giảng viên xuất sắc";
   const subtitle = "Giảng viên";
   const description =
@@ -75,7 +99,7 @@ const TeachersSection = () => {
   }
 
   return (
-    <section id="teachers" className="py-24 bg-muted/30 relative overflow-hidden">
+    <section id="teachers" className="py-16 bg-muted/30 relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 right-0 w-96 h-96 bg-japanese/5 rounded-full blur-3xl" />
@@ -84,27 +108,70 @@ const TeachersSection = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-10">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-japanese/10 text-japanese text-sm font-semibold mb-4">
             <Award className="w-4 h-4" />
             {subtitle}
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
             {title}
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             {description}
           </p>
         </div>
 
+        {/* Compact Single-line Search & Funnel Filter Control */}
+        <div className="max-w-2xl mx-auto mb-12 flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <input
+              type="text"
+              placeholder="Tìm kiếm giảng viên..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-12 pl-11 pr-10 rounded-2xl border border-border bg-card text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            {search && (
+              <button 
+                onClick={() => setSearch('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Funnel Filter Dropdown */}
+          <Select value={selectedSpec} onValueChange={setSelectedSpec}>
+            <SelectTrigger className="w-full sm:w-60 h-12 rounded-2xl border-border bg-card px-4 font-bold text-sm shadow-sm gap-2 shrink-0 border">
+              <div className="flex items-center gap-2 truncate">
+                <SlidersHorizontal className="w-4 h-4 text-primary shrink-0" />
+                <SelectValue placeholder="Lọc chuyên môn" />
+              </div>
+            </SelectTrigger>
+            <SelectContent align="end" className="max-h-80">
+              <SelectItem value="all" className="font-bold">
+                Tất cả chuyên môn ({teacherList.length})
+              </SelectItem>
+              {allSpecs.map((spec) => (
+                <SelectItem key={spec} value={spec}>
+                  {spec}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Teachers Grid */}
-        {teacherList.length === 0 ? (
-          <div className="py-20 text-center text-muted-foreground">
-            Đang cập nhật dữ liệu giảng viên, vui lòng quay lại sau.
+        {filteredTeachers.length === 0 ? (
+          <div className="py-16 text-center text-muted-foreground bg-card rounded-3xl border border-border">
+            <p className="font-semibold text-lg mb-1">Không tìm thấy giảng viên phù hợp</p>
+            <p className="text-xs">Thử thay đổi từ khóa hoặc bộ lọc chuyên môn.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {teacherList.map((teacher) => (
+            {filteredTeachers.map((teacher) => (
               <Link
                 key={teacher.id}
                 to={`/giao-vien/${(teachers || []).find(t => t.id === teacher.id)?.slug || teacher.id}`}

@@ -8,7 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, Calendar, Eye, ArrowRight, ChevronLeft, ChevronRight, Newspaper, Sparkles, TrendingUp } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search, Calendar, Eye, ArrowRight, ChevronLeft, ChevronRight, Newspaper, Sparkles, TrendingUp, SlidersHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useBlogCategories } from '@/components/admin/BlogCategoryManager';
@@ -160,47 +167,46 @@ const Blog = () => {
             </div>
           </ScrollReveal>
 
-          {/* Search Bar */}
+          {/* Single-line Search & Funnel Filter Bar */}
           <ScrollReveal delay={100}>
-            <div className="max-w-xl mx-auto mt-8">
-              <div className="relative">
+            <div className="max-w-2xl mx-auto mt-8 flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   placeholder="Tìm kiếm bài viết, chủ đề tiếng Nhật..."
                   value={search}
                   onChange={e => handleSearchChange(e.target.value)}
-                  className="pl-12 h-14 rounded-2xl border-border/60 bg-card/80 text-base shadow-sm focus:shadow-md transition-all backdrop-blur-md"
+                  className="pl-12 pr-10 h-13 rounded-2xl border-border/80 bg-card/90 text-base shadow-sm focus:shadow-md transition-all backdrop-blur-md"
                 />
+                {search && (
+                  <button
+                    onClick={() => handleSearchChange('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm font-bold p-1"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-            </div>
-          </ScrollReveal>
 
-          {/* Category Chips */}
-          <ScrollReveal delay={200}>
-            <div className="flex flex-wrap justify-center gap-2 mt-6">
-              <button
-                onClick={() => handleCategoryChange('all')}
-                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-                  category === 'all'
-                    ? 'bg-primary text-primary-foreground shadow-md scale-105'
-                    : 'bg-card/80 border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                Tất cả ({categoryCounts.all || 0})
-              </button>
-              {categories.map(c => (
-                <button
-                  key={c.value}
-                  onClick={() => handleCategoryChange(c.value)}
-                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-                    category === c.value
-                      ? 'bg-primary text-primary-foreground shadow-md scale-105'
-                      : 'bg-card/80 border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {c.label} ({categoryCounts[c.value] || 0})
-                </button>
-              ))}
+              {/* Funnel Filter Dropdown */}
+              <Select value={category} onValueChange={handleCategoryChange}>
+                <SelectTrigger className="w-full sm:w-60 h-13 rounded-2xl border-border/80 bg-card/90 px-4 font-bold text-sm shadow-sm gap-2 shrink-0 border">
+                  <div className="flex items-center gap-2 truncate">
+                    <SlidersHorizontal className="w-4 h-4 text-primary shrink-0" />
+                    <SelectValue placeholder="Danh mục bài viết" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent align="end" className="max-h-80">
+                  <SelectItem value="all" className="font-bold">
+                    Tất cả danh mục ({categoryCounts.all || 0})
+                  </SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label} ({categoryCounts[c.value] || 0})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </ScrollReveal>
         </div>

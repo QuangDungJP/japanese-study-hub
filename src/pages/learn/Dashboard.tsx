@@ -34,10 +34,10 @@ interface Lesson {
 }
 
 const skills = [
-  { id: 'reading', name: 'Đọc hiểu', icon: BookOpen, color: 'text-blue-600 bg-blue-500/10 border-blue-200', href: '/learn/reading', description: 'Luyện đọc và hiểu văn bản tiếng Nhật' },
-  { id: 'speaking', name: 'Luyện nói', icon: Mic, color: 'text-emerald-600 bg-emerald-500/10 border-emerald-200', href: '/learn/speaking', description: 'Luyện phát âm và phản xạ giao tiếp' },
-  { id: 'writing', name: 'Luyện viết', icon: PenTool, color: 'text-purple-600 bg-purple-500/10 border-purple-200', href: '/learn/writing', description: 'Luyện đặt câu và đoạn văn' },
-  { id: 'listening', name: 'Luyện nghe', icon: Headphones, color: 'text-amber-600 bg-amber-500/10 border-amber-200', href: '/learn/listening', description: 'Luyện nghe hiểu qua hội thoại' },
+  { id: 'reading', name: 'Đọc hiểu', icon: BookOpen, color: 'text-blue-600 bg-blue-500/10 border-blue-200', href: '/learn/my-classes', description: 'Luyện đọc bài giảng & bài đọc trong Lớp học' },
+  { id: 'speaking', name: 'Luyện nói', icon: Mic, color: 'text-emerald-600 bg-emerald-500/10 border-emerald-200', href: '/learn/my-classes', description: 'Luyện phản xạ giao tiếp theo giáo trình' },
+  { id: 'writing', name: 'Luyện viết', icon: PenTool, color: 'text-purple-600 bg-purple-500/10 border-purple-200', href: '/learn/my-classes', description: 'Luyện viết câu và bài tập được giao' },
+  { id: 'listening', name: 'Luyện nghe', icon: Headphones, color: 'text-amber-600 bg-amber-500/10 border-amber-200', href: '/learn/my-classes', description: 'Luyện nghe file âm thanh của lớp học' },
 ];
 
 const Dashboard = () => {
@@ -143,9 +143,14 @@ const Dashboard = () => {
                 <Building className="w-4 h-4" /> Lớp học của tôi
               </Link>
             </Button>
+            <Button variant="outline" className="bg-white/15 hover:bg-white/25 border-white/30 text-white gap-2 font-bold shadow-md" asChild>
+              <Link to="/learn/guide">
+                <BookOpen className="w-4 h-4" /> Hướng dẫn
+              </Link>
+            </Button>
             <Button className="bg-white text-primary hover:bg-white/90 gap-2 font-bold shadow-md" asChild>
-              <Link to="/learn/reading">
-                <Play className="w-4 h-4 fill-current" /> Học tiếp ngay
+              <Link to="/learn/my-classes">
+                <Play className="w-4 h-4 fill-current" /> Vào lớp học
               </Link>
             </Button>
           </div>

@@ -37,6 +37,7 @@ const navSections = [
   {
     label: 'Hệ thống & Cá nhân',
     items: [
+      { name: 'Hướng dẫn sử dụng', href: '/teacher/guide', icon: BookOpen },
       { name: 'Thông báo', href: '/teacher/notifications', icon: Bell },
       { name: 'Báo lỗi hệ thống', href: '/teacher/bug-reports', icon: Bug },
       { name: 'Hồ sơ cá nhân', href: '/teacher/profile', icon: User },

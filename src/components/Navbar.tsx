@@ -24,6 +24,7 @@ const defaultNavLinks = [
   { name: "Google Meet", href: "/zoom", key: "zoom" },
   { name: "Blog", href: "/blog", key: "blog" },
   { name: "Sự kiện", href: "/su-kien", key: "events" },
+  { name: "Hướng dẫn", href: "/huong-dan", key: "guide" },
   { name: "Liên hệ", href: "/lien-he", key: "contact" },
 ];
 
