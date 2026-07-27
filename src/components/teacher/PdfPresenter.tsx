@@ -205,6 +205,7 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        showCloseButton={false}
         className="max-w-[98vw] w-[98vw] h-[95vh] p-0 overflow-hidden flex flex-col gap-0"
         onInteractOutside={(e) => e.preventDefault()}
       >
