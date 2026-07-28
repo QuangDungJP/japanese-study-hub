@@ -137,7 +137,6 @@ const MaterialsManager = ({ lessons, scope, readOnly, title }: Props) => {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, effectiveScope.kind, (effectiveScope as any).lessonId, (effectiveScope as any).classId]);
 
   const grouped = useMemo(() => {

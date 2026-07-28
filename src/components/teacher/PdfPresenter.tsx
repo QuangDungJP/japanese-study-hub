@@ -11,7 +11,6 @@ import { useAuth } from "@/hooks/useAuth";
 
 // pdfjs-dist v6 (ESM). We set the workerSrc to the CDN that mirrors the installed version.
 import * as pdfjsLib from "pdfjs-dist";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (pdfjsLib as any).GlobalWorkerOptions.workerSrc =
   `https://cdn.jsdelivr.net/npm/pdfjs-dist@${(pdfjsLib as any).version}/build/pdf.worker.min.mjs`;
 
@@ -27,7 +26,6 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const renderTaskRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [doc, setDoc] = useState<any>(null);
   const storageKey = useMemo(() => (url ? `pdf-presenter:${url}` : ""), [url]);
   const readSaved = useCallback(() => {
@@ -78,10 +76,8 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
     } else {
       hydratedRef.current = true;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const task = (pdfjsLib as any).getDocument({ url, withCredentials: false });
     task.promise
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((d: any) => {
         if (cancelled) return;
         setDoc(d);
