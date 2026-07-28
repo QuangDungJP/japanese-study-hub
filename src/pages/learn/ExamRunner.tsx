@@ -112,7 +112,8 @@ const ExamRunner = () => {
         .from("exam_attempts").select("id,status")
         .eq("exam_id", id).eq("student_id", user.id);
       const submitted = (attempts || []).filter((a: any) => a.status !== "in_progress");
-      if (submitted.length >= (ex.max_attempts || 1)) {
+      const isUnlimited = ex.max_attempts === 0 || ex.max_attempts === null || ex.max_attempts < 0;
+      if (!isUnlimited && submitted.length >= (ex.max_attempts || 1)) {
         setLocked("Bạn đã dùng hết số lượt làm bài.");
         setExam(ex); setLoading(false); return;
       }
