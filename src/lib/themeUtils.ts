@@ -12,6 +12,8 @@ export interface ThemeOption {
   bgPreview: string;
   description: string;
   primaryHsl: string;
+  darkHsl: string;
+  lightHsl: string;
 }
 
 export const THEME_OPTIONS: ThemeOption[] = [
@@ -24,6 +26,8 @@ export const THEME_OPTIONS: ThemeOption[] = [
     bgPreview: 'bg-rose-50 border-rose-200 text-rose-700',
     description: 'Hồng anh đào truyền thống Nhật Bản, mang lại cảm giác tươi sáng & tràn đầy cảm hứng học tập.',
     primaryHsl: '343 85% 50%',
+    darkHsl: '343 85% 35%',
+    lightHsl: '343 85% 65%',
   },
   {
     id: 'fuji',
@@ -33,7 +37,9 @@ export const THEME_OPTIONS: ThemeOption[] = [
     gradient: 'from-blue-600 via-indigo-600 to-sky-500',
     bgPreview: 'bg-blue-50 border-blue-200 text-blue-700',
     description: 'Xanh dương ngọc biển đại dương & Núi Phú Sĩ điềm tĩnh, chuyên nghiệp.',
-    primaryHsl: '217 91% 60%',
+    primaryHsl: '217 91% 55%',
+    darkHsl: '217 91% 38%',
+    lightHsl: '217 91% 70%',
   },
   {
     id: 'matcha',
@@ -43,7 +49,9 @@ export const THEME_OPTIONS: ThemeOption[] = [
     gradient: 'from-emerald-600 via-teal-600 to-green-500',
     bgPreview: 'bg-emerald-50 border-emerald-200 text-emerald-700',
     description: 'Xanh trà đạo Kyoto dịu mắt, thư thái và tập trung học tập đỉnh cao.',
-    primaryHsl: '142 71% 45%',
+    primaryHsl: '142 71% 40%',
+    darkHsl: '142 71% 28%',
+    lightHsl: '142 71% 55%',
   },
   {
     id: 'tokyo',
@@ -54,6 +62,8 @@ export const THEME_OPTIONS: ThemeOption[] = [
     bgPreview: 'bg-purple-900 border-purple-700 text-purple-200',
     description: 'Chủ đề đêm neon huyền ảo của thủ đô Tokyo, cực kỳ sang trọng & dễ chịu vào buổi tối.',
     primaryHsl: '262 83% 58%',
+    darkHsl: '262 83% 40%',
+    lightHsl: '262 83% 72%',
   },
   {
     id: 'sunburst',
@@ -63,7 +73,9 @@ export const THEME_OPTIONS: ThemeOption[] = [
     gradient: 'from-red-600 via-amber-600 to-rose-700',
     bgPreview: 'bg-red-50 border-red-200 text-red-700',
     description: 'Màu đỏ biểu tượng Nhật Bản nhiệt huyết, bứt phá năng lượng tích lũy XP.',
-    primaryHsl: '0 84% 60%',
+    primaryHsl: '0 84% 55%',
+    darkHsl: '0 84% 38%',
+    lightHsl: '0 84% 70%',
   },
 ];
 
@@ -73,9 +85,23 @@ export const getSavedTheme = (): string => {
 
 export const applyTheme = (themeId: string) => {
   const theme = THEME_OPTIONS.find(t => t.id === themeId) || THEME_OPTIONS[0];
-  document.documentElement.setAttribute('data-theme', theme.id);
-  document.documentElement.style.setProperty('--primary-hsl', theme.primaryHsl);
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme.id);
+  root.style.setProperty('--primary-hsl', theme.primaryHsl);
+  root.style.setProperty('--japanese', theme.primaryHsl);
+  root.style.setProperty('--japanese-dark', theme.darkHsl);
+  root.style.setProperty('--japanese-light', theme.lightHsl);
+  root.style.setProperty('--primary', theme.primaryHsl);
+  root.style.setProperty('--ring', theme.primaryHsl);
+  root.style.setProperty('--sidebar-primary', theme.primaryHsl);
+  root.style.setProperty(
+    '--gradient-primary',
+    `linear-gradient(135deg, hsl(${theme.primaryHsl}) 0%, hsl(${theme.darkHsl}) 100%)`
+  );
   localStorage.setItem('tnqdo_app_theme', theme.id);
+
+  // Notify components dynamically
+  window.dispatchEvent(new CustomEvent('tnqdo_theme_changed', { detail: theme }));
 };
 
 export const initTheme = () => {
