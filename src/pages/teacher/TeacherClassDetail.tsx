@@ -397,8 +397,16 @@ const TeacherClassDetail = () => {
               {aForm.file_url && <p className="text-xs text-muted-foreground truncate">Đã tải: {aForm.file_url}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Bắt đầu</Label><Input type="datetime-local" value={aForm.start_at} onChange={e => setAForm({ ...aForm, start_at: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Hạn nộp</Label><Input type="datetime-local" value={aForm.due_date} onChange={e => setAForm({ ...aForm, due_date: e.target.value })} /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">Bắt đầu mở đề</Label>
+                <Input type="datetime-local" value={aForm.start_at} onChange={e => setAForm({ ...aForm, start_at: e.target.value })} />
+                <p className="text-[10px] text-muted-foreground">Để trống = Luôn mở</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Hạn nộp bài</Label>
+                <Input type="datetime-local" value={aForm.due_date} onChange={e => setAForm({ ...aForm, due_date: e.target.value })} />
+                <p className="text-[10px] text-muted-foreground">Để trống = Không hạn</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
