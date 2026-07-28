@@ -50,6 +50,7 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
   const [linkInput, setLinkInput] = useState('');
   const [level, setLevel] = useState('N5');
   const [scheduleMode, setScheduleMode] = useState<'always' | 'scheduled'>('always');
+  const [maxAttempts, setMaxAttempts] = useState<number>(1);
   // multi-class
   const [myClasses, setMyClasses] = useState<Array<{ id: string; name: string }>>([]);
   const [extraClassIds, setExtraClassIds] = useState<string[]>([]);
@@ -60,6 +61,7 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
       setTitle(initial?.title || '');
       setInstructions(initial?.instructions || initial?.description || '');
       setPoints(initial?.points ?? 100);
+      setMaxAttempts(initial?.max_attempts ?? 1);
       setDueDate(initial?.due_date ? new Date(initial.due_date).toISOString().slice(0, 16) : '');
       if (initial?.start_at) {
         setScheduleMode('scheduled');
@@ -140,6 +142,7 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
       instructions: instructions || null,
       description: instructions || null,
       points,
+      max_attempts: maxAttempts,
       due_date: dueDate || null,
       start_at: finalStartAt,
       topic_id: topicId === 'none' ? null : topicId,
@@ -356,7 +359,7 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
 
           {step === 3 && (
             <div className="space-y-6 max-w-2xl mx-auto">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Điểm tối đa</Label>
                   <Input type="number" value={points} onChange={e => setPoints(parseInt(e.target.value) || 0)} className="mt-1" />
@@ -368,6 +371,20 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
                     <SelectContent>
                       <SelectItem value="none">Không có chủ đề</SelectItem>
                       {topics.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Lượt nộp tối đa</Label>
+                  <Select value={maxAttempts <= 0 ? '0' : String(maxAttempts)} onValueChange={v => setMaxAttempts(parseInt(v))}>
+                    <SelectTrigger className="mt-1 font-medium"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 lần</SelectItem>
+                      <SelectItem value="2">2 lần</SelectItem>
+                      <SelectItem value="3">3 lần</SelectItem>
+                      <SelectItem value="5">5 lần</SelectItem>
+                      <SelectItem value="10">10 lần</SelectItem>
+                      <SelectItem value="0">♾️ Vô hạn</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

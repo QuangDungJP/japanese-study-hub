@@ -18,6 +18,7 @@ import MaterialsManager from '@/components/teacher/MaterialsManager';
 import ClassBanner from '@/components/classroom/ClassBanner';
 import ClassStream from '@/components/classroom/ClassStream';
 import ClassworkTab from '@/components/classroom/ClassworkTab';
+import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 
 const StudentClassDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -167,27 +168,8 @@ const StudentClassDetail = () => {
           {id && <ClassworkTab classId={id} isTeacher={false} />}
         </TabsContent>
 
-        <TabsContent value="lessons" className="mt-4 space-y-3">
-          {lessons.length === 0 ? <Card><CardContent className="py-12 text-center text-muted-foreground">Chưa có bài học nào</CardContent></Card> :
-            lessons.map(l => {
-              const st = isAvailable(l.start_at, l.end_at);
-              return (
-                <Card key={l.id}>
-                  <CardContent className="p-4 flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold">{l.title_vi}</h3>
-                      <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-                        {l.start_at && <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />{format(new Date(l.start_at), 'dd/MM HH:mm')}{l.end_at && ` → ${format(new Date(l.end_at), 'HH:mm')}`}</span>}
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{l.duration_minutes} phút</span>
-                      </div>
-                    </div>
-                    {st === 'upcoming' ? <Badge variant="outline">Sắp tới</Badge> :
-                     st === 'ended' ? <Badge variant="outline">Đã kết thúc</Badge> :
-                     <Button size="sm" asChild><Link to={`/learn/${l.skill}`}><Play className="w-4 h-4 mr-1" />Vào học</Link></Button>}
-                  </CardContent>
-                </Card>
-              );
-            })}
+        <TabsContent value="lessons" className="mt-4">
+          {id && <ClassLessonOrganizer classId={id} className={cls?.name_vi} isTeacher={false} />}
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-4">

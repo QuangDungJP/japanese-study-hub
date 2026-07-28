@@ -537,8 +537,44 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
               </div>
 
               <div>
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Số lượt làm tối đa</Label>
-                <Input type="number" min={1} value={maxAttempts} onChange={(e) => setMaxAttempts(parseInt(e.target.value) || 1)} className="mt-1 w-32" />
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">
+                  Số lượt làm tối đa
+                </Label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select
+                    value={maxAttempts <= 0 ? '0' : String(maxAttempts)}
+                    onValueChange={(v) => setMaxAttempts(parseInt(v))}
+                  >
+                    <SelectTrigger className="w-48 h-9 font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 lượt làm</SelectItem>
+                      <SelectItem value="2">2 lượt làm</SelectItem>
+                      <SelectItem value="3">3 lượt làm</SelectItem>
+                      <SelectItem value="5">5 lượt làm</SelectItem>
+                      <SelectItem value="10">10 lượt làm</SelectItem>
+                      <SelectItem value="0">♾️ Vô hạn (Không giới hạn)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {maxAttempts > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground">Tùy chỉnh:</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={maxAttempts}
+                        onChange={(e) => setMaxAttempts(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-20 h-9"
+                      />
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {maxAttempts <= 0
+                    ? '⚡ Học viên có thể làm lại bài kiểm tra không giới hạn số lần (Vô hạn).'
+                    : `Học viên được phép nộp tối đa ${maxAttempts} lần.`}
+                </p>
               </div>
 
               <div className="space-y-2">

@@ -21,6 +21,7 @@ import ClassStream from '@/components/classroom/ClassStream';
 import ClassworkTab from '@/components/classroom/ClassworkTab';
 import Gradebook from '@/components/classroom/Gradebook';
 import ClassAnalytics from '@/components/classroom/ClassAnalytics';
+import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 
 const TeacherClassDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -252,28 +253,16 @@ const TeacherClassDetail = () => {
           </CardContent></Card>
         </TabsContent>
 
-        <TabsContent value="lessons" className="mt-4">
-          <div className="flex justify-end mb-3">
-            <Button asChild size="sm"><Link to="/teacher/lessons"><Plus className="w-4 h-4 mr-1" />Quản lý bài học</Link></Button>
+        <TabsContent value="lessons" className="mt-4 space-y-4">
+          <div className="flex justify-end mb-2">
+            <Button asChild size="sm" variant="outline">
+              <Link to="/teacher/lessons">
+                <Plus className="w-4 h-4 mr-1" />
+                Tạo / Quản lý kho bài học gốc
+              </Link>
+            </Button>
           </div>
-          <Card><CardContent className="p-0">
-            <Table>
-              <TableHeader><TableRow><TableHead>Tiêu đề</TableHead><TableHead>Lịch học</TableHead><TableHead>Cấp độ</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {lessons.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Chưa có bài học. Vào "Quản lý bài học" và gán class_id.</TableCell></TableRow> :
-                  lessons.map(l => (
-                    <TableRow key={l.id}>
-                      <TableCell className="font-medium">{l.title_vi}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {l.start_at ? <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />{format(new Date(l.start_at), 'dd/MM HH:mm')}{l.end_at && ` → ${format(new Date(l.end_at), 'HH:mm')}`}</span> : '—'}
-                      </TableCell>
-                      <TableCell>{l.level}</TableCell>
-                      <TableCell>{l.is_published ? <Badge className="bg-green-500/10 text-green-600">Đã đăng</Badge> : <Badge variant="outline">Nháp</Badge>}</TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </CardContent></Card>
+          {id && <ClassLessonOrganizer classId={id} className={cls?.name_vi} isTeacher onRefreshNeeded={fetchAll} />}
         </TabsContent>
 
         <TabsContent value="materials" className="mt-4">

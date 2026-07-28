@@ -648,6 +648,7 @@ const MaterialsManager = ({ lessons, scope, readOnly, title }: Props) => {
                   placeholder="VD: Tuần 1 - Tổng quan, Ngữ pháp N5..."
                 />
                 <datalist id="topic-suggestions">
+                  <option value="Giáo trình học (Sách Ebook / Lộ trình chung)" />
                   {topics.map((t) => (
                     <option key={t} value={t} />
                   ))}
