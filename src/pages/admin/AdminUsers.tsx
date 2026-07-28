@@ -121,7 +121,7 @@ const AdminUsers = () => {
   const filteredUsers = users.filter(u => {
     const matchSearch = (u.full_name?.toLowerCase() || '').includes(search.toLowerCase());
     if (roleFilter === 'all') return matchSearch;
-    if (roleFilter === 'user') return matchSearch && (u.roles.length === 0 || (u.roles.length === 1 && u.roles[0] === 'user'));
+    if (roleFilter === 'user') return matchSearch && (u.roles.length === 0 || u.roles.includes('user'));
     return matchSearch && u.roles.includes(roleFilter);
   });
 
@@ -155,7 +155,7 @@ const AdminUsers = () => {
     senior_teacher: users.filter(u => u.roles.includes('senior_teacher')).length,
     teacher: users.filter(u => u.roles.includes('teacher')).length,
     moderator: users.filter(u => u.roles.includes('moderator')).length,
-    user: users.filter(u => u.roles.length === 0 || (u.roles.length === 1 && u.roles[0] === 'user')).length,
+    user: users.filter(u => u.roles.length === 0 || u.roles.includes('user')).length,
   };
 
   const activeToday = users.filter(u => (u.progress?.daily_progress || 0) > 0).length;
@@ -301,7 +301,7 @@ const AdminUsers = () => {
                         <TableCell>
                           <div className="flex flex-wrap gap-1 justify-center">
                             {user.roles.length === 0 ? (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">User</Badge>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-600">Học viên</Badge>
                             ) : (
                               user.roles.map(role => {
                                 const rc = ROLE_CONFIG[role];
@@ -352,7 +352,7 @@ const AdminUsers = () => {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuLabel className="text-xs text-muted-foreground">Gán vai trò</DropdownMenuLabel>
-                              {(['teacher', 'senior_teacher', 'moderator', 'admin'] as const).map(role => {
+                              {(['user', 'teacher', 'senior_teacher', 'moderator', 'admin'] as const).map(role => {
                                 const rc = ROLE_CONFIG[role];
                                 const Icon = rc.icon;
                                 const hasRole = user.roles.includes(role);
