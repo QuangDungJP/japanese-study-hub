@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { InlineLessonExercises } from '@/components/learning/InlineLessonExercises';
 import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
+import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 
 interface ClassData {
   id: string;
@@ -666,7 +667,7 @@ const MyClasses = () => {
                     </div>
                   )}
 
-                  {/* Direct Interactive Exercises ("Hiển thị Chi tiết Xổ ra Siêu đẹp") */}
+                  {/* Direct Interactive Exercises */}
                   <div className="pt-6 border-t border-border space-y-4">
                     <InlineLessonExercises 
                       lessonId={activeLesson.id} 
@@ -677,42 +678,14 @@ const MyClasses = () => {
               </Card>
             </div>
           ) : (
-            /* Lesson list */
+            /* Lesson list with Session & Week Grouping */
             <div className="space-y-4">
-              <h2 className="text-lg font-bold text-foreground">Bài giảng & tài liệu học tập</h2>
-              {lessons.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                    Chưa có bài học nào được đăng cho lớp này.
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {lessons.map((lesson) => (
-                    <Card key={lesson.id} className="hover:shadow-md transition-all duration-200 cursor-pointer" onClick={() => setActiveLesson(lesson)}>
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start gap-2">
-                          <Badge className={getSkillBadgeColor(lesson.skill)}>
-                            {getSkillLabel(lesson.skill)}
-                          </Badge>
-                          <Badge variant="outline">{lesson.level}</Badge>
-                        </div>
-                        <CardTitle className="text-base font-bold pt-2">{lesson.title_vi}</CardTitle>
-                        <CardDescription className="text-xs line-clamp-1">{lesson.title}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="pb-3 text-xs text-muted-foreground flex justify-between items-center">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          {lesson.duration_minutes} phút
-                        </span>
-                        <span className="font-semibold text-yellow-600">
-                          +{lesson.xp_reward} XP
-                        </span>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+              {selectedClass && (
+                <ClassLessonOrganizer 
+                  classId={selectedClass.id} 
+                  className={selectedClass.name_vi} 
+                  isTeacher={false} 
+                />
               )}
             </div>
           )}
