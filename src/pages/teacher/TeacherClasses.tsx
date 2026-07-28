@@ -47,6 +47,9 @@ import { exportToGoogleSheetsCSV, exportToGoogleDocs } from '@/lib/exportUtils';
 import { ExamManager } from '@/components/calendar/ExamManager';
 import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 import LessonEditor from '@/components/teacher/LessonEditor';
+import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
+import AttendanceManager from '@/components/teacher/AttendanceManager';
+import TeacherTimesheet from '@/components/teacher/TeacherTimesheet';
 
 interface ClassData {
   id: string;
@@ -1055,9 +1058,11 @@ const TeacherClasses = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
-        <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto grid grid-cols-5">
+        <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto flex flex-wrap gap-1">
           <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
-          <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học</TabsTrigger>
+          <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học (Buổi/Tuần)</TabsTrigger>
+          <TabsTrigger value="attendance" className="rounded-lg text-xs md:text-sm font-semibold">Điểm danh học viên</TabsTrigger>
+          <TabsTrigger value="timesheet" className="rounded-lg text-xs md:text-sm font-semibold">Chấm công & Thù lao</TabsTrigger>
           <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Bài kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Chấm bài</TabsTrigger>
           <TabsTrigger value="students" className="rounded-lg text-xs md:text-sm font-semibold">Học viên</TabsTrigger>
@@ -1154,105 +1159,35 @@ const TeacherClasses = () => {
           </div>
         </TabsContent>
 
-        {/* Tab 2: Lessons (Bài học) */}
+        {/* Tab 2: Lessons (Bài học Buổi/Tuần) */}
         <TabsContent value="lessons" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold text-foreground">Bài giảng & Tài liệu lớp học</h2>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setIsLinkLessonOpen(true)}>
-                Gán bài học có sẵn
-              </Button>
-              <Button size="sm" onClick={() => setIsCreateLessonOpen(true)}>
-                <Plus className="w-4 h-4 mr-1" /> Tạo bài mới cho lớp
-              </Button>
-            </div>
+          <div className="flex justify-end items-center gap-2 mb-2">
+            <Button variant="outline" size="sm" onClick={() => setIsLinkLessonOpen(true)}>
+              Gán bài học có sẵn
+            </Button>
+            <Button size="sm" onClick={() => setIsCreateLessonOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" /> Tạo bài mới cho lớp
+            </Button>
           </div>
 
-          {classDetailLessons.length === 0 ? (
-            <Card>
-              <CardContent className="py-16 text-center text-muted-foreground">
-                <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                Lớp học chưa có tài liệu hay bài giảng nào. Hãy nhấn Tạo bài mới hoặc Gán bài học có sẵn!
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {classDetailLessons.map((lesson) => (
-                <div key={lesson.id} className="space-y-0">
-                  <Card className={`hover:shadow-md transition-all duration-200 ${
-                    inlinePresentingLessonId === lesson.id ? 'border-primary/60 shadow-md' : ''
-                  }`}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex flex-wrap gap-2 items-center">
-                          <Badge className="bg-primary/10 text-primary uppercase text-xs">
-                            {getSkillLabel(lesson.skill)}
-                          </Badge>
-                          <Badge variant="outline">{lesson.level}</Badge>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-muted text-muted-foreground"
-                            title="Chỉnh sửa bài học"
-                            onClick={() => {
-                              setEditingLesson(lesson);
-                              setIsEditLessonOpen(true);
-                            }}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-destructive h-8 w-8 hover:bg-destructive/10" 
-                            onClick={() => handleUnlinkLesson(lesson.id)}
-                            title="Gỡ khỏi lớp"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <CardTitle className="text-base font-bold pt-2">{lesson.title_vi}</CardTitle>
-                      <CardDescription className="text-xs line-clamp-1">{lesson.title}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pb-4 flex justify-between items-center text-xs text-muted-foreground border-t pt-3">
-                      <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {lesson.duration_minutes} phút</span>
-                      <Button
-                        size="sm"
-                        className="gap-1.5"
-                        variant={inlinePresentingLessonId === lesson.id ? 'outline' : 'hero'}
-                        onClick={() => {
-                          if (inlinePresentingLessonId === lesson.id) {
-                            setInlinePresentingLessonId(null);
-                            setPresentingLesson(null);
-                          } else {
-                            setInlinePresentingLessonId(lesson.id);
-                            setPresentingLesson(lesson);
-                          }
-                        }}
-                      >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        {inlinePresentingLessonId === lesson.id ? 'Thu lại' : 'Trình chiếu'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* Inline Presentation Panel */}
-                  {inlinePresentingLessonId === lesson.id && presentingLesson && (
-                    <InlineLessonPresentation
-                      lesson={presentingLesson}
-                      onClose={() => {
-                        setInlinePresentingLessonId(null);
-                        setPresentingLesson(null);
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+          {selectedClass && (
+            <ClassLessonOrganizer
+              classId={selectedClass.id}
+              className={selectedClass.name_vi}
+              isTeacher={true}
+              onRefreshNeeded={() => fetchClassroomDetails(selectedClass.id)}
+            />
           )}
+        </TabsContent>
+
+        {/* Tab 3: Attendance (Điểm danh học viên) */}
+        <TabsContent value="attendance" className="space-y-4">
+          <AttendanceManager />
+        </TabsContent>
+
+        {/* Tab 4: Timesheet (Chấm công & Thù lao) */}
+        <TabsContent value="timesheet" className="space-y-4">
+          <TeacherTimesheet teacherId={selectedClass.teacher_id} />
         </TabsContent>
 
         {/* Tab 3: Exams (Bài kiểm tra) */}

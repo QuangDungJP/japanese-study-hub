@@ -21,7 +21,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-import InlineLessonPresentation from './InlineLessonPresentation';
+import { InlineLessonPresentation } from './InlineLessonPresentation';
 
 export interface LessonItem {
   id: string;
