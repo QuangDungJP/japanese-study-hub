@@ -61,7 +61,9 @@ const MediaLibraryPicker = ({
         }
       }
       setFiles(allFiles);
-    } catch { }
+    } catch {
+      // ignore fetch errors
+    }
     setLoading(false);
   };
 
