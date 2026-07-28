@@ -144,7 +144,6 @@ const ExamRunner = () => {
       setLoading(false);
     };
     init();
-    // eslint-disable-next-line
   }, [id, user?.id]);
 
   // Countdown
@@ -160,7 +159,6 @@ const ExamRunner = () => {
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
-    // eslint-disable-next-line
   }, [exam, startedAt]);
 
   const submit = async (auto = false) => {
