@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   BookOpen, Clock, Award, Save, X, Image, Film, FileText, 
-  Link as LinkIcon, Paperclip, ChevronDown, ChevronUp, Sparkles, Upload
+  Link as LinkIcon, Paperclip, ChevronDown, ChevronUp, Sparkles, Upload,
+  Calendar, Layers, Hash, ListOrdered
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,7 @@ import {
 import MediaUploader from '@/components/shared/MediaUploader';
 import { cn } from '@/lib/utils';
 
-interface LessonFormData {
+export interface LessonFormData {
   title: string;
   title_vi: string;
   description: string;
@@ -38,6 +39,10 @@ interface LessonFormData {
   slide_url?: string;
   document_url?: string;
   content_html?: string;
+  week_number?: number | null;
+  session_number?: number | null;
+  session_id?: string | null;
+  order_index?: number;
 }
 
 interface LessonEditorProps {
@@ -82,6 +87,9 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
     slide_url: '',
     document_url: '',
     content_html: '',
+    week_number: 1,
+    session_number: 1,
+    order_index: 1,
   });
 
   useEffect(() => {
@@ -126,7 +134,7 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
               {isEditing ? 'Chỉnh sửa Bài học / Tài liệu' : 'Tạo Bài học / Tài liệu mới'}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Đăng tài liệu PDF, slide bài giảng hoặc video cho lớp học
+              Đăng tài liệu PDF, slide bài giảng, phân chia bài theo Buổi & Tuần học
             </p>
           </div>
         </div>
@@ -151,11 +159,85 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
           <Input
             value={formData.title_vi}
             onChange={(e) => updateField('title_vi', e.target.value)}
-            placeholder="Ví dụ: Slide Bài 1 Minna no Nihongo / Bài đọc JLPT N3..."
+            placeholder="Ví dụ: Slide Buổi 1 / N3 7-2017 / Ebook Kanji N3..."
             className="h-12 text-base font-semibold border-border/80 bg-card rounded-xl"
             autoFocus
           />
         </div>
+
+        {/* --- WEEK & SESSION ASSIGNMENT OPTION (OPTION CHIA BÀI THEO TUẦN & BUỔI & THỨ TỰ) --- */}
+        <Card className="border-primary/30 bg-primary/5 shadow-2xs">
+          <CardContent className="p-4 space-y-3">
+            <Label className="text-xs font-extrabold uppercase tracking-wider text-primary flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              Phân loại vào Tuần học, Buổi học & Thứ tự hiển thị
+            </Label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Option Chia bài theo Tuần */}
+              <div className="space-y-1 bg-card p-2.5 rounded-xl border border-border">
+                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-emerald-600" /> Chọn Tuần học
+                </Label>
+                <Select
+                  value={formData.week_number ? formData.week_number.toString() : 'none'}
+                  onValueChange={(val) => updateField('week_number', val === 'none' ? null : parseInt(val))}
+                >
+                  <SelectTrigger className="h-9 text-xs font-medium">
+                    <SelectValue placeholder="Chọn tuần..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Chưa phân tuần --</SelectItem>
+                    {Array.from({ length: 16 }, (_, i) => i + 1).map((w) => (
+                      <SelectItem key={w} value={w.toString()}>
+                        🗓️ Tuần {w}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Option Chia bài theo Buổi */}
+              <div className="space-y-1 bg-card p-2.5 rounded-xl border border-border">
+                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600" /> Chọn Buổi học
+                </Label>
+                <Select
+                  value={formData.session_number ? formData.session_number.toString() : 'none'}
+                  onValueChange={(val) => updateField('session_number', val === 'none' ? null : parseInt(val))}
+                >
+                  <SelectTrigger className="h-9 text-xs font-medium">
+                    <SelectValue placeholder="Chọn buổi..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Chưa phân buổi --</SelectItem>
+                    {Array.from({ length: 48 }, (_, i) => i + 1).map((s) => (
+                      <SelectItem key={s} value={s.toString()}>
+                        📅 Buổi {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Option Sắp xếp Thứ tự (Order Index) */}
+              <div className="space-y-1 bg-card p-2.5 rounded-xl border border-border">
+                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                  <ListOrdered className="w-3.5 h-3.5 text-purple-600" /> Thứ tự trong danh mục
+                </Label>
+                <Input
+                  type="number"
+                  value={formData.order_index ?? 1}
+                  onChange={(e) => updateField('order_index', parseInt(e.target.value) || 1)}
+                  min={1}
+                  max={99}
+                  className="h-9 text-xs font-bold"
+                  placeholder="Ví dụ: 1, 2, 3..."
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Description / Instructions (Optional) */}
         <div className="space-y-2">
@@ -171,7 +253,7 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
           />
         </div>
 
-        {/* Attachments Section (Google Classroom Style - Complete File & Slide Link Options) */}
+        {/* Attachments Section (Google Classroom Style) */}
         <Card className="border-border/80 shadow-soft">
           <CardContent className="p-4 space-y-4">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -258,13 +340,13 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
           />
         </div>
 
-        {/* Collapsible Advanced Settings (Optional - Defaulted for quick save) */}
+        {/* Collapsible Advanced Settings */}
         <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced} className="border rounded-2xl p-4 bg-muted/20">
           <CollapsibleTrigger asChild>
             <button type="button" className="w-full flex items-center justify-between font-bold text-xs text-muted-foreground hover:text-foreground">
               <span className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                Cài đặt phân loại (Kỹ năng, Trình độ JLPT, Điểm XP - Không bắt buộc)
+                Cài đặt nâng cao (Kỹ năng, Trình độ JLPT, Điểm XP)
               </span>
               {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>

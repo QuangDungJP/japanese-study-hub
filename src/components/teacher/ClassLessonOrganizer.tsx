@@ -15,7 +15,8 @@ import {
   BookOpen, Folder, FolderOpen, GripVertical, ArrowUp, ArrowDown, MoveRight,
   Plus, Upload, FileText, ChevronDown, ChevronRight, Play, ExternalLink,
   BookMarked, Sparkles, Clock, Calendar, Trash2, Edit3, Link2, FileType2, Presentation,
-  MoreVertical, Search, CheckCircle2, Layers, Filter, Eye, Maximize2, Layers3
+  MoreVertical, Search, CheckCircle2, Layers, Filter, Eye, Maximize2, Layers3,
+  BarChart3, ListOrdered, CheckSquare, Sparkle, RefreshCw
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -74,7 +75,7 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<string>('all');
-  const [viewGroupMode, setViewGroupMode] = useState<'session' | 'week'>('session');
+  const [viewGroupMode, setViewGroupMode] = useState<'session' | 'week' | 'overview'>('session');
 
   // Drag and Drop state
   const [draggedItem, setDraggedItem] = useState<LessonItem | null>(null);
@@ -88,6 +89,9 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
 
   // Inline Slide Presentation state
   const [activePresentation, setActivePresentation] = useState<{ title: string; url: string; type?: string } | null>(null);
+
+  // Quick Session Topic Edit Dialog
+  const [editSessionTopic, setEditSessionTopic] = useState<{ id: string; topic: string; weekNum?: number } | null>(null);
 
   // Create material dialog
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
@@ -325,7 +329,6 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
       } else if (targetFolderId.startsWith('week_')) {
         newWeekNumber = parseInt(targetFolderId.replace('week_', ''), 10);
         newCategory = 'week';
-        // Pick first session of that week if exists
         const sInWeek = sessions.find((x, idx) => (x.week_number || Math.ceil((idx + 1) / 2)) === newWeekNumber);
         if (sInWeek) newSessionId = sInWeek.id;
       } else {
@@ -415,10 +418,32 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
         sb.from(tableB).update({ order_index: orderA }).eq('id', otherItem.id),
       ]);
 
-      toast({ title: 'Đã cập nhật vị trí bài học' });
+      toast({ title: 'Đã cập nhật vị trí thứ tự bài học' });
     } catch (e: any) {
       toast({ title: 'Lỗi sắp xếp', description: e.message, variant: 'destructive' });
       loadData();
+    }
+  };
+
+  // Save session topic edit
+  const handleSaveSessionTopic = async () => {
+    if (!editSessionTopic) return;
+    try {
+      const { error } = await supabase
+        .from('class_sessions')
+        .update({
+          topic: editSessionTopic.topic,
+          week_number: editSessionTopic.weekNum || null,
+        })
+        .eq('id', editSessionTopic.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Đã lưu tên chủ đề Buổi / Tuần học' });
+      setEditSessionTopic(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Lỗi lưu chủ đề', description: e.message, variant: 'destructive' });
     }
   };
 
@@ -500,7 +525,6 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
   }
 
   const folderKeys = Object.keys(groupedData).filter((k) => {
-    // Only show unassigned if has items or if teacher
     if (k === 'unassigned' && groupedData.unassigned.items.length === 0 && !isTeacher) return false;
     return true;
   });
@@ -514,10 +538,10 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
                 <Layers3 className="w-6 h-6 text-primary" />
-                Giáo trình & Bài học theo Buổi
+                Giáo trình & Bài học theo Buổi / Tuần
               </h2>
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-bold">
-                {items.length} nội dung
+                {items.length} tài nguyên
               </Badge>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -525,8 +549,8 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
             </p>
           </div>
 
-          {/* Group View Toggle (Theo Buổi vs Theo Tuần) */}
-          <div className="flex items-center gap-2 self-start sm:self-auto bg-muted/60 p-1 rounded-xl border">
+          {/* Group View Toggle (Theo Buổi vs Theo Tuần vs Tổng Quan Lộ Trình) */}
+          <div className="flex items-center gap-1.5 self-start sm:self-auto bg-muted/60 p-1.5 rounded-xl border flex-wrap">
             <Button
               size="sm"
               variant={viewGroupMode === 'session' ? 'default' : 'ghost'}
@@ -543,343 +567,508 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
             >
               <Layers className="w-3.5 h-3.5 mr-1.5" /> Theo Tuần / Chủ đề
             </Button>
+            <Button
+              size="sm"
+              variant={viewGroupMode === 'overview' ? 'default' : 'ghost'}
+              onClick={() => setViewGroupMode('overview')}
+              className="h-8 text-xs font-semibold rounded-lg bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
+            >
+              <BarChart3 className="w-3.5 h-3.5 mr-1.5" /> Tổng Quan & Xếp Thứ Tự
+            </Button>
           </div>
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm bài học, slide, tài liệu..."
-              className="pl-9 h-9 text-xs bg-background"
-            />
-          </div>
+        {viewGroupMode !== 'overview' && (
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm bài học, slide, tài liệu..."
+                className="pl-9 h-9 text-xs bg-background"
+              />
+            </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select value={selectedSkill} onValueChange={setSelectedSkill}>
-              <SelectTrigger className="h-9 text-xs w-full sm:w-[150px] bg-background">
-                <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
-                <SelectValue placeholder="Tất cả kỹ năng" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả kỹ năng</SelectItem>
-                <SelectItem value="reading">📖 Đọc hiểu</SelectItem>
-                <SelectItem value="listening">🎧 Nghe hiểu</SelectItem>
-                <SelectItem value="vocabulary">📚 Từ vựng</SelectItem>
-                <SelectItem value="grammar">📝 Ngữ pháp</SelectItem>
-                <SelectItem value="speaking">🗣️ Nói / Hội thoại</SelectItem>
-                <SelectItem value="writing">✍️ Luyện viết</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Select value={selectedSkill} onValueChange={setSelectedSkill}>
+                <SelectTrigger className="h-9 text-xs w-full sm:w-[150px] bg-background">
+                  <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectValue placeholder="Tất cả kỹ năng" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả kỹ năng</SelectItem>
+                  <SelectItem value="reading">📖 Đọc hiểu</SelectItem>
+                  <SelectItem value="listening">🎧 Nghe hiểu</SelectItem>
+                  <SelectItem value="vocabulary">📚 Từ vựng</SelectItem>
+                  <SelectItem value="grammar">📝 Ngữ pháp</SelectItem>
+                  <SelectItem value="speaking">🗣️ Nói / Hội thoại</SelectItem>
+                  <SelectItem value="writing">✍️ Luyện viết</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAllFoldersOpen(true)}
-                className="h-9 text-[11px] px-2.5 bg-background"
-                title="Mở tất cả các danh mục"
-              >
-                Mở tất cả
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAllFoldersOpen(false)}
-                className="h-9 text-[11px] px-2.5 bg-background"
-                title="Thu gọn tất cả các danh mục"
-              >
-                Thu gọn
-              </Button>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAllFoldersOpen(true)}
+                  className="h-9 text-[11px] px-2.5 bg-background"
+                  title="Mở tất cả các danh mục"
+                >
+                  Mở tất cả
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAllFoldersOpen(false)}
+                  className="h-9 text-[11px] px-2.5 bg-background"
+                  title="Thu gọn tất cả các danh mục"
+                >
+                  Thu gọn
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Main Accordion List */}
-      <div className="space-y-4">
-        {folderKeys.map((folderId) => {
-          const group = groupedData[folderId];
-          if (!group) return null;
+      {/* VIEW MODE 3: TỔNG QUAN LỘ TRÌNH & XẾP THỨ TỰ (OVERVIEW MATRIX) */}
+      {viewGroupMode === 'overview' ? (
+        <div className="space-y-6">
+          {/* Summary Dashboard Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="bg-blue-500/10 border-blue-500/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center font-bold">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Tổng số Buổi học</p>
+                  <p className="text-xl font-extrabold text-blue-700 dark:text-blue-400">{sessions.length} buổi</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          const isOpen = openFolders[folderId] !== false;
-          const isDragOver = dragOverFolderId === folderId;
-          const itemsList = group.items;
+            <Card className="bg-emerald-500/10 border-emerald-500/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Tổng số Tuần học</p>
+                  <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-400">
+                    {Math.max(4, Math.ceil(sessions.length / 2))} tuần
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
 
-          // Theme colors based on folder category
-          let headerGradient = 'from-slate-700 to-zinc-800 text-white';
-          let headerBg = 'bg-card hover:bg-accent/30';
-          let iconBg = 'bg-primary/10 text-primary';
+            <Card className="bg-purple-500/10 border-purple-500/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500 text-white flex items-center justify-center font-bold">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Tổng Bài học & Slide</p>
+                  <p className="text-xl font-extrabold text-purple-700 dark:text-purple-400">{items.length} bài</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          if (folderId === 'curriculum') {
-            headerGradient = 'from-purple-600 to-indigo-600 text-white';
-            headerBg = 'bg-purple-500/5 hover:bg-purple-500/10 border-purple-500/20';
-            iconBg = 'bg-purple-600 text-white';
-          } else if (folderId.startsWith('week_')) {
-            headerGradient = 'from-emerald-600 to-teal-600 text-white';
-            headerBg = 'bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/20';
-            iconBg = 'bg-emerald-600 text-white';
-          } else if (folderId.startsWith('session_')) {
-            headerGradient = 'from-blue-600 to-cyan-600 text-white';
-            headerBg = 'bg-blue-500/5 hover:bg-blue-500/10 border-blue-500/20';
-            iconBg = 'bg-blue-600 text-white';
-          }
+            <Card className="bg-amber-500/10 border-amber-500/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold">
+                  <ListOrdered className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Thứ tự tùy chỉnh</p>
+                  <p className="text-xl font-extrabold text-amber-700 dark:text-amber-400">Đã kích hoạt ✨</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          return (
-            <div
-              key={folderId}
-              onDragOver={(e) => handleDragOverFolder(e, folderId)}
-              onDragLeave={handleDragLeaveFolder}
-              onDrop={(e) => handleDropOnFolder(e, folderId)}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-2xs ${
-                isDragOver ? 'border-primary ring-4 ring-primary/20 bg-primary/10 scale-[1.005]' : 'border-border/80'
-              }`}
-            >
-              {/* Accordion Group Header */}
-              <div
-                className={`flex items-center justify-between p-3.5 sm:p-4 transition-colors cursor-pointer select-none ${headerBg}`}
-                onClick={() => toggleFolder(folderId)}
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <button type="button" className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
-                    {isOpen ? (
-                      <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-                    )}
-                  </button>
+          {/* Overview List with Reordering Controls */}
+          <Card className="border-border shadow-soft">
+            <CardHeader className="border-b bg-muted/40 p-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <ListOrdered className="w-5 h-5 text-primary" />
+                  Ma Trận Lộ Trình & Sắp Xếp Thứ Tự Chi Tiết
+                </CardTitle>
+                <Button size="sm" variant="outline" onClick={loadData} className="text-xs gap-1">
+                  <RefreshCw className="w-3.5 h-3.5" /> Làm mới dữ liệu
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              {sessions.map((s, idx) => {
+                const sItems = items.filter((it) => it.session_id === s.id);
+                const weekNum = s.week_number || Math.ceil((idx + 1) / 2);
 
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs font-bold ${iconBg}`}>
-                    {folderId === 'curriculum' ? (
-                      <BookMarked className="w-5 h-5" />
-                    ) : folderId.startsWith('week_') ? (
-                      <Layers className="w-5 h-5" />
-                    ) : (
-                      <Calendar className="w-5 h-5" />
-                    )}
-                  </div>
+                return (
+                  <div key={s.id} className="p-3.5 rounded-xl border bg-card space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between gap-3 flex-wrap bg-muted/30 p-2.5 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-blue-600 text-white font-bold text-xs">
+                          Buổi {idx + 1}
+                        </Badge>
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-xs">
+                          Tuần {weekNum}
+                        </Badge>
+                        <span className="font-bold text-sm text-foreground">{s.topic || 'Bài học trên lớp'}</span>
+                      </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-base sm:text-lg text-foreground tracking-tight line-clamp-1">
-                        {group.title}
-                      </h3>
-                      <Badge variant="secondary" className="font-semibold text-xs shrink-0">
-                        {itemsList.length} tài nguyên
-                      </Badge>
-                      {isDragOver && (
-                        <Badge className="bg-primary text-primary-foreground animate-pulse">Thả vào đây 🎯</Badge>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{s.session_date ? format(parseISO(s.session_date), 'dd/MM/yyyy') : ''}</span>
+                        {isTeacher && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-primary font-medium"
+                            onClick={() => setEditSessionTopic({ id: s.id, topic: s.topic || '', weekNum })}
+                          >
+                            <Edit3 className="w-3.5 h-3.5 mr-1" /> Sửa tên chủ đề
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Lesson Items inside this session with ordering buttons */}
+                    <div className="pl-3 border-l-2 border-primary/20 space-y-2">
+                      {sItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic py-1">Chưa có bài học được gán vào buổi này.</p>
+                      ) : (
+                        sItems.map((item, itemIdx) => (
+                          <div key={item.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/40 text-xs">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Badge variant="secondary" className="font-bold text-[10px] shrink-0">
+                                #{item.order_index || itemIdx + 1}
+                              </Badge>
+                              <span className="font-medium text-foreground truncate">{item.title}</span>
+                              <Badge variant="outline" className="text-[10px]">
+                                {item.type === 'lesson' ? 'Bài học' : item.file_type || 'Tài liệu'}
+                              </Badge>
+                            </div>
+
+                            {isTeacher && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6"
+                                  disabled={itemIdx === 0}
+                                  onClick={() => moveItemUpDown(item, `session_${s.id}`, -1)}
+                                  title="Chuyển lên"
+                                >
+                                  <ArrowUp className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6"
+                                  disabled={itemIdx === sItems.length - 1}
+                                  onClick={() => moveItemUpDown(item, `session_${s.id}`, 1)}
+                                  title="Chuyển xuống"
+                                >
+                                  <ArrowDown className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))
                       )}
                     </div>
-                    {group.subtitle && <p className="text-xs text-muted-foreground truncate mt-0.5">{group.subtitle}</p>}
                   </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        /* MAIN ACCORDION LIST (THEO BUỔI HOẶC THEO TUẦN) */
+        <div className="space-y-4">
+          {folderKeys.map((folderId) => {
+            const group = groupedData[folderId];
+            if (!group) return null;
+
+            const isOpen = openFolders[folderId] !== false;
+            const isDragOver = dragOverFolderId === folderId;
+            const itemsList = group.items;
+
+            // Theme colors based on folder category
+            let headerGradient = 'from-slate-700 to-zinc-800 text-white';
+            let headerBg = 'bg-card hover:bg-accent/30';
+            let iconBg = 'bg-primary/10 text-primary';
+
+            if (folderId === 'curriculum') {
+              headerGradient = 'from-purple-600 to-indigo-600 text-white';
+              headerBg = 'bg-purple-500/5 hover:bg-purple-500/10 border-purple-500/20';
+              iconBg = 'bg-purple-600 text-white';
+            } else if (folderId.startsWith('week_')) {
+              headerGradient = 'from-emerald-600 to-teal-600 text-white';
+              headerBg = 'bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/20';
+              iconBg = 'bg-emerald-600 text-white';
+            } else if (folderId.startsWith('session_')) {
+              headerGradient = 'from-blue-600 to-cyan-600 text-white';
+              headerBg = 'bg-blue-500/5 hover:bg-blue-500/10 border-blue-500/20';
+              iconBg = 'bg-blue-600 text-white';
+            }
+
+            return (
+              <div
+                key={folderId}
+                onDragOver={(e) => handleDragOverFolder(e, folderId)}
+                onDragLeave={handleDragLeaveFolder}
+                onDrop={(e) => handleDropOnFolder(e, folderId)}
+                className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-2xs ${
+                  isDragOver ? 'border-primary ring-4 ring-primary/20 bg-primary/10 scale-[1.005]' : 'border-border/80'
+                }`}
+              >
+                {/* Accordion Group Header */}
+                <div
+                  className={`flex items-center justify-between p-3.5 sm:p-4 transition-colors cursor-pointer select-none ${headerBg}`}
+                  onClick={() => toggleFolder(folderId)}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <button type="button" className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                      {isOpen ? (
+                        <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                      )}
+                    </button>
+
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs font-bold ${iconBg}`}>
+                      {folderId === 'curriculum' ? (
+                        <BookMarked className="w-5 h-5" />
+                      ) : folderId.startsWith('week_') ? (
+                        <Layers className="w-5 h-5" />
+                      ) : (
+                        <Calendar className="w-5 h-5" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-base sm:text-lg text-foreground tracking-tight line-clamp-1">
+                          {group.title}
+                        </h3>
+                        <Badge variant="secondary" className="font-semibold text-xs shrink-0">
+                          {itemsList.length} tài nguyên
+                        </Badge>
+                        {isDragOver && (
+                          <Badge className="bg-primary text-primary-foreground animate-pulse">Thả vào đây 🎯</Badge>
+                        )}
+                      </div>
+                      {group.subtitle && <p className="text-xs text-muted-foreground truncate mt-0.5">{group.subtitle}</p>}
+                    </div>
+                  </div>
+
+                  {isTeacher && (
+                    <div className="flex items-center gap-2 ml-2" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setTargetFolderId(folderId);
+                          setMaterialDialogOpen(true);
+                        }}
+                        className="h-8 text-xs bg-background shadow-2xs hover:bg-muted font-medium"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1 text-primary" /> Thêm tài liệu / Slide
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                {isTeacher && (
-                  <div className="flex items-center gap-2 ml-2" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setTargetFolderId(folderId);
-                        setMaterialDialogOpen(true);
-                      }}
-                      className="h-8 text-xs bg-background shadow-2xs hover:bg-muted font-medium"
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1 text-primary" /> Thêm tài liệu / Slide
-                    </Button>
+                {/* Accordion Content Items */}
+                {isOpen && (
+                  <div className="p-3 sm:p-4 pt-1 bg-card/50 space-y-2.5 border-t border-border/50">
+                    {itemsList.length === 0 ? (
+                      <div className="p-6 border-2 border-dashed rounded-xl text-center text-xs text-muted-foreground bg-muted/20 my-2">
+                        <FolderOpen className="w-8 h-8 mx-auto mb-2 opacity-30 text-primary" />
+                        Mục này chưa có bài học hoặc tài liệu nào.
+                        {isTeacher && (
+                          <span className="block mt-1 text-primary font-medium">
+                            Kéo bài học thả vào đây hoặc bấm nút "Thêm tài liệu / Slide".
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      itemsList.map((item, idx) => {
+                        const isSlideOrDoc = item.slide_url || item.document_url || (item.file_type && ['pdf', 'ppt', 'pptx'].includes(item.file_type.toLowerCase()));
+                        const postedDateStr = formatDatePosted(item.created_at);
+
+                        return (
+                          <div
+                            key={item.id}
+                            draggable={isTeacher}
+                            onDragStart={(e) => handleDragStart(e, item)}
+                            className={`group flex items-center justify-between gap-3 p-3.5 rounded-xl border bg-card hover:bg-accent/40 shadow-2xs transition-all duration-150 ${
+                              draggedItem?.id === item.id ? 'opacity-40 border-dashed border-primary' : 'hover:border-primary/40'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              {isTeacher && (
+                                <div
+                                  className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors p-1 shrink-0"
+                                  title="Kéo để di chuyển hoặc thay đổi thứ tự"
+                                >
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
+                              )}
+
+                              {/* Item Blue Badge Icon (matching Google Classroom in screenshot) */}
+                              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
+                                {item.type === 'lesson' ? (
+                                  <FileText className="w-5 h-5" />
+                                ) : isSlideOrDoc ? (
+                                  <Presentation className="w-5 h-5 text-purple-600" />
+                                ) : (
+                                  <FileType2 className="w-5 h-5 text-emerald-600" />
+                                )}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-bold text-sm text-foreground line-clamp-1 tracking-tight">
+                                    {item.title}
+                                  </h4>
+                                  {item.type === 'lesson' ? (
+                                    <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/30 text-[10px] uppercase font-bold">
+                                      Bài học
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-500/30 text-[10px] uppercase font-bold">
+                                      {item.file_type || 'Tài liệu'}
+                                    </Badge>
+                                  )}
+                                  {item.skill && (
+                                    <Badge variant="secondary" className="text-[10px] font-medium">
+                                      {item.skill}
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
+                                  <span>{postedDateStr}</span>
+                                  {item.duration_minutes && (
+                                    <span className="flex items-center gap-1">
+                                      • <Clock className="w-3 h-3" /> {item.duration_minutes} phút
+                                    </span>
+                                  )}
+                                  {item.description && (
+                                    <span className="line-clamp-1 max-w-md hidden md:inline text-muted-foreground/80">
+                                      • {item.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Quick Action Controls */}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {/* Inline Presentation trigger if available */}
+                              {(item.slide_url || item.document_url || (item.file_url && (item.file_url.includes('.pdf') || item.file_url.includes('canva.com')))) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setActivePresentation({
+                                    title: item.title,
+                                    url: item.slide_url || item.document_url || item.file_url || '',
+                                    type: item.file_type || 'slide'
+                                  })}
+                                  className="h-8 text-xs font-semibold bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 border-purple-500/30 rounded-lg"
+                                >
+                                  <Presentation className="w-3.5 h-3.5 mr-1" /> Xem Slide Inline
+                                </Button>
+                              )}
+
+                              {/* Main Action Button */}
+                              {item.type === 'lesson' ? (
+                                <Button size="sm" variant="default" asChild className="h-8 text-xs font-bold rounded-lg shadow-xs">
+                                  <Link to={`/learn/lessons/${item.id}`}>
+                                    <Play className="w-3.5 h-3.5 mr-1 fill-current" /> Vào học
+                                  </Link>
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="outline" asChild className="h-8 text-xs font-semibold rounded-lg">
+                                  <a href={item.file_url} target="_blank" rel="noreferrer">
+                                    <ExternalLink className="w-3.5 h-3.5 mr-1" /> Mở file
+                                  </a>
+                                </Button>
+                              )}
+
+                              {/* Dropdown Menu (More options) */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Tùy chọn thao tác:</div>
+                                  {item.type === 'lesson' ? (
+                                    <DropdownMenuItem asChild>
+                                      <Link to={`/learn/lessons/${item.id}`}>
+                                        <Play className="w-3.5 h-3.5 mr-2 text-primary" /> Mở bài học
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem asChild>
+                                      <a href={item.file_url} target="_blank" rel="noreferrer">
+                                        <ExternalLink className="w-3.5 h-3.5 mr-2 text-purple-600" /> Xem tệp tài liệu
+                                      </a>
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  {isTeacher && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Chuyển danh mục:
+                                      </div>
+                                      <DropdownMenuItem onClick={() => moveItemToFolder(item, 'curriculum')}>
+                                        📚 Giáo trình học & Sách Ebook
+                                      </DropdownMenuItem>
+                                      {viewGroupMode === 'session' ? (
+                                        sessions.map((s, sIdx) => (
+                                          <DropdownMenuItem key={s.id} onClick={() => moveItemToFolder(item, `session_${s.id}`)}>
+                                            📅 Buổi {sIdx + 1}: {s.topic || format(parseISO(s.session_date), 'dd/MM')}
+                                          </DropdownMenuItem>
+                                        ))
+                                      ) : (
+                                        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((w) => (
+                                          <DropdownMenuItem key={w} onClick={() => moveItemToFolder(item, `week_${w}`)}>
+                                            🗓️ Tuần {w}
+                                          </DropdownMenuItem>
+                                        ))
+                                      )}
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem disabled={idx === 0} onClick={() => moveItemUpDown(item, folderId, -1)}>
+                                        <ArrowUp className="w-3.5 h-3.5 mr-2" /> Chuyển lên trên
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem disabled={idx === itemsList.length - 1} onClick={() => moveItemUpDown(item, folderId, 1)}>
+                                        <ArrowDown className="w-3.5 h-3.5 mr-2" /> Chuyển xuống dưới
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 )}
               </div>
-
-              {/* Accordion Content Items */}
-              {isOpen && (
-                <div className="p-3 sm:p-4 pt-1 bg-card/50 space-y-2.5 border-t border-border/50">
-                  {itemsList.length === 0 ? (
-                    <div className="p-6 border-2 border-dashed rounded-xl text-center text-xs text-muted-foreground bg-muted/20 my-2">
-                      <FolderOpen className="w-8 h-8 mx-auto mb-2 opacity-30 text-primary" />
-                      Mục này chưa có bài học hoặc tài liệu nào.
-                      {isTeacher && (
-                        <span className="block mt-1 text-primary font-medium">
-                          Kéo bài học thả vào đây hoặc bấm nút "Thêm tài liệu / Slide".
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    itemsList.map((item, idx) => {
-                      const isSlideOrDoc = item.slide_url || item.document_url || (item.file_type && ['pdf', 'ppt', 'pptx'].includes(item.file_type.toLowerCase()));
-                      const postedDateStr = formatDatePosted(item.created_at);
-
-                      return (
-                        <div
-                          key={item.id}
-                          draggable={isTeacher}
-                          onDragStart={(e) => handleDragStart(e, item)}
-                          className={`group flex items-center justify-between gap-3 p-3.5 rounded-xl border bg-card hover:bg-accent/40 shadow-2xs transition-all duration-150 ${
-                            draggedItem?.id === item.id ? 'opacity-40 border-dashed border-primary' : 'hover:border-primary/40'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            {isTeacher && (
-                              <div
-                                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors p-1 shrink-0"
-                                title="Kéo để di chuyển hoặc thay đổi thứ tự"
-                              >
-                                <GripVertical className="w-4 h-4" />
-                              </div>
-                            )}
-
-                            {/* Item Blue Badge Icon (matching Google Classroom in screenshot) */}
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
-                              {item.type === 'lesson' ? (
-                                <FileText className="w-5 h-5" />
-                              ) : isSlideOrDoc ? (
-                                <Presentation className="w-5 h-5 text-purple-600" />
-                              ) : (
-                                <FileType2 className="w-5 h-5 text-emerald-600" />
-                              )}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="font-bold text-sm text-foreground line-clamp-1 tracking-tight">
-                                  {item.title}
-                                </h4>
-                                {item.type === 'lesson' ? (
-                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/30 text-[10px] uppercase font-bold">
-                                    Bài học
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-500/30 text-[10px] uppercase font-bold">
-                                    {item.file_type || 'Tài liệu'}
-                                  </Badge>
-                                )}
-                                {item.skill && (
-                                  <Badge variant="secondary" className="text-[10px] font-medium">
-                                    {item.skill}
-                                  </Badge>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
-                                <span>{postedDateStr}</span>
-                                {item.duration_minutes && (
-                                  <span className="flex items-center gap-1">
-                                    • <Clock className="w-3 h-3" /> {item.duration_minutes} phút
-                                  </span>
-                                )}
-                                {item.description && (
-                                  <span className="line-clamp-1 max-w-md hidden md:inline text-muted-foreground/80">
-                                    • {item.description}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Quick Action Controls */}
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {/* Inline Presentation trigger if available */}
-                            {(item.slide_url || item.document_url || (item.file_url && (item.file_url.includes('.pdf') || item.file_url.includes('canva.com')))) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setActivePresentation({
-                                  title: item.title,
-                                  url: item.slide_url || item.document_url || item.file_url || '',
-                                  type: item.file_type || 'slide'
-                                })}
-                                className="h-8 text-xs font-semibold bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 border-purple-500/30 rounded-lg"
-                              >
-                                <Presentation className="w-3.5 h-3.5 mr-1" /> Xem Slide Inline
-                              </Button>
-                            )}
-
-                            {/* Main Action Button */}
-                            {item.type === 'lesson' ? (
-                              <Button size="sm" variant="default" asChild className="h-8 text-xs font-bold rounded-lg shadow-xs">
-                                <Link to={`/learn/lessons/${item.id}`}>
-                                  <Play className="w-3.5 h-3.5 mr-1 fill-current" /> Vào học
-                                </Link>
-                              </Button>
-                            ) : (
-                              <Button size="sm" variant="outline" asChild className="h-8 text-xs font-semibold rounded-lg">
-                                <a href={item.file_url} target="_blank" rel="noreferrer">
-                                  <ExternalLink className="w-3.5 h-3.5 mr-1" /> Mở file
-                                </a>
-                              </Button>
-                            )}
-
-                            {/* Dropdown Menu (More options) */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56">
-                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Tùy chọn thao tác:</div>
-                                {item.type === 'lesson' ? (
-                                  <DropdownMenuItem asChild>
-                                    <Link to={`/learn/lessons/${item.id}`}>
-                                      <Play className="w-3.5 h-3.5 mr-2 text-primary" /> Mở bài học
-                                    </Link>
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem asChild>
-                                    <a href={item.file_url} target="_blank" rel="noreferrer">
-                                      <ExternalLink className="w-3.5 h-3.5 mr-2 text-purple-600" /> Xem tệp tài liệu
-                                    </a>
-                                  </DropdownMenuItem>
-                                )}
-
-                                {isTeacher && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                                      Chuyển danh mục:
-                                    </div>
-                                    <DropdownMenuItem onClick={() => moveItemToFolder(item, 'curriculum')}>
-                                      📚 Giáo trình học & Sách Ebook
-                                    </DropdownMenuItem>
-                                    {viewGroupMode === 'session' ? (
-                                      sessions.map((s, sIdx) => (
-                                        <DropdownMenuItem key={s.id} onClick={() => moveItemToFolder(item, `session_${s.id}`)}>
-                                          📅 Buổi {sIdx + 1}: {s.topic || format(parseISO(s.session_date), 'dd/MM')}
-                                        </DropdownMenuItem>
-                                      ))
-                                    ) : (
-                                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((w) => (
-                                        <DropdownMenuItem key={w} onClick={() => moveItemToFolder(item, `week_${w}`)}>
-                                          🗓️ Tuần {w}
-                                        </DropdownMenuItem>
-                                      ))
-                                    )}
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem disabled={idx === 0} onClick={() => moveItemUpDown(item, folderId, -1)}>
-                                      <ArrowUp className="w-3.5 h-3.5 mr-2" /> Chuyển lên trên
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem disabled={idx === itemsList.length - 1} onClick={() => moveItemUpDown(item, folderId, 1)}>
-                                      <ArrowDown className="w-3.5 h-3.5 mr-2" /> Chuyển xuống dưới
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal Presentation Viewer */}
       {activePresentation && (
@@ -897,6 +1086,46 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
                 title={activePresentation.title}
               />
             </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal Edit Session Topic */}
+      {editSessionTopic && (
+        <Dialog open={!!editSessionTopic} onOpenChange={() => setEditSessionTopic(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-primary" />
+                Đổi tên Chủ đề Buổi / Tuần học
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Tên chủ đề buổi học</label>
+                <Input
+                  value={editSessionTopic.topic}
+                  onChange={(e) => setEditSessionTopic({ ...editSessionTopic, topic: e.target.value })}
+                  placeholder="VD: Đoản văn + Nghe N4 - M1"
+                  className="mt-1 font-semibold"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Số Tuần học tương ứng</label>
+                <Input
+                  type="number"
+                  value={editSessionTopic.weekNum || 1}
+                  onChange={(e) => setEditSessionTopic({ ...editSessionTopic, weekNum: parseInt(e.target.value) || 1 })}
+                  className="mt-1"
+                  min={1}
+                  max={24}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setEditSessionTopic(null)}>Hủy</Button>
+              <Button onClick={handleSaveSessionTopic}>Lưu thay đổi</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
