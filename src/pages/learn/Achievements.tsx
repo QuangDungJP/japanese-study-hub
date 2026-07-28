@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -68,7 +68,22 @@ const Achievements = () => {
     enabled: !!user,
   });
 
-  const achievements: Achievement[] = [
+  const { data: studentSubmissionsCount } = useQuery({
+    queryKey: ['student-submissions-count', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count, error } = await supabase
+        .from('student_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
+  const achievements: Achievement[] = useMemo(() => [
     // Streak achievements
     {
       id: 'streak-3',
@@ -204,52 +219,52 @@ const Achievements = () => {
       category: 'xp',
       rarity: 'legendary',
     },
-    // Vocabulary achievements
+    // Vocabulary / Exercise achievements
     {
       id: 'vocab-10',
       title: 'Bộ sưu tập từ',
-      description: 'Học thuộc 10 từ vựng',
+      description: 'Hoàn thành 10 bài tập / từ vựng',
       icon: <Target className="w-6 h-6" />,
       requirement: 10,
-      current: progress?.vocabulary_mastered || 0,
-      unlocked: (progress?.vocabulary_mastered || 0) >= 10,
+      current: (progress?.vocabulary_mastered || studentSubmissionsCount || 0),
+      unlocked: (progress?.vocabulary_mastered || studentSubmissionsCount || 0) >= 10,
       category: 'vocabulary',
       rarity: 'common',
     },
     {
       id: 'vocab-50',
       title: 'Kho từ vựng',
-      description: 'Học thuộc 50 từ vựng',
+      description: 'Hoàn thành 50 bài tập / từ vựng',
       icon: <Target className="w-6 h-6" />,
       requirement: 50,
-      current: progress?.vocabulary_mastered || 0,
-      unlocked: (progress?.vocabulary_mastered || 0) >= 50,
+      current: (progress?.vocabulary_mastered || studentSubmissionsCount || 0),
+      unlocked: (progress?.vocabulary_mastered || studentSubmissionsCount || 0) >= 50,
       category: 'vocabulary',
       rarity: 'rare',
     },
     {
       id: 'vocab-200',
       title: 'Từ điển sống',
-      description: 'Học thuộc 200 từ vựng',
+      description: 'Hoàn thành 200 bài tập / từ vựng',
       icon: <Heart className="w-6 h-6" />,
       requirement: 200,
-      current: progress?.vocabulary_mastered || 0,
-      unlocked: (progress?.vocabulary_mastered || 0) >= 200,
+      current: (progress?.vocabulary_mastered || studentSubmissionsCount || 0),
+      unlocked: (progress?.vocabulary_mastered || studentSubmissionsCount || 0) >= 200,
       category: 'vocabulary',
       rarity: 'epic',
     },
     {
       id: 'vocab-500',
       title: 'Bậc thầy từ vựng',
-      description: 'Học thuộc 500 từ vựng',
+      description: 'Hoàn thành 500 bài tập / từ vựng',
       icon: <Crown className="w-6 h-6" />,
       requirement: 500,
-      current: progress?.vocabulary_mastered || 0,
-      unlocked: (progress?.vocabulary_mastered || 0) >= 500,
+      current: (progress?.vocabulary_mastered || studentSubmissionsCount || 0),
+      unlocked: (progress?.vocabulary_mastered || studentSubmissionsCount || 0) >= 500,
       category: 'vocabulary',
       rarity: 'legendary',
     },
-  ];
+  ], [progress, completedLessons, studentSubmissionsCount]);
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {

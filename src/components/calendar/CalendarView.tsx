@@ -60,6 +60,7 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
       const channel = supabase
         .channel('public:calendar-view-live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchEvents)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions' }, fetchEvents)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, fetchEvents)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, fetchEvents)
         .subscribe();
@@ -86,6 +87,25 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
 
       if (error) throw error;
 
+      // Fetch class_sessions for enrolled classes
+      let classSessions: any[] = [];
+      const { data: enrollments } = await supabase
+        .from('class_students')
+        .select('class_id')
+        .eq('student_id', user?.id)
+        .eq('status', 'active');
+
+      if (enrollments && enrollments.length > 0) {
+        const classIds = enrollments.map(e => e.class_id);
+        const { data: cSessions } = await supabase
+          .from('class_sessions')
+          .select('*, classes(name_vi, name)')
+          .in('class_id', classIds)
+          .gte('session_date', startDate)
+          .lte('session_date', endDate);
+        classSessions = cSessions || [];
+      }
+
       // Fetch bookings
       const { data: bookings } = await supabase
         .from('bookings')
@@ -108,6 +128,20 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
         .or(`start_date.gte.${startDate},end_date.lte.${endDate}`);
 
       const allEvents: CalendarEvent[] = [];
+
+      // Map class sessions
+      if (classSessions.length > 0 && showEventTypes.includes('booking')) {
+        allEvents.push(...classSessions.map(cs => ({
+          id: `session-${cs.id}`,
+          title: cs.topic || cs.classes?.name_vi || 'Lớp học trực tuyến',
+          start_time: `${cs.session_date}T${cs.start_time}`,
+          end_time: `${cs.session_date}T${cs.end_time || cs.start_time}`,
+          event_type: 'booking' as const,
+          description: cs.notes || undefined,
+          meet_link: cs.meet_link || undefined,
+          reference_id: cs.id,
+        })));
+      }
 
       // Map calendar events
       if (calendarEvents) {

@@ -17,12 +17,15 @@ import {
 } from '@/components/ui/dialog';
 import { 
   Building, GraduationCap, Calendar, Video, Clock, 
-  BookOpen, FileText, CheckCircle2, MessageSquare, Star, ArrowLeft, UserX, AlertCircle
+  BookOpen, FileText, CheckCircle2, MessageSquare, Star, ArrowLeft, UserX, AlertCircle,
+  Play, ExternalLink, Download, Maximize2, Sparkles, Dumbbell
 } from 'lucide-react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 import { sendAbsenceNotification } from '@/lib/emailService';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { InlineLessonExercises } from '@/components/learning/InlineLessonExercises';
+import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 
 interface ClassData {
   id: string;
@@ -107,6 +110,8 @@ const MyClasses = () => {
   
   // Active lesson details inside classroom
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  const [showInlinePresentation, setShowInlinePresentation] = useState(false);
+  const [useGooglePdfEmbed, setUseGooglePdfEmbed] = useState(false);
 
   // Absence & Makeup state
   const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = useState(false);
@@ -548,8 +553,8 @@ const MyClasses = () => {
                 <ArrowLeft className="w-4 h-4" /> Quay lại danh sách bài học
               </Button>
 
-              <Card>
-                <CardHeader>
+              <Card className="border shadow-soft">
+                <CardHeader className="border-b bg-muted/20">
                   <div className="flex flex-wrap gap-2 items-center justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -558,71 +563,115 @@ const MyClasses = () => {
                         </Badge>
                         <Badge variant="outline">{activeLesson.level}</Badge>
                       </div>
-                      <CardTitle className="text-xl md:text-2xl font-bold">{activeLesson.title_vi}</CardTitle>
-                      <CardDescription>{activeLesson.title}</CardDescription>
+                      <CardTitle className="text-xl md:text-2xl font-extrabold text-foreground">{activeLesson.title_vi}</CardTitle>
+                      <CardDescription className="text-sm font-medium">{activeLesson.title}</CardDescription>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0 mt-2 md:mt-0">
-                      <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {activeLesson.duration_minutes} phút</span>
-                      <span className="flex items-center gap-1 text-yellow-500 font-bold"><Star className="w-4 h-4 fill-yellow-500" /> +{activeLesson.xp_reward} XP</span>
+                    <div className="flex items-center gap-3 shrink-0 mt-2 md:mt-0">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-4 h-4" /> {activeLesson.duration_minutes} phút</span>
+                      <span className="flex items-center gap-1 text-xs text-yellow-600 font-bold bg-yellow-500/10 px-2.5 py-1 rounded-full"><Star className="w-4 h-4 fill-yellow-500" /> +{activeLesson.xp_reward} XP</span>
+                      <Button 
+                        size="sm" 
+                        variant="hero" 
+                        className="gap-1.5 font-bold shadow-md"
+                        onClick={() => setShowInlinePresentation(true)}
+                      >
+                        <Play className="w-4 h-4 fill-current" /> Trình chiếu Slide
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* External Slide / Google Drive Link if any */}
-                  {activeLesson.slide_url && (
-                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <BookOpen className="w-6 h-6 text-primary" />
-                        <div>
-                          <p className="font-bold text-sm text-foreground">Slide bài giảng / Link trình chiếu</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{activeLesson.slide_url}</p>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="hero" asChild className="shrink-0 font-semibold gap-1.5">
-                        <a href={activeLesson.slide_url} target="_blank" rel="noopener noreferrer">
-                          Xem Slide
-                        </a>
-                      </Button>
+
+                <CardContent className="p-6 space-y-6">
+                  {/* Fullscreen / Slide Presentation Drawer */}
+                  {showInlinePresentation && (
+                    <div className="rounded-2xl border-2 border-primary/40 overflow-hidden shadow-2xl animate-fade-in">
+                      <InlineLessonPresentation 
+                        lesson={activeLesson} 
+                        onClose={() => setShowInlinePresentation(false)} 
+                      />
                     </div>
                   )}
 
-                  {/* Attached Document PDF/DOCX file if any */}
-                  {activeLesson.document_url && (
-                    <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-xl flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-blue-600" />
-                        <div>
-                          <p className="font-bold text-sm text-foreground">Tệp tài liệu đính kèm (PDF/Word/PPTX)</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{activeLesson.document_url.split('/').pop()}</p>
+                  {/* Embedded Live PDF / Slide Interactive Viewer */}
+                  {(() => {
+                    const pdfUrl = activeLesson.document_url || activeLesson.content_html?.match(/(https?:[^\s<"']+\.pdf[^\s<"']*)/i)?.[1] || null;
+                    const slideUrl = activeLesson.slide_url || activeLesson.content_html?.match(/(https?:\/\/(?:docs\.google\.com|canva\.com)[^\s<"']+)/i)?.[1] || null;
+                    const activeMediaUrl = pdfUrl || slideUrl;
+
+                    if (!activeMediaUrl) return null;
+
+                    return (
+                      <div className="rounded-2xl border border-primary/20 bg-card overflow-hidden shadow-sm space-y-0">
+                        <div className="px-4 py-3 bg-primary/5 border-b flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 font-bold text-sm text-foreground">
+                            <BookOpen className="w-4.5 h-4.5 text-primary" />
+                            <span>Trình chiếu Học liệu & Slide trực tiếp</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {pdfUrl && (
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 text-xs font-semibold text-muted-foreground hover:text-foreground" 
+                                onClick={() => setUseGooglePdfEmbed(p => !p)}
+                              >
+                                {useGooglePdfEmbed ? 'Native PDF' : 'Google Viewer'}
+                              </Button>
+                            )}
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              asChild 
+                              className="h-7 text-xs font-bold gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                            >
+                              <a href={activeMediaUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-3.5 h-3.5" /> Mở link gốc
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="w-full bg-muted/20 relative" style={{ height: 'min(65vh, 580px)' }}>
+                          {pdfUrl ? (
+                            <iframe
+                              src={useGooglePdfEmbed 
+                                ? `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true` 
+                                : pdfUrl}
+                              className="w-full h-full border-0"
+                              title="Trình chiếu tài liệu PDF"
+                            />
+                          ) : (
+                            <iframe
+                              src={slideUrl!}
+                              className="w-full h-full border-0"
+                              title="Trình chiếu Slide"
+                              allowFullScreen
+                            />
+                          )}
                         </div>
                       </div>
-                      <Button size="sm" variant="outline" asChild className="shrink-0 font-semibold gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50">
-                        <a href={activeLesson.document_url} target="_blank" rel="noopener noreferrer">
-                          Tải tài liệu
-                        </a>
-                      </Button>
-                    </div>
-                  )}
+                    );
+                  })()}
 
-                  {/* Video Lesson if any */}
-                  {/* Lesson text content rendered */}
-                  {activeLesson.content_html ? (
-                    <div className="border rounded-xl p-6 bg-card prose prose-indigo dark:prose-invert max-w-none leading-relaxed">
+                  {/* Theory HTML content */}
+                  {activeLesson.content_html && (
+                    <div className="border rounded-2xl p-6 bg-card prose prose-indigo dark:prose-invert max-w-none leading-relaxed shadow-sm">
                       <div dangerouslySetInnerHTML={{ __html: activeLesson.content_html }} />
                     </div>
-                  ) : !activeLesson.slide_url && !activeLesson.document_url && (
+                  )}
+
+                  {!activeLesson.content_html && !activeLesson.slide_url && !activeLesson.document_url && (
                     <div className="text-center py-8 text-muted-foreground text-sm">
-                      Bài học này chưa cập nhật nội dung chi tiết.
+                      Bài học này chưa cập nhật nội dung văn bản.
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Luyện tập bài tập của bài học này để ghi điểm XP.
-                    </p>
-                    <Button onClick={() => navigate('/learn/exercises')} className="w-full sm:w-auto font-semibold">
-                      Làm bài tập ngay
-                    </Button>
+                  {/* Direct Interactive Exercises ("Hiển thị Chi tiết Xổ ra Siêu đẹp") */}
+                  <div className="pt-6 border-t border-border space-y-4">
+                    <InlineLessonExercises 
+                      lessonId={activeLesson.id} 
+                      lessonTitle={activeLesson.title_vi || activeLesson.title} 
+                    />
                   </div>
                 </CardContent>
               </Card>
