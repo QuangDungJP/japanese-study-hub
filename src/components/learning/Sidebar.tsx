@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/collapsible";
 import DarkModeToggle from '@/components/theme/DarkModeToggle';
 import { Badge } from '@/components/ui/badge';
+import { getSavedTheme } from '@/lib/themeUtils';
 
 const allNavigation = [
   { name: 'Bảng điều khiển', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
