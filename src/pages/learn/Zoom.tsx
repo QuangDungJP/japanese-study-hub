@@ -130,7 +130,8 @@ const Zoom = () => {
       }
 
       const mappedTeachers: Teacher[] = (tpData || []).map((t: any) => {
-        const prof = profileMap[t.user_id] || {};
+        const prof: { full_name: string | null; avatar_url: string | null } =
+          profileMap[t.user_id] || { full_name: null, avatar_url: null };
         const specs = Array.isArray(t.specializations) ? t.specializations : [];
         const langs = Array.isArray(t.languages) ? t.languages : ["日本語", "Tiếng Việt"];
         const certs = Array.isArray(t.certifications) ? t.certifications : [];
