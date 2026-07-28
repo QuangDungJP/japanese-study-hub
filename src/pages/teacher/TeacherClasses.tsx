@@ -63,6 +63,8 @@ interface ClassData {
   created_at: string;
   student_count?: number;
   courses?: { title_vi: string };
+  total_sessions?: number | null;
+  custom_fields?: { total_sessions?: number } | null;
 }
 
 interface Student {
@@ -167,6 +169,7 @@ const TeacherClasses = () => {
     description_vi: '',
     course_id: '',
     max_students: 30,
+    total_sessions: 24,
     start_date: '',
     end_date: ''
   });
@@ -799,6 +802,7 @@ const TeacherClasses = () => {
       description_vi: classItem.description_vi || '',
       course_id: classItem.course_id || 'none',
       max_students: classItem.max_students || 30,
+      total_sessions: classItem.total_sessions || classItem.custom_fields?.total_sessions || 24,
       start_date: classItem.start_date || '',
       end_date: classItem.end_date || ''
     });
@@ -833,6 +837,7 @@ const TeacherClasses = () => {
       description_vi: '',
       course_id: 'none',
       max_students: 30,
+      total_sessions: 24,
       start_date: '',
       end_date: ''
     });
