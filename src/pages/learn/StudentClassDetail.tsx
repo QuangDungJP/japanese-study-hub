@@ -60,8 +60,20 @@ const StudentClassDetail = () => {
 
   const submissionFor = (aid: string) => submissions.find(s => s.assignment_id === aid);
 
+  const statusBadge = (sub: any, a: any) => {
+    if (a.start_at && new Date(a.start_at) > now) {
+      return <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30">🔒 Chưa đến giờ mở ({format(new Date(a.start_at), 'HH:mm dd/MM')})</Badge>;
+    }
+    if (!sub) {
+      if (a.due_date && new Date(a.due_date) < now) return <Badge className="bg-red-500/10 text-red-600">Quá hạn</Badge>;
+      return <Badge variant="outline">Chưa nộp</Badge>;
+    }
+    if (sub.status === 'graded') return <Badge className="bg-green-500/10 text-green-600">Đã chấm{sub.score != null ? ` • ${sub.score}` : ''}</Badge>;
+    return <Badge className="bg-blue-500/10 text-blue-600">Chờ duyệt</Badge>;
+  };
+
   const canSubmit = (a: any): { ok: boolean; reason?: string } => {
-    if (a.start_at && new Date(a.start_at) > now) return { ok: false, reason: 'Bài tập chưa mở để nộp' };
+    if (a.start_at && new Date(a.start_at) > now) return { ok: false, reason: `Đề thi/bài tập chưa đến giờ mở (Mở lúc ${format(new Date(a.start_at), 'HH:mm dd/MM/yyyy')})` };
     if (a.due_date && new Date(a.due_date) < now) return { ok: false, reason: 'Bài tập đã quá hạn nộp' };
     return { ok: true };
   };
@@ -117,15 +129,6 @@ const StudentClassDetail = () => {
     toast({ title: 'Đã nộp bài' });
     setSubOpen(false);
     fetchAll();
-  };
-
-  const statusBadge = (sub: any, a: any) => {
-    if (!sub) {
-      if (a.due_date && new Date(a.due_date) < now) return <Badge className="bg-red-500/10 text-red-600">Quá hạn</Badge>;
-      return <Badge variant="outline">Chưa nộp</Badge>;
-    }
-    if (sub.status === 'graded') return <Badge className="bg-green-500/10 text-green-600">Đã chấm{sub.score != null ? ` • ${sub.score}` : ''}</Badge>;
-    return <Badge className="bg-blue-500/10 text-blue-600">Chờ duyệt</Badge>;
   };
 
   if (loading) return <div className="text-center py-12 text-muted-foreground">Đang tải...</div>;

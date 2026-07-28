@@ -113,6 +113,7 @@ const ClassworkTab = ({ classId, isTeacher }: Props) => {
               const sub = subFor(a.id);
               const submitted = sub?.status === 'submitted' || sub?.status === 'graded';
               const overdue = a.due_date && new Date(a.due_date) < new Date() && !submitted;
+              const upcoming = a.start_at && new Date(a.start_at) > new Date();
               return (
                 <Card key={a.id} className="hover:shadow-md hover:border-primary/40 transition-all group/item">
                   <CardContent className="p-4 flex items-start gap-4">
@@ -123,11 +124,20 @@ const ClassworkTab = ({ classId, isTeacher }: Props) => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold">{a.title}</h4>
                         {submitted && <Badge className="bg-green-500/15 text-green-700 border-green-500/30"><CheckCircle2 className="w-3 h-3 mr-1" />{sub?.status === 'graded' ? 'Đã chấm' : 'Đã nộp'}</Badge>}
+                        {upcoming && <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 font-medium">🔒 Chưa đến giờ mở đề</Badge>}
                         {overdue && <Badge variant="destructive">Quá hạn</Badge>}
                         {a.points ? <Badge variant="outline">{a.points} điểm</Badge> : null}
                       </div>
                       {a.description && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{a.description}</p>}
                       <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        {a.start_at ? (
+                          <span className={`flex items-center gap-1 font-medium ${upcoming ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            <CalendarClock className="w-3 h-3" />
+                            {upcoming ? `Mở đề lúc: ${format(new Date(a.start_at), 'dd/MM/yyyy HH:mm')}` : `Đã mở lúc: ${format(new Date(a.start_at), 'dd/MM/yyyy HH:mm')}`}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-emerald-600 font-medium">🟢 Luôn mở</span>
+                        )}
                         {a.due_date && <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />Hạn: {format(new Date(a.due_date), 'dd/MM/yyyy HH:mm')}</span>}
                         {Array.isArray(a.attachments) && a.attachments.length > 0 && (
                           <span className="flex items-center gap-1">
@@ -137,12 +147,27 @@ const ClassworkTab = ({ classId, isTeacher }: Props) => {
                         {sub?.score != null && <span className="text-primary font-semibold">Điểm: {sub.score}/{a.points || 100}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition">
+                    <div className="flex items-center gap-1">
                       {isTeacher ? (
                         <>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(a)}><Edit className="w-4 h-4" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => delAssignment(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                         </>
+                      ) : upcoming ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            toast({
+                              title: 'Chưa tới giờ mở đề bài',
+                              description: `Đề thi/bài tập này được lên lịch mở lúc ${format(new Date(a.start_at), 'dd/MM/yyyy HH:mm')}. Vui lòng quay lại đúng giờ!`,
+                              variant: 'destructive',
+                            });
+                          }}
+                          className="border-amber-500/50 text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold"
+                        >
+                          🔒 Mở lúc {format(new Date(a.start_at), 'HH:mm dd/MM')}
+                        </Button>
                       ) : (
                         <Button size="sm" onClick={() => openSubmit(a)} variant={submitted ? 'outline' : 'default'}>
                           {submitted ? 'Xem/Sửa' : 'Nộp bài'}

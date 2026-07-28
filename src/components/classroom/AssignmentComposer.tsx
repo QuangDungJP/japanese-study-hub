@@ -49,6 +49,7 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
   const [questions, setQuestions] = useState<Question[]>([]);
   const [linkInput, setLinkInput] = useState('');
   const [level, setLevel] = useState('N5');
+  const [scheduleMode, setScheduleMode] = useState<'always' | 'scheduled'>('always');
   // multi-class
   const [myClasses, setMyClasses] = useState<Array<{ id: string; name: string }>>([]);
   const [extraClassIds, setExtraClassIds] = useState<string[]>([]);
@@ -60,7 +61,13 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
       setInstructions(initial?.instructions || initial?.description || '');
       setPoints(initial?.points ?? 100);
       setDueDate(initial?.due_date ? new Date(initial.due_date).toISOString().slice(0, 16) : '');
-      setStartAt(initial?.start_at ? new Date(initial.start_at).toISOString().slice(0, 16) : '');
+      if (initial?.start_at) {
+        setScheduleMode('scheduled');
+        setStartAt(new Date(initial.start_at).toISOString().slice(0, 16));
+      } else {
+        setScheduleMode('always');
+        setStartAt('');
+      }
       setTopicId(initial?.topic_id || 'none');
       setKind(initial?.kind || 'assignment');
       setAttachments(Array.isArray(initial?.attachments) ? initial.attachments : []);
@@ -123,14 +130,18 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
 
   const save = async () => {
     if (!title.trim()) return toast({ title: 'Thiếu tiêu đề', variant: 'destructive' });
+    if (scheduleMode === 'scheduled' && !startAt) {
+      return toast({ title: 'Chưa chọn thời gian mở đề', description: 'Vui lòng chọn thời gian bắt đầu mở bài khi sử dụng chế độ "Hẹn giờ mở đề"', variant: 'destructive' });
+    }
     setSaving(true);
+    const finalStartAt = scheduleMode === 'scheduled' ? (startAt || null) : null;
     const basePayload: any = {
       title: title.trim(),
       instructions: instructions || null,
       description: instructions || null,
       points,
       due_date: dueDate || null,
-      start_at: startAt || null,
+      start_at: finalStartAt,
       topic_id: topicId === 'none' ? null : topicId,
       kind,
       attachments,
@@ -361,16 +372,67 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1"><CalendarClock className="w-3 h-3" />Ngày phát hành</Label>
-                  <Input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)} className="mt-1" />
-                  <p className="text-xs text-muted-foreground mt-1">Để trống = giao ngay lập tức</p>
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground block mb-2">Chế độ mở đề / Phát hành</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setScheduleMode('always'); setStartAt(''); }}
+                    className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+                      scheduleMode === 'always' ? 'border-emerald-500 bg-emerald-500/10' : 'border-border hover:border-emerald-500/40'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-sm">Luôn mở</div>
+                      <div className="text-xs text-muted-foreground">Mở làm bài ngay bất kỳ lúc nào</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setScheduleMode('scheduled')}
+                    className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+                      scheduleMode === 'scheduled' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                      <CalendarClock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-sm">Hẹn giờ mở đề</div>
+                      <div className="text-xs text-muted-foreground">Tới giờ setup mới mở đề bài</div>
+                    </div>
+                  </button>
                 </div>
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1"><CalendarClock className="w-3 h-3" />Hạn nộp</Label>
-                  <Input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)} className="mt-1" />
-                </div>
+
+                {scheduleMode === 'scheduled' && (
+                  <div className="mt-3 p-3.5 rounded-xl border bg-card/60 space-y-1.5 animate-in fade-in">
+                    <Label className="text-xs font-semibold flex items-center gap-1">
+                      <CalendarClock className="w-3.5 h-3.5 text-primary" />
+                      Thời gian mở đề bài (Giờ setup)
+                    </Label>
+                    <Input
+                      type="datetime-local"
+                      value={startAt}
+                      onChange={e => setStartAt(e.target.value)}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      🔒 Học viên chỉ có thể mở xem đề và nộp bài kể từ thời điểm này trở đi.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <CalendarClock className="w-3 h-3" /> Hạn nộp bài (Deadline)
+                </Label>
+                <Input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)} className="mt-1" />
+                <p className="text-xs text-muted-foreground mt-1">Để trống nếu không đặt hạn nộp</p>
               </div>
 
               {!initial?.id && myClasses.length > 0 && (

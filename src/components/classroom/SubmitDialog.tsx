@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Link2, Trash2 } from 'lucide-react';
+import { Upload, FileText, Link2, Trash2, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 import InlineViewer from './InlineViewer';
 
 interface Att { kind: 'file' | 'link'; url: string; name: string }
@@ -26,6 +27,7 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
   const [saving, setSaving] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const isReturned = existing?.status === 'graded' && existing?.returned_at;
+  const isUpcoming = assignment?.start_at && new Date(assignment.start_at) > new Date();
   const rubric: Array<{ title: string; max: number }> = Array.isArray(assignment?.rubric) ? assignment.rubric : [];
   const rubricScores: Record<string, number> = existing?.rubric_scores || {};
   const questions: Array<{ prompt: string; hint?: string }> = Array.isArray(assignment?.assigned_to?.questions) ? assignment.assigned_to.questions : [];
@@ -60,6 +62,9 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
 
   const submit = async () => {
     if (!user) return;
+    if (isUpcoming) {
+      return toast({ title: 'Chưa đến giờ mở đề', description: 'Đề bài chưa được mở để nộp bài', variant: 'destructive' });
+    }
     setSaving(true);
     const payload: any = {
       assignment_id: assignment.id, student_id: user.id,
@@ -81,6 +86,20 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nộp bài: {assignment?.title}</DialogTitle></DialogHeader>
+
+        {isUpcoming && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-1 text-amber-800 dark:text-amber-300">
+            <div className="flex items-center gap-2 font-semibold">
+              <Clock className="w-5 h-5 text-amber-600" />
+              🔒 Chưa đến giờ mở đề bài
+            </div>
+            <p className="text-sm">
+              Đề bài/bài kiểm tra này được lên lịch mở lúc{' '}
+              <strong>{format(new Date(assignment.start_at), 'HH:mm - dd/MM/yyyy')}</strong>. Bạn chưa thể làm bài hay nộp bài vào lúc này.
+            </p>
+          </div>
+        )}
+
         {isReturned && (
           <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 space-y-2">
             <div className="flex items-center justify-between">
@@ -144,24 +163,24 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
           )}
           <div>
             <Label>Nội dung bài làm</Label>
-            <Textarea value={content} onChange={e => setContent(e.target.value)} rows={4} placeholder="Nhập câu trả lời hoặc mô tả bài làm…" />
+            <Textarea value={content} onChange={e => setContent(e.target.value)} rows={4} placeholder="Nhập câu trả lời hoặc mô tả bài làm…" disabled={isUpcoming} />
           </div>
           <div className="space-y-2">
             <Label>Đính kèm</Label>
             <div className="flex flex-wrap gap-2 items-center">
-              <label className="cursor-pointer">
-                <input type="file" className="hidden" onChange={e => e.target.files?.[0] && upload(e.target.files[0])} />
-                <Button asChild variant="outline" size="sm"><span><Upload className="w-4 h-4 mr-1" />Tải file</span></Button>
+              <label className={`cursor-pointer ${isUpcoming ? 'pointer-events-none opacity-50' : ''}`}>
+                <input type="file" className="hidden" disabled={isUpcoming} onChange={e => e.target.files?.[0] && upload(e.target.files[0])} />
+                <Button asChild variant="outline" size="sm" disabled={isUpcoming}><span><Upload className="w-4 h-4 mr-1" />Tải file</span></Button>
               </label>
-              <Input value={link} onChange={e => setLink(e.target.value)} placeholder="Dán link…" className="h-9 w-56" />
-              <Button variant="outline" size="sm" onClick={addLink}><Link2 className="w-4 h-4 mr-1" />Thêm link</Button>
+              <Input value={link} onChange={e => setLink(e.target.value)} placeholder="Dán link…" className="h-9 w-56" disabled={isUpcoming} />
+              <Button variant="outline" size="sm" onClick={addLink} disabled={isUpcoming}><Link2 className="w-4 h-4 mr-1" />Thêm link</Button>
             </div>
             {attachments.map((a, i) => (
               <div key={i} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                 {a.kind === 'file' ? <FileText className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
                 <button className="flex-1 text-sm truncate hover:underline text-left" onClick={() => setPreviewIdx(previewIdx === i ? null : i)}>{a.name}</button>
                 <a href={a.url} target="_blank" rel="noreferrer" className="text-xs text-primary">Mở</a>
-                <Button variant="ghost" size="icon" onClick={() => setAttachments(as => as.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" disabled={isUpcoming} onClick={() => setAttachments(as => as.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
               </div>
             ))}
             {previewIdx != null && attachments[previewIdx] && (
@@ -171,7 +190,9 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Hủy</Button>
-          <Button onClick={submit} disabled={saving}>{saving ? 'Đang nộp…' : 'Nộp bài'}</Button>
+          <Button onClick={submit} disabled={saving || isUpcoming}>
+            {isUpcoming ? '🔒 Chưa đến giờ mở đề' : saving ? 'Đang nộp…' : 'Nộp bài'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
