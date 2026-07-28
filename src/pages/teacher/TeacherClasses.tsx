@@ -526,7 +526,10 @@ const TeacherClasses = () => {
         teacher_id: user?.id,
         class_id: selectedClass?.id,
         language: 'japanese',
-        is_published: true
+        is_published: true,
+        week_number: formData.week_number || null,
+        session_number: formData.session_number || null,
+        order_index: formData.order_index || 1,
       };
 
       // Try inserting with full payload
@@ -534,11 +537,13 @@ const TeacherClasses = () => {
         .from('lessons')
         .insert(lessonData);
 
-      // If missing column error (e.g. document_url or slide_url column not in DB schema cache)
-      if (error && (error.message?.includes('document_url') || error.message?.includes('slide_url') || error.message?.includes('schema cache'))) {
+      // Fallback retry if schema cache doesn't have newer columns yet
+      if (error && (error.message?.includes('document_url') || error.message?.includes('slide_url') || error.message?.includes('week_number') || error.message?.includes('schema cache'))) {
         const safeData = { ...lessonData };
         delete safeData.document_url;
         delete safeData.slide_url;
+        delete safeData.week_number;
+        delete safeData.session_number;
         const retryResult = await supabase
           .from('lessons')
           .insert(safeData);
@@ -576,6 +581,9 @@ const TeacherClasses = () => {
         video_url: formData.video_url || null,
         slide_url: formData.slide_url || null,
         document_url: formData.document_url || null,
+        week_number: formData.week_number || null,
+        session_number: formData.session_number || null,
+        order_index: formData.order_index || 1,
       };
 
       let { error } = await supabase
@@ -583,10 +591,12 @@ const TeacherClasses = () => {
         .update(lessonData)
         .eq('id', editingLesson.id);
 
-      if (error && (error.message?.includes('document_url') || error.message?.includes('slide_url'))) {
+      if (error && (error.message?.includes('document_url') || error.message?.includes('slide_url') || error.message?.includes('week_number'))) {
         const safeData = { ...lessonData };
         delete safeData.document_url;
         delete safeData.slide_url;
+        delete safeData.week_number;
+        delete safeData.session_number;
         const retry = await supabase.from('lessons').update(safeData).eq('id', editingLesson.id);
         error = retry.error;
       }
