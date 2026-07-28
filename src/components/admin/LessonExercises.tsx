@@ -110,28 +110,34 @@ const LessonExercises = ({ lessonId, lessonTitle }: LessonExercisesProps) => {
 
   const getExerciseInfo = (exercise: Exercise) => {
     switch (exercise.exercise_type) {
-      case 'vocabulary':
+      case 'vocabulary': {
         const vocabCount = exercise.content?.items?.length || 0;
         return `${vocabCount} từ vựng`;
-      case 'multiple_choice':
+      }
+      case 'multiple_choice': {
         const qCount = exercise.content?.questions?.length || 0;
         return `${qCount} câu hỏi`;
+      }
       case 'writing':
         return exercise.requires_grading ? 'Cần chấm bài' : 'Tự luyện';
       case 'listening':
         return exercise.audio_url ? 'Có file audio' : 'Chưa có audio';
-      case 'reading':
+      case 'reading': {
         const textLength = exercise.content?.text?.length || 0;
         return `${textLength} ký tự`;
-      case 'fill_blank':
+      }
+      case 'fill_blank': {
         const fillCount = exercise.content?.sentences?.length || 0;
         return `${fillCount} câu điền`;
-      case 'matching':
+      }
+      case 'matching': {
         const matchCount = exercise.content?.pairs?.length || 0;
         return `${matchCount} cặp`;
-      case 'sentence_order':
+      }
+      case 'sentence_order': {
         const orderCount = exercise.content?.items?.length || 0;
         return `${orderCount} câu`;
+      }
       default:
         return '';
     }

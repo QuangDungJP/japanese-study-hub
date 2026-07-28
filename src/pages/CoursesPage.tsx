@@ -82,7 +82,7 @@ const CoursesPage = () => {
         const teacherIds = Array.from(
           new Set((ctData || []).map((ct: any) => ct.teacher_id as string))
         );
-        let teacherMap: Record<string, any> = {};
+        const teacherMap: Record<string, any> = {};
         if (teacherIds.length > 0) {
           const { data: teachers } = await supabase
             .from("teacher_profiles")
