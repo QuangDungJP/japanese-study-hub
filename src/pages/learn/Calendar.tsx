@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,19 +10,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Calendar, Plus, FileText, UserX, Video } from 'lucide-react';
+import { Calendar, Plus, FileText, UserX, Video, AlertCircle, BookOpen } from 'lucide-react';
 import { CalendarView } from '@/components/calendar/CalendarView';
 import { LeaveRequestForm } from '@/components/calendar/LeaveRequestForm';
 import { LeaveRequestList } from '@/components/calendar/LeaveRequestList';
 import { ExamList } from '@/components/calendar/ExamList';
 import { MyBookings } from '@/components/booking/MyBookings';
 import { BookingForm } from '@/components/booking/BookingForm';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentCalendarPage = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('calendar');
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [enrolledClassCount, setEnrolledClassCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkEnrollment = async () => {
+      const { count } = await supabase
+        .from('class_students')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', user.id)
+        .eq('status', 'active');
+      setEnrolledClassCount(count || 0);
+    };
+    checkEnrollment();
+  }, [user]);
 
   const handleLeaveSuccess = () => {
     setLeaveDialogOpen(false);
@@ -75,6 +93,34 @@ const StudentCalendarPage = () => {
           </Dialog>
         </div>
       </div>
+
+      {/* Student Enrollment & Class Status Banner */}
+      {enrolledClassCount === 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900 dark:text-amber-300">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+            <div>
+              <p className="font-bold text-sm">Bạn chưa được xếp vào lớp học trực tuyến chính thức nào</p>
+              <p className="text-xs opacity-90">Lịch lớp học tự động hiển thị sau khi được duyệt tham gia lớp. Bạn vẫn có thể đặt lịch học 1-1 hoặc xem lịch cá nhân.</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" asChild className="border-amber-400 text-amber-900 dark:text-amber-100 hover:bg-amber-500/20 shrink-0 font-semibold">
+            <Link to="/learn/my-classes">Vào Lớp học của tôi</Link>
+          </Button>
+        </div>
+      )}
+
+      {enrolledClassCount && enrolledClassCount > 0 && (
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <BookOpen className="w-5 h-5 text-primary shrink-0" />
+            <div>
+              <p className="font-bold text-sm text-foreground">Đã đồng bộ lịch học từ {enrolledClassCount} lớp học đang tham gia</p>
+              <p className="text-xs text-muted-foreground">Tất cả các buổi học trực tuyến, lịch kiểm tra và lịch hẹn 1-1 được tự động cập nhật Realtime.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

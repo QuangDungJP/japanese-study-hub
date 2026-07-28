@@ -40,8 +40,8 @@ const ZoomSection = () => {
     icon: iconMap[f.icon] || Video,
   })) || defaultFeatures;
 
-  const teacherName = zoomData?.teacherName || "Ms. Sarah Johnson";
-  const teacherRole = zoomData?.teacherRole || "IELTS Instructor";
+  const teacherName = zoomData?.teacherName || "Sensei Yamada Kenji";
+  const teacherRole = zoomData?.teacherRole || "Giảng viên Tiếng Nhật N1";
 
   if (isLoading) {
     return (
