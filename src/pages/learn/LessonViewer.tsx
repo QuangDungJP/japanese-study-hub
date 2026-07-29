@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import PdfPresenter from "@/components/teacher/PdfPresenter";
-import BlockRenderer from "@/components/lesson-viewer/BlockRenderer";
+import BlockRenderer, { getEmbeddableInfo } from "@/components/lesson-viewer/BlockRenderer";
 import { isBlockArray } from "@/lib/lessonBlocks";
 import {
   ArrowLeft,
@@ -23,6 +23,7 @@ import {
   Sparkles,
   Target,
   Trophy,
+  ExternalLink,
 } from "lucide-react";
 interface Lesson {
   id: string;
@@ -103,15 +104,57 @@ return () => {
       cancelled = true;
 };
 }, [id, user]);
-const videoEmbed = useMemo(() => {
+  const videoEmbed = useMemo(() => {
     if (!lesson?.video_url) return null;
-const url = lesson.video_url.trim();
-const yt = url.match(
+    const url = lesson.video_url.trim();
+    const yt = url.match(
       /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{6,})/,
     );
-if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-return url;
-}, [lesson]);
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+    return url;
+  }, [lesson]);
+
+  const embeddedLinks = useMemo(() => {
+    if (!lesson) return [];
+    const list: string[] = [];
+
+    const addIfValid = (u?: string | null) => {
+      if (!u) return;
+      const clean = u.trim();
+      if (!clean) return;
+      if (
+        clean.includes("docs.google.com") ||
+        clean.includes("canva.com") ||
+        /\.(pdf|pptx?|xlsx?|docx?)($|\?)/i.test(clean)
+      ) {
+        if (!list.includes(clean)) list.push(clean);
+      }
+    };
+
+    addIfValid((lesson as any).slide_url);
+    addIfValid((lesson as any).document_url);
+
+    if (lesson.content_html) {
+      const found = lesson.content_html.match(/https?:\/\/(?:docs\.google\.com|canva\.com|[^\s<"']+\.(?:pdf|pptx?|xlsx?|docx?))[^\s<"']*/gi) || [];
+      found.forEach(u => {
+        const clean = u.replace(/[">'\,]+$/, '').trim();
+        addIfValid(clean);
+      });
+    }
+
+    return list;
+  }, [lesson]);
+
+  const processedHtml = useMemo(() => {
+    if (!lesson?.content_html) return null;
+    let html = lesson.content_html;
+    embeddedLinks.forEach(url => {
+      const escapedUrl = url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const containerRegex = new RegExp(`<div[^>]*>\\s*<p[^>]*>.*?Slide trình chiếu:.*?<\\/p>\\s*<p[^>]*>\\s*<a[^>]*>${escapedUrl}<\\/a>\\s*<\\/p>\\s*<\\/div>`, 'gi');
+      html = html.replace(containerRegex, '');
+    });
+    return html.trim() || null;
+  }, [lesson?.content_html, embeddedLinks]);
 const handleComplete = async () => {
     if (!user || !lesson || completed) return;
 const { error } = await supabase
@@ -294,7 +337,90 @@ picture-in-picture"
         }
         return null;
       })()}
-      {(lesson.content_html ||
+      {/* Live Interactive Presentation, Spreadsheet & Document In-Page Viewer */}
+      {embeddedLinks.length > 0 && (
+        <div className="space-y-6">
+          {embeddedLinks.map((url, idx) => {
+            const info = getEmbeddableInfo(url);
+            return (
+              <Card key={idx} className="overflow-hidden border-primary/30 shadow-xl rounded-3xl bg-card">
+                {/* Header Bar */}
+                <div className="px-5 py-4 bg-gradient-to-r from-muted/90 via-card to-primary/10 border-b flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0 border border-primary/20">
+                      {info.type === 'sheet' ? '📊' : info.type === 'slide' ? '📺' : info.type === 'canva' ? '🎨' : '📄'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-extrabold text-base text-foreground tracking-tight">
+                          {info.label}
+                        </h3>
+                        <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-xs font-bold px-2.5 py-0.5">
+                          Trình chiếu trực tiếp trong trang ✨
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate max-w-xl mt-0.5">{url}</p>
+                    </div>
+                  </div>
+
+                  {/* Action controls */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs font-bold gap-1.5 bg-background text-primary border-primary/30 rounded-xl"
+                      asChild
+                    >
+                      <a href={url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-3.5 h-3.5" /> Mở link gốc
+                      </a>
+                    </Button>
+
+                    {info.type === 'pdf' && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-8 text-xs font-bold gap-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                        onClick={() => setPresenter({ url, title: lesson.title_vi || lesson.title })}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Chế độ Presenter Laser
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Embedded Responsive Live Iframe Container */}
+                <div className="w-full h-[640px] bg-zinc-950/5 relative overflow-hidden">
+                  <iframe
+                    src={info.embedUrl}
+                    className="w-full h-full border-0"
+                    title={info.label}
+                    allowFullScreen
+                  />
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* HTML / text content */}
+      {(() => {
+        const blocks = (lesson.content && typeof lesson.content === 'object' && Array.isArray((lesson.content as any).blocks))
+          ? (lesson.content as any).blocks
+          : null;
+        if (blocks && isBlockArray(blocks) && blocks.length > 0) {
+          return (
+            <Card>
+              <CardContent className="p-5 sm:p-7">
+                <BlockRenderer blocks={blocks} />
+              </CardContent>
+            </Card>
+          );
+        }
+        return null;
+      })()}
+      {(processedHtml ||
         (lesson.content &&
           typeof lesson.content === "object" &&
           !Array.isArray((lesson.content as any).blocks) &&
@@ -307,7 +433,7 @@ picture-in-picture"
               className="prose prose-sm sm:prose-base dark:prose-invert max-w-none leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html:
-                  lesson.content_html || (lesson.content as any).text || "",
+                  processedHtml || (lesson.content as any).text || "",
               }}
             />{" "}
           </CardContent>{" "}
