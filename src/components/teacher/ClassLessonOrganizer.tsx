@@ -95,6 +95,7 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
 
   // Create material dialog
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
+  const [materialMode, setMaterialMode] = useState<'file' | 'url'>('file');
   const [targetFolderId, setTargetFolderId] = useState<string>('curriculum');
   const [materialForm, setMaterialForm] = useState({ title: '', link_url: '', category: 'giáo_trình' });
   const [uploading, setUploading] = useState(false);
@@ -453,7 +454,12 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
     setUploading(true);
     try {
       const ext = (file.name.split('.').pop() || 'file').toLowerCase();
-      const path = `curriculum/${classId}/${Date.now()}_${file.name}`;
+      // Sanitize filename to avoid invalid key errors in storage
+      const safeFileName = file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9.-]/g, '_');
+      const path = `curriculum/${classId}/${Date.now()}_${safeFileName}`;
       const { error: upErr } = await supabase.storage.from('lesson-assets').upload(path, file);
       if (upErr) throw upErr;
 
@@ -473,7 +479,7 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
         class_id: classId,
         session_id: targetSessionId,
         week_number: targetWeekNum,
-        title: materialForm.title || file.name,
+        title: materialForm.title.trim() || file.name,
         description: targetFolderId === 'curriculum' ? 'giáo_trình' : (targetSessionId ? `buổi_${targetSessionId}` : 'tài_liệu'),
         file_url: publicUrl,
         file_type: ext,
@@ -489,6 +495,53 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
       loadData();
     } catch (e: any) {
       toast({ title: 'Lỗi tải file', description: e.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddUrlMaterial = async () => {
+    if (!user || !materialForm.link_url.trim()) {
+      toast({ title: 'Vui lòng nhập URL trình chiếu', variant: 'destructive' });
+      return;
+    }
+    setUploading(true);
+    try {
+      let targetSessionId: string | null = null;
+      let targetWeekNum: number | null = null;
+
+      if (targetFolderId.startsWith('session_')) {
+        targetSessionId = targetFolderId.replace('session_', '');
+      } else if (targetFolderId.startsWith('week_')) {
+        targetWeekNum = parseInt(targetFolderId.replace('week_', ''), 10);
+      }
+
+      const rawUrl = materialForm.link_url.trim();
+      let detectedType = 'slide';
+      if (rawUrl.toLowerCase().includes('.pdf')) detectedType = 'pdf';
+      else if (rawUrl.includes('canva.com') || rawUrl.includes('google.com/presentation') || rawUrl.toLowerCase().includes('.ppt')) detectedType = 'slide';
+      else detectedType = 'link';
+
+      const { error: dbErr } = await (supabase as any).from('lesson_materials').insert({
+        teacher_id: user.id,
+        class_id: classId,
+        session_id: targetSessionId,
+        week_number: targetWeekNum,
+        title: materialForm.title.trim() || 'URL Trình chiếu / Slide',
+        description: targetFolderId === 'curriculum' ? 'giáo_trình' : (targetSessionId ? `buổi_${targetSessionId}` : 'tài_liệu'),
+        file_url: rawUrl,
+        file_type: detectedType,
+        order_index: (groupedData[targetFolderId]?.items.length || 0) + 1,
+      });
+
+      if (dbErr) throw dbErr;
+
+      toast({ title: 'Đã thêm URL trình chiếu', description: materialForm.title || rawUrl });
+      setMaterialDialogOpen(false);
+      setMaterialForm({ title: '', link_url: '', category: 'giáo_trình' });
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Lỗi thêm URL trình chiếu', description: e.message, variant: 'destructive' });
     } finally {
       setUploading(false);
     }
@@ -898,7 +951,12 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
                       </div>
                     ) : (
                       itemsList.map((item, idx) => {
-                        const isSlideOrDoc = item.slide_url || item.document_url || (item.file_type && ['pdf', 'ppt', 'pptx'].includes(item.file_type.toLowerCase()));
+                        const targetSlideUrl = item.slide_url || item.document_url || item.file_url;
+                        const isSlideOrDoc = !!targetSlideUrl && (
+                          item.file_type === 'slide' || item.file_type === 'pdf' ||
+                          (item.file_type && ['pdf', 'ppt', 'pptx', 'link'].includes(item.file_type.toLowerCase())) ||
+                          targetSlideUrl.includes('.pdf') || targetSlideUrl.includes('.ppt') || targetSlideUrl.includes('canva.com') || targetSlideUrl.includes('google.com/presentation')
+                        );
                         const postedDateStr = formatDatePosted(item.created_at);
 
                         return (
@@ -920,7 +978,7 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
                                 </div>
                               )}
 
-                              {/* Item Blue Badge Icon (matching Google Classroom in screenshot) */}
+                              {/* Item Badge Icon */}
                               <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
                                 {item.type === 'lesson' ? (
                                   <FileText className="w-5 h-5" />
@@ -940,8 +998,12 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
                                     <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/30 text-[10px] uppercase font-bold">
                                       Bài học
                                     </Badge>
-                                  ) : (
+                                  ) : isSlideOrDoc ? (
                                     <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-500/30 text-[10px] uppercase font-bold">
+                                      Slide / Trình chiếu 📺
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-[10px] uppercase font-bold">
                                       {item.file_type || 'Tài liệu'}
                                     </Badge>
                                   )}
@@ -970,19 +1032,19 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
 
                             {/* Quick Action Controls */}
                             <div className="flex items-center gap-1.5 shrink-0">
-                              {/* Inline Presentation trigger if available */}
-                              {(item.slide_url || item.document_url || (item.file_url && (item.file_url.includes('.pdf') || item.file_url.includes('canva.com')))) && (
+                              {/* Slide Presentation trigger */}
+                              {isSlideOrDoc && targetSlideUrl && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setActivePresentation({
                                     title: item.title,
-                                    url: item.slide_url || item.document_url || item.file_url || '',
+                                    url: targetSlideUrl,
                                     type: item.file_type || 'slide'
                                   })}
-                                  className="h-8 text-xs font-semibold bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 border-purple-500/30 rounded-lg"
+                                  className="h-8 text-xs font-bold bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-purple-700 dark:text-purple-300 hover:from-purple-500/20 hover:to-indigo-500/20 border-purple-500/30 rounded-lg shadow-2xs"
                                 >
-                                  <Presentation className="w-3.5 h-3.5 mr-1" /> Xem Slide Inline
+                                  <Presentation className="w-3.5 h-3.5 mr-1 text-purple-600" /> Trình chiếu Slide 📺
                                 </Button>
                               )}
 
@@ -1132,37 +1194,83 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
 
       {/* Upload Material Dialog */}
       <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-primary" />
               Thêm Slide / Tài liệu cho {groupedData[targetFolderId]?.title || 'Buổi học'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+
+          {/* Mode Switcher: Tải tệp vs Nhập URL trình chiếu */}
+          <div className="flex gap-2 p-1 bg-muted/60 rounded-xl border">
+            <Button
+              type="button"
+              size="sm"
+              variant={materialMode === 'file' ? 'default' : 'ghost'}
+              onClick={() => setMaterialMode('file')}
+              className="flex-1 text-xs font-semibold rounded-lg"
+            >
+              <Upload className="w-3.5 h-3.5 mr-1.5" /> Tải tệp từ máy tính
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={materialMode === 'url' ? 'default' : 'ghost'}
+              onClick={() => setMaterialMode('url')}
+              className="flex-1 text-xs font-semibold rounded-lg"
+            >
+              <Link2 className="w-3.5 h-3.5 mr-1.5" /> Nhập URL trình chiếu
+            </Button>
+          </div>
+
+          <div className="space-y-3 py-1">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase">Tiêu đề đính kèm</label>
               <Input
                 value={materialForm.title}
                 onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })}
-                placeholder="VD: Slide Bài Giảng Buổi 1 (PDF / PPT)"
-                className="mt-1"
+                placeholder={materialMode === 'url' ? "VD: Slide Google Slides / Canva Buổi 31" : "VD: Từ vựng Minna N4 - Bài 31"}
+                className="mt-1 font-medium"
               />
             </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase">Chọn tệp từ máy tính</label>
-              <Input
-                type="file"
-                disabled={uploading}
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.zip"
-                onChange={(e) => e.target.files?.[0] && handleUploadMaterial(e.target.files[0])}
-                className="mt-1"
-              />
-              <p className="text-[11px] text-muted-foreground mt-1">Hỗ trợ PDF, PowerPoint, Word, Excel, ZIP...</p>
-            </div>
+
+            {materialMode === 'file' ? (
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Chọn tệp từ máy tính</label>
+                <Input
+                  type="file"
+                  disabled={uploading}
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.zip"
+                  onChange={(e) => e.target.files?.[0] && handleUploadMaterial(e.target.files[0])}
+                  className="mt-1"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  Hỗ trợ PDF, PowerPoint (.pptx), Word, Excel, ZIP... (Tên file tự động chuẩn hóa an toàn).
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Đường dẫn URL trình chiếu / Tài liệu online</label>
+                <Input
+                  value={materialForm.link_url}
+                  onChange={(e) => setMaterialForm({ ...materialForm, link_url: e.target.value })}
+                  placeholder="https://docs.google.com/presentation/d/... hoặc Canva / PDF URL"
+                  className="font-mono text-xs"
+                />
+                <p className="text-[11px] text-muted-foreground bg-primary/5 p-2 rounded-lg border border-primary/10">
+                  ✨ <strong>Hỗ trợ nhúng trực tiếp:</strong> Google Slides, Canva, Office PowerPoint Web, PDF online... Học viên có thể xem trực tiếp ngay trong lớp học!
+                </p>
+              </div>
+            )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={() => setMaterialDialogOpen(false)}>Hủy</Button>
+            {materialMode === 'url' && (
+              <Button onClick={handleAddUrlMaterial} disabled={uploading || !materialForm.link_url.trim()}>
+                {uploading ? 'Đang thêm...' : 'Lưu URL trình chiếu'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

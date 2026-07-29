@@ -6,8 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, ArrowRight, Play, Eye, EyeOff,
-  CheckCircle2, RefreshCw, X, ExternalLink, FileText, BookOpen
+  CheckCircle2, RefreshCw, X, ExternalLink, FileText, BookOpen, Presentation, Sparkles
 } from 'lucide-react';
+import PdfPresenter from './PdfPresenter';
 
 interface Lesson {
   id: string;
@@ -43,6 +44,7 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [useGoogleEmbed, setUseGoogleEmbed] = useState(false);
+  const [pdfPresenterOpen, setPdfPresenterOpen] = useState(false);
 
   useEffect(() => {
     if (lesson && isOpen) {
@@ -263,13 +265,23 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
             {/* Slide 1: In-Browser Live PDF & Slide Presentation */}
             {currentSlide === 1 && (
               <div className="space-y-4 animate-fade-in flex-1 flex flex-col">
-                {/* Top Backup Link Bar */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/60 border text-xs shrink-0">
+                {/* Top Control Bar */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/60 border text-xs shrink-0 flex-wrap gap-2">
                   <div className="flex items-center gap-2 font-medium text-foreground">
                     <BookOpen className="w-4 h-4 text-primary" />
                     <span>Trình chiếu tài liệu trực tiếp trên Website</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {pdfUrl && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 text-xs font-bold gap-1 bg-red-600 hover:bg-red-700 text-white shadow-xs"
+                        onClick={() => setPdfPresenterOpen(true)}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Chế độ Presenter (Laser & Đồng hồ)
+                      </Button>
+                    )}
                     {pdfUrl && (
                       <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground hover:text-foreground" onClick={() => setUseGoogleEmbed(prev => !prev)}>
                         {useGoogleEmbed ? 'Chuyển Native PDF' : 'Chuyển Google Viewer'}
@@ -349,6 +361,15 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
             </Button>
           </div>
         </div>
+
+        {pdfUrl && (
+          <PdfPresenter
+            open={pdfPresenterOpen}
+            onOpenChange={setPdfPresenterOpen}
+            url={pdfUrl}
+            title={lesson.title_vi || lesson.title}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

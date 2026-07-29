@@ -31,11 +31,38 @@ interface Exercise {
 }
 
 interface InlineLessonPresentationProps {
-  lesson: Lesson;
-  onClose: () => void;
+  lesson?: Lesson;
+  slideUrl?: string;
+  title?: string;
+  onClose?: () => void;
 }
 
-export const InlineLessonPresentation = ({ lesson, onClose }: InlineLessonPresentationProps) => {
+export const getEmbeddableSlideUrl = (rawUrl: string): string => {
+  if (!rawUrl) return '';
+  const url = rawUrl.trim();
+
+  // Google Slides
+  if (url.includes('docs.google.com/presentation')) {
+    if (url.includes('/embed')) return url;
+    return url.replace(/\/edit.*$/, '/embed').replace(/\/pub.*$/, '/embed');
+  }
+
+  // Canva
+  if (url.includes('canva.com/design')) {
+    if (url.includes('?embed') || url.includes('&embed')) return url;
+    const cleanUrl = url.split('?')[0];
+    return `${cleanUrl}?embed`;
+  }
+
+  // PowerPoint or Office Online files (.pptx, .ppt)
+  if (url.toLowerCase().endsWith('.pptx') || url.toLowerCase().endsWith('.ppt')) {
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+  }
+
+  return url;
+};
+
+export const InlineLessonPresentation = ({ lesson, slideUrl: propSlideUrl, title: propTitle, onClose }: InlineLessonPresentationProps) => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -43,10 +70,12 @@ export const InlineLessonPresentation = ({ lesson, onClose }: InlineLessonPresen
   const [useGoogleEmbed, setUseGoogleEmbed] = useState(false);
 
   useEffect(() => {
-    fetchExercises(lesson.id);
-    setCurrentSlide(0);
-    setShowAnswer(false);
-  }, [lesson.id]);
+    if (lesson?.id) {
+      fetchExercises(lesson.id);
+      setCurrentSlide(0);
+      setShowAnswer(false);
+    }
+  }, [lesson?.id]);
 
   const fetchExercises = async (lessonId: string) => {
     try {
@@ -63,11 +92,103 @@ export const InlineLessonPresentation = ({ lesson, onClose }: InlineLessonPresen
     }
   };
 
+  const targetUrl = propSlideUrl || (lesson as any)?.document_url || lesson?.slide_url || 
+    (lesson?.content_html?.match(/(https?:[^\s<"']+\.(?:pdf|pptx|ppt)[^\s<"']*)/i)?.[1]) ||
+    (lesson?.content_html?.match(/(https?:\/\/(?:docs\.google\.com|canva\.com)[^\s<"']+)/i)?.[1]);
+
+  const displayTitle = propTitle || lesson?.title_vi || lesson?.title || 'Slide Trình Chiếu';
+  const embeddableUrl = targetUrl ? getEmbeddableSlideUrl(targetUrl) : '';
+
+  if (!lesson && targetUrl) {
+    const isGoogle = targetUrl.includes('docs.google.com/presentation');
+    const isCanva = targetUrl.includes('canva.com');
+    const isPdf = targetUrl.toLowerCase().includes('.pdf');
+    const isPpt = targetUrl.toLowerCase().includes('.ppt');
+
+    return (
+      <div className="flex flex-col h-full rounded-2xl border border-primary/20 bg-card overflow-hidden shadow-soft">
+        {/* Header Bar */}
+        <div className="px-4 py-3 bg-gradient-to-r from-muted/80 via-card to-primary/5 border-b flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+              📺
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm text-foreground truncate">{displayTitle}</h3>
+                {isGoogle && (
+                  <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px] font-bold">
+                    Google Slides 📊
+                  </Badge>
+                )}
+                {isCanva && (
+                  <Badge className="bg-purple-500/10 text-purple-700 border-purple-500/30 text-[10px] font-bold">
+                    Canva Slide 🎨
+                  </Badge>
+                )}
+                {isPpt && (
+                  <Badge className="bg-orange-500/10 text-orange-700 border-orange-500/30 text-[10px] font-bold">
+                    PowerPoint Online 📑
+                  </Badge>
+                )}
+                {isPdf && (
+                  <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30 text-[10px] font-bold">
+                    Tài liệu PDF 📄
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate max-w-md">{targetUrl}</p>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const el = document.getElementById('standalone-slide-iframe') as HTMLIFrameElement;
+                if (el) el.src = embeddableUrl;
+              }}
+              className="h-8 text-xs font-medium gap-1 bg-background"
+              title="Tải lại slide"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Tải lại
+            </Button>
+
+            <Button size="sm" variant="outline" className="h-8 text-xs font-bold gap-1 bg-background text-primary" asChild>
+              <a href={targetUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-3.5 h-3.5" /> Mở link gốc
+              </a>
+            </Button>
+
+            {onClose && (
+              <Button size="sm" variant="ghost" className="h-8 text-xs gap-1 hover:bg-destructive/10 hover:text-destructive" onClick={onClose}>
+                <X className="w-4 h-4" /> Thu gọn
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Embedded Iframe Slide Player Container */}
+        <div className="flex-1 min-h-[520px] w-full bg-zinc-950/5 relative rounded-b-2xl overflow-hidden">
+          <iframe
+            id="standalone-slide-iframe"
+            src={embeddableUrl}
+            className="w-full h-full min-h-[560px] border-0"
+            title={displayTitle}
+            allowFullScreen
+          />
+        </div>
+      </div>
+    );
+  }
+
   // Detect PDF / slide URL from lesson fields or embedded links
-  const pdfUrl = (lesson as any).document_url || 
-    (lesson.content_html?.match(/(https?:[^\s<"']+\.pdf[^\s<"']*)/i)?.[1]) || null;
-  const slideUrl = (lesson as any).slide_url || 
-    (lesson.content_html?.match(/(https?:\/\/(?:docs\.google\.com|canva\.com)[^\s<"']+)/i)?.[1]) || null;
+  const pdfUrl = (lesson as any)?.document_url || 
+    (lesson?.content_html?.match(/(https?:[^\s<"']+\.pdf[^\s<"']*)/i)?.[1]) || null;
+  const slideUrl = (lesson as any)?.slide_url || 
+    (lesson?.content_html?.match(/(https?:\/\/(?:docs\.google\.com|canva\.com)[^\s<"']+)/i)?.[1]) || null;
 
   const totalSlides = 2 + exercises.length;
 

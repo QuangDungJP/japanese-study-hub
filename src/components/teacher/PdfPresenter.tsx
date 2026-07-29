@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   ChevronLeft, ChevronRight, Maximize2, Minimize2, X,
   ZoomIn, ZoomOut, LayoutGrid, Loader2, Download, ExternalLink,
+  Clock, Sparkles, Sun, Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,12 @@ interface Props {
   url: string;
   title?: string;
 }
+
+const fmtTimer = (sec: number) => {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
 
 const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
   const { user } = useAuth();
@@ -43,6 +50,24 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
   const [showThumbs, setShowThumbs] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const hydratedRef = useRef(false);
+
+  // Presenter Enhancements
+  const [laserActive, setLaserActive] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [bgDark, setBgDark] = useState(true);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+
+  // Presentation stopwatch timer
+  useEffect(() => {
+    if (!open) {
+      setTimerSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setTimerSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [open]);
 
   // Load the PDF
   useEffect(() => {
@@ -216,7 +241,38 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Presentation Timer */}
+              <div className="flex items-center gap-1 text-xs font-mono px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20" title="Thời gian trình chiếu">
+                <Clock className="w-3.5 h-3.5 animate-pulse" />
+                <span>{fmtTimer(timerSeconds)}</span>
+              </div>
+
+              {/* Laser Pointer Toggle */}
+              <Button
+                variant={laserActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLaserActive((v) => !v)}
+                className={cn("h-8 text-xs font-bold gap-1", laserActive && "bg-red-600 hover:bg-red-700 text-white animate-pulse")}
+                title="Bật/Tắt con trỏ Laser đỏ"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Laser {laserActive ? "BẬT" : ""}
+              </Button>
+
+              {/* Canvas Theme Toggle */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBgDark((v) => !v)}
+                className="h-8 text-xs font-medium gap-1"
+                title="Đổi màu nền trình chiếu (Tối / Sáng)"
+              >
+                {bgDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5" />}
+              </Button>
+
+              <div className="h-4 w-[1px] bg-border mx-1" />
+
               <Button variant="ghost" size="sm" onClick={() => setShowThumbs((v) => !v)} title="Danh sách slide">
                 <LayoutGrid className="w-4 h-4" />
               </Button>
@@ -225,7 +281,7 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
               </Button>
               <button
                 onClick={() => setZoom(1)}
-                className="text-xs font-mono px-2 py-1 rounded hover:bg-muted"
+                className="text-xs font-mono px-2 py-1 rounded hover:bg-muted font-bold"
                 title="Vừa khung hình"
               >
                 {Math.round(zoom * 100)}%
@@ -269,7 +325,20 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
 
             <div
               ref={containerRef}
-              className="relative flex-1 bg-neutral-900 flex items-center justify-center overflow-auto"
+              onMouseMove={(e) => {
+                if (laserActive && containerRef.current) {
+                  const rect = containerRef.current.getBoundingClientRect();
+                  setMousePos({
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                  });
+                }
+              }}
+              className={cn(
+                "relative flex-1 flex items-center justify-center overflow-auto transition-colors duration-300",
+                bgDark ? "bg-zinc-950" : "bg-zinc-200/80",
+                laserActive && "cursor-crosshair"
+              )}
             >
               {loading && (
                 <div className="absolute inset-0 flex items-center justify-center text-white/80 gap-2">
@@ -286,12 +355,23 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
               )}
               <canvas ref={canvasRef} className="shadow-2xl rounded-sm bg-white" />
 
+              {/* Red Glowing Laser Pointer Cursor */}
+              {laserActive && (
+                <div
+                  className="pointer-events-none absolute w-6 h-6 rounded-full bg-red-500/80 border-2 border-white shadow-[0_0_20px_6px_rgba(239,68,68,0.9)] animate-pulse z-50 -translate-x-1/2 -translate-y-1/2"
+                  style={{
+                    left: `${mousePos.x}px`,
+                    top: `${mousePos.y}px`,
+                  }}
+                />
+              )}
+
               {/* Click zones for nav */}
               <button
                 aria-label="Slide trước"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg transition-all"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -299,7 +379,7 @@ const PdfPresenter = ({ open, onOpenChange, url, title }: Props) => {
                 aria-label="Slide kế tiếp"
                 onClick={() => setPage((p) => Math.min(total, p + 1))}
                 disabled={page >= total}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg transition-all"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
