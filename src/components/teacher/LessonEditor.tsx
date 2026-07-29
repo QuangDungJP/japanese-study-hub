@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { 
   BookOpen, Clock, Award, Save, X, Image, Film, FileText, 
   Link as LinkIcon, Paperclip, ChevronDown, ChevronUp, Sparkles, Upload,
-  Calendar, Layers, Hash, ListOrdered
+  Calendar, Layers, Hash, ListOrdered, Video
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -98,6 +99,33 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
     }
   }, [initialData]);
 
+  const [classList, setClassList] = useState<{ id: string; name_vi: string }[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>('none');
+  const [classSessions, setClassSessions] = useState<{ id: string; topic: string | null; session_date: string; record_url?: string | null }[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('none');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('classes').select('id, name_vi').eq('is_active', true);
+      setClassList(data || []);
+    })();
+  }, []);
+
+  const handleClassSelect = async (classId: string) => {
+    setSelectedClassId(classId);
+    setSelectedSessionId('none');
+    if (classId !== 'none') {
+      const { data } = await supabase
+        .from('class_sessions')
+        .select('id, topic, session_date, record_url')
+        .eq('class_id', classId)
+        .order('session_date', { ascending: true });
+      setClassSessions(data || []);
+    } else {
+      setClassSessions([]);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.title_vi.trim()) {
       alert('Vui lòng nhập Tên bài học / Tài liệu!');
@@ -106,10 +134,19 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
 
     setSaving(true);
     try {
+      if (selectedSessionId !== 'none' && (formData.video_url || formData.slide_url)) {
+        const recUrl = formData.video_url || formData.slide_url;
+        await supabase
+          .from('class_sessions')
+          .update({ record_url: recUrl })
+          .eq('id', selectedSessionId);
+      }
+
       const payload: LessonFormData = {
         ...formData,
         title: formData.title || formData.title_vi,
         description: formData.description || formData.description_vi,
+        session_id: selectedSessionId !== 'none' ? selectedSessionId : null,
       };
       await onSubmit(payload);
     } finally {
@@ -235,6 +272,58 @@ const LessonEditor = ({ initialData, onSubmit, onCancel, isEditing }: LessonEdit
                   placeholder="Ví dụ: 1, 2, 3..."
                 />
               </div>
+            </div>
+
+            {/* Direct Class & Session Link Selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-primary/20">
+              <div className="space-y-1 bg-card p-2.5 rounded-xl border border-border">
+                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                  <Video className="w-3.5 h-3.5 text-purple-600" /> Chọn Lớp học để trỏ Record Video
+                </Label>
+                <Select value={selectedClassId} onValueChange={handleClassSelect}>
+                  <SelectTrigger className="h-9 text-xs font-medium">
+                    <SelectValue placeholder="Chọn lớp..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Không gán vào lớp --</SelectItem>
+                    {classList.map(cls => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        {cls.name_vi}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedClassId !== 'none' && (
+                <div className="space-y-1 bg-card p-2.5 rounded-xl border border-purple-500/30">
+                  <Label className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-purple-600" /> Chọn Buổi học cụ thể để gắn Video Record
+                  </Label>
+                  <Select value={selectedSessionId} onValueChange={(val) => {
+                    setSelectedSessionId(val);
+                    if (val !== 'none') {
+                      const foundIndex = classSessions.findIndex(s => s.id === val);
+                      if (foundIndex >= 0) {
+                        updateField('session_number', foundIndex + 1);
+                        updateField('session_id', val);
+                      }
+                    }
+                  }}>
+                    <SelectTrigger className="h-9 text-xs font-semibold text-purple-700">
+                      <SelectValue placeholder="Chọn buổi học..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-- Chọn buổi học --</SelectItem>
+                      {classSessions.map((s, idx) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          Buổi {idx + 1} ({s.session_date}): {s.topic || 'Buổi học Meeting'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

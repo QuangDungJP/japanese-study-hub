@@ -247,104 +247,106 @@ const TeacherLessons = () => {
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Media</TableHead>
-                  <TableHead>Tiêu đề</TableHead>
-                  <TableHead>Kỹ năng</TableHead>
-                  <TableHead>Trình độ</TableHead>
-                  <TableHead>Thời lượng</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lessons.map((lesson) => {
-                  const skillInfo = getSkillInfo(lesson.skill);
-                  return (
-                    <TableRow key={lesson.id}>
-                      <TableCell>
-                        <div className="w-16 h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                          {lesson.thumbnail_url ? (
-                            <img 
-                              src={lesson.thumbnail_url} 
-                              alt="" 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : lesson.video_url ? (
-                            <Film className="w-5 h-5 text-muted-foreground" />
-                          ) : (
-                            <Image className="w-5 h-5 text-muted-foreground/50" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{lesson.title_vi || lesson.title}</p>
-                          {lesson.title_vi && lesson.title !== lesson.title_vi && (
-                            <p className="text-sm text-muted-foreground">{lesson.title}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={skillInfo.color}>
-                          {skillInfo.icon} {skillInfo.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{lesson.level}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="w-4 h-4" />
-                          {lesson.duration_minutes} phút
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {lesson.is_published ? (
-                          <Badge className="bg-green-500/10 text-green-600">Đã xuất bản</Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
-                            Nháp
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(lesson.created_at), 'dd/MM/yyyy', { locale: vi })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditor(lesson)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Chỉnh sửa
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setExercisesLesson(lesson)}>
-                              <Dumbbell className="w-4 h-4 mr-2" />
-                              Quản lý bài tập
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {!lesson.is_published && (
-                              <DropdownMenuItem onClick={() => handlePublish(lesson.id)}>
-                                <Send className="w-4 h-4 mr-2" />
-                                {isSeniorTeacher ? 'Xuất bản' : 'Gửi duyệt'}
-                              </DropdownMenuItem>
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px]">Media</TableHead>
+                    <TableHead>Tiêu đề</TableHead>
+                    <TableHead>Kỹ năng</TableHead>
+                    <TableHead>Trình độ</TableHead>
+                    <TableHead>Thời lượng</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lessons.map((lesson) => {
+                    const skillInfo = getSkillInfo(lesson.skill);
+                    return (
+                      <TableRow key={lesson.id}>
+                        <TableCell>
+                          <div className="w-16 h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                            {lesson.thumbnail_url ? (
+                              <img 
+                                src={lesson.thumbnail_url} 
+                                alt="" 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : lesson.video_url ? (
+                              <Film className="w-5 h-5 text-muted-foreground" />
+                            ) : (
+                              <Image className="w-5 h-5 text-muted-foreground/50" />
                             )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{lesson.title_vi || lesson.title}</p>
+                            {lesson.title_vi && lesson.title !== lesson.title_vi && (
+                              <p className="text-sm text-muted-foreground">{lesson.title}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={skillInfo.color}>
+                            {skillInfo.icon} {skillInfo.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{lesson.level}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            {lesson.duration_minutes} phút
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {lesson.is_published ? (
+                            <Badge className="bg-green-500/10 text-green-600">Đã xuất bản</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                              Nháp
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(lesson.created_at), 'dd/MM/yyyy', { locale: vi })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditor(lesson)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Chỉnh sửa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setExercisesLesson(lesson)}>
+                                <Dumbbell className="w-4 h-4 mr-2" />
+                                Quản lý bài tập
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {!lesson.is_published && (
+                                <DropdownMenuItem onClick={() => handlePublish(lesson.id)}>
+                                  <Send className="w-4 h-4 mr-2" />
+                                  {isSeniorTeacher ? 'Xuất bản' : 'Gửi duyệt'}
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

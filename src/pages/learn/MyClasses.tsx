@@ -27,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { InlineLessonExercises } from '@/components/learning/InlineLessonExercises';
 import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
+import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
 
 interface ClassData {
   id: string;
@@ -120,6 +121,7 @@ const MyClasses = () => {
   const [absenceReason, setAbsenceReason] = useState('');
   const [submittingAbsence, setSubmittingAbsence] = useState(false);
   const [studentAttendance, setStudentAttendance] = useState<any[]>([]);
+  const [playingVideoRecord, setPlayingVideoRecord] = useState<{ url: string; title: string } | null>(null);
 
   const fetchAttendanceRecords = async (classId: string) => {
     if (!user) return;
@@ -438,9 +440,12 @@ const MyClasses = () => {
       </div>
 
       <Tabs defaultValue="stream" className="space-y-6">
-        <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto grid grid-cols-4">
+        <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto flex flex-wrap gap-1">
           <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
           <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học</TabsTrigger>
+          <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1.5">
+            🎬 Record Buổi Học
+          </TabsTrigger>
           <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Bài nộp</TabsTrigger>
         </TabsList>
@@ -461,59 +466,92 @@ const MyClasses = () => {
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {sessions.map((session) => (
-                    <Card key={session.id} className="hover:shadow-sm transition-shadow">
-                      <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="space-y-1">
-                          <p className="font-semibold text-sm md:text-base text-foreground">
-                            {session.topic || 'Buổi học trực tuyến'}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {formatWithJST(session.session_date, false)}
-                            </span>
-                            <span className="flex items-center gap-1 font-medium">
-                              <Clock className="w-3.5 h-3.5" />
-                              {formatTimeWithJST(session.start_time)}
-                            </span>
-                          </div>
-                          {session.notes && (
-                            <p className="text-xs text-muted-foreground italic line-clamp-2">📝 {session.notes}</p>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto">
-                          {studentAttendance.some(a => a.session_date === session.session_date && a.status === 'excused_absence') ? (
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">
-                              Đã báo vắng
-                            </Badge>
-                          ) : (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => {
-                                setSelectedSessionToAbsence(session);
-                                setIsAbsenceDialogOpen(true);
-                              }}
-                            >
-                              <UserX className="w-3.5 h-3.5" /> Báo vắng
-                            </Button>
-                          )}
+                  {sessions.map((session) => {
+                    const recUrl = (session as any).record_url || session.notes?.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i)?.[1] || null;
+                    const cleanNotes = session.notes ? session.notes.replace(/\[RECORD_URL:\s*[^\s\]]+\]/gi, '').trim() : '';
 
-                          {session.meet_link ? (
-                            <Button size="sm" variant="hero" className="gap-2 shrink-0" asChild>
-                              <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
-                                <Video className="w-4 h-4" /> Vào học Meeting
-                              </a>
-                            </Button>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Chưa có link</Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                    return (
+                      <Card key={session.id} className="hover:shadow-sm transition-shadow">
+                        <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div className="space-y-1">
+                            <p className="font-semibold text-sm md:text-base text-foreground">
+                              {session.topic || 'Buổi học trực tuyến'}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {formatWithJST(session.session_date, false)}
+                              </span>
+                              <span className="flex items-center gap-1 font-medium">
+                                <Clock className="w-3.5 h-3.5" />
+                                {formatTimeWithJST(session.start_time)}
+                              </span>
+                              {recUrl && (
+                                <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs font-bold gap-1">
+                                  🎬 Đã có Record Video
+                                </Badge>
+                              )}
+                            </div>
+                            {cleanNotes && (
+                              <p className="text-xs text-muted-foreground italic line-clamp-2">📝 {cleanNotes}</p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto">
+                            {recUrl && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs"
+                                onClick={() => setPlayingVideoRecord({ url: recUrl, title: session.topic || 'Record Buổi Học' })}
+                              >
+                                <Play className="w-3.5 h-3.5 fill-current" /> Xem Record Video
+                              </Button>
+                            )}
+                            {studentAttendance.some(a => a.session_date === session.session_date && a.status === 'excused_absence') ? (
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs font-semibold">
+                                Đã báo vắng
+                              </Badge>
+                            ) : (() => {
+                              const sessionTimeStr = `${session.session_date}T${session.start_time.length === 5 ? session.start_time + ':00' : session.start_time}`;
+                              const isPast = !isNaN(new Date(sessionTimeStr).getTime()) && new Date(sessionTimeStr).getTime() < Date.now();
+
+                              if (isPast) {
+                                return (
+                                  <Badge variant="outline" className="bg-muted/80 text-muted-foreground text-xs font-medium border-border">
+                                    ⏰ Đã qua buổi học
+                                  </Badge>
+                                );
+                              }
+
+                              return (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    setSelectedSessionToAbsence(session);
+                                    setIsAbsenceDialogOpen(true);
+                                  }}
+                                >
+                                  <UserX className="w-3.5 h-3.5" /> Báo vắng
+                                </Button>
+                              );
+                            })()}
+
+                            {session.meet_link ? (
+                              <Button size="sm" variant="hero" className="gap-2 shrink-0" asChild>
+                                <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
+                                  <Video className="w-4 h-4" /> Vào học Meeting
+                                </a>
+                              </Button>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">Chưa có link</Badge>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -691,6 +729,107 @@ const MyClasses = () => {
           )}
         </TabsContent>
 
+        {/* Tab Recordings: Kho Video Record Buổi Học */}
+        <TabsContent value="recordings" className="space-y-6">
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-extrabold text-foreground flex items-center gap-2">
+                <Video className="w-5 h-5 text-purple-600" /> Kho Video Record Ghi Hình Buổi Học
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Xem lại toàn bộ video bài giảng các buổi học trực tuyến bất cứ lúc nào với đầy đủ tính năng tua video
+              </p>
+            </div>
+          </div>
+
+          {(() => {
+            const recordedSessions = sessions.filter(
+              s => (s as any).record_url || s.notes?.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i)
+            );
+
+            if (recordedSessions.length === 0) {
+              return (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Video className="w-12 h-12 mx-auto mb-3 text-purple-400 opacity-50 animate-pulse" />
+                    <h3 className="text-base font-bold text-foreground">Chưa có video record buổi học nào</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Giáo viên sẽ cập nhật video ghi hình lại sau mỗi buổi học trực tuyến.
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {recordedSessions.map((session) => {
+                  const recUrl = (session as any).record_url || session.notes?.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i)?.[1] || '';
+                  const cleanNotes = session.notes ? session.notes.replace(/\[RECORD_URL:\s*[^\s\]]+\]/gi, '').trim() : '';
+
+                  return (
+                    <Card key={session.id} className="overflow-hidden border border-purple-500/20 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group bg-card">
+                      <div>
+                        {/* Header info */}
+                        <div className="p-5 bg-gradient-to-r from-purple-500/10 via-card to-primary/5 border-b space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge className="bg-purple-600 text-white text-xs font-bold px-2.5 py-0.5">
+                              🎬 Record Buổi Học
+                            </Badge>
+                            <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {formatWithJST(session.session_date, false)}
+                            </span>
+                          </div>
+                          <h3 className="font-extrabold text-base text-foreground group-hover:text-purple-600 transition-colors line-clamp-2">
+                            {session.topic || 'Video ghi hình buổi học trực tuyến'}
+                          </h3>
+                        </div>
+
+                        {/* Body content & notes */}
+                        <div className="p-5 space-y-3">
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1 font-medium">
+                              <Clock className="w-3.5 h-3.5" />
+                              Giờ học: {formatTimeWithJST(session.start_time)}
+                            </span>
+                          </div>
+                          {cleanNotes && (
+                            <p className="text-xs text-muted-foreground bg-muted/50 p-2.5 rounded-xl border line-clamp-3">
+                              📝 {cleanNotes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action play button */}
+                      <div className="p-4 bg-muted/30 border-t flex items-center justify-between gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs font-bold gap-1 border-primary/30"
+                          asChild
+                        >
+                          <a href={recUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-3.5 h-3.5" /> Link gốc
+                          </a>
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-9 font-extrabold text-xs gap-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-md"
+                          onClick={() => setPlayingVideoRecord({ url: recUrl, title: session.topic || 'Record Buổi Học' })}
+                        >
+                          <Play className="w-4 h-4 fill-current" /> Xem Video Record →
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </TabsContent>
+
         {/* Tab 3: Exams (Kiểm tra) */}
         <TabsContent value="exams" className="space-y-4">
           <h2 className="text-lg font-bold text-foreground">Danh sách bài kiểm tra</h2>
@@ -863,6 +1002,16 @@ const MyClasses = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Video Record Player Modal for Students */}
+      {playingVideoRecord && (
+        <SessionVideoPlayer
+          videoUrl={playingVideoRecord.url}
+          title={playingVideoRecord.title}
+          isOpen={!!playingVideoRecord}
+          onClose={() => setPlayingVideoRecord(null)}
+        />
+      )}
     </div>
   );
 };

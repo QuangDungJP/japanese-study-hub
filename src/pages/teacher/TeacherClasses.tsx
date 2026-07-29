@@ -36,7 +36,7 @@ import {
   Users, Plus, Edit, Eye, Calendar, UserPlus, Trash2, 
   BookOpen, Star, Trophy, TrendingUp, Search, X,
   GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
-  FileText, CheckCircle2, MessageSquare, Play
+  FileText, CheckCircle2, MessageSquare, Play, Upload, Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -50,6 +50,7 @@ import LessonEditor from '@/components/teacher/LessonEditor';
 import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 import AttendanceManager from '@/components/teacher/AttendanceManager';
 import TeacherTimesheet from '@/components/teacher/TeacherTimesheet';
+import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
 
 interface ClassData {
   id: string;
@@ -124,6 +125,7 @@ interface ClassSession {
   meet_link: string | null;
   status: string;
   notes: string | null;
+  record_url?: string | null;
 }
 
 interface Submission {
@@ -198,7 +200,7 @@ const TeacherClasses = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isEditLessonOpen, setIsEditLessonOpen] = useState(false);
 
-  // Session dialog
+  // Session dialog & record player
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<ClassSession | null>(null);
   const [sessionFormData, setSessionFormData] = useState({
@@ -206,8 +208,11 @@ const TeacherClasses = () => {
     session_date: '',
     start_time: '18:00',
     meet_link: '',
-    notes: ''
+    notes: '',
+    record_url: ''
   });
+  const [uploadingRecord, setUploadingRecord] = useState(false);
+  const [playingVideoRecord, setPlayingVideoRecord] = useState<{ url: string; title: string } | null>(null);
 
   // Submission grading modal
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -297,12 +302,12 @@ const TeacherClasses = () => {
               .from('profiles')
               .select('full_name, avatar_url')
               .eq('user_id', student.student_id)
-              .single(),
+              .maybeSingle(),
             supabase
               .from('user_progress')
               .select('total_xp, streak, lessons_completed, vocabulary_mastered, daily_progress, daily_goal')
               .eq('user_id', student.student_id)
-              .single()
+              .maybeSingle()
           ]);
 
           return {
@@ -427,11 +432,26 @@ const TeacherClasses = () => {
       }
       const lessonIds = classLes.map(l => l.id);
 
-      const { data: exercises } = await supabase
-        .from('exercises')
-        .select('id, title, title_vi, exercise_type, correct_answers, lesson_id')
-        .in('lesson_id', lessonIds)
-        .eq('requires_grading', true);
+      let exercises: any[] = [];
+      try {
+        const { data: exData, error: exErr } = await supabase
+          .from('exercises')
+          .select('id, title, title_vi, exercise_type, correct_answers, lesson_id')
+          .in('lesson_id', lessonIds)
+          .eq('requires_grading', true);
+
+        if (exErr) {
+          const { data: fallbackEx } = await supabase
+            .from('exercises')
+            .select('id, title, title_vi, exercise_type, correct_answers, lesson_id')
+            .in('lesson_id', lessonIds);
+          exercises = fallbackEx || [];
+        } else {
+          exercises = exData || [];
+        }
+      } catch (err) {
+        console.warn('Fallback exercises query', err);
+      }
 
       if (!exercises || exercises.length === 0) {
         setClassSubmissions([]);
@@ -721,47 +741,111 @@ const TeacherClasses = () => {
 
   const openCreateSessionDialog = () => {
     setEditingSession(null);
-    setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '' });
+    setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '', record_url: '' });
     setIsSessionDialogOpen(true);
   };
 
   const openEditSessionDialog = (session: ClassSession) => {
     setEditingSession(session);
+    let recUrl = session.record_url || '';
+    if (!recUrl && session.notes) {
+      const match = session.notes.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i);
+      if (match) recUrl = match[1];
+    }
     setSessionFormData({
       topic: session.topic || '',
       session_date: session.session_date,
       start_time: session.start_time,
       meet_link: session.meet_link || '',
-      notes: session.notes || ''
+      notes: session.notes ? session.notes.replace(/\[RECORD_URL:\s*[^\s\]]+\]/gi, '').trim() : '',
+      record_url: recUrl
     });
     setIsSessionDialogOpen(true);
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!selectedClass) return;
+    if (!confirm('Bạn có chắc muốn XÓA buổi học này? Thao tác này không thể hoàn tác.')) return;
+    try {
+      const { error } = await supabase
+        .from('class_sessions')
+        .delete()
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      toast({ title: 'Thành công', description: 'Đã xóa buổi học' });
+      setIsSessionDialogOpen(false);
+      setEditingSession(null);
+      fetchClassroomDetails(selectedClass.id);
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message || 'Không thể xóa buổi học', variant: 'destructive' });
+    }
+  };
+
+  const handleUploadSessionRecord = async (file: File) => {
+    try {
+      setUploadingRecord(true);
+      const cleanName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `recordings/${Date.now()}_${cleanName}`;
+
+      const { error } = await supabase.storage
+        .from('lesson-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('lesson-assets')
+        .getPublicUrl(filePath);
+
+      setSessionFormData(prev => ({ ...prev, record_url: publicUrl }));
+      toast({ title: 'Thành công', description: 'Đã tải video record lên thành công!' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi upload', description: err.message || 'Không thể upload video', variant: 'destructive' });
+    } finally {
+      setUploadingRecord(false);
+    }
   };
 
   const handleCreateSession = async () => {
     if (!selectedClass) return;
     try {
-      const payload = {
+      const payload: any = {
         class_id: selectedClass.id,
         topic: sessionFormData.topic,
         session_date: sessionFormData.session_date,
         start_time: sessionFormData.start_time,
         meet_link: sessionFormData.meet_link || null,
         notes: sessionFormData.notes || null,
+        record_url: sessionFormData.record_url || null,
         status: 'scheduled'
       };
 
-      const { error } = editingSession
+      let { error } = editingSession
         ? await supabase.from('class_sessions').update(payload).eq('id', editingSession.id)
         : await supabase.from('class_sessions').insert(payload);
 
+      if (error && (error.message?.includes('record_url') || error.message?.includes('schema cache'))) {
+        const safePayload = { ...payload };
+        delete safePayload.record_url;
+        if (sessionFormData.record_url) {
+          safePayload.notes = (safePayload.notes ? safePayload.notes + '\n' : '') + `[RECORD_URL: ${sessionFormData.record_url}]`;
+        }
+        const retry = editingSession
+          ? await supabase.from('class_sessions').update(safePayload).eq('id', editingSession.id)
+          : await supabase.from('class_sessions').insert(safePayload);
+        error = retry.error;
+      }
+
       if (error) throw error;
-      toast({ title: 'Thành công', description: editingSession ? 'Đã cập nhật buổi học' : 'Đã tạo lịch học Meeting mới' });
+      toast({ title: 'Thành công', description: editingSession ? 'Đã cập nhật buổi học' : 'Đã tạo buổi học mới' });
       setIsSessionDialogOpen(false);
       setEditingSession(null);
-      setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '' });
+      setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '', record_url: '' });
       fetchClassroomDetails(selectedClass.id);
-    } catch (err) {
-      toast({ title: 'Lỗi', description: 'Không thể lưu lịch học', variant: 'destructive' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message || 'Không thể lưu buổi học', variant: 'destructive' });
     }
   };
 
@@ -1061,6 +1145,9 @@ const TeacherClasses = () => {
         <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto flex flex-wrap gap-1">
           <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
           <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học (Buổi/Tuần)</TabsTrigger>
+          <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1.5">
+            🎬 Record Buổi Học
+          </TabsTrigger>
           <TabsTrigger value="attendance" className="rounded-lg text-xs md:text-sm font-semibold">Điểm danh học viên</TabsTrigger>
           <TabsTrigger value="timesheet" className="rounded-lg text-xs md:text-sm font-semibold">Chấm công & Thù lao</TabsTrigger>
           <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Bài kiểm tra</TabsTrigger>
@@ -1090,44 +1177,67 @@ const TeacherClasses = () => {
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {classSessions.map((session) => (
-                    <Card key={session.id} className="hover:shadow-sm transition-shadow">
-                      <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="space-y-1">
-                          <p className="font-semibold text-sm md:text-base text-foreground">
-                            {session.topic || 'Buổi học Meeting trực tiếp'}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {formatWithJST(session.session_date, false)}
-                            </span>
-                            <span className="flex items-center gap-1 font-medium">
-                              <Clock className="w-3.5 h-3.5" />
-                              {formatTimeWithJST(session.start_time)}
-                            </span>
+                  {classSessions.map((session) => {
+                    const recUrl = session.record_url || session.notes?.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i)?.[1] || null;
+                    const cleanNotes = session.notes ? session.notes.replace(/\[RECORD_URL:\s*[^\s\]]+\]/gi, '').trim() : '';
+
+                    return (
+                      <Card key={session.id} className="hover:shadow-sm transition-shadow">
+                        <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div className="space-y-1">
+                            <p className="font-semibold text-sm md:text-base text-foreground">
+                              {session.topic || 'Buổi học Meeting trực tiếp'}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {formatWithJST(session.session_date, false)}
+                              </span>
+                              <span className="flex items-center gap-1 font-medium">
+                                <Clock className="w-3.5 h-3.5" />
+                                {formatTimeWithJST(session.start_time)}
+                              </span>
+                              {recUrl && (
+                                <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs font-bold gap-1">
+                                  🎬 Đã có Record Video
+                                </Badge>
+                              )}
+                            </div>
+                            {cleanNotes && (
+                              <p className="text-xs text-muted-foreground italic line-clamp-2">📝 {cleanNotes}</p>
+                            )}
                           </div>
-                          {session.notes && (
-                            <p className="text-xs text-muted-foreground italic line-clamp-2">📝 {session.notes}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
-                          {session.meet_link ? (
-                            <Button size="sm" variant="outline" className="gap-1.5 flex-1 md:flex-none" asChild>
-                              <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
-                                <Video className="w-4 h-4 text-primary" /> Vào phòng học Meeting
-                              </a>
+                          <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto">
+                            {recUrl && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
+                                onClick={() => setPlayingVideoRecord({ url: recUrl, title: session.topic || 'Record Buổi Học' })}
+                              >
+                                <Play className="w-3.5 h-3.5 fill-current" /> Xem Record Video
+                              </Button>
+                            )}
+                            {session.meet_link ? (
+                              <Button size="sm" variant="outline" className="gap-1.5 border-primary/30 text-primary" asChild>
+                                <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
+                                  <Video className="w-4 h-4 text-primary" /> Vào phòng Meeting
+                                </a>
+                              </Button>
+                            ) : (
+                              <Badge variant="outline">Chưa gắn link</Badge>
+                            )}
+                            <Button size="icon" variant="ghost" title="Sửa buổi học" onClick={() => openEditSessionDialog(session)}>
+                              <Edit className="w-4 h-4" />
                             </Button>
-                          ) : (
-                            <Badge variant="outline">Chưa gắn link</Badge>
-                          )}
-                          <Button size="icon" variant="ghost" onClick={() => openEditSessionDialog(session)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                            <Button size="icon" variant="ghost" title="Xóa buổi học" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSession(session.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1180,6 +1290,121 @@ const TeacherClasses = () => {
           )}
         </TabsContent>
 
+        {/* Tab Recordings: Kho Video Record Buổi Học */}
+        <TabsContent value="recordings" className="space-y-6">
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-extrabold text-foreground flex items-center gap-2">
+                <Video className="w-5 h-5 text-purple-600" /> Kho Video Record Ghi Hình Buổi Học ({classSessions.filter(s => s.record_url || s.notes?.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i)).length})
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Quản lý và cập nhật video ghi hình bài giảng cho học viên xem lại sau mỗi buổi học
+              </p>
+            </div>
+            <Button size="sm" onClick={openCreateSessionDialog} className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-1">
+              <Plus className="w-4 h-4" /> Thêm / Cập nhật Record Buổi Học
+            </Button>
+          </div>
+
+          {(() => {
+            const recordedSessions = classSessions.filter(
+              s => s.record_url || s.notes?.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i)
+            );
+
+            if (recordedSessions.length === 0) {
+              return (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Video className="w-12 h-12 mx-auto mb-3 text-purple-400 opacity-50 animate-pulse" />
+                    <h3 className="text-base font-bold text-foreground">Chưa có video record buổi học nào được đăng</h3>
+                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                      Nhấn vào từng buổi học để upload hoặc dán đường dẫn link Google Drive / YouTube video record.
+                    </p>
+                    <Button size="sm" onClick={openCreateSessionDialog}>
+                      <Plus className="w-4 h-4 mr-1" /> Lên lịch & Thêm Record Buổi Học
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {recordedSessions.map((session) => {
+                  const recUrl = session.record_url || session.notes?.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i)?.[1] || '';
+                  const cleanNotes = session.notes ? session.notes.replace(/\[RECORD_URL:\s*[^\s\]]+\]/gi, '').trim() : '';
+
+                  return (
+                    <Card key={session.id} className="overflow-hidden border border-purple-500/20 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group bg-card">
+                      <div>
+                        {/* Header info */}
+                        <div className="p-5 bg-gradient-to-r from-purple-500/10 via-card to-primary/5 border-b space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge className="bg-purple-600 text-white text-xs font-bold px-2.5 py-0.5">
+                              🎬 Record Buổi Học
+                            </Badge>
+                            <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {formatWithJST(session.session_date, false)}
+                            </span>
+                          </div>
+                          <h3 className="font-extrabold text-base text-foreground group-hover:text-purple-600 transition-colors line-clamp-2">
+                            {session.topic || 'Video ghi hình buổi học trực tuyến'}
+                          </h3>
+                        </div>
+
+                        {/* Body content & notes */}
+                        <div className="p-5 space-y-3">
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1 font-medium">
+                              <Clock className="w-3.5 h-3.5" />
+                              Giờ học: {formatTimeWithJST(session.start_time)}
+                            </span>
+                          </div>
+                          {cleanNotes && (
+                            <p className="text-xs text-muted-foreground bg-muted/50 p-2.5 rounded-xl border line-clamp-3">
+                              📝 {cleanNotes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action play & edit buttons */}
+                      <div className="p-4 bg-muted/30 border-t flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs font-bold gap-1"
+                            onClick={() => openEditSessionDialog(session)}
+                          >
+                            <Edit className="w-3.5 h-3.5" /> Sửa Record
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs font-bold gap-1 text-destructive hover:bg-destructive/10 border-destructive/30"
+                            onClick={() => handleDeleteSession(session.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Xóa
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="h-9 font-extrabold text-xs gap-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-md"
+                          onClick={() => setPlayingVideoRecord({ url: recUrl, title: session.topic || 'Record Buổi Học' })}
+                        >
+                          <Play className="w-4 h-4 fill-current" /> Phát Video →
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </TabsContent>
+
         {/* Tab 3: Attendance (Điểm danh học viên) */}
         <TabsContent value="attendance" className="space-y-4">
           <AttendanceManager />
@@ -1187,7 +1412,7 @@ const TeacherClasses = () => {
 
         {/* Tab 4: Timesheet (Chấm công & Thù lao) */}
         <TabsContent value="timesheet" className="space-y-4">
-          <TeacherTimesheet teacherId={selectedClass.teacher_id} />
+          <TeacherTimesheet teacherId={selectedClass.teacher_id} classId={selectedClass.id} />
         </TabsContent>
 
         {/* Tab 3: Exams (Bài kiểm tra) */}
@@ -1405,22 +1630,25 @@ const TeacherClasses = () => {
 
       {/* Create/edit session/schedule dialogue */}
       <Dialog open={isSessionDialogOpen} onOpenChange={(open) => { setIsSessionDialogOpen(open); if (!open) setEditingSession(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingSession ? 'Chỉnh sửa buổi học' : 'Lên lịch giảng dạy Meeting'}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              {editingSession ? 'Chỉnh sửa buổi học' : 'Thêm / Lên lịch buổi học mới'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-3">
             <div className="space-y-1">
-              <Label>Chủ đề / Bài giảng</Label>
+              <Label className="font-semibold">Chủ đề / Tên buổi học</Label>
               <Input
                 value={sessionFormData.topic}
                 onChange={(e) => setSessionFormData({ ...sessionFormData, topic: e.target.value })}
-                placeholder="Ví dụ: Luyện từ vựng N5 bài 1"
+                placeholder="Ví dụ: Luyện từ vựng Minna N4 Bài 31 + Kanji N3 Bài 1"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label>Ngày học</Label>
+                <Label className="font-semibold">Ngày học</Label>
                 <Input
                   type="date"
                   value={sessionFormData.session_date}
@@ -1428,7 +1656,7 @@ const TeacherClasses = () => {
                 />
               </div>
               <div className="space-y-1">
-                <Label>Giờ học (VN)</Label>
+                <Label className="font-semibold">Giờ học (VN)</Label>
                 <Input
                   type="time"
                   value={sessionFormData.start_time}
@@ -1437,28 +1665,78 @@ const TeacherClasses = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <Label>Link phòng học Meeting</Label>
+              <Label className="font-semibold">Link phòng học Meeting</Label>
               <Input
                 value={sessionFormData.meet_link}
                 onChange={(e) => setSessionFormData({ ...sessionFormData, meet_link: e.target.value })}
-                placeholder="https://meet.google.com/..."
+                placeholder="https://meet.google.com/qdd-rjdr-ggf"
               />
             </div>
+
+            {/* Record Video URL & File Upload Section */}
+            <div className="space-y-2 p-3 bg-purple-500/5 rounded-xl border border-purple-500/20">
+              <Label className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                <Video className="w-4 h-4 text-purple-600" /> Video Record Ghi Hình Sau Buổi Học
+              </Label>
+              <div className="space-y-2">
+                <Input
+                  value={sessionFormData.record_url}
+                  onChange={(e) => setSessionFormData({ ...sessionFormData, record_url: e.target.value })}
+                  placeholder="Dán link Google Drive video, YouTube, Vimeo hoặc file MP4..."
+                  className="bg-background"
+                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="video/*"
+                    disabled={uploadingRecord}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadSessionRecord(file);
+                    }}
+                    className="text-xs bg-background flex-1 cursor-pointer"
+                  />
+                  {uploadingRecord && (
+                    <span className="text-xs text-purple-600 font-bold animate-pulse shrink-0">
+                      Đang tải video...
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  💡 Học viên & Giáo viên có thể xem trực tiếp video record buổi học với đầy đủ tính năng tua video, chuyển tốc độ ngay trên website.
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-1">
-              <Label>Ghi chú / tài liệu buổi học (tùy chọn)</Label>
+              <Label className="font-semibold">Ghi chú / tài liệu buổi học (tùy chọn)</Label>
               <Textarea
                 value={sessionFormData.notes}
                 onChange={(e) => setSessionFormData({ ...sessionFormData, notes: e.target.value })}
                 placeholder="Ví dụ: link tài liệu, nội dung đã học, việc cần chuẩn bị cho buổi sau..."
-                rows={3}
+                rows={2}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsSessionDialogOpen(false)}>Hủy</Button>
-            <Button onClick={handleCreateSession} disabled={!sessionFormData.topic || !sessionFormData.session_date}>
-              {editingSession ? 'Lưu thay đổi' : 'Xác nhận lên lịch'}
-            </Button>
+
+          <DialogFooter className="flex items-center justify-between gap-2">
+            {editingSession ? (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => handleDeleteSession(editingSession.id)}
+                className="mr-auto text-xs font-bold gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" /> Xóa buổi học
+              </Button>
+            ) : <div />}
+
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => setIsSessionDialogOpen(false)}>Hủy</Button>
+              <Button onClick={handleCreateSession} disabled={!sessionFormData.topic || !sessionFormData.session_date}>
+                {editingSession ? 'Lưu thay đổi' : 'Xác nhận thêm buổi học'}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1821,6 +2099,15 @@ const TeacherClasses = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Session Record Video Player Dialog */}
+      {playingVideoRecord && (
+        <SessionVideoPlayer
+          videoUrl={playingVideoRecord.url}
+          title={playingVideoRecord.title}
+          isOpen={!!playingVideoRecord}
+          onClose={() => setPlayingVideoRecord(null)}
+        />
+      )}
     </div>
   );
 };

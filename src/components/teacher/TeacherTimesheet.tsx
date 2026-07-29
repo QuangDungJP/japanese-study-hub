@@ -50,10 +50,11 @@ interface TimesheetData {
 
 interface Props {
   teacherId?: string;
+  classId?: string;
   isAdminView?: boolean;
 }
 
-export const TeacherTimesheet = ({ teacherId, isAdminView = false }: Props) => {
+export const TeacherTimesheet = ({ teacherId, classId, isAdminView = false }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -69,34 +70,44 @@ export const TeacherTimesheet = ({ teacherId, isAdminView = false }: Props) => {
     if (targetTeacherId) {
       fetchTimesheetAndWorkLogs();
     }
-  }, [targetTeacherId, selectedMonthYear]);
+  }, [targetTeacherId, classId, selectedMonthYear]);
 
   const fetchTimesheetAndWorkLogs = async () => {
     setLoading(true);
     try {
       const sb: any = supabase;
 
-      // 1. Fetch teacher per-session rate
-      const { data: tProfile } = await sb
-        .from('teacher_profiles')
-        .select('per_session_rate')
-        .eq('user_id', targetTeacherId)
-        .maybeSingle();
-
-      const rate = tProfile?.per_session_rate || 250000;
+      // 1. Fetch teacher per-session rate safely
+      let rate = 250000;
+      try {
+        const { data: tProfile } = await sb
+          .from('teacher_profiles')
+          .select('per_session_rate')
+          .eq('user_id', targetTeacherId)
+          .maybeSingle();
+        if (tProfile?.per_session_rate) rate = tProfile.per_session_rate;
+      } catch (e) {
+        console.warn('Fallback default session rate', e);
+      }
       setPerSessionRate(rate);
 
       // 2. Fetch classes taught by this teacher
-      const { data: myClasses } = await sb
+      let myClassesQuery = sb
         .from('classes')
         .select('id, name_vi')
         .eq('teacher_id', targetTeacherId);
 
+      if (classId) {
+        myClassesQuery = myClassesQuery.eq('id', classId);
+      }
+
+      const { data: myClasses } = await myClassesQuery;
+
       const classMap: Record<string, string> = {};
       (myClasses || []).forEach((c: any) => { classMap[c.id] = c.name_vi; });
-      const classIds = Object.keys(classMap);
+      const targetClassIds = Object.keys(classMap);
 
-      if (classIds.length === 0) {
+      if (targetClassIds.length === 0) {
         setWorkLogs([]);
         setTimesheet(null);
         setLoading(false);
@@ -104,34 +115,37 @@ export const TeacherTimesheet = ({ teacherId, isAdminView = false }: Props) => {
       }
 
       // 3. Fetch completed sessions in the selected month
-      const [yearStr, monthStr] = selectedMonthYear.split('-');
       const startDate = `${selectedMonthYear}-01`;
       const endDate = `${selectedMonthYear}-31`;
 
       const { data: sData } = await sb
         .from('class_sessions')
         .select('*')
-        .in('class_id', classIds)
+        .in('class_id', targetClassIds)
         .gte('session_date', startDate)
         .lte('session_date', endDate)
         .order('session_date', { ascending: true });
 
-      // 4. Fetch attendance records for these sessions
+      // 4. Fetch attendance records for these sessions safely
       const sessionIds = (sData || []).map((s: any) => s.id);
       let attendanceMap: Record<string, { present: number; total: number }> = {};
 
       if (sessionIds.length > 0) {
-        const { data: attData } = await sb
-          .from('attendance')
-          .select('class_id, session_date, status')
-          .in('class_id', classIds);
+        try {
+          const { data: attData } = await sb
+            .from('attendance')
+            .select('class_id, session_date, status')
+            .in('class_id', targetClassIds);
 
-        (attData || []).forEach((a: any) => {
-          const key = `${a.class_id}_${a.session_date}`;
-          if (!attendanceMap[key]) attendanceMap[key] = { present: 0, total: 0 };
-          attendanceMap[key].total += 1;
-          if (a.status === 'present' || a.status === 'late') attendanceMap[key].present += 1;
-        });
+          (attData || []).forEach((a: any) => {
+            const key = `${a.class_id}_${a.session_date}`;
+            if (!attendanceMap[key]) attendanceMap[key] = { present: 0, total: 0 };
+            attendanceMap[key].total += 1;
+            if (a.status === 'present' || a.status === 'late') attendanceMap[key].present += 1;
+          });
+        } catch (e) {
+          console.warn('Fallback attendance map', e);
+        }
       }
 
       // Map to WorkSessionLog items
@@ -148,20 +162,26 @@ export const TeacherTimesheet = ({ teacherId, isAdminView = false }: Props) => {
           topic: s.topic,
           attendance_count: attInfo.present,
           total_students: attInfo.total,
-          duration_hours: 1.5, // Standard 90 min session
+          duration_hours: 1.5,
           status: s.status || 'completed',
         };
       });
 
       setWorkLogs(logs);
 
-      // 5. Fetch existing timesheet or calculate draft
-      const { data: tsData } = await sb
-        .from('teacher_timesheets')
-        .select('*')
-        .eq('teacher_id', targetTeacherId)
-        .eq('month_year', selectedMonthYear)
-        .maybeSingle();
+      // 5. Fetch existing timesheet or calculate draft safely
+      let tsData: any = null;
+      try {
+        const res = await sb
+          .from('teacher_timesheets')
+          .select('*')
+          .eq('teacher_id', targetTeacherId)
+          .eq('month_year', selectedMonthYear)
+          .maybeSingle();
+        tsData = res.data;
+      } catch (e) {
+        console.warn('Fallback timesheet data', e);
+      }
 
       const totalSessions = logs.length;
       const totalHours = totalSessions * 1.5;
