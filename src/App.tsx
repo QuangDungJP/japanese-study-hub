@@ -33,6 +33,11 @@ import StudentCalendar from "./pages/learn/Calendar";
 import Settings from "./pages/learn/Settings";
 import Profile from "./pages/learn/Profile";
 import MyClasses from "./pages/learn/MyClasses";
+import StudentClassDetail from "./pages/learn/StudentClassDetail";
+import Lessons from "./pages/learn/Lessons";
+import LessonViewer from "./pages/learn/LessonViewer";
+import Exams from "./pages/learn/Exams";
+import ExamRunner from "./pages/learn/ExamRunner";
 import StudentNotifications from "./pages/learn/StudentNotifications";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -108,6 +113,11 @@ const App = () => (
               <Route path="/learn" element={<LearningLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="my-classes" element={<MyClasses />} />
+                <Route path="my-classes/:id" element={<StudentClassDetail />} />
+                <Route path="lessons" element={<Lessons />} />
+                <Route path="lessons/:id" element={<LessonViewer />} />
+                <Route path="exams" element={<Exams />} />
+                <Route path="exams/:id" element={<ExamRunner />} />
                 <Route path="reading" element={<Reading />} />
                 <Route path="speaking" element={<Speaking />} />
                 <Route path="writing" element={<Writing />} />
