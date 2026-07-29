@@ -12,6 +12,58 @@ const toneClass: Record<string, string> = {
   success: 'bg-green-500/10 border-green-500/30 text-green-900 dark:text-green-200',
 };
 
+import { ExternalLink } from 'lucide-react';
+
+export const getEmbeddableInfo = (rawUrl: string) => {
+  if (!rawUrl) return { embedUrl: '', type: 'link', label: 'Liên kết' };
+  const url = rawUrl.trim();
+
+  // Google Sheets
+  if (url.includes('docs.google.com/spreadsheets')) {
+    let clean = url;
+    if (clean.includes('/edit')) {
+      clean = clean.replace(/\/edit.*$/, '/preview');
+    } else if (!clean.includes('/preview') && !clean.includes('/pubhtml') && !clean.includes('/htmlembed')) {
+      clean = `${clean.split('?')[0]}/preview`;
+    }
+    return { embedUrl: clean, type: 'sheet', label: 'Bảng tính Google Sheets 📊' };
+  }
+
+  // Google Slides
+  if (url.includes('docs.google.com/presentation')) {
+    const embedUrl = url.replace(/\/edit.*$/, '/embed').replace(/\/pub.*$/, '/embed');
+    return { embedUrl, type: 'slide', label: 'Trình chiếu Google Slides 📺' };
+  }
+
+  // Google Docs
+  if (url.includes('docs.google.com/document')) {
+    const embedUrl = url.replace(/\/edit.*$/, '/preview');
+    return { embedUrl, type: 'doc', label: 'Tài liệu Google Docs 📝' };
+  }
+
+  // Canva
+  if (url.includes('canva.com/design')) {
+    const cleanUrl = url.split('?')[0];
+    return { embedUrl: `${cleanUrl}?embed`, type: 'canva', label: 'Slide Canva 🎨' };
+  }
+
+  // Office files (.pptx, .xlsx, .docx)
+  if (/\.(pptx?|xlsx?|docx?)($|\?)/i.test(url)) {
+    return {
+      embedUrl: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`,
+      type: 'office',
+      label: 'Tài liệu Office Online 📑'
+    };
+  }
+
+  // PDF
+  if (/\.pdf($|\?)/i.test(url) || url.toLowerCase().includes('.pdf')) {
+    return { embedUrl: url, type: 'pdf', label: 'Tài liệu PDF 📄' };
+  }
+
+  return { embedUrl: url, type: 'link', label: 'Đường dẫn liên kết 🔗' };
+};
+
 const ytEmbed = (u: string) => {
   const m = u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{6,})/);
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
@@ -80,17 +132,23 @@ const BlockView = ({ block }: { block: LessonBlock }) => {
       ) : null;
     case 'embed': {
       if (!d.url) return null;
-      const office = officeEmbed(d.url);
-      const isPdf = /\.pdf($|\?)/i.test(d.url);
-      const src = office || d.url;
+      const info = getEmbeddableInfo(d.url);
       return (
-        <Card className="overflow-hidden">
-          {d.title && <div className="px-4 py-2 border-b text-sm font-medium">{d.title}</div>}
-          {(office || isPdf) ? (
-            <iframe src={src} className="w-full h-[70vh]" title={d.title || 'embed'} />
-          ) : (
-            <a href={d.url} target="_blank" rel="noreferrer" className="p-4 block text-primary underline text-sm">{d.title || d.url}</a>
-          )}
+        <Card className="overflow-hidden border-primary/20 shadow-md rounded-2xl">
+          <div className="px-4 py-3 bg-muted/60 border-b flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 font-bold text-sm">
+              <span>{info.type === 'sheet' ? '📊' : info.type === 'slide' ? '📺' : info.type === 'canva' ? '🎨' : '📄'}</span>
+              <span className="truncate">{d.title || info.label}</span>
+            </div>
+            <Button size="sm" variant="outline" className="h-7 text-xs font-bold gap-1" asChild>
+              <a href={d.url} target="_blank" rel="noreferrer">
+                <ExternalLink className="w-3.5 h-3.5" /> Mở tab mới
+              </a>
+            </Button>
+          </div>
+          <div className="w-full h-[600px] bg-zinc-950/5 relative">
+            <iframe src={info.embedUrl} className="w-full h-full border-0" title={d.title || info.label} allowFullScreen />
+          </div>
         </Card>
       );
     }
