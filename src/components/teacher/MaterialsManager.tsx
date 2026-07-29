@@ -451,13 +451,15 @@ const MaterialsManager = ({ lessons, scope, readOnly, title }: Props) => {
                                 <Eye className="w-4 h-4" />
                               )}
                             </Button>
-                            {m.file_type === "pdf" && (
+                            {(["pdf", "ppt", "pptx", "slide"].includes(m.file_type.toLowerCase()) ||
+                              m.file_url.includes("canva.com") ||
+                              m.file_url.includes("google.com/presentation")) && (
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-7 w-7 text-primary"
+                                className="h-7 w-7 text-purple-600 hover:text-purple-700 hover:bg-purple-500/10"
                                 onClick={() => setPresenting(m)}
-                                title="Trình chiếu slide"
+                                title="Trình chiếu slide bài giảng"
                               >
                                 <Presentation className="w-4 h-4" />
                               </Button>
