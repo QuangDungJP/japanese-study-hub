@@ -95,6 +95,57 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
     replaced_session_id: '',
   });
 
+  // Cascade shift (push down) dialog state
+  const [shiftOpen, setShiftOpen] = useState(false);
+  const [shiftData, setShiftData] = useState({
+    fromSessionId: '',
+    shiftDays: 7, // Default 1 week push down
+  });
+
+  // Cascade shift remaining sessions forward
+  const handleCascadeShift = async () => {
+    if (!shiftData.fromSessionId) {
+      return toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn buổi học bắt đầu dời lịch', variant: 'destructive' });
+    }
+    const targetSession = sessions.find(s => s.id === shiftData.fromSessionId);
+    if (!targetSession) return;
+
+    const affectedSessions = sessions.filter(
+      s => s.session_date >= targetSession.session_date && s.status !== 'completed'
+    );
+
+    if (affectedSessions.length === 0) {
+      return toast({ title: 'Thông báo', description: 'Không có buổi học nào bị ảnh hưởng', variant: 'destructive' });
+    }
+
+    const days = Number(shiftData.shiftDays) || 7;
+
+    const updates = affectedSessions.map(s => {
+      const parts = s.session_date.split('-');
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      d.setDate(d.getDate() + days);
+      const newDateStr = format(d, 'yyyy-MM-dd');
+      return (supabase as any)
+        .from('class_sessions')
+        .update({ session_date: newDateStr })
+        .eq('id', s.id);
+    });
+
+    const results = await Promise.all(updates);
+    const hasError = results.some((r: any) => r.error);
+
+    if (hasError) {
+      return toast({ title: 'Lỗi', description: 'Một số buổi học chưa được dời lịch', variant: 'destructive' });
+    }
+
+    toast({ 
+      title: 'Đẩy lịch tịnh tiến thành công!', 
+      description: `Đã lùi ${affectedSessions.length} buổi học còn lại thêm ${days} ngày.` 
+    });
+    setShiftOpen(false);
+    load();
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
@@ -303,6 +354,9 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
         </div>
         {canEdit && (
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950" onClick={() => setShiftOpen(true)}>
+              <RefreshCw className="w-4 h-4 mr-1" /> Đẩy lùi lịch tịnh tiến
+            </Button>
             <Button size="sm" variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-purple-950" onClick={() => setMakeupOpen(true)}>
               <CalendarPlus className="w-4 h-4 mr-1" /> + Tạo buổi học bù
             </Button>
@@ -426,6 +480,9 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
                   {renderStatusBadge(s.status)}
                   {canEdit && (
                     <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Đẩy lùi buổi này và các buổi sau" onClick={() => { setShiftData({ fromSessionId: s.id, shiftDays: 7 }); setShiftOpen(true); }}>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </Button>
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(s); setOpen(true); }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
@@ -747,6 +804,79 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
             <Button variant="ghost" onClick={() => setMakeupOpen(false)}>Hủy</Button>
             <Button className="bg-purple-700 hover:bg-purple-800 text-white" onClick={saveMakeupSession}>
               Xác nhận Tạo buổi học bù
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cascade Shift (Push Down) Dialog */}
+      <Dialog open={shiftOpen} onOpenChange={setShiftOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <RefreshCw className="w-5 h-5 text-amber-600" /> Tự động đẩy lùi lịch tịnh tiến (Cascade Shift)
+            </DialogTitle>
+            <DialogDescription>
+              Khi hoãn hoặc dời 1 buổi học, hệ thống sẽ tự động đẩy lùi tất cả các buổi học tiếp theo lùi lại để luôn bảo đảm 100% tổng số buổi học đã quy định.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Chọn buổi bắt đầu bị dời lịch</Label>
+              <select
+                className="w-full h-9 rounded-md border bg-background px-2 text-sm mt-1"
+                value={shiftData.fromSessionId}
+                onChange={e => setShiftData({ ...shiftData, fromSessionId: e.target.value })}
+              >
+                <option value="">-- Chọn buổi học bị dời --</option>
+                {sessions
+                  .filter(s => s.status !== 'completed')
+                  .map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.session_date} ({s.start_time}) - {s.topic || 'Buổi học'}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <Label>Số ngày lùi lại (Ví dụ: 7 ngày = lùi 1 tuần)</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={shiftData.shiftDays}
+                  onChange={e => setShiftData({ ...shiftData, shiftDays: parseInt(e.target.value) || 7 })}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShiftData({ ...shiftData, shiftDays: 7 })}
+                >
+                  Lùi 1 tuần (+7 ngày)
+                </Button>
+              </div>
+            </div>
+
+            {shiftData.fromSessionId && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg text-xs space-y-1">
+                <p className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" /> Số buổi bị ảnh hưởng:
+                </p>
+                <p className="text-muted-foreground">
+                  Có {sessions.filter(s => s.session_date >= (sessions.find(x => x.id === shiftData.fromSessionId)?.session_date || '') && s.status !== 'completed').length} buổi học từ ngày này trở đi sẽ được dời lùi thêm +{shiftData.shiftDays} ngày. Tổng số buổi của khóa học được giữ nguyên đầy đủ.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShiftOpen(false)}>Hủy</Button>
+            <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleCascadeShift}>
+              Xác nhận Đẩy lùi lịch
             </Button>
           </DialogFooter>
         </DialogContent>
