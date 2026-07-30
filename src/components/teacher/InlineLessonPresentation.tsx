@@ -82,7 +82,7 @@ export const InlineLessonPresentation = ({ lesson, slideUrl: propSlideUrl, title
       setLoading(true);
       const { data } = await supabase
         .from('exercises')
-        .select('*')
+        .select('id, title, title_vi, exercise_type, instructions_vi, content, audio_url, requires_grading, order_index, lesson_id')
         .eq('lesson_id', lessonId);
       setExercises(data || []);
     } catch (err) {

@@ -87,16 +87,19 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
 
       if (error) throw error;
 
-      // Fetch class_sessions for enrolled classes
+      // Fetch class_sessions for enrolled classes or classes taught by teacher
       let classSessions: any[] = [];
-      const { data: enrollments } = await supabase
-        .from('class_students')
-        .select('class_id')
-        .eq('student_id', user?.id)
-        .eq('status', 'active');
+      const [{ data: enrollments }, { data: taughtClasses }] = await Promise.all([
+        supabase.from('class_students').select('class_id').eq('student_id', user?.id).eq('status', 'active'),
+        supabase.from('classes').select('id').eq('teacher_id', user?.id),
+      ]);
 
-      if (enrollments && enrollments.length > 0) {
-        const classIds = enrollments.map(e => e.class_id);
+      const classIds = Array.from(new Set([
+        ...(enrollments?.map(e => e.class_id) || []),
+        ...(taughtClasses?.map(c => c.id) || []),
+      ]));
+
+      if (classIds.length > 0) {
         const { data: cSessions } = await supabase
           .from('class_sessions')
           .select('*, classes(name_vi, name)')
@@ -106,11 +109,11 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
         classSessions = cSessions || [];
       }
 
-      // Fetch bookings
+      // Fetch bookings for student or teacher
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('*, meetings(meet_link)')
-        .eq('user_id', user?.id)
+        .select('*, meetings(meet_link), profiles:user_id(full_name)')
+        .or(`user_id.eq.${user?.id},teacher_id.eq.${user?.id}`)
         .gte('booking_date', startDate)
         .lte('booking_date', endDate);
 

@@ -15,8 +15,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop,
+  Loader2, Plus, Pencil, Trash2, X, Eye, EyeOff, Star, Award, Globe, MapPin, Clock, Users, BookOpen, GripVertical, Save, Crop, Calendar, Video, Building, ExternalLink, CheckCircle2
 } from "lucide-react";
+import { formatWithJST } from "@/lib/dateUtils";
 import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
 import ImageCropModal from "@/components/shared/ImageCropModal";
@@ -94,6 +95,7 @@ export default function AdminTeachers() {
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [scheduleTeacher, setScheduleTeacher] = useState<TeacherRow | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<TeacherRow | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -422,6 +424,15 @@ export default function AdminTeachers() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs font-semibold gap-1 text-primary border-primary/30"
+                          onClick={() => setScheduleTeacher(teacher)}
+                          title="Xem Lịch dạy & Danh sách Lớp"
+                        >
+                          <Calendar className="w-3.5 h-3.5" /> Lịch dạy & Lớp
+                        </Button>
                         <Button size="icon" variant="ghost" onClick={() => openEdit(teacher)}><Pencil className="w-4 h-4" /></Button>
                         <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(teacher.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
@@ -433,6 +444,12 @@ export default function AdminTeachers() {
           )}
         </CardContent>
       </Card>
+
+      <TeacherScheduleModal
+        open={!!scheduleTeacher}
+        onOpenChange={(o) => !o && setScheduleTeacher(null)}
+        teacher={scheduleTeacher}
+      />
 
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -616,3 +633,224 @@ export default function AdminTeachers() {
     </div>
   );
 }
+
+function TeacherScheduleModal({
+  open,
+  onOpenChange,
+  teacher,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  teacher: TeacherRow | null;
+}) {
+  const [classes, setClasses] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open && teacher) {
+      fetchTeacherData();
+    }
+  }, [open, teacher]);
+
+  const fetchTeacherData = async () => {
+    if (!teacher) return;
+    setLoading(true);
+    try {
+      // 1. Fetch classes taught by this teacher
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('*, courses(title_vi)')
+        .or(`teacher_id.eq.${teacher.user_id || teacher.id}`);
+
+      setClasses(classData || []);
+
+      const classIds = (classData || []).map((c: any) => c.id);
+
+      // 2. Fetch class sessions for these classes
+      if (classIds.length > 0) {
+        const { data: sessionData } = await supabase
+          .from('class_sessions')
+          .select('*, classes(name_vi)')
+          .in('class_id', classIds)
+          .order('session_date', { ascending: false });
+
+        setSessions(sessionData || []);
+      } else {
+        setSessions([]);
+      }
+
+      // 3. Fetch 1-on-1 bookings for this teacher
+      const { data: bookingData } = await supabase
+        .from('bookings')
+        .select('*, profiles:user_id(full_name), meetings(meet_link)')
+        .or(`teacher_id.eq.${teacher.user_id || teacher.id},teacher_name.ilike.%${teacher.display_name}%`)
+        .order('booking_date', { ascending: false });
+
+      setBookings(bookingData || []);
+    } catch (err) {
+      console.error('Error loading teacher schedule:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!teacher) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[85vh] p-0">
+        <DialogHeader className="p-6 pb-2 border-b">
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+              {teacher.image_url ? (
+                <img src={teacher.image_url} className="w-10 h-10 rounded-full object-cover" alt="" />
+              ) : (
+                '👩‍🏫'
+              )}
+            </div>
+            <div>
+              <p className="font-bold">{teacher.display_name}</p>
+              <p className="text-xs text-muted-foreground font-normal">
+                {teacher.headline || 'Giảng viên'} · Lịch dạy & Danh sách Lớp phụ trách
+              </p>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="max-h-[calc(85vh-120px)]">
+          <div className="p-6">
+            <Tabs defaultValue="classes" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="classes" className="gap-2">
+                  <Building className="w-4 h-4" />
+                  Danh sách Lớp học ({classes.length})
+                </TabsTrigger>
+                <TabsTrigger value="schedule" className="gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Lịch dạy & Session ({sessions.length + bookings.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="classes" className="space-y-4">
+                {loading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : classes.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Building className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                    <p>Giảng viên chưa được phân công lớp học nào.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {classes.map((cls) => (
+                      <Card key={cls.id} className="border border-border/80 shadow-sm">
+                        <CardContent className="p-4 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <Badge variant="outline" className="text-[10px] text-primary border-primary/30 mb-1">
+                                {cls.courses?.title_vi || 'Khóa học'}
+                              </Badge>
+                              <h4 className="font-bold text-foreground text-base">{cls.name_vi || cls.name}</h4>
+                            </div>
+                            <Badge variant={cls.status === 'ongoing' ? 'default' : 'secondary'} className="text-xs">
+                              {cls.status === 'ongoing' ? 'Đang học' : cls.status || 'Hoạt động'}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-2 border-t">
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5" /> Sĩ số: {cls.max_students || 30} HV
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <BookOpen className="w-3.5 h-3.5" /> Tổng buổi: {cls.total_sessions || 24} buổi
+                            </div>
+                            {cls.start_date && (
+                              <div className="flex items-center gap-1 col-span-2">
+                                <Calendar className="w-3.5 h-3.5" /> Khai giảng: {formatWithJST(cls.start_date, false)}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="schedule" className="space-y-4">
+                {loading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : sessions.length === 0 && bookings.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                    <p>Chưa có lịch dạy trực tuyến hoặc lịch Meeting nào.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Class Sessions */}
+                    {sessions.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                          <Building className="w-4 h-4 text-primary" /> Buổi học lớp trực tuyến ({sessions.length})
+                        </h4>
+                        <div className="rounded-xl border divide-y divide-border bg-card">
+                          {sessions.slice(0, 10).map((sess) => (
+                            <div key={sess.id} className="p-3 flex items-center justify-between text-xs">
+                              <div>
+                                <p className="font-bold text-foreground">{sess.topic || 'Buổi học'}</p>
+                                <p className="text-muted-foreground">{sess.classes?.name_vi} • 📅 {formatWithJST(sess.session_date, false)} lúc {sess.start_time?.slice(0, 5)}</p>
+                              </div>
+                              {sess.meet_link && (
+                                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => window.open(sess.meet_link, '_blank')}>
+                                  <Video className="w-3 h-3 mr-1" /> Vào Google Meet
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bookings 1-on-1 */}
+                    {bookings.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                          <Video className="w-4 h-4 text-indigo-500" /> Lịch học Meeting 1-on-1 ({bookings.length})
+                        </h4>
+                        <div className="rounded-xl border divide-y divide-border bg-card">
+                          {bookings.slice(0, 10).map((b) => (
+                            <div key={b.id} className="p-3 flex items-center justify-between text-xs">
+                              <div>
+                                <p className="font-bold text-foreground">Học viên: {(b.profiles as any)?.full_name || 'Học viên'}</p>
+                                <p className="text-muted-foreground">📅 {formatWithJST(b.booking_date, false)} lúc {b.booking_time?.slice(0, 5)} ({b.duration_minutes} phút)</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="capitalize text-[10px]">
+                                  {b.status}
+                                </Badge>
+                                {b.meetings?.[0]?.meet_link && (
+                                  <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => window.open(b.meetings[0].meet_link, '_blank')}>
+                                    <Video className="w-3 h-3 mr-1" /> Meet
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

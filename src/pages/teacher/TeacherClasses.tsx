@@ -436,14 +436,14 @@ const TeacherClasses = () => {
       try {
         const { data: exData, error: exErr } = await supabase
           .from('exercises')
-          .select('id, title, title_vi, exercise_type, correct_answers, lesson_id')
+          .select('id, title, title_vi, exercise_type, lesson_id')
           .in('lesson_id', lessonIds)
           .eq('requires_grading', true);
 
         if (exErr) {
           const { data: fallbackEx } = await supabase
             .from('exercises')
-            .select('id, title, title_vi, exercise_type, correct_answers, lesson_id')
+            .select('id, title, title_vi, exercise_type, lesson_id')
             .in('lesson_id', lessonIds);
           exercises = fallbackEx || [];
         } else {

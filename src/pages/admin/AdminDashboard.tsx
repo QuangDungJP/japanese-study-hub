@@ -13,7 +13,8 @@ import {
   FileText,
   DollarSign,
   Calendar,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ interface Stats {
   totalVocabulary: number;
   activeUsers: number;
   totalOrders: number;
+  pendingFeedback: number;
 }
 
 const AdminDashboard = () => {
@@ -41,6 +43,7 @@ const AdminDashboard = () => {
     totalVocabulary: 0,
     activeUsers: 0,
     totalOrders: 0,
+    pendingFeedback: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +56,7 @@ const AdminDashboard = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, fetchStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vocabulary' }, fetchStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_submissions' }, fetchStats)
       .subscribe();
 
     return () => {
@@ -64,14 +68,19 @@ const AdminDashboard = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      const [usersResult, classesResult, lessonsResult, vocabResult, activeResult, ordersResult] = await Promise.all([
+      const [usersResult, classesResult, lessonsResult, vocabResult, activeResult, ordersResult, feedbackResult] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('classes').select('*', { count: 'exact', head: true }),
         supabase.from('lessons').select('*', { count: 'exact', head: true }),
         supabase.from('vocabulary').select('*', { count: 'exact', head: true }),
         supabase.from('user_progress').select('*', { count: 'exact', head: true }).eq('last_activity_date', today),
         supabase.from('orders').select('*', { count: 'exact', head: true }),
+        supabase.from('contact_submissions').select('id, data').eq('status', 'new'),
       ]);
+
+      const pendingFeedbackCount = ((feedbackResult.data || []) as any[]).filter(
+        (r) => r.data?.form_type === 'feedback'
+      ).length;
 
       setStats({
         totalUsers: usersResult.count || 0,
@@ -80,6 +89,7 @@ const AdminDashboard = () => {
         totalVocabulary: vocabResult.count || 0,
         activeUsers: activeResult.count || 0,
         totalOrders: ordersResult.count || 0,
+        pendingFeedback: pendingFeedbackCount,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -90,10 +100,10 @@ const AdminDashboard = () => {
 
   const statCards = [
     { name: 'Tổng học viên', value: stats.totalUsers, icon: Users, color: 'text-blue-600 bg-blue-500/10 border-blue-200', href: '/admin/users' },
-    { name: 'Lớp học Google Classroom', value: stats.totalClasses, icon: Building, color: 'text-emerald-600 bg-emerald-500/10 border-emerald-200', href: '/admin/classes' },
+    { name: 'Lớp học Classroom', value: stats.totalClasses, icon: Building, color: 'text-emerald-600 bg-emerald-500/10 border-emerald-200', href: '/admin/classes' },
     { name: 'Bài học & Bài tập', value: stats.totalLessons, icon: BookOpen, color: 'text-purple-600 bg-purple-500/10 border-purple-200', href: '/admin/lessons' },
-    { name: 'Từ vựng JLPT', value: stats.totalVocabulary, icon: BookText, color: 'text-pink-600 bg-pink-500/10 border-pink-200', href: '/admin/vocabulary' },
-    { name: 'Hoạt động hôm nay', value: stats.activeUsers, icon: TrendingUp, color: 'text-amber-600 bg-amber-500/10 border-amber-200', href: '/admin/users' },
+    { name: 'Feedback chờ duyệt', value: stats.pendingFeedback, icon: MessageSquare, color: 'text-amber-600 bg-amber-500/10 border-amber-200', href: '/admin/website' },
+    { name: 'Hoạt động hôm nay', value: stats.activeUsers, icon: TrendingUp, color: 'text-rose-600 bg-rose-500/10 border-rose-200', href: '/admin/users' },
     { name: 'Đơn hàng mua khóa học', value: stats.totalOrders, icon: DollarSign, color: 'text-indigo-600 bg-indigo-500/10 border-indigo-200', href: '/admin/orders' },
   ];
 

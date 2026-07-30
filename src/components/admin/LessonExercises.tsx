@@ -77,7 +77,7 @@ const LessonExercises = ({ lessonId, lessonTitle }: LessonExercisesProps) => {
     try {
       const { data, error } = await supabase
         .from('exercises')
-        .select('*')
+        .select('id, lesson_id, exercise_type, title, title_vi, instructions, instructions_vi, content, audio_url, requires_grading, order_index, created_at')
         .eq('lesson_id', lessonId)
         .order('order_index', { ascending: true });
 
