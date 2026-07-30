@@ -23,6 +23,13 @@ interface ClassInfo {
   name_vi: string;
 }
 
+interface SessionInfo {
+  id: string;
+  session_date: string;
+  start_time: string;
+  topic: string | null;
+}
+
 interface StudentInfo {
   id: string;
   student_id: string;
@@ -41,6 +48,8 @@ const AttendanceManager = () => {
   const { user } = useAuth();
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -54,10 +63,16 @@ const AttendanceManager = () => {
   }, [user]);
 
   useEffect(() => {
+    if (selectedClass) {
+      fetchSessions(selectedClass);
+    }
+  }, [selectedClass]);
+
+  useEffect(() => {
     if (selectedClass && selectedDate) {
       fetchStudentsAndAttendance();
     }
-  }, [selectedClass, selectedDate]);
+  }, [selectedClass, selectedDate, selectedSessionId]);
 
   const fetchClasses = async () => {
     const { data, error } = await supabase
@@ -72,6 +87,28 @@ const AttendanceManager = () => {
     }
 
     setClasses(data || []);
+  };
+
+  const fetchSessions = async (classId: string) => {
+    const { data } = await supabase
+      .from('class_sessions')
+      .select('id, session_date, start_time, topic')
+      .eq('class_id', classId)
+      .order('session_date', { ascending: false });
+
+    setSessions(data || []);
+    if (data && data.length > 0) {
+      setSelectedSessionId(data[0].id);
+      setSelectedDate(data[0].session_date);
+    }
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setSelectedDate(session.session_date);
+    }
   };
 
   const fetchStudentsAndAttendance = async () => {
@@ -93,12 +130,14 @@ const AttendanceManager = () => {
         .select('user_id, full_name')
         .in('user_id', studentIds);
 
-      // Fetch existing attendance for this date
-      const { data: existingAttendance } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('class_id', selectedClass)
-        .eq('session_date', selectedDate);
+      // Fetch existing attendance for this session or date
+      let query = supabase.from('attendance').select('*').eq('class_id', selectedClass);
+      if (selectedSessionId) {
+        query = query.or(`session_id.eq.${selectedSessionId},session_date.eq.${selectedDate}`);
+      } else {
+        query = query.eq('session_date', selectedDate);
+      }
+      const { data: existingAttendance } = await query;
 
       // Build attendance records
       const attendanceRecords: AttendanceRecord[] = (classStudents || []).map(student => {
@@ -144,6 +183,7 @@ const AttendanceManager = () => {
               status: record.status,
               notes: record.notes,
               marked_by: user?.id,
+              session_id: selectedSessionId || null,
               check_in_time: record.status === 'present' || record.status === 'late' 
                 ? new Date().toISOString() 
                 : null
@@ -157,6 +197,7 @@ const AttendanceManager = () => {
               class_id: selectedClass,
               student_id: record.student_id,
               session_date: selectedDate,
+              session_id: selectedSessionId || null,
               status: record.status,
               notes: record.notes,
               marked_by: user?.id,
@@ -212,7 +253,7 @@ const AttendanceManager = () => {
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Chọn lớp
+                Chọn lớp học
               </label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
                 <SelectTrigger>
@@ -227,7 +268,28 @@ const AttendanceManager = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1 min-w-[200px]">
+
+            {selectedClass && (
+              <div className="flex-1 min-w-[220px]">
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Chọn Buổi học (Lịch học)
+                </label>
+                <Select value={selectedSessionId} onValueChange={handleSelectSession}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="-- Chọn buổi học --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sessions.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.session_date} ({s.start_time}) - {s.topic || 'Buổi học'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="flex-1 min-w-[180px]">
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
                 Ngày điểm danh
               </label>

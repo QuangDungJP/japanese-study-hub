@@ -233,6 +233,7 @@ const MyClasses = () => {
   const handleSelectClass = async (cls: ClassData) => {
     setSelectedClass(cls);
     setActiveLesson(null);
+    fetchAttendanceRecords(cls.id);
     try {
       // 1. Fetch class sessions (stream schedule)
       const { data: sessionsData } = await supabase
@@ -445,6 +446,9 @@ const MyClasses = () => {
           <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học</TabsTrigger>
           <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1.5">
             🎬 Record Buổi Học
+          </TabsTrigger>
+          <TabsTrigger value="attendance" className="rounded-lg text-xs md:text-sm font-bold text-emerald-600 dark:text-emerald-400 gap-1">
+            📊 Chuyên cần ({studentAttendance.filter(a => a.status === 'present' || a.status === 'late').length}/{sessions.length || 0})
           </TabsTrigger>
           <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Bài nộp</TabsTrigger>
@@ -952,6 +956,126 @@ const MyClasses = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab 5: Attendance (Báo cáo & Lịch sử Điểm danh Chuyên cần) */}
+        <TabsContent value="attendance" className="space-y-6">
+          {(() => {
+            const presentCount = studentAttendance.filter(a => a.status === 'present').length;
+            const lateCount = studentAttendance.filter(a => a.status === 'late').length;
+            const excusedCount = studentAttendance.filter(a => a.status === 'excused_absence' || a.status === 'excused').length;
+            const absentCount = studentAttendance.filter(a => a.status === 'absent').length;
+            const totalTarget = selectedClass?.total_sessions || sessions.length || 24;
+            const totalAttended = presentCount + lateCount;
+            const ratePercent = totalTarget > 0 ? Math.round((totalAttended / totalTarget) * 100) : 0;
+
+            return (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="bg-emerald-500/10 border-emerald-500/20">
+                    <CardContent className="p-4 text-center">
+                      <p className="text-xs text-muted-foreground font-medium">Tỉ lệ chuyên cần</p>
+                      <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">{ratePercent}%</p>
+                      <Progress value={ratePercent} className="h-1.5 mt-2 bg-emerald-200 dark:bg-emerald-950" />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <p className="text-xs text-muted-foreground">Có mặt / Đi muộn</p>
+                      <p className="text-2xl font-bold text-foreground mt-1">{presentCount} <span className="text-xs text-muted-foreground">có mặt</span> + {lateCount} <span className="text-xs text-muted-foreground">muộn</span></p>
+                      <p className="text-[11px] text-muted-foreground mt-1">trên tổng số {totalTarget} buổi</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <p className="text-xs text-muted-foreground">Báo vắng có phép</p>
+                      <p className="text-2xl font-bold text-amber-600 mt-1">{excusedCount}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Đã gửi thông báo cho GV</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <p className="text-xs text-muted-foreground font-medium">Vắng không phép</p>
+                      <p className="text-2xl font-bold text-destructive mt-1">{absentCount}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Cần liên hệ xếp học bù</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Session Attendance Table */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base font-bold flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" /> Bảng chi tiết điểm danh từng buổi
+                      </CardTitle>
+                      <CardDescription className="text-xs">Theo dõi lịch sử tham gia học tập của bạn</CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {sessions.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">Chưa có lịch buổi học nào</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {sessions.map((sess, idx) => {
+                          const att = studentAttendance.find(a => a.session_date === sess.session_date || a.session_id === sess.id);
+                          const status = att?.status || 'unmarked';
+
+                          const getBadge = () => {
+                            switch (status) {
+                              case 'present':
+                                return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300">🟢 Có mặt</Badge>;
+                              case 'late':
+                                return <Badge className="bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-300">🟡 Đi muộn</Badge>;
+                              case 'excused_absence':
+                              case 'excused':
+                                return <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300">🟠 Vắng có phép</Badge>;
+                              case 'absent':
+                                return <Badge variant="destructive">🔴 Vắng mặt</Badge>;
+                              default:
+                                return <Badge variant="outline" className="text-muted-foreground">⚪ Chưa điểm danh</Badge>;
+                            }
+                          };
+
+                          return (
+                            <div key={sess.id} className="flex flex-wrap items-center justify-between p-3 border rounded-xl bg-card hover:bg-muted/30 text-sm gap-2">
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground min-w-[55px] text-center">
+                                  Buổi {idx + 1}
+                                </span>
+                                <div>
+                                  <p className="font-semibold text-foreground">{sess.topic || 'Buổi học'}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    📅 {formatWithJST(sess.session_date, false)} - ⏰ {formatTimeWithJST(sess.start_time)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {getBadge()}
+                                {status === 'unmarked' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                                    onClick={() => {
+                                      setSelectedSessionToAbsence(sess);
+                                      setIsAbsenceDialogOpen(true);
+                                    }}
+                                  >
+                                    Xin nghỉ
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
