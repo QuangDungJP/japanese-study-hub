@@ -137,7 +137,7 @@ return () => {
     if (lesson.content_html) {
       const found = lesson.content_html.match(/https?:\/\/(?:docs\.google\.com|canva\.com|[^\s<"']+\.(?:pdf|pptx?|xlsx?|docx?))[^\s<"']*/gi) || [];
       found.forEach(u => {
-        const clean = u.replace(/[">'\,]+$/, '').trim();
+        const clean = u.replace(/[ "'>,]+$/, '').trim();
         addIfValid(clean);
       });
     }
