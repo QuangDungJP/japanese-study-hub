@@ -39,42 +39,43 @@ const UserGuide = () => {
   const studentSteps = [
     {
       step: '01',
-      title: 'Tham gia Lớp học Google Classroom',
-      description: 'Truy cập mục "Lớp học của tôi" để xem toàn bộ các lớp bạn đang theo học tại TNQDO.',
+      title: 'Tham gia Lớp học Google Classroom 5 Tab',
+      description: 'Truy cập mục "Lớp học của tôi" để trải nghiệm không gian học tập trực tuyến hiện đại.',
       details: [
-        'Xem Thông báo, lịch học Meeting và tài liệu tại Bảng tin Stream',
-        'Theo dõi tiến độ bài học và xem slide giảng dạy trực quan',
-        'Làm bài tập rèn luyện và nộp bài trực tiếp cho giảng viên'
+        '📌 Stream Bảng tin: Xem thông báo lớp, tài liệu tải về và link Google Meet học trực tuyến.',
+        '📚 Tab Bài học: Xem danh sách slide bài giảng tương tác visual chuẩn máy chiếu.',
+        '📝 Tab Bài tập & Thi: Làm bài tập rèn luyện trắc nghiệm, nộp bài phát âm/luận văn.',
+        '👥 Tab Học viên: Quản lý danh sách các bạn học cùng lớp.'
       ]
     },
     {
       step: '02',
-      title: 'Rèn luyện 4 Kỹ năng Tiếng Nhật',
-      description: 'Luyện tập chuyên sâu từng kỹ năng (Đọc hiểu, Luyện nghe, Luyện nói, Luyện viết).',
+      title: 'Rèn luyện 4 Kỹ năng chuẩn JLPT N5-N1',
+      description: 'Luyện tập chuyên sâu từng kỹ năng với phương pháp tương tác phản xạ.',
       details: [
-        'Đọc hiểu: Bài đọc chuẩn JLPT kèm từ vựng dịch nghĩa',
-        'Luyện nghe: File âm thanh chuẩn giọng bản xứ Nhật Bản',
-        'Luyện nói & Viết: Thực hành đặt câu và luyện phản xạ'
+        '📖 Đọc hiểu: Bài đọc dịch nghĩa chi tiết từng câu kèm bảng từ vựng JLPT.',
+        '🎧 Luyện nghe: Audio chuẩn giọng bản xứ Nhật Bản, làm bài tập điền từ và chọn đáp án.',
+        '🗣️ Luyện nói & ✍️ Luyện viết: Thu âm bài Kaiwa và tập viết Kanji nộp cho giáo viên chấm.'
       ]
     },
     {
       step: '03',
-      title: 'Tích lũy Streak & Điểm thưởng XP',
-      description: 'Duy trì thói quen học tập hàng ngày để thăng hạng trên Bảng xếp hạng.',
+      title: 'Tích lũy Điểm XP & Chuỗi Streak 🔥',
+      description: 'Học tập vui vẻ như chơi game, duy trì thói quen học tập liên tục hàng ngày.',
       details: [
-        'Mỗi bài học hoàn thành sẽ cộng ngay điểm XP tương ứng',
-        'Học liên tục mỗi ngày để duy trì Chuỗi Streak ngọn lửa 🔥',
-        'Hoàn thành chỉ tiêu mục tiêu XP trong ngày'
+        '⚡ Nhận điểm XP tương ứng sau mỗi bài học hoặc bài tập hoàn thành.',
+        '🔥 Duy trì chuỗi Streak ngọn lửa học tập mỗi ngày không ngắt quãng.',
+        '🏆 Thăng hạng Cấp độ (Level) và đua Top Bảng xếp hạng Học viên.'
       ]
     },
     {
       step: '04',
       title: 'Đặt lịch học Meeting 1:1 với Giảng viên',
-      description: 'Chọn khung giờ rảnh và đặt lịch luyện nói trực tiếp cùng thầy cô.',
+      description: 'Chọn khung giờ rảnh và đặt lịch luyện giao tiếp trực tiếp 1:1 cùng thầy cô.',
       details: [
-        'Xem danh sách giảng viên chất lượng tại mục Giảng viên',
-        'Chọn ngày và khung giờ học Meeting 1:1',
-        'Tham gia phòng học Meeting khi đến giờ hẹn'
+        '📅 Xem danh sách giảng viên chất lượng tại mục Giảng viên.',
+        '📹 Đặt lịch hẹn và bấm "Vào phòng Meeting" khi đến giờ học.',
+        '📩 Gửi đơn xin nghỉ phép/dời lịch trực tiếp trên hệ thống nếu bận đột xuất.'
       ]
     }
   ];
@@ -82,42 +83,42 @@ const UserGuide = () => {
   const teacherSteps = [
     {
       step: '01',
-      title: 'Quản lý Lớp học Google Classroom',
+      title: 'Quản lý Lớp học Google Classroom 5 Tab',
       description: 'Không gian quản lý lớp học toàn diện 5 Tab chuyên nghiệp cho giảng viên.',
       details: [
-        'Bảng tin: Đăng thông báo, lịch Meeting và thảo luận với lớp',
-        'Bài học: Đưa bài giảng vào lớp và kích hoạt Chế độ Trình chiếu slide',
-        'Bài kiểm tra & Bài nộp: Chấm điểm bài làm học viên trực tiếp'
+        '📌 Stream Bảng tin: Đăng thông báo, dán link phòng học Google Meet/Zoom và thảo luận với lớp.',
+        '📚 Tab Bài học & 🖥️ Trình chiếu Slide: Bật chế độ trình chiếu máy chiếu full màn hình khi dạy học.',
+        '📝 Tab Bài kiểm tra & Bài nộp: Chấm bài nộp phát âm/luận văn và theo dõi sĩ số học viên.'
       ]
     },
     {
       step: '02',
-      title: 'Sử dụng Chế độ Trình chiếu bài giảng',
-      description: 'Trình chiếu slide tương tác trực quan khi dạy học trên lớp hoặc qua Meeting.',
+      title: 'Chế độ Trình chiếu Slide Bài giảng',
+      description: 'Trình chiếu slide tương tác trực quan khi dạy học trên lớp hoặc qua Google Meet.',
       details: [
-        'Nhấp nút "Trình chiếu" tại bất kỳ bài học nào trong Lớp học',
-        'Màn hình hiển thị chữ to rõ, chuẩn máy chiếu và chia sẻ màn hình Meeting',
-        'Hỗ trợ công cụ chuyển slide mượt mà'
+        '🎬 Kích hoạt chế độ Trình chiếu Full màn hình tối ưu máy chiếu với 1-Click.',
+        '🔤 Font chữ Nhật to rõ kèm bản dịch nghĩa và âm thanh bài đọc chuẩn bản xứ.',
+        '⚡ Chuyển slide mượt mà bằng phím mũi tên nhanh chóng.'
       ]
     },
     {
       step: '03',
-      title: 'Chấm điểm & Gửi nhận xét Bài nộp',
-      description: 'Theo dõi bài làm học viên gửi lên và cho điểm chi tiết.',
+      title: 'Chấm điểm & Viết nhận xét Bài nộp',
+      description: 'Theo dõi sự tiến bộ và đưa ra định hướng học tập cho từng học viên.',
       details: [
-        'Nhận thông báo khi có bài tập mới học viên nộp',
-        'Xem đáp án tham khảo và bài làm của từng học viên',
-        'Nhập điểm số (0-100) và viết nhận xét chi tiết gửi cho học viên'
+        '🔔 Nhận thông báo tự động khi học viên nộp bài thu âm hoặc bài viết.',
+        '🎯 So sánh bài làm với Đáp án tham khảo tiêu chuẩn của hệ thống.',
+        '💯 Nhập điểm số (0 - 100) và gửi lời nhận xét tư vấn chi tiết cho học viên.'
       ]
     },
     {
       step: '04',
-      title: 'Điểm danh & Theo dõi lịch Meeting',
-      description: 'Quản lý sĩ số lớp học và tạo liên kết phòng học Meeting.',
+      title: 'Điểm danh & Quản lý Lịch dạy Timesheet',
+      description: 'Quản lý sĩ số lớp học, điểm danh chuyên cần và thời khóa biểu.',
       details: [
-        'Điểm danh nhanh học viên có mặt, vắng mặt hoặc đi muộn',
-        'Tạo lịch học Meeting và gửi link cho học viên trong lớp',
-        'Phê duyệt các yêu cầu xin nghỉ phép của học viên'
+        '✅ Điểm danh 1-Click trạng thái Có mặt, Vắng mặt, Đi muộn, Có lý do.',
+        '📊 Thống kê tự động tỷ lệ chuyên cần của từng học viên.',
+        '💼 Quản lý ca dạy Meeting 1:1 và theo dõi Bảng chấm công Timesheet hàng tháng.'
       ]
     }
   ];
@@ -125,42 +126,42 @@ const UserGuide = () => {
   const adminSteps = [
     {
       step: '01',
-      title: 'Quản trị Người dùng & Giảng viên',
-      description: 'Quản lý toàn bộ danh sách học viên, phân quyền giảng viên và xét duyệt tài khoản.',
+      title: 'Quản trị Người dùng & Phân quyền Roles',
+      description: 'Điều hành toàn bộ cơ sở dữ liệu người dùng, phân cấp vai trò và bảo mật.',
       details: [
-        'Xem danh sách người dùng và tiến độ học tập',
-        'Cấp quyền Giảng viên (Teacher / Senior Teacher)',
-        'Cập nhật hồ sơ chuyên môn và chứng chỉ cho giáo viên'
+        '👥 Xem danh sách người dùng, tiến độ học tập, level, XP và Streak.',
+        '🛡️ Cấp quyền Giảng viên (Teacher / Senior Teacher) an toàn.',
+        '🔒 Bảo mật quyền Admin chống thay đổi vai trò Admin chiếm quyền.'
       ]
     },
     {
       step: '02',
-      title: 'Quản lý Lớp học & Bài học',
-      description: 'Tạo mới các lớp học, tạo ngân hàng bài giảng mẫu chuẩn JLPT.',
+      title: 'Quản lý Đặt lịch Meeting 1:1 (Admin Bookings)',
+      description: 'Điều phối toàn bộ lịch hẹn luyện giao tiếp 1:1 giữa Học viên và Giảng viên.',
       details: [
-        'Tạo lớp học mới và phân công giảng viên phụ trách',
-        'Tạo và phê duyệt các bài học mới cho 4 kỹ năng',
-        'Liên kết bài học và tài liệu vào từng khóa học'
+        '📅 Xem danh sách các yêu cầu đặt lịch hẹn luyện nói 1:1 phát sinh.',
+        '🔗 Cấp link Google Meet tự động/tùy chỉnh và gửi thông báo tới 2 bên.',
+        '✔️ Phê duyệt hoặc hỗ trợ dời ca học khi có sự cố kỹ thuật.'
       ]
     },
     {
       step: '03',
-      title: 'Quản trị Website CMS & Tin tức Blog',
-      description: 'Cập nhật giao diện trang chủ, bài viết blog và các sự kiện workshop.',
+      title: 'Quản lý Khóa học, Lớp học & CMS Website Footer',
+      description: 'Tạo mới khóa học, lớp học và tùy biến giao diện website thương hiệu.',
       details: [
-        'Chỉnh sửa Banner trang chủ, khẩu hiệu và các phần giới thiệu',
-        'Đăng bài viết chia sẻ kinh nghiệm học và ghim bài nổi bật',
-        'Tạo sự kiện workshop luyện thi JLPT'
+        '🏫 Tạo Lớp học mới, phân công Giảng viên phụ trách và quản lý bài giảng.',
+        '🌐 Quản lý CMS Website: Sửa Banner Hero, Giới thiệu và Footer Chân trang.',
+        '✨ Cấu hình 3 bài viết nổi bật hiển thị ở khối Blog Trang chủ.'
       ]
     },
     {
       step: '04',
-      title: 'Theo dõi Đơn hàng & Tài chính',
-      description: 'Xác nhận giao dịch thanh toán mua khóa học của học viên.',
+      title: 'Duyệt Đơn hàng Mua khóa học & Doanh thu',
+      description: 'Xác nhận giao dịch thanh toán mua khóa học và quản lý tài chính.',
       details: [
-        'Xem danh sách đơn hàng đăng ký mua khóa học',
-        'Xác nhận thông tin chuyển khoản qua ngân hàng',
-        'Theo dõi báo cáo doanh thu tổng quan'
+        '💳 Kiểm tra thông tin đơn hàng và ảnh minh chứng chuyển khoản ngân hàng.',
+        '✅ Tự động kích hoạt quyền học lập tức cho học viên sau khi duyệt.',
+        '📊 Xem biểu đồ báo cáo doanh thu tổng quan real-time.'
       ]
     }
   ];
