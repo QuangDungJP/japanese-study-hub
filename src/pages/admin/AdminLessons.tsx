@@ -442,6 +442,7 @@ const AdminLessons = () => {
             <tbody>
               {filteredLessons.map((lesson) => {
                 const SkillIcon = skillIcons[lesson.skill] || BookOpen;
+                const skillColor = skillColors[lesson.skill] || 'bg-primary';
                 return (
                   <tr key={lesson.id} className="border-t border-border hover:bg-muted/30">
                     <td className="p-4">
@@ -452,8 +453,8 @@ const AdminLessons = () => {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-lg ${skillColors[lesson.skill]}/10 flex items-center justify-center`}>
-                          <SkillIcon className={`w-4 h-4 ${skillColors[lesson.skill].replace('bg-', 'text-')}`} />
+                        <div className={`w-8 h-8 rounded-lg ${skillColor}/10 flex items-center justify-center`}>
+                          <SkillIcon className={`w-4 h-4 ${skillColor.replace('bg-', 'text-')}`} />
                         </div>
                         <span className="text-sm capitalize">{lesson.skill}</span>
                       </div>

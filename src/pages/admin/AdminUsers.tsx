@@ -88,28 +88,36 @@ const AdminUsers = () => {
   };
 
   const assignRole = async (userId: string, role: string) => {
+    if (role === 'admin') {
+      toast({ title: 'Bảo vệ Admin', description: 'Không thể cấp quyền Admin tại giao diện này.', variant: 'destructive' });
+      return;
+    }
     try {
       const { data: existing } = await supabase.from('user_roles').select('id').eq('user_id', userId).eq('role', role as any);
       if (existing && existing.length > 0) {
-        toast({ title: 'Thông báo', description: 'Đã có role này' }); return;
+        toast({ title: 'Thông báo', description: 'Đã có vai trò này' }); return;
       }
       const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
       if (error) throw error;
       toast({ title: 'Thành công', description: `Đã gán ${ROLE_CONFIG[role]?.label || role}` });
       fetchUsers();
     } catch (error) {
-      toast({ title: 'Lỗi', description: 'Không thể gán role', variant: 'destructive' });
+      toast({ title: 'Lỗi', description: 'Không thể gán vai trò', variant: 'destructive' });
     }
   };
 
   const removeRole = async (userId: string, role: string) => {
+    if (role === 'admin') {
+      toast({ title: 'Bảo vệ Admin', description: 'Không thể xóa vai trò Admin tại giao diện này.', variant: 'destructive' });
+      return;
+    }
     try {
       const { error } = await supabase.from('user_roles').delete().eq('user_id', userId).eq('role', role as any);
       if (error) throw error;
       toast({ title: 'Thành công', description: `Đã xóa ${ROLE_CONFIG[role]?.label || role}` });
       fetchUsers();
     } catch (error) {
-      toast({ title: 'Lỗi', description: 'Không thể xóa role', variant: 'destructive' });
+      toast({ title: 'Lỗi', description: 'Không thể xóa vai trò', variant: 'destructive' });
     }
   };
 
@@ -305,15 +313,16 @@ const AdminUsers = () => {
                             ) : (
                               user.roles.map(role => {
                                 const rc = ROLE_CONFIG[role];
+                                const isAdmin = role === 'admin';
                                 return (
                                   <Badge
                                     key={role}
                                     variant={rc?.badgeVariant as any || 'outline'}
-                                    className="text-[10px] px-1.5 py-0 cursor-pointer hover:opacity-70"
-                                    onClick={() => removeRole(user.user_id, role)}
-                                    title="Click để xóa role"
+                                    className={`text-[10px] px-1.5 py-0 ${isAdmin ? 'cursor-default' : 'cursor-pointer hover:opacity-70'}`}
+                                    onClick={() => !isAdmin && removeRole(user.user_id, role)}
+                                    title={isAdmin ? 'Vai trò Admin được bảo vệ' : 'Click để xóa role'}
                                   >
-                                    {rc?.label || role} ×
+                                    {rc?.label || role} {!isAdmin && '×'}
                                   </Badge>
                                 );
                               })
@@ -348,11 +357,11 @@ const AdminUsers = () => {
                             <DropdownMenuContent align="end" className="w-52 bg-popover">
                               <DropdownMenuLabel className="text-xs text-muted-foreground">Hành động</DropdownMenuLabel>
                               <DropdownMenuItem onClick={() => { setSelectedStudent(user); setModalOpen(true); }}>
-                                <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
+                                <Eye className="w-4 h-4 mr-2 text-primary" /> Xem chi tiết học viên
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuLabel className="text-xs text-muted-foreground">Gán vai trò</DropdownMenuLabel>
-                              {(['user', 'teacher', 'senior_teacher', 'moderator', 'admin'] as const).map(role => {
+                              {(['user', 'teacher', 'senior_teacher', 'moderator'] as const).map(role => {
                                 const rc = ROLE_CONFIG[role];
                                 const Icon = rc.icon;
                                 const hasRole = user.roles.includes(role);

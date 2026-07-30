@@ -60,7 +60,7 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
       setLoading(true);
       const { data, error } = await supabase
         .from('exercises')
-        .select('*')
+        .select('id, title, title_vi, exercise_type, instructions_vi, content, audio_url, requires_grading, order_index, lesson_id')
         .eq('lesson_id', lessonId);
 
       if (error) throw error;

@@ -88,7 +88,7 @@ const TeacherSubmissions = () => {
       // Get exercises for these lessons
       const { data: exercises } = await supabase
         .from('exercises')
-        .select('id, title, title_vi, exercise_type, instructions, instructions_vi, correct_answers, lesson_id')
+        .select('id, title, title_vi, exercise_type, instructions, instructions_vi, lesson_id')
         .in('lesson_id', lessonIds)
         .eq('requires_grading', true);
 

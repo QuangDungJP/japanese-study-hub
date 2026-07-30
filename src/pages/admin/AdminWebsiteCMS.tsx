@@ -17,8 +17,10 @@ import SectionEditorFields from '@/components/admin/SectionEditorFields';
 import { 
   Layout, Image, Video, Eye, EyeOff, Save, Upload, Trash2, 
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
-  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal
+  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, MessageSquare
 } from 'lucide-react';
+import TestimonialsManager from '@/components/admin/TestimonialsManager';
+
 
 interface WebsiteContent {
   id: string;
@@ -438,6 +440,10 @@ const AdminWebsiteCMS = () => {
             <Image className="w-4 h-4" />
             Media
           </TabsTrigger>
+          <TabsTrigger value="testimonials" className="gap-2">
+            <MessageSquare className="w-4 h-4 text-amber-500" />
+            Feedback học viên
+          </TabsTrigger>
         </TabsList>
 
         {/* Sections Tab */}
@@ -696,6 +702,11 @@ const AdminWebsiteCMS = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Feedback Tab */}
+        <TabsContent value="testimonials" className="space-y-4">
+          <TestimonialsManager />
         </TabsContent>
       </Tabs>
 
