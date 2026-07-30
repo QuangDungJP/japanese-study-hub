@@ -539,6 +539,70 @@ const CTAEditor = ({ content, onChange }: { content: Record<string, any>; onChan
   );
 };
 
+const FooterEditor = ({ content, onChange }: { content: Record<string, any>; onChange: (c: Record<string, any>) => void }) => {
+  const update = (key: string, value: string) => onChange({ ...content, [key]: value });
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold text-foreground flex items-center gap-2">
+        <Globe className="w-4 h-4 text-primary" /> Thông tin Chân trang (Footer)
+      </h3>
+      
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold">Mô tả thương hiệu</Label>
+        <Textarea 
+          value={content.brand_description || ""} 
+          onChange={(e) => update("brand_description", e.target.value)} 
+          rows={3}
+          placeholder="Trung tâm đào tạo Tiếng Nhật hàng đầu..." 
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Địa chỉ trụ sở</Label>
+          <Input value={content.address || ""} onChange={(e) => update("address", e.target.value)} placeholder="123 Nguyễn Huệ, Q.1, TP.HCM" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Số điện thoại Hotline</Label>
+          <Input value={content.phone || ""} onChange={(e) => update("phone", e.target.value)} placeholder="1900 1234" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Email liên hệ</Label>
+          <Input value={content.email || ""} onChange={(e) => update("email", e.target.value)} placeholder="hello@tnqdo.com" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Tên miền Website / URL</Label>
+          <Input value={content.website_domain || ""} onChange={(e) => update("website_domain", e.target.value)} placeholder="https://quangdungjp.quachthanhlong.com/" />
+        </div>
+      </div>
+
+      <div className="border-t pt-3 space-y-3">
+        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Mạng xã hội</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Facebook URL</Label>
+            <Input value={content.facebook_url || ""} onChange={(e) => update("facebook_url", e.target.value)} placeholder="https://facebook.com/..." />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Youtube URL</Label>
+            <Input value={content.youtube_url || ""} onChange={(e) => update("youtube_url", e.target.value)} placeholder="https://youtube.com/..." />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Instagram URL</Label>
+            <Input value={content.instagram_url || ""} onChange={(e) => update("instagram_url", e.target.value)} placeholder="https://instagram.com/..." />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-1 border-t pt-3">
+        <Label className="text-xs font-semibold">Bản quyền (Copyright text)</Label>
+        <Input value={content.copyright_text || ""} onChange={(e) => update("copyright_text", e.target.value)} placeholder="© 2026 TNQDO. All rights reserved." />
+      </div>
+    </div>
+  );
+};
+
 const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFieldsProps) => {
   switch (sectionKey) {
     case "hero":
@@ -547,6 +611,8 @@ const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFie
       return <TeachersEditor content={content} onChange={onChange} />;
     case "cta":
       return <CTAEditor content={content} onChange={onChange} />;
+    case "footer":
+      return <FooterEditor content={content} onChange={onChange} />;
     default:
       return null;
   }

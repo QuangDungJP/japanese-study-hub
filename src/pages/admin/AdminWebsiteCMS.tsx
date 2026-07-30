@@ -63,6 +63,7 @@ const sectionLabels: Record<string, string> = {
   'about_values': 'Giới thiệu - Giá trị',
   'about_3c_values': 'Giới thiệu - 3C Cốt lõi',
   'about_cta': 'Giới thiệu - CTA',
+  'footer': 'Chân trang (Footer)',
 };
 
 const AdminWebsiteCMS = () => {

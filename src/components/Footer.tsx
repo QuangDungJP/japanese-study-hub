@@ -1,8 +1,33 @@
-import { Facebook, Youtube, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Facebook, Youtube, Instagram, Mail, Phone, MapPin, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
 
 const Footer = () => {
+  const { data: footerContent } = useQuery({
+    queryKey: ['footer-section-content'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('website_content')
+        .select('content')
+        .eq('section_key', 'footer')
+        .maybeSingle();
+      return (data?.content as Record<string, any>) || null;
+    },
+    staleTime: 30_000,
+  });
+
+  const brandDescription = footerContent?.brand_description || "Trung tâm đào tạo Tiếng Nhật hàng đầu. Chinh phục JLPT N5-N1 với phương pháp hiện đại và giáo viên bản ngữ.";
+  const address = footerContent?.address || "123 Nguyễn Huệ, Q.1, TP.HCM";
+  const phone = footerContent?.phone || "1900 1234";
+  const email = footerContent?.email || "hello@tnqdo.com";
+  const websiteDomain = footerContent?.website_domain || "https://quangdungjp.quachthanhlong.com/";
+  const facebookUrl = footerContent?.facebook_url || "#";
+  const youtubeUrl = footerContent?.youtube_url || "#";
+  const instagramUrl = footerContent?.instagram_url || "#";
+  const copyrightText = footerContent?.copyright_text || "© 2026 TNQDO. All rights reserved.";
+
   return (
     <footer className="bg-foreground text-primary-foreground py-16">
       <div className="container mx-auto px-4">
@@ -10,17 +35,17 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <Logo className="flex items-center gap-2 mb-4" imgClassName="w-10 h-10 rounded-xl object-cover" />
-            <p className="text-primary-foreground/70 mb-6">
-              Trung tâm đào tạo Tiếng Nhật hàng đầu. Chinh phục JLPT N5-N1 với phương pháp hiện đại và giáo viên bản ngữ.
+            <p className="text-primary-foreground/70 mb-6 text-sm leading-relaxed">
+              {brandDescription}
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
                 <Youtube className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
             </div>
@@ -29,7 +54,7 @@ const Footer = () => {
           {/* Pages */}
           <div>
             <h4 className="font-bold text-lg mb-4">Trang</h4>
-            <ul className="space-y-3">
+            <ul className="space-y-3 text-sm">
               <li><Link to="/gioi-thieu" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Giới thiệu</Link></li>
               <li><Link to="/khoa-hoc" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Khóa học</Link></li>
               <li><Link to="/giao-vien" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Giáo viên</Link></li>
@@ -41,7 +66,7 @@ const Footer = () => {
           {/* Support */}
           <div>
             <h4 className="font-bold text-lg mb-4">Hỗ trợ</h4>
-            <ul className="space-y-3">
+            <ul className="space-y-3 text-sm">
               <li><Link to="/faq" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Hỏi & Đáp</Link></li>
               <li><Link to="/lien-he" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Liên hệ</Link></li>
               <li><Link to="/chinh-sach-bao-mat" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Chính sách bảo mật</Link></li>
@@ -52,23 +77,23 @@ const Footer = () => {
           {/* Contact */}
           <div>
             <h4 className="font-bold text-lg mb-4">Liên hệ</h4>
-            <ul className="space-y-4">
+            <ul className="space-y-4 text-sm">
               <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-accent mt-0.5" />
-                <span className="text-primary-foreground/70">123 Nguyễn Huệ, Q.1, TP.HCM</span>
+                <MapPin className="w-5 h-5 text-accent mt-0.5 shrink-0" />
+                <span className="text-primary-foreground/70">{address}</span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-accent" />
-                <span className="text-primary-foreground/70">1900 1234</span>
+                <Phone className="w-5 h-5 text-accent shrink-0" />
+                <span className="text-primary-foreground/70">{phone}</span>
               </li>
               <li className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-accent" />
-                <span className="text-primary-foreground/70">hello@tnqdo.com</span>
+                <Mail className="w-5 h-5 text-accent shrink-0" />
+                <span className="text-primary-foreground/70">{email}</span>
               </li>
               <li className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-accent" />
-                <a href="https://quangdungjp.quachthanhlong.com/" target="_blank" rel="noopener noreferrer" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  quangdungjp.quachthanhlong.com
+                <Globe className="w-5 h-5 text-accent shrink-0" />
+                <a href={websiteDomain} target="_blank" rel="noopener noreferrer" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors truncate">
+                  {websiteDomain.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                 </a>
               </li>
             </ul>
@@ -78,7 +103,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-primary-foreground/60 text-sm">
-            © 2024 TNQDO. All rights reserved.
+            {copyrightText}
           </p>
           <div className="flex gap-6">
             <Link to="/chinh-sach-bao-mat" className="text-primary-foreground/60 hover:text-primary-foreground text-sm transition-colors">
