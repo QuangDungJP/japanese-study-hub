@@ -80,6 +80,7 @@ import Terms from "./pages/Terms";
 import EventsPage from "./pages/EventsPage";
 import EventDetailPage from "./pages/EventDetail";
 import AdminEvents from "./pages/admin/AdminEvents";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -91,14 +92,15 @@ const App = () => (
           <LearningProvider>
             <Toaster />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/gioi-thieu" element={<About />} />
-              <Route path="/khoa-hoc" element={<CoursesPage />} />
-              <Route path="/giao-vien" element={<TeachersPage />} />
-              <Route path="/zoom" element={<ZoomPage />} />
-              <Route path="/lien-he" element={<Contact />} />
-              <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
+              <ScrollToTop />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/gioi-thieu" element={<About />} />
+                <Route path="/khoa-hoc" element={<CoursesPage />} />
+                <Route path="/giao-vien" element={<TeachersPage />} />
+                <Route path="/zoom" element={<ZoomPage />} />
+                <Route path="/lien-he" element={<Contact />} />
+                <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
               <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
