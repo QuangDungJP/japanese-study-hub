@@ -245,6 +245,29 @@ const AttendanceManager = () => {
     total: attendance.length
   };
 
+  const exportAttendanceToExcel = () => {
+    if (!selectedClass || attendance.length === 0) return;
+    const currentClassName = classes.find(c => c.id === selectedClass)?.name_vi || 'LopHoc';
+    const headers = ['STT', 'Họ và tên học viên', 'Ngày điểm danh', 'Trạng thái điểm danh', 'Ghi chú'];
+    const statusLabels: Record<string, string> = {
+      present: 'Có mặt',
+      absent: 'Vắng mặt',
+      late: 'Đi muộn',
+      excused: 'Vắng có phép'
+    };
+
+    const rows = attendance.map((rec, index) => [
+      index + 1,
+      rec.student_name,
+      selectedDate,
+      statusLabels[rec.status] || rec.status,
+      rec.notes || ''
+    ]);
+
+    exportToCSV(`DiemDanh_${currentClassName.replace(/\s+/g, '_')}_${selectedDate}`, headers, rows);
+    toast.success('Đã xuất file điểm danh Excel / Google Sheet thành công!');
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -306,56 +329,86 @@ const AttendanceManager = () => {
 
       {selectedClass && (
         <>
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Users className="w-6 h-6 mx-auto text-muted-foreground mb-1" />
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Tổng số</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <UserCheck className="w-6 h-6 mx-auto text-green-600 mb-1" />
-                <p className="text-2xl font-bold text-green-600">{stats.present}</p>
-                <p className="text-xs text-muted-foreground">Có mặt</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <UserX className="w-6 h-6 mx-auto text-red-600 mb-1" />
-                <p className="text-2xl font-bold text-red-600">{stats.absent}</p>
-                <p className="text-xs text-muted-foreground">Vắng</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Clock className="w-6 h-6 mx-auto text-yellow-600 mb-1" />
-                <p className="text-2xl font-bold text-yellow-600">{stats.late}</p>
-                <p className="text-xs text-muted-foreground">Đi muộn</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <CalendarCheck className="w-6 h-6 mx-auto text-blue-600 mb-1" />
-                <p className="text-2xl font-bold text-blue-600">{stats.excused}</p>
-                <p className="text-xs text-muted-foreground">Có phép</p>
-              </CardContent>
-            </Card>
+          {/* Stats & Progress Chart Bar */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4 text-center">
+                  <Users className="w-6 h-6 mx-auto text-primary mb-1" />
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Sĩ số lớp</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-green-500/10 border-green-500/20">
+                <CardContent className="p-4 text-center">
+                  <UserCheck className="w-6 h-6 mx-auto text-green-600 mb-1" />
+                  <p className="text-2xl font-bold text-green-600">{stats.present}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Có mặt ({stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0}%)</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-red-500/10 border-red-500/20">
+                <CardContent className="p-4 text-center">
+                  <UserX className="w-6 h-6 mx-auto text-red-600 mb-1" />
+                  <p className="text-2xl font-bold text-red-600">{stats.absent}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Vắng mặt</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-yellow-500/10 border-yellow-500/20">
+                <CardContent className="p-4 text-center">
+                  <Clock className="w-6 h-6 mx-auto text-yellow-600 mb-1" />
+                  <p className="text-2xl font-bold text-yellow-600">{stats.late}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Đi muộn</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-500/10 border-blue-500/20">
+                <CardContent className="p-4 text-center">
+                  <CalendarCheck className="w-6 h-6 mx-auto text-blue-600 mb-1" />
+                  <p className="text-2xl font-bold text-blue-600">{stats.excused}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Có phép</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Visual Attendance Ratio Bar Chart */}
+            {stats.total > 0 && (
+              <Card className="p-4 bg-muted/30">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold">
+                    <span>Tỉ lệ tham gia buổi học</span>
+                    <span className="text-green-600 font-bold">{Math.round(((stats.present + stats.late) / stats.total) * 100)}% Chuyên cần</span>
+                  </div>
+                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden flex">
+                    <div style={{ width: `${(stats.present / stats.total) * 100}%` }} className="bg-green-500 transition-all" title="Có mặt" />
+                    <div style={{ width: `${(stats.late / stats.total) * 100}%` }} className="bg-yellow-500 transition-all" title="Đi muộn" />
+                    <div style={{ width: `${(stats.excused / stats.total) * 100}%` }} className="bg-blue-500 transition-all" title="Có phép" />
+                    <div style={{ width: `${(stats.absent / stats.total) * 100}%` }} className="bg-red-500 transition-all" title="Vắng mặt" />
+                  </div>
+                  <div className="flex justify-around text-[11px] text-muted-foreground pt-1">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Có mặt ({stats.present})</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Đi muộn ({stats.late})</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> Có phép ({stats.excused})</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Vắng mặt ({stats.absent})</span>
+                  </div>
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Attendance List */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <CalendarCheck className="w-5 h-5" />
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarCheck className="w-5 h-5 text-primary" />
                 Điểm danh - {format(new Date(selectedDate), 'EEEE, dd/MM/yyyy', { locale: vi })}
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950 font-bold" onClick={exportAttendanceToExcel}>
+                  <FileSpreadsheet className="w-4 h-4 mr-1 text-emerald-600" />
+                  Xuất Google Sheet / Excel
+                </Button>
                 <Button variant="outline" size="sm" onClick={markAllPresent}>
                   <UserCheck className="w-4 h-4 mr-1" />
-                  Đánh dấu tất cả có mặt
+                  Tất cả có mặt
                 </Button>
                 <Button size="sm" onClick={saveAttendance} disabled={saving}>
                   <Save className="w-4 h-4 mr-1" />

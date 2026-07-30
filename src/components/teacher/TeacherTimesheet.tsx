@@ -128,7 +128,7 @@ export const TeacherTimesheet = ({ teacherId, classId, isAdminView = false }: Pr
 
       // 4. Fetch attendance records for these sessions safely
       const sessionIds = (sData || []).map((s: any) => s.id);
-      let attendanceMap: Record<string, { present: number; total: number }> = {};
+      const attendanceMap: Record<string, { present: number; total: number }> = {};
 
       if (sessionIds.length > 0) {
         try {
