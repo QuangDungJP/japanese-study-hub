@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 import { Plus, Loader2, Pencil, Trash2, Video, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,16 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+
+  const initialExamData = useMemo(() => {
+    if (editingExam) return editingExam;
+    if (classId) return { class_id: classId };
+    return undefined;
+  }, [editingExam, classId]);
+
+  const mappedClasses = useMemo(() => {
+    return classes.map((c) => ({ id: c.id, name: c.name_vi }));
+  }, [classes]);
 
   useEffect(() => {
     if (user) {
@@ -192,9 +202,9 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
       <ExamBuilder
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        classes={classes.map((c) => ({ id: c.id, name: c.name_vi }))}
+        classes={mappedClasses}
         teacherId={user?.id || ''}
-        initial={editingExam ?? (classId ? { class_id: classId } : undefined)}
+        initial={initialExamData}
         onSaved={fetchData}
       />
     </div>
