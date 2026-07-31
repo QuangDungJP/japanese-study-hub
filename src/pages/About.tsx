@@ -62,17 +62,20 @@ const About = () => {
                 Về TNQDO
               </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-foreground mb-6 leading-[1.1] tracking-tight">
-                Nền tảng học{" "}
+                Mạng lưới Nhật ngữ{" "}
                 <span className="relative inline-block">
-                  <span className="text-japanese">Tiếng Nhật</span>
+                  <span className="text-japanese">TIÊN PHONG</span>
                   <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 300 8" fill="none">
                     <path d="M2 6C80 2 150 2 298 6" stroke="hsl(var(--japanese))" strokeWidth="3" strokeLinecap="round" opacity="0.4" />
                   </svg>
                 </span>
-                {" "}hàng đầu
+                {" "}tại Việt Nam
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                 Sứ mệnh giúp người Việt chinh phục tiếng Nhật hiệu quả nhất với phương pháp khoa học và công nghệ AI tiên tiến
+              </p>
+              <p className="mt-3 text-base md:text-lg font-semibold tracking-wide text-japanese/80 italic">
+                「 Hãy bắt đầu ngay khi còn có thể 」
               </p>
             </ScrollReveal>
           </div>
@@ -216,7 +219,7 @@ const About = () => {
                 <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
                   Câu hỏi <span className="text-sakura">thường gặp</span>
                 </h2>
-                <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+                <p className="text-foreground/70 text-lg max-w-xl mx-auto">
                   Tìm câu trả lời cho những thắc mắc phổ biến về NihonGo!
                 </p>
 
@@ -245,8 +248,8 @@ const About = () => {
                           {faq.question}
                         </span>
                       </AccordionTrigger>
-                      <AccordionContent className="bg-card border border-t-0 border-border/50 rounded-b-2xl px-6 py-5 text-foreground leading-relaxed whitespace-pre-wrap shadow-sm">
-                        {faq.answer}
+                      <AccordionContent className="bg-background border border-t-0 border-border rounded-b-2xl px-6 py-5 text-foreground leading-relaxed whitespace-pre-wrap shadow-sm">
+                        <span className="text-foreground">{faq.answer}</span>
                       </AccordionContent>
                     </AccordionItem>
                   </ScrollReveal>
