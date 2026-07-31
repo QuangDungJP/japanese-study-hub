@@ -83,10 +83,21 @@ interface Exam {
   timer_mode: string | null;
   meet_link: string | null;
   max_score: number;
+  passing_score: number | null;
   starts_at: string | null;
   ends_at: string | null;
   lock_after_end: boolean;
   is_published: boolean;
+  show_answers_after: boolean;
+  questions: Array<{
+    text: string;
+    type?: string;
+    options: string[];
+    correct_index: number;
+    accepted_answers?: string[];
+    explanation?: string;
+    points?: number;
+  }>;
 }
 
 interface Submission {
@@ -99,6 +110,19 @@ interface Submission {
   exercise?: {
     title_vi: string;
   };
+}
+
+interface ExamAttempt {
+  id: string;
+  exam_id: string;
+  started_at: string;
+  submitted_at: string | null;
+  status: string;
+  score: number | null;
+  total: number | null;
+  time_spent_seconds: number;
+  student_comment: string | null;
+  answers: (number | string | null)[];
 }
 
 const MyClasses = () => {
@@ -114,6 +138,9 @@ const MyClasses = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [examAttempts, setExamAttempts] = useState<Record<string, ExamAttempt[]>>({});
+  const [expandedExamId, setExpandedExamId] = useState<string | null>(null);
+  const [expandedReviewAttemptId, setExpandedReviewAttemptId] = useState<string | null>(null);
 
   // Active lesson details inside classroom
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -265,6 +292,25 @@ const MyClasses = () => {
         .eq('class_id', cls.id)
         .order('exam_date', { ascending: true });
       setExams(examsData || []);
+
+      // 4. Fetch exam attempts for this student (grouped by exam)
+      if (examsData && examsData.length > 0 && user) {
+        const examIds = (examsData as any[]).map((e) => e.id);
+        const { data: attemptsData } = await supabase
+          .from('exam_attempts')
+          .select('id, exam_id, started_at, submitted_at, status, score, total, time_spent_seconds, student_comment, answers')
+          .in('exam_id', examIds)
+          .eq('student_id', user.id)
+          .order('started_at', { ascending: false });
+        const grouped: Record<string, ExamAttempt[]> = {};
+        for (const att of (attemptsData || [])) {
+          if (!grouped[att.exam_id]) grouped[att.exam_id] = [];
+          grouped[att.exam_id].push(att as ExamAttempt);
+        }
+        setExamAttempts(grouped);
+      } else {
+        setExamAttempts({});
+      }
 
       // 4. Fetch student submissions for lessons/exercises in this class
       if (lessonsData && lessonsData.length > 0) {
@@ -842,81 +888,282 @@ const MyClasses = () => {
         {/* Tab 3: Exams (Kiểm tra) */}
         <TabsContent value="exams" className="space-y-4">
           <h2 className="text-lg font-bold text-foreground">Danh sách bài kiểm tra</h2>
-          {exams.length === 0 ? (
+          {exams.filter(e => e.is_published).length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                Không có bài kiểm tra nào sắp diễn ra.
+                Không có bài kiểm tra nào.
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
               {exams.filter(e => e.is_published).map((exam) => {
                 const now = new Date();
-                // Use starts_at if set, otherwise fall back to exam_date+start_time
                 const openTime = exam.starts_at
                   ? new Date(exam.starts_at)
                   : new Date(`${exam.exam_date}T${exam.start_time}`);
                 const isLocked = now < openTime;
-                // Check if exam has closed
                 const isClosed = !!(exam.ends_at && exam.lock_after_end && now > new Date(exam.ends_at));
+                const allAttempts = examAttempts[exam.id] || [];
+                const attempts = allAttempts.filter(a => a.status !== 'in_progress');
+                const inProgress = allAttempts.find(a => a.status === 'in_progress');
+                const isExpanded = expandedExamId === exam.id;
+
+                const fmtTime = (sec: number) => {
+                  const m = Math.floor(sec / 60);
+                  const s = sec % 60;
+                  return m > 0 ? `${m}ph ${s}s` : `${s}s`;
+                };
+                const statusLabel = (s: string) => {
+                  if (s === 'submitted') return { text: 'Đã nộp', color: 'text-green-600' };
+                  if (s === 'auto_submitted') return { text: 'Hết giờ – Tự nộp', color: 'text-amber-600' };
+                  if (s === 'graded') return { text: 'Đã chấm', color: 'text-blue-600' };
+                  return { text: s, color: 'text-muted-foreground' };
+                };
+
                 return (
-                  <Card key={exam.id} className={isLocked ? 'opacity-90 bg-muted/20' : ''}>
-                    <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" className="capitalize">{exam.exam_type}</Badge>
-                          <p className="font-semibold text-sm sm:text-base text-foreground">{exam.title_vi}</p>
-                          {isClosed ? (
-                            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200 text-xs">
-                              🔴 Đã đóng
-                            </Badge>
-                          ) : isLocked ? (
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">
-                              🕒 Đúng giờ thi mới mở
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 text-xs">
-                              🟢 Đã mở xem & vào thi
-                            </Badge>
+                  <Card key={exam.id} className={`transition-all ${isLocked ? 'opacity-90 bg-muted/20' : ''}`}>
+                    <CardContent className="p-4">
+                      {/* Main row */}
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="secondary" className="capitalize shrink-0">{exam.exam_type}</Badge>
+                            <p className="font-semibold text-sm sm:text-base text-foreground">{exam.title_vi}</p>
+                            {isClosed ? (
+                              <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200 text-xs">🔴 Đã đóng</Badge>
+                            ) : isLocked ? (
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">🕒 Chưa đến giờ</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 text-xs">🟢 Đang mở</Badge>
+                            )}
+                            {inProgress && (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200 text-xs animate-pulse">
+                                ⏳ Đang làm dở
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            <span>Lịch thi: {formatWithJST(`${exam.exam_date}T${exam.start_time}`, true)}</span>
+                            <span>Thời gian: {exam.duration_minutes ? `${exam.duration_minutes} phút` : (exam.timer_mode === 'stopwatch' ? 'Bấm giờ' : 'Không giới hạn')}</span>
+                            {attempts.length > 0 && (
+                              <span className="text-primary font-medium">{attempts.length} lần đã làm</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto">
+                          {/* Lịch sử button */}
+                          {attempts.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5 w-full sm:w-auto"
+                              onClick={() => setExpandedExamId(isExpanded ? null : exam.id)}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Lịch sử ({attempts.length})
+                              <span className={`transition-transform inline-block ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
+                            </Button>
+                          )}
+                          {/* Vào làm / tiếp tục */}
+                          {!isLocked && !isClosed && (
+                            <Button
+                              size="sm"
+                              variant="hero"
+                              className="gap-2 font-semibold w-full sm:w-auto"
+                              onClick={() => navigate(`/learn/exams/${exam.id}`)}
+                            >
+                              <GraduationCap className="w-4 h-4" />
+                              {inProgress ? 'Tiếp tục bài' : 'Vào làm bài'}
+                            </Button>
+                          )}
+                          {isLocked && (
+                            <Button size="sm" variant="outline" disabled className="gap-2 w-full sm:w-auto">
+                              🕒 Chưa đến giờ
+                            </Button>
+                          )}
+                          {exam.meet_link && !isLocked && (
+                            <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto" asChild>
+                              <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
+                                <Video className="w-4 h-4" /> Zoom
+                              </a>
+                            </Button>
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                          <span>Lịch thi: {formatWithJST(`${exam.exam_date}T${exam.start_time}`, true)}</span>
-                          <span>Thời gian: {exam.duration_minutes ? `${exam.duration_minutes} phút` : (exam.timer_mode === 'stopwatch' ? 'Bấm giờ' : 'Không giới hạn')}</span>
+                      </div>
+
+                      {/* History dropdown */}
+                      {isExpanded && attempts.length > 0 && (
+                        <div className="mt-4 pt-4 border-t space-y-3">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Lịch sử làm bài
+                          </p>
+                          {attempts.map((att, idx) => {
+                            const sl = statusLabel(att.status);
+                            const hasScore = att.score !== null && att.total !== null && att.total! > 0;
+                            const pct = hasScore ? Math.round((att.score! / att.total!) * 100) : null;
+                            const isReviewOpen = expandedReviewAttemptId === att.id;
+                            const canShowReview = exam.show_answers_after && att.status !== 'in_progress' && Array.isArray(att.answers) && exam.questions?.length > 0;
+                            const passingScore = exam.passing_score ?? 0;
+                            const passed = hasScore && att.score! >= passingScore && passingScore > 0;
+
+                            return (
+                              <div key={att.id} className="rounded-xl border bg-muted/30 overflow-hidden">
+                                {/* Attempt summary row */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm font-bold shrink-0 ${hasScore && passingScore > 0 ? (passed ? 'bg-green-500 text-white' : 'bg-red-400 text-white') : 'bg-primary/10 text-primary'}`}>
+                                      {attempts.length - idx}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className={`text-xs font-semibold ${sl.color}`}>{sl.text}</span>
+                                        {hasScore && passingScore > 0 && (
+                                          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                            {passed ? '✓ Đạt' : '✗ Chưa đạt'}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        Nộp: {att.submitted_at ? new Date(att.submitted_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                        {att.time_spent_seconds > 0 && ` · ${fmtTime(att.time_spent_seconds)}`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {hasScore ? (
+                                      <div className="text-right">
+                                        <p className="font-bold text-lg text-primary leading-none">{att.score}/{att.total}</p>
+                                        <p className="text-xs text-muted-foreground">{pct}%</p>
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground italic">Chờ chấm</span>
+                                    )}
+                                    {canShowReview && (
+                                      <Button
+                                        size="sm"
+                                        variant={isReviewOpen ? 'secondary' : 'outline'}
+                                        className="gap-1.5 text-xs h-8"
+                                        onClick={() => setExpandedReviewAttemptId(isReviewOpen ? null : att.id)}
+                                      >
+                                        {isReviewOpen ? '▲ Đóng' : '📋 Xem đáp án'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Per-question review */}
+                                {isReviewOpen && canShowReview && (
+                                  <div className="border-t bg-background/60 p-3 space-y-3">
+                                    <p className="text-xs font-semibold text-muted-foreground">Chi tiết từng câu:</p>
+                                    {exam.questions.map((q, qi) => {
+                                      const studentAns = att.answers[qi];
+                                      const qtype = q.type || 'multiple_choice';
+                                      const isAutoGraded = qtype !== 'essay';
+
+                                      let isCorrect = false;
+                                      if (qtype === 'multiple_choice' || qtype === 'true_false') {
+                                        isCorrect = typeof studentAns === 'number' && studentAns === q.correct_index;
+                                      } else if (qtype === 'short_answer') {
+                                        const accepted = (q.accepted_answers || []).map(a => a.trim().toLowerCase()).filter(Boolean);
+                                        isCorrect = typeof studentAns === 'string' && !!studentAns.trim() && accepted.includes(studentAns.trim().toLowerCase());
+                                      }
+
+                                      const notAnswered = studentAns === null || studentAns === undefined || studentAns === '';
+
+                                      return (
+                                        <div
+                                          key={qi}
+                                          className={`rounded-lg border p-3 space-y-2 text-sm ${!isAutoGraded ? 'border-muted bg-muted/20' : isCorrect ? 'border-green-400/50 bg-green-50/50 dark:bg-green-950/20' : notAnswered ? 'border-muted bg-muted/20' : 'border-red-400/50 bg-red-50/50 dark:bg-red-950/20'}`}
+                                        >
+                                          {/* Question header */}
+                                          <div className="flex items-start gap-2">
+                                            <span className={`inline-flex w-6 h-6 rounded-full text-xs items-center justify-center font-bold shrink-0 mt-0.5 ${!isAutoGraded ? 'bg-muted text-muted-foreground' : isCorrect ? 'bg-green-500 text-white' : notAnswered ? 'bg-muted text-muted-foreground' : 'bg-red-500 text-white'}`}>
+                                              {isAutoGraded ? (isCorrect ? '✓' : (notAnswered ? '—' : '✗')) : qi + 1}
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="font-medium text-foreground leading-snug">{q.text}</p>
+                                              {q.points && <span className="text-xs text-muted-foreground">{q.points} điểm</span>}
+                                            </div>
+                                          </div>
+
+                                          {/* Options for MC / TF */}
+                                          {(qtype === 'multiple_choice' || qtype === 'true_false') && (
+                                            <div className="space-y-1.5 pl-8">
+                                              {q.options.map((opt, oi) => {
+                                                const isSelected = studentAns === oi;
+                                                const isRight = oi === q.correct_index;
+                                                return (
+                                                  <div key={oi} className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs ${isRight ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-medium' : isSelected && !isRight ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 line-through' : 'text-muted-foreground'}`}>
+                                                    <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${isRight ? 'border-green-500 bg-green-500 text-white' : isSelected ? 'border-red-400 bg-red-400 text-white' : 'border-muted-foreground/30'}`}>
+                                                      {String.fromCharCode(65 + oi)}
+                                                    </span>
+                                                    <span className="flex-1">{opt}</span>
+                                                    {isRight && <span className="shrink-0 text-green-600 font-semibold">✓ Đúng</span>}
+                                                    {isSelected && !isRight && <span className="shrink-0 text-red-500">✗ Bạn chọn</span>}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+
+                                          {/* Short answer */}
+                                          {qtype === 'short_answer' && (
+                                            <div className="pl-8 space-y-1">
+                                              <div className={`px-2 py-1.5 rounded-md text-xs ${isCorrect ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                                                <span className="text-muted-foreground">Bạn trả lời: </span>
+                                                <span className="font-medium">{notAnswered ? '(không trả lời)' : String(studentAns)}</span>
+                                              </div>
+                                              {!isCorrect && q.accepted_answers && q.accepted_answers.filter(Boolean).length > 0 && (
+                                                <div className="px-2 py-1.5 rounded-md text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                                  <span className="text-muted-foreground">Đáp án đúng: </span>
+                                                  <span className="font-medium">{q.accepted_answers.filter(Boolean).join(' / ')}</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+
+                                          {/* Essay */}
+                                          {qtype === 'essay' && (
+                                            <div className="pl-8">
+                                              <div className="px-2 py-1.5 rounded-md text-xs bg-muted text-muted-foreground">
+                                                <span className="font-medium">Bài làm: </span>
+                                                {notAnswered ? <em>(không trả lời)</em> : <span className="whitespace-pre-wrap">{String(studentAns)}</span>}
+                                              </div>
+                                              <p className="text-xs text-amber-600 mt-1 pl-1">✏️ Giáo viên sẽ chấm tay câu này.</p>
+                                            </div>
+                                          )}
+
+                                          {/* Teacher explanation */}
+                                          {q.explanation && (
+                                            <div className="pl-8">
+                                              <div className="flex gap-1.5 px-2 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300">
+                                                <span className="shrink-0">💡</span>
+                                                <div>
+                                                  <p className="font-semibold mb-0.5">Giải thích:</p>
+                                                  <p className="leading-relaxed">{q.explanation}</p>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+
+                                    {att.student_comment && (
+                                      <div className="rounded-lg border bg-muted/30 p-3 text-xs">
+                                        <p className="font-semibold text-muted-foreground mb-1">Nhận xét của bạn:</p>
+                                        <p className="text-foreground italic">"{att.student_comment}"</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
-                        {/* Nút làm bài trực tuyến */}
-                        {!isLocked && !isClosed && exam.is_published && (
-                          <Button
-                            size="sm"
-                            variant="hero"
-                            className="gap-2 font-semibold w-full sm:w-auto"
-                            onClick={() => navigate(`/learn/exams/${exam.id}`)}
-                          >
-                            <GraduationCap className="w-4 h-4" /> Vào làm bài
-                          </Button>
-                        )}
-                        {isLocked && (
-                          <Button size="sm" variant="outline" disabled className="gap-2 w-full sm:w-auto">
-                            🔒 Chưa đến giờ thi
-                          </Button>
-                        )}
-                        {/* Nút phòng Zoom nếu có */}
-                        {exam.meet_link && !isLocked && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-2 w-full sm:w-auto"
-                            asChild
-                          >
-                            <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
-                              <Video className="w-4 h-4" /> Phòng thi Online
-                            </a>
-                          </Button>
-                        )}
-                      </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -925,59 +1172,63 @@ const MyClasses = () => {
           )}
         </TabsContent>
 
-        {/* Tab 4: Submissions (Bài nộp) */}
+        {/* Tab 4: Bài nộp (Exercise Submissions) */}
         <TabsContent value="submissions" className="space-y-4">
-          <h2 className="text-lg font-bold text-foreground">Lịch sử nộp bài & Điểm số</h2>
+          <h2 className="text-lg font-bold text-foreground">Lịch sử nộp bài tập</h2>
           {submissions.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                Bạn chưa nộp bài tập nào cho lớp học này.
+                <p className="font-medium">Chưa có bài tập nào được nộp.</p>
+                <p className="text-xs mt-1">Hoàn thành bài tập trong tab Bài học để thấy lịch sử ở đây.</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {submissions.map((sub) => (
-                <Card key={sub.id} className="border border-border">
+                <Card key={sub.id} className="border hover:shadow-sm transition-shadow">
                   <CardContent className="p-4 space-y-3">
+                    {/* Header row */}
                     <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <p className="font-semibold text-sm md:text-base text-foreground">
-                          {sub.exercise?.title_vi || 'Bài làm tập làm văn/phát âm'}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm md:text-base text-foreground truncate">
+                          {sub.exercise?.title_vi || 'Bài tập'}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           Nộp lúc: {formatWithJST(sub.submitted_at, true)}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
                         {sub.status === 'graded' ? (
                           <div className="space-y-1">
-                            <Badge className="bg-green-500/10 text-green-600 border-green-200">
-                              Đã chấm điểm
-                            </Badge>
-                            <p className="text-base font-extrabold text-primary pt-0.5">
-                              {sub.score}/100
+                            <Badge className="bg-green-500/10 text-green-600 border-green-200 border">✅ Đã chấm</Badge>
+                            <p className="text-xl font-extrabold text-primary">
+                              {sub.score ?? '—'}<span className="text-xs text-muted-foreground font-normal">/100</span>
                             </p>
                           </div>
+                        ) : sub.status === 'reviewed' ? (
+                          <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 border">🔵 Đã xem xét</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200">
-                            Chờ chấm điểm
-                          </Badge>
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 border-yellow-200">⏳ Chờ chấm</Badge>
                         )}
                       </div>
                     </div>
 
-                    <div className="bg-muted/40 p-3 rounded-lg text-xs md:text-sm text-muted-foreground whitespace-pre-wrap border">
-                      <strong>Nội dung bài làm:</strong>
-                      <p className="mt-1 bg-background p-2 rounded border">{sub.content}</p>
-                    </div>
+                    {/* Content */}
+                    {sub.content && (
+                      <div className="bg-muted/40 p-3 rounded-lg text-sm text-foreground border">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1.5">Nội dung bài làm:</p>
+                        <p className="whitespace-pre-wrap leading-relaxed">{sub.content}</p>
+                      </div>
+                    )}
 
+                    {/* Teacher feedback */}
                     {sub.feedback && (
-                      <div className="bg-primary/5 border border-primary/20 p-3 rounded-lg text-xs md:text-sm text-foreground space-y-1">
-                        <span className="font-bold flex items-center gap-1 text-primary">
-                          <MessageSquare className="w-3.5 h-3.5" /> Nhận xét từ Giáo viên:
+                      <div className="bg-primary/5 border border-primary/20 p-3 rounded-lg text-sm space-y-1">
+                        <span className="font-bold flex items-center gap-1.5 text-primary text-xs">
+                          <MessageSquare className="w-3.5 h-3.5" /> Nhận xét từ Giáo viên
                         </span>
-                        <p className="italic text-muted-foreground pl-4">"{sub.feedback}"</p>
+                        <p className="text-muted-foreground italic leading-relaxed pl-1">"{sub.feedback}"</p>
                       </div>
                     )}
                   </CardContent>
