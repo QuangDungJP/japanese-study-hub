@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,15 +8,18 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
   X, ClipboardList, ListChecks, CalendarClock, CheckCircle2, ArrowRight, ArrowLeft,
   Wand2, Sparkles, Plus, Trash2, Copy, Loader2, Users, CircleDot, ToggleRight,
-  Type, AlignLeft, GripVertical, AlertCircle,
+  Type, AlignLeft, GripVertical, Clipboard, Music, Upload, Volume2, Timer,
+  Infinity as InfinityIcon, Clock,
 } from 'lucide-react';
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay';
+export type TimerMode = 'none' | 'stopwatch' | 'countdown';
 
 export interface ExamQuestion {
   _key?: string;
@@ -27,6 +30,7 @@ export interface ExamQuestion {
   accepted_answers?: string[];
   explanation?: string;
   points?: number;
+  audio_url?: string;
 }
 
 interface ClassOption { id: string; name: string }
@@ -104,9 +108,229 @@ const normalizeQuestion = (q: any): ExamQuestion => {
     accepted_answers: Array.isArray(q?.accepted_answers) ? q.accepted_answers : undefined,
     explanation: q?.explanation || '',
     points: typeof q?.points === 'number' ? q.points : 1,
+    audio_url: q?.audio_url || undefined,
   };
 };
 
+// ─── Parse paste text into option lines ────────────────────────────────────────
+const parsePasteLines = (text: string): string[] =>
+  text
+    .split(/\r?\n/)
+    .map((l) => {
+      // Strip leading A. / A) / A: / A、 / 1. / 1) patterns
+      return l.replace(/^[A-Fa-f1-6][.)、:．]\s*/u, '').trim();
+    })
+    .filter((l) => l.length > 0);
+
+// ─── Quick Paste Popover ────────────────────────────────────────────────────────
+interface QuickPasteProps {
+  onPaste: (lines: string[]) => void;
+}
+const QuickPastePopover = ({ onPaste }: QuickPasteProps) => {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+
+  const apply = () => {
+    const lines = parsePasteLines(text);
+    if (lines.length >= 2) {
+      onPaste(lines);
+      setText('');
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-xs border-dashed border-primary/40 text-primary hover:bg-primary/10"
+          title="Paste nhanh nhiều đáp án từ Word/Excel"
+        >
+          <Clipboard className="w-3.5 h-3.5" />
+          Paste nhanh
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-3 space-y-3" align="start">
+        <div>
+          <p className="text-sm font-semibold mb-1">📋 Paste nhanh đáp án</p>
+          <p className="text-xs text-muted-foreground">
+            Dán 4 đáp án từ Word/Excel vào đây (mỗi dòng = 1 đáp án). Hệ thống tự phân vào A, B, C, D.
+          </p>
+        </div>
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            // Auto-apply right after paste if multi-line
+            const pasted = e.clipboardData?.getData('text') || '';
+            const lines = parsePasteLines(pasted);
+            if (lines.length >= 2) {
+              e.preventDefault();
+              onPaste(lines);
+              setText('');
+              setOpen(false);
+            }
+          }}
+          rows={5}
+          placeholder={`ゆうべ\nきのう\nあした\nおととい`}
+          className="font-mono text-sm resize-none"
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className="flex-1"
+            onClick={apply}
+            disabled={parsePasteLines(text).length < 2}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+            Áp dụng ({parsePasteLines(text).length} đáp án)
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+            Hủy
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+// ─── Audio Upload per Question ──────────────────────────────────────────────────
+interface AudioUploadProps {
+  audioUrl?: string;
+  onChange: (url: string | undefined) => void;
+}
+const AudioUpload = ({ audioUrl, onChange }: AudioUploadProps) => {
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith('audio/')) {
+      toast({ title: 'Chỉ chấp nhận file âm thanh (MP3, WAV…)', variant: 'destructive' });
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'mp3';
+      const path = `exam-audio/${Date.now()}-${generateKey()}.${ext}`;
+      const { error } = await supabase.storage.from('exam-audio').upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from('exam-audio').getPublicUrl(path);
+      onChange(data.publicUrl);
+      toast({ title: '✅ Đã tải lên file âm thanh' });
+    } catch (e: any) {
+      toast({ title: 'Lỗi upload audio', description: e.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="audio/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
+      />
+      {audioUrl ? (
+        <div className="flex items-center gap-2 flex-1 min-w-0 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2">
+          <Volume2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <audio controls src={audioUrl} className="h-8 flex-1 min-w-0" style={{ maxWidth: '100%' }} />
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="text-muted-foreground hover:text-destructive shrink-0"
+            title="Xóa audio"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-xs border-dashed"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Music className="w-3.5 h-3.5" />
+          )}
+          {uploading ? 'Đang tải...' : 'Thêm Audio 🎵'}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+// ─── Timer Mode Card Selector ──────────────────────────────────────────────────
+interface TimerModeCardProps {
+  value: TimerMode;
+  onChange: (v: TimerMode) => void;
+}
+const TimerModeCard = ({ value, onChange }: TimerModeCardProps) => {
+  const options: { v: TimerMode; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
+    {
+      v: 'none',
+      label: 'Không bấm giờ',
+      desc: 'Không hiển thị đồng hồ',
+      icon: <X className="w-5 h-5" />,
+      color: 'text-muted-foreground',
+    },
+    {
+      v: 'stopwatch',
+      label: 'Đếm thời gian',
+      desc: 'Đếm lên – học viên làm bao lâu cũng được',
+      icon: <Timer className="w-5 h-5" />,
+      color: 'text-blue-500',
+    },
+    {
+      v: 'countdown',
+      label: 'Giới hạn thời gian',
+      desc: 'Đếm ngược – hết giờ tự động nộp bài',
+      icon: <Clock className="w-5 h-5" />,
+      color: 'text-orange-500',
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {options.map((opt) => {
+        const active = value === opt.v;
+        return (
+          <button
+            key={opt.v}
+            type="button"
+            onClick={() => onChange(opt.v)}
+            className={`rounded-xl border-2 p-4 text-left transition-all space-y-1.5 ${
+              active
+                ? 'border-primary bg-primary/10 shadow-md'
+                : 'border-border hover:border-primary/40 hover:bg-muted/50'
+            }`}
+          >
+            <div className={`${active ? 'text-primary' : opt.color}`}>{opt.icon}</div>
+            <p className={`font-semibold text-sm ${active ? 'text-primary' : 'text-foreground'}`}>
+              {opt.label}
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{opt.desc}</p>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── Main ExamBuilder ──────────────────────────────────────────────────────────
 const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved }: Props) => {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -130,6 +354,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [examDate, setExamDate] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [duration, setDuration] = useState(60);
+  const [timerMode, setTimerMode] = useState<TimerMode>('countdown');
   const [maxScore, setMaxScore] = useState(100);
   const [passingScore, setPassingScore] = useState(50);
   const [startsAt, setStartsAt] = useState('');
@@ -173,6 +398,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setExamDate(initial?.exam_date || new Date().toISOString().slice(0, 10));
       setStartTime(initial?.start_time || '09:00');
       setDuration(initial?.duration_minutes || 60);
+      setTimerMode((initial?.timer_mode as TimerMode) || 'countdown');
       setMaxScore(initial?.max_score ?? 100);
       setPassingScore(initial?.passing_score ?? 50);
       setStartsAt(initial?.starts_at ? initial.starts_at.slice(0, 16) : '');
@@ -189,7 +415,6 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const totalPoints = useMemo(() => questions.reduce((s, q) => s + (q.points || 0), 0), [questions]);
   const autoGraded = useMemo(() => questions.filter((q) => questionTypeMeta[q.type].auto).length, [questions]);
 
-  // Keep max score in sync with question points when they add up to something meaningful
   useEffect(() => {
     if (totalPoints > 0) setMaxScore(totalPoints);
   }, [totalPoints]);
@@ -238,6 +463,36 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
+
+  // ── Smart paste handler ──────────────────────────────────────────────────────
+  const handleOptionPaste = useCallback(
+    (qIndex: number, optStartIndex: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+      const text = e.clipboardData?.getData('text') || '';
+      const lines = parsePasteLines(text);
+      if (lines.length < 2) return; // single line – normal paste
+
+      e.preventDefault();
+      setQuestions((arr) =>
+        arr.map((q, idx) => {
+          if (idx !== qIndex) return q;
+          const newOptions = [...q.options];
+          lines.forEach((line, li) => {
+            const targetIdx = optStartIndex + li;
+            if (targetIdx < 6) {
+              if (targetIdx >= newOptions.length) newOptions.push(line);
+              else newOptions[targetIdx] = line;
+            }
+          });
+          return { ...q, options: newOptions };
+        })
+      );
+      toast({
+        title: `✅ Đã điền ${lines.length} đáp án`,
+        description: 'Paste thông minh từ clipboard',
+      });
+    },
+    [toast]
+  );
 
   const runAI = async (action: 'exam_generate' | 'exam_questions', extra: any = {}) => {
     if (!title.trim() && !titleVi.trim()) {
@@ -327,7 +582,6 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     }
 
     setSaving(true);
-    // Strip internal UI _key before saving to database
     const cleanQuestions = questions.map(({ _key, ...q }) => q);
 
     const base: any = {
@@ -339,7 +593,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       exam_type: examType,
       exam_date: examDate,
       start_time: startTime,
-      duration_minutes: duration,
+      duration_minutes: timerMode === 'countdown' ? duration : null,
+      timer_mode: timerMode,
       meet_link: meetLink || null,
       max_score: maxScore,
       passing_score: passingScore,
@@ -420,6 +675,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
+          {/* ── Step 1: Cơ bản ── */}
           {step === 1 && (
             <div className="space-y-5 max-w-2xl mx-auto">
               <div>
@@ -497,8 +753,10 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
             </div>
           )}
 
+          {/* ── Step 2: Câu hỏi ── */}
           {step === 2 && (
             <div className="space-y-4 max-w-3xl mx-auto">
+              {/* Toolbar */}
               <div className="flex items-center justify-between gap-2 flex-wrap sticky -top-6 bg-background/95 backdrop-blur py-2 z-10">
                 <div className="flex items-center gap-2 text-sm">
                   <Badge variant="outline" className="gap-1"><ListChecks className="w-3 h-3" />{questions.length} câu</Badge>
@@ -545,40 +803,71 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                             <Input type="number" min={0} className="w-16 h-8" value={q.points ?? 0} onChange={(e) => patchQ(i, { points: parseInt(e.target.value) || 0 })} />
                           </div>
                         </div>
+
                         <Textarea value={q.text} onChange={(e) => patchQ(i, { text: e.target.value })} rows={2} placeholder="Nội dung câu hỏi…" />
 
+                        {/* ── Audio upload ── */}
+                        <AudioUpload
+                          audioUrl={q.audio_url}
+                          onChange={(url) => patchQ(i, { audio_url: url || undefined })}
+                        />
+
                         {(q.type === 'multiple_choice' || q.type === 'true_false') && (
-                          <div className="grid sm:grid-cols-2 gap-2">
-                            {q.options.map((opt, oi) => (
-                              <div key={oi} className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => patchQ(i, { correct_index: oi })}
-                                  className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 ${
-                                    q.correct_index === oi ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-muted-foreground/40'
-                                  }`}
-                                >
-                                  {String.fromCharCode(65 + oi)}
-                                </button>
-                                <Input
-                                  value={opt}
-                                  onChange={(e) => { const arr = [...q.options]; arr[oi] = e.target.value; patchQ(i, { options: arr }); }}
-                                  placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`}
-                                  disabled={q.type === 'true_false'}
-                                  className="h-8"
+                          <div className="space-y-2">
+                            {/* Smart paste hint */}
+                            {q.type === 'multiple_choice' && (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-xs text-muted-foreground flex-1">
+                                  💡 Paste nhiều dòng vào ô bất kỳ → tự điền A B C D
+                                </p>
+                                <QuickPastePopover
+                                  onPaste={(lines) => {
+                                    const newOptions = [...q.options];
+                                    lines.forEach((line, li) => {
+                                      if (li < 6) {
+                                        if (li >= newOptions.length) newOptions.push(line);
+                                        else newOptions[li] = line;
+                                      }
+                                    });
+                                    patchQ(i, { options: newOptions });
+                                    toast({ title: `✅ Đã điền ${Math.min(lines.length, 6)} đáp án` });
+                                  }}
                                 />
-                                {q.type === 'multiple_choice' && q.options.length > 2 && (
-                                  <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => removeOption(i, oi)}>
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
                               </div>
-                            ))}
-                            {q.type === 'multiple_choice' && q.options.length < 6 && (
-                              <Button type="button" variant="ghost" size="sm" className="h-8 justify-start text-muted-foreground" onClick={() => patchQ(i, { options: [...q.options, ''] })}>
-                                <Plus className="w-3.5 h-3.5 mr-1" />Thêm đáp án
-                              </Button>
                             )}
+                            <div className="grid sm:grid-cols-2 gap-2">
+                              {q.options.map((opt, oi) => (
+                                <div key={oi} className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => patchQ(i, { correct_index: oi })}
+                                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 ${
+                                      q.correct_index === oi ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-muted-foreground/40'
+                                    }`}
+                                  >
+                                    {String.fromCharCode(65 + oi)}
+                                  </button>
+                                  <Input
+                                    value={opt}
+                                    onChange={(e) => { const arr = [...q.options]; arr[oi] = e.target.value; patchQ(i, { options: arr }); }}
+                                    onPaste={(e) => handleOptionPaste(i, oi, e)}
+                                    placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`}
+                                    disabled={q.type === 'true_false'}
+                                    className="h-8"
+                                  />
+                                  {q.type === 'multiple_choice' && q.options.length > 2 && (
+                                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => removeOption(i, oi)}>
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              {q.type === 'multiple_choice' && q.options.length < 6 && (
+                                <Button type="button" variant="ghost" size="sm" className="h-8 justify-start text-muted-foreground" onClick={() => patchQ(i, { options: [...q.options, ''] })}>
+                                  <Plus className="w-3.5 h-3.5 mr-1" />Thêm đáp án
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         )}
 
@@ -622,8 +911,42 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
             </div>
           )}
 
+          {/* ── Step 3: Lịch & Giao ── */}
           {step === 3 && (
             <div className="space-y-6 max-w-2xl mx-auto">
+
+              {/* ── Timer Mode ── */}
+              <div className="space-y-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Timer className="w-3.5 h-3.5" />Chế độ bấm giờ
+                </Label>
+                <TimerModeCard value={timerMode} onChange={setTimerMode} />
+                {timerMode === 'countdown' && (
+                  <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3">
+                    <Clock className="w-4 h-4 text-orange-500 shrink-0" />
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="text-sm font-medium text-orange-700 dark:text-orange-400">Thời gian làm bài:</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={duration}
+                        onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
+                        className="w-24 h-8 font-bold"
+                      />
+                      <span className="text-sm text-orange-600 dark:text-orange-400">phút</span>
+                    </div>
+                  </div>
+                )}
+                {timerMode === 'stopwatch' && (
+                  <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3">
+                    <Timer className="w-4 h-4 text-blue-500 shrink-0" />
+                    <p className="text-sm text-blue-700 dark:text-blue-400">
+                      Đồng hồ đếm lên sẽ hiển thị khi học viên làm bài. Không có giới hạn thời gian.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Ngày kiểm tra *</Label>
@@ -634,8 +957,17 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                   <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Thời lượng (phút)</Label>
-                  <Input type="number" min={1} value={duration} onChange={(e) => setDuration(parseInt(e.target.value) || 0)} className="mt-1" />
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {timerMode === 'none' || timerMode === 'stopwatch' ? 'Thời lượng dự kiến (phút)' : 'Thời gian làm bài (phút)'}
+                  </Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={duration}
+                    onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
+                    className="mt-1"
+                    disabled={timerMode === 'countdown'}
+                  />
                 </div>
               </div>
 
