@@ -362,6 +362,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [shuffle, setShuffle] = useState(false);
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [isPublished, setIsPublished] = useState(false);
+  const [antiCheat, setAntiCheat] = useState(false);
+  const [antiCheatMaxViolations, setAntiCheatMaxViolations] = useState(3);
+  const [showAnswersAfter, setShowAnswersAfter] = useState(true);
   const [primaryClass, setPrimaryClass] = useState<string>('all');
   const [extraClassIds, setExtraClassIds] = useState<string[]>([]);
 
@@ -406,6 +409,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setShuffle(initial?.shuffle_questions ?? false);
       setMaxAttempts(initial?.max_attempts ?? 1);
       setIsPublished(initial?.is_published ?? false);
+      setAntiCheat(initial?.anti_cheat ?? false);
+      setAntiCheatMaxViolations(initial?.anti_cheat_max_violations ?? 3);
+      setShowAnswersAfter(initial?.show_answers_after ?? true);
       setPrimaryClass(initial?.class_id || 'all');
       setExtraClassIds([]);
     }
@@ -604,6 +610,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       lock_after_end: lockAfterEnd,
       shuffle_questions: shuffle,
       max_attempts: maxAttempts,
+      anti_cheat: antiCheat,
+      anti_cheat_max_violations: antiCheatMaxViolations,
+      show_answers_after: showAnswersAfter,
       questions: cleanQuestions as any,
     };
     const sb: any = supabase;
@@ -1041,6 +1050,32 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                   <div><p className="font-medium text-sm">Xáo trộn câu hỏi</p><p className="text-xs text-muted-foreground">Mỗi học viên thấy thứ tự khác nhau.</p></div>
                   <Switch checked={shuffle} onCheckedChange={setShuffle} />
                 </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="font-medium text-sm">Hiện đáp án sau khi nộp</p>
+                    <p className="text-xs text-muted-foreground">Học viên có thể xem câu đúng/sai và giải thích.</p>
+                  </div>
+                  <Switch checked={showAnswersAfter} onCheckedChange={setShowAnswersAfter} />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3 border-red-500/30 bg-red-500/5">
+                  <div>
+                    <p className="font-medium text-sm flex items-center gap-1.5">🛡️ Chống gian lận (Anti-cheat)</p>
+                    <p className="text-xs text-muted-foreground">Cảnh báo khi học viên chuyển tab / rời khỏi cửa sổ bài thi.</p>
+                  </div>
+                  <Switch checked={antiCheat} onCheckedChange={setAntiCheat} />
+                </div>
+                {antiCheat && (
+                  <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 ml-4">
+                    <p className="text-sm text-red-700 dark:text-red-400 flex-1">Tự nộp bài sau</p>
+                    <Input
+                      type="number" min={1} max={10}
+                      value={antiCheatMaxViolations}
+                      onChange={(e) => setAntiCheatMaxViolations(Math.max(1, parseInt(e.target.value) || 3))}
+                      className="w-20 h-8"
+                    />
+                    <p className="text-sm text-red-700 dark:text-red-400">lần vi phạm</p>
+                  </div>
+                )}
                 <div className="flex items-center justify-between rounded-lg border p-3 border-primary/30 bg-primary/5">
                   <div><p className="font-medium text-sm">Công bố ngay</p><p className="text-xs text-muted-foreground">Học viên có thể vào làm bài.</p></div>
                   <Switch checked={isPublished} onCheckedChange={setIsPublished} />
