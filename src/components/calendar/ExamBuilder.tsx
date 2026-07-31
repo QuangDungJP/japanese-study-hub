@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,13 @@ import { useToast } from '@/hooks/use-toast';
 import {
   X, ClipboardList, ListChecks, CalendarClock, CheckCircle2, ArrowRight, ArrowLeft,
   Wand2, Sparkles, Plus, Trash2, Copy, Loader2, Users, CircleDot, ToggleRight,
-  Type, AlignLeft, GripVertical,
+  Type, AlignLeft, GripVertical, AlertCircle,
 } from 'lucide-react';
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay';
 
 export interface ExamQuestion {
+  _key?: string;
   type: QuestionType;
   text: string;
   options: string[];
@@ -52,20 +53,54 @@ const questionTypeMeta: Record<QuestionType, { label: string; icon: typeof Circl
   essay: { label: 'Tự luận', icon: AlignLeft, auto: false },
 };
 
+const generateKey = () => Math.random().toString(36).substring(2, 9);
+
 const emptyQuestion = (type: QuestionType = 'multiple_choice'): ExamQuestion => {
-  if (type === 'true_false') return { type, text: '', options: ['Đúng', 'Sai'], correct_index: 0, points: 1, explanation: '' };
-  if (type === 'short_answer') return { type, text: '', options: [], correct_index: 0, accepted_answers: [''], points: 1, explanation: '' };
-  if (type === 'essay') return { type, text: '', options: [], correct_index: 0, points: 5, explanation: '' };
-  return { type, text: '', options: ['', '', '', ''], correct_index: 0, points: 1, explanation: '' };
+  const _key = generateKey();
+  if (type === 'true_false') return { _key, type, text: '', options: ['Đúng', 'Sai'], correct_index: 0, points: 1, explanation: '' };
+  if (type === 'short_answer') return { _key, type, text: '', options: [], correct_index: 0, accepted_answers: [''], points: 1, explanation: '' };
+  if (type === 'essay') return { _key, type, text: '', options: [], correct_index: 0, points: 5, explanation: '' };
+  return { _key, type, text: '', options: ['', '', '', ''], correct_index: 0, points: 1, explanation: '' };
 };
 
 const normalizeQuestion = (q: any): ExamQuestion => {
   const type: QuestionType = q?.type || 'multiple_choice';
+  let options: string[] = Array.isArray(q?.options) ? [...q.options] : [];
+
+  if (type === 'true_false') {
+    if (options.length !== 2) options = ['Đúng', 'Sai'];
+  } else if (type === 'multiple_choice') {
+    if (options.length < 2) {
+      options = ['', '', '', ''];
+    }
+  }
+
+  let correctIdx = 0;
+  if (typeof q?.correct_index === 'number') {
+    correctIdx = q.correct_index;
+  } else if (typeof q?.correct_index === 'string' && !isNaN(parseInt(q.correct_index))) {
+    correctIdx = parseInt(q.correct_index);
+  } else if (typeof q?.correct_answer === 'number') {
+    correctIdx = q.correct_answer;
+  } else if (typeof q?.correct_answer === 'string') {
+    const letter = q.correct_answer.toUpperCase().trim();
+    if (['A', 'B', 'C', 'D', 'E', 'F'].includes(letter)) {
+      correctIdx = letter.charCodeAt(0) - 65;
+    }
+  }
+
+  if (options.length > 0) {
+    correctIdx = Math.max(0, Math.min(correctIdx, options.length - 1));
+  } else {
+    correctIdx = 0;
+  }
+
   return {
+    _key: q?._key || generateKey(),
     type,
     text: q?.text || '',
-    options: Array.isArray(q?.options) ? q.options : type === 'true_false' ? ['Đúng', 'Sai'] : [],
-    correct_index: typeof q?.correct_index === 'number' ? q.correct_index : 0,
+    options,
+    correct_index: correctIdx,
     accepted_answers: Array.isArray(q?.accepted_answers) ? q.accepted_answers : undefined,
     explanation: q?.explanation || '',
     points: typeof q?.points === 'number' ? q.points : 1,
@@ -108,31 +143,47 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
 
   const isEdit = !!initial?.id;
 
+  const prevOpenRef = useRef(false);
+  const prevInitialIdRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
-    if (!open) return;
-    setStep(1);
-    setTitle(initial?.title || '');
-    setTitleVi(initial?.title_vi || '');
-    setExamType(initial?.exam_type || 'quiz');
-    setLevel('N5');
-    setInstructions(initial?.instructions || '');
-    setDescriptionVi(initial?.description_vi || '');
-    setMeetLink(initial?.meet_link || '');
-    setVideoUrl(initial?.video_url || '');
-    setQuestions(Array.isArray(initial?.questions) ? initial.questions.map(normalizeQuestion) : []);
-    setExamDate(initial?.exam_date || new Date().toISOString().slice(0, 10));
-    setStartTime(initial?.start_time || '09:00');
-    setDuration(initial?.duration_minutes || 60);
-    setMaxScore(initial?.max_score ?? 100);
-    setPassingScore(initial?.passing_score ?? 50);
-    setStartsAt(initial?.starts_at ? initial.starts_at.slice(0, 16) : '');
-    setEndsAt(initial?.ends_at ? initial.ends_at.slice(0, 16) : '');
-    setLockAfterEnd(initial?.lock_after_end ?? true);
-    setShuffle(initial?.shuffle_questions ?? false);
-    setMaxAttempts(initial?.max_attempts ?? 1);
-    setIsPublished(initial?.is_published ?? false);
-    setPrimaryClass(initial?.class_id || 'all');
-    setExtraClassIds([]);
+    if (!open) {
+      prevOpenRef.current = false;
+      return;
+    }
+
+    const isNewOpen = !prevOpenRef.current;
+    const initialId = initial?.id;
+    const isDifferentExam = initialId !== prevInitialIdRef.current;
+
+    if (isNewOpen || isDifferentExam) {
+      prevOpenRef.current = true;
+      prevInitialIdRef.current = initialId;
+
+      setStep(1);
+      setTitle(initial?.title || '');
+      setTitleVi(initial?.title_vi || '');
+      setExamType(initial?.exam_type || 'quiz');
+      setLevel('N5');
+      setInstructions(initial?.instructions || '');
+      setDescriptionVi(initial?.description_vi || '');
+      setMeetLink(initial?.meet_link || '');
+      setVideoUrl(initial?.video_url || '');
+      setQuestions(Array.isArray(initial?.questions) ? initial.questions.map(normalizeQuestion) : []);
+      setExamDate(initial?.exam_date || new Date().toISOString().slice(0, 10));
+      setStartTime(initial?.start_time || '09:00');
+      setDuration(initial?.duration_minutes || 60);
+      setMaxScore(initial?.max_score ?? 100);
+      setPassingScore(initial?.passing_score ?? 50);
+      setStartsAt(initial?.starts_at ? initial.starts_at.slice(0, 16) : '');
+      setEndsAt(initial?.ends_at ? initial.ends_at.slice(0, 16) : '');
+      setLockAfterEnd(initial?.lock_after_end ?? true);
+      setShuffle(initial?.shuffle_questions ?? false);
+      setMaxAttempts(initial?.max_attempts ?? 1);
+      setIsPublished(initial?.is_published ?? false);
+      setPrimaryClass(initial?.class_id || 'all');
+      setExtraClassIds([]);
+    }
   }, [open, initial]);
 
   const totalPoints = useMemo(() => questions.reduce((s, q) => s + (q.points || 0), 0), [questions]);
@@ -152,7 +203,33 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const addQuestion = (type: QuestionType = 'multiple_choice') => setQuestions((a) => [...a, emptyQuestion(type)]);
   const removeQuestion = (i: number) => setQuestions((a) => a.filter((_, idx) => idx !== i));
   const duplicateQuestion = (i: number) =>
-    setQuestions((a) => [...a.slice(0, i + 1), { ...a[i], options: [...a[i].options], accepted_answers: a[i].accepted_answers ? [...a[i].accepted_answers!] : undefined }, ...a.slice(i + 1)]);
+    setQuestions((a) => [
+      ...a.slice(0, i + 1),
+      {
+        ...a[i],
+        _key: generateKey(),
+        options: [...a[i].options],
+        accepted_answers: a[i].accepted_answers ? [...a[i].accepted_answers!] : undefined,
+      },
+      ...a.slice(i + 1),
+    ]);
+
+  const removeOption = (qIndex: number, optIndex: number) => {
+    setQuestions((arr) =>
+      arr.map((q, idx) => {
+        if (idx !== qIndex) return q;
+        const newOptions = q.options.filter((_, x) => x !== optIndex);
+        let newCorrect = q.correct_index;
+        if (optIndex < q.correct_index) {
+          newCorrect = Math.max(0, q.correct_index - 1);
+        } else if (optIndex === q.correct_index) {
+          newCorrect = Math.min(q.correct_index, newOptions.length - 1);
+        }
+        return { ...q, options: newOptions, correct_index: Math.max(0, newCorrect) };
+      })
+    );
+  };
+
   const moveQuestion = (i: number, dir: -1 | 1) =>
     setQuestions((a) => {
       const j = i + dir;
@@ -189,9 +266,49 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   };
 
   const validate = () => {
-    if (!titleVi.trim() && !title.trim()) return 'Vui lòng nhập tiêu đề';
-    if (!examDate) return 'Chọn ngày kiểm tra';
+    if (!titleVi.trim() && !title.trim()) return 'Vui lòng nhập tiêu đề bài kiểm tra';
+    if (!examDate) return 'Vui lòng chọn ngày kiểm tra';
     return null;
+  };
+
+  const validateQuestions = () => {
+    if (questions.length === 0) return 'Vui lòng thêm ít nhất 1 câu hỏi';
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.text.trim()) {
+        return `Câu ${i + 1}: Vui lòng nhập nội dung câu hỏi`;
+      }
+      if (q.type === 'multiple_choice') {
+        const nonEmptyOpts = q.options.filter((o) => o.trim().length > 0);
+        if (nonEmptyOpts.length < 2) {
+          return `Câu ${i + 1}: Cần ít nhất 2 đáp án không để trống`;
+        }
+      }
+      if (q.type === 'short_answer') {
+        const validAnswers = (q.accepted_answers || []).filter((a) => a.trim().length > 0);
+        if (validAnswers.length === 0) {
+          return `Câu ${i + 1}: Vui lòng nhập ít nhất 1 đáp án được chấp nhận`;
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleNextStep = () => {
+    if (step === 1) {
+      if (!title.trim() && !titleVi.trim()) {
+        toast({ title: 'Vui lòng nhập tiêu đề bài kiểm tra', variant: 'destructive' });
+        return;
+      }
+      setStep(2);
+    } else if (step === 2) {
+      const qErr = validateQuestions();
+      if (qErr) {
+        toast({ title: qErr, variant: 'destructive' });
+        return;
+      }
+      setStep(3);
+    }
   };
 
   const save = async () => {
@@ -201,7 +318,18 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setStep(!titleVi.trim() && !title.trim() ? 1 : 3);
       return;
     }
+
+    const qErr = validateQuestions();
+    if (qErr) {
+      toast({ title: qErr, variant: 'destructive' });
+      setStep(2);
+      return;
+    }
+
     setSaving(true);
+    // Strip internal UI _key before saving to database
+    const cleanQuestions = questions.map(({ _key, ...q }) => q);
+
     const base: any = {
       title: (title || titleVi).trim(),
       title_vi: (titleVi || title).trim(),
@@ -222,7 +350,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       lock_after_end: lockAfterEnd,
       shuffle_questions: shuffle,
       max_attempts: maxAttempts,
-      questions: questions as any,
+      questions: cleanQuestions as any,
     };
     const sb: any = supabase;
     let error: any = null;
@@ -241,7 +369,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     }
     setSaving(false);
     if (error) {
-      toast({ title: 'Lỗi lưu', description: error.message, variant: 'destructive' });
+      toast({ title: 'Lỗi lưu bài kiểm tra', description: error.message, variant: 'destructive' });
       return;
     }
     toast({ title: isEdit ? 'Đã cập nhật bài kiểm tra' : 'Đã tạo bài kiểm tra' });
@@ -395,7 +523,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                 const meta = questionTypeMeta[q.type];
                 const TypeIcon = meta.icon;
                 return (
-                  <div key={i} className="rounded-xl border-2 bg-card p-4 space-y-3">
+                  <div key={q._key || i} className="rounded-xl border-2 bg-card p-4 space-y-3">
                     <div className="flex items-start gap-2">
                       <div className="flex flex-col items-center gap-1 pt-1">
                         <button type="button" className="text-muted-foreground hover:text-foreground disabled:opacity-30" onClick={() => moveQuestion(i, -1)} disabled={i === 0}><GripVertical className="w-4 h-4" /></button>
@@ -440,10 +568,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                                   className="h-8"
                                 />
                                 {q.type === 'multiple_choice' && q.options.length > 2 && (
-                                  <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => {
-                                    const arr = q.options.filter((_, x) => x !== oi);
-                                    patchQ(i, { options: arr, correct_index: Math.min(q.correct_index, arr.length - 1) });
-                                  }}><X className="w-3.5 h-3.5" /></button>
+                                  <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => removeOption(i, oi)}>
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
                                 )}
                               </div>
                             ))}
@@ -630,7 +757,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
           </Button>
           <div className="flex items-center gap-2">
             {step < 3 ? (
-              <Button type="button" onClick={() => canNext && setStep(step + 1)} disabled={!canNext}>
+              <Button type="button" onClick={handleNextStep}>
                 Tiếp tục<ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
