@@ -783,6 +783,14 @@ const ExamRunner = () => {
   };
 
   const maxVio = exam.anti_cheat_max_violations || 3;
+  const penalty = exam.anti_cheat_penalty || 'auto_submit';
+
+  const penaltyLabel: Record<string, string> = {
+    warn_only: 'Chỉ cảnh báo — không bị phạt.',
+    auto_submit: `Sau ${maxVio} lần → tự động nộp bài.`,
+    reset_answers: `Sau ${maxVio} lần → xóa hết câu trả lời, làm lại từ đầu.`,
+    deduct_points: `Mỗi lần → trừ ${exam.anti_cheat_deduct_per_violation || 5} điểm. Sau ${maxVio} lần → tự nộp.`,
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -796,14 +804,21 @@ const ExamRunner = () => {
               <p className="text-muted-foreground">
                 Bạn đã rời khỏi cửa sổ bài kiểm tra.
                 <br />
-                <span className="font-bold text-foreground">Vi phạm: {violations}/{maxVio} lần</span>
+                <span className="font-bold text-foreground">Vi phạm: {violations}/{penalty === 'warn_only' ? '∞' : maxVio} lần</span>
               </p>
-              {violations >= maxVio ? (
-                <p className="text-red-500 font-semibold">Đã vượt quá số lần vi phạm — bài kiểm tra đang được nộp…</p>
+              {penalty === 'reset_answers' && violations >= maxVio ? (
+                <p className="text-red-500 font-semibold">🔄 Tất cả câu trả lời đã bị xóa — làm lại từ đầu!</p>
+              ) : penalty !== 'warn_only' && violations >= maxVio ? (
+                <p className="text-red-500 font-semibold">Đã vượt quá giới hạn — bài đang được nộp…</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Sau {maxVio} lần vi phạm, bài sẽ tự động nộp.</p>
+                <p className="text-sm text-muted-foreground">{penaltyLabel[penalty]}</p>
               )}
-              {violations < maxVio && (
+              {penalty === 'deduct_points' && violations > 0 && violations < maxVio && (
+                <p className="text-sm text-red-500 font-medium">
+                  ➖ Đã trừ tổng {violations * (exam.anti_cheat_deduct_per_violation || 5)} điểm
+                </p>
+              )}
+              {(penalty === 'warn_only' || violations < maxVio) && (
                 <Button className="w-full" onClick={() => setShowViolationWarning(false)}>
                   Tôi hiểu, tiếp tục làm bài
                 </Button>
