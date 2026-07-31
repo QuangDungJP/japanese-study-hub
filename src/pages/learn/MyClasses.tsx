@@ -79,9 +79,14 @@ interface Exam {
   exam_type: string;
   exam_date: string;
   start_time: string;
-  duration_minutes: number;
+  duration_minutes: number | null;
+  timer_mode: string | null;
   meet_link: string | null;
   max_score: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  lock_after_end: boolean;
+  is_published: boolean;
 }
 
 interface Submission {
@@ -846,9 +851,15 @@ const MyClasses = () => {
             </Card>
           ) : (
             <div className="space-y-3">
-              {exams.map((exam) => {
-                const examDateTime = new Date(`${exam.exam_date}T${exam.start_time}`);
-                const isLocked = new Date() < examDateTime;
+              {exams.filter(e => e.is_published).map((exam) => {
+                const now = new Date();
+                // Use starts_at if set, otherwise fall back to exam_date+start_time
+                const openTime = exam.starts_at
+                  ? new Date(exam.starts_at)
+                  : new Date(`${exam.exam_date}T${exam.start_time}`);
+                const isLocked = now < openTime;
+                // Check if exam has closed
+                const isClosed = !!(exam.ends_at && exam.lock_after_end && now > new Date(exam.ends_at));
                 return (
                   <Card key={exam.id} className={isLocked ? 'opacity-90 bg-muted/20' : ''}>
                     <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -856,9 +867,13 @@ const MyClasses = () => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="secondary" className="capitalize">{exam.exam_type}</Badge>
                           <p className="font-semibold text-sm sm:text-base text-foreground">{exam.title_vi}</p>
-                          {isLocked ? (
+                          {isClosed ? (
+                            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200 text-xs">
+                              🔴 Đã đóng
+                            </Badge>
+                          ) : isLocked ? (
                             <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">
-                              🔒 Đúng giờ thi mới mở phòng
+                              🕒 Đúng giờ thi mới mở
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 text-xs">
@@ -868,26 +883,40 @@ const MyClasses = () => {
                         </div>
                         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                           <span>Lịch thi: {formatWithJST(`${exam.exam_date}T${exam.start_time}`, true)}</span>
-                          <span>Thời gian: {exam.duration_minutes} phút</span>
+                          <span>Thời gian: {exam.duration_minutes ? `${exam.duration_minutes} phút` : (exam.timer_mode === 'stopwatch' ? 'Bấm giờ' : 'Không giới hạn')}</span>
                         </div>
                       </div>
-                      {exam.meet_link && (
-                        <Button 
-                          size="sm" 
-                          variant={isLocked ? "outline" : "hero"} 
-                          className="gap-2 shrink-0 w-full sm:w-auto font-semibold"
-                          disabled={isLocked}
-                          asChild={!isLocked}
-                        >
-                          {isLocked ? (
-                            <span>🔒 Chưa đến giờ thi</span>
-                          ) : (
+                      <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
+                        {/* Nút làm bài trực tuyến */}
+                        {!isLocked && !isClosed && exam.is_published && (
+                          <Button
+                            size="sm"
+                            variant="hero"
+                            className="gap-2 font-semibold w-full sm:w-auto"
+                            onClick={() => navigate(`/learn/exams/${exam.id}`)}
+                          >
+                            <GraduationCap className="w-4 h-4" /> Vào làm bài
+                          </Button>
+                        )}
+                        {isLocked && (
+                          <Button size="sm" variant="outline" disabled className="gap-2 w-full sm:w-auto">
+                            🔒 Chưa đến giờ thi
+                          </Button>
+                        )}
+                        {/* Nút phòng Zoom nếu có */}
+                        {exam.meet_link && !isLocked && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-2 w-full sm:w-auto"
+                            asChild
+                          >
                             <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
-                              <Video className="w-4 h-4 text-primary" /> Phòng thi Online
+                              <Video className="w-4 h-4" /> Phòng thi Online
                             </a>
-                          )}
-                        </Button>
-                      )}
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 );
