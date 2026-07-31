@@ -51,6 +51,8 @@ interface Exam {
   is_published: boolean;
   anti_cheat: boolean;
   anti_cheat_max_violations: number;
+  anti_cheat_penalty: 'warn_only' | 'auto_submit' | 'reset_answers' | 'deduct_points';
+  anti_cheat_deduct_per_violation: number;
   show_answers_after: boolean;
 }
 
@@ -158,6 +160,9 @@ const ExamRunner = () => {
   useEffect(() => {
     if (!exam?.anti_cheat || result || locked || runMode !== "exam") return;
 
+    const penalty = exam.anti_cheat_penalty || 'auto_submit';
+    const maxVio = exam.anti_cheat_max_violations || 3;
+
     const handleViolation = async () => {
       if (submittedRef.current) return;
       const newCount = violationsRef.current + 1;
@@ -171,7 +176,33 @@ const ExamRunner = () => {
         await supabase.from("exam_attempts").update({ violations: newCount }).eq("id", aid);
       }
 
-      const maxVio = exam.anti_cheat_max_violations || 3;
+      // Apply penalty
+      if (penalty === 'warn_only') {
+        // Just warn, do nothing else
+        return;
+      }
+
+      if (penalty === 'reset_answers' && newCount >= maxVio) {
+        // Reset all answers
+        setAnswers({});
+        toast({ title: "🔄 Vi phạm quá nhiều — tất cả câu trả lời đã bị xóa!", description: "Bạn phải làm lại từ đầu.", variant: "destructive" });
+        violationsRef.current = 0;
+        setViolations(0);
+        if (aid) await supabase.from("exam_attempts").update({ violations: 0, answers: [] }).eq("id", aid);
+        return;
+      }
+
+      if (penalty === 'deduct_points') {
+        const deduct = exam.anti_cheat_deduct_per_violation || 5;
+        toast({ title: `➖ Trừ ${deduct} điểm (lần ${newCount})`, description: `Tổng bị trừ: ${newCount * deduct} điểm`, variant: "destructive" });
+        if (newCount >= maxVio) {
+          toast({ title: "🚫 Đã vượt quá giới hạn — tự động nộp bài!", variant: "destructive" });
+          submit(true);
+        }
+        return;
+      }
+
+      // Default: auto_submit
       if (newCount >= maxVio) {
         toast({ title: "🚫 Đã vượt quá số lần vi phạm — tự động nộp bài!", variant: "destructive" });
         submit(true);
@@ -649,34 +680,84 @@ const ExamRunner = () => {
     );
   }
 
-  // ── Result screen (transition to review) ────────────────────────────────────
+  // ── Result screen (with stats + auto-review) ───────────────────────────────
   if (result && runMode === "exam") {
     const passing = exam.passing_score || 0;
     const passed = result.score >= passing;
     const hasEssay = orderedQuestions.some(q => qType(q) === "essay");
+    const autoGradedQs = orderedQuestions.filter(q => isAutoGraded(q));
+    const correctCount = autoGradedQs.reduce((n, q, _i) => {
+      const origIdx = orderedQuestions.indexOf(q);
+      return n + (gradeQuestion(q, result.submittedAnswers[origIdx]) ? 1 : 0);
+    }, 0);
+    const wrongCount = autoGradedQs.length - correctCount;
+    const essayCount = orderedQuestions.length - autoGradedQs.length;
+    const deductedPoints = (exam.anti_cheat && exam.anti_cheat_penalty === 'deduct_points')
+      ? violations * (exam.anti_cheat_deduct_per_violation || 5)
+      : 0;
+    const finalScore = Math.max(0, result.score - deductedPoints);
+
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto p-6 space-y-6">
         <Card>
-          <CardContent className="py-12 text-center space-y-4">
-            <Trophy className={`w-14 h-14 mx-auto ${passed ? "text-yellow-500" : "text-muted-foreground"}`} />
-            <h2 className="text-2xl font-bold">
-              {result.status === "auto_submitted" ? "Hết giờ — Đã tự nộp" : passed ? "Chúc mừng!" : "Đã nộp bài"}
-            </h2>
-            <p className="text-4xl font-extrabold text-primary">{result.score}/{result.total}</p>
-            {passing > 0 && <p className="text-muted-foreground">Điểm đạt yêu cầu: {passing}</p>}
-            {violations > 0 && <p className="text-sm text-red-500">⚠ Vi phạm: {violations} lần tab switching</p>}
+          <CardContent className="p-6 space-y-5">
+            {/* Score hero */}
+            <div className="text-center">
+              <Trophy className={`w-14 h-14 mx-auto mb-2 ${passed ? "text-yellow-500" : "text-muted-foreground"}`} />
+              <h2 className="text-2xl font-bold">
+                {result.status === "auto_submitted" ? "Hết giờ — Đã tự nộp" : passed ? "🎉 Chúc mừng!" : "Đã nộp bài"}
+              </h2>
+              <p className="text-5xl font-extrabold text-primary mt-2">{deductedPoints > 0 ? finalScore : result.score}/{result.total}</p>
+              {passing > 0 && (
+                <p className={`text-sm mt-1 font-medium ${passed ? "text-green-600" : "text-red-500"}`}>
+                  {passed ? `✓ Đạt (≥ ${passing} điểm)` : `✗ Chưa đạt (cần ≥ ${passing} điểm)`}
+                </p>
+              )}
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-green-50 dark:bg-green-950/20 rounded-xl p-3 text-center border border-green-200 dark:border-green-800">
+                <p className="text-2xl font-extrabold text-green-600">{correctCount}</p>
+                <p className="text-xs text-green-700 dark:text-green-400 font-medium">Câu đúng ✓</p>
+              </div>
+              <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-3 text-center border border-red-200 dark:border-red-800">
+                <p className="text-2xl font-extrabold text-red-500">{wrongCount}</p>
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium">Câu sai ✗</p>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-3 text-center border">
+                <p className="text-2xl font-extrabold text-muted-foreground">{essayCount > 0 ? essayCount : '—'}</p>
+                <p className="text-xs text-muted-foreground font-medium">{essayCount > 0 ? 'Tự luận' : 'Tổng câu'}</p>
+                {essayCount === 0 && <p className="text-lg font-bold text-foreground">{orderedQuestions.length}</p>}
+              </div>
+            </div>
+
+            {/* Violation & deduction info */}
+            {violations > 0 && (
+              <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-3 border border-red-200 dark:border-red-800 text-sm space-y-1">
+                <p className="font-semibold text-red-600 flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4" /> Vi phạm anti-cheat: {violations} lần
+                </p>
+                {deductedPoints > 0 && (
+                  <p className="text-red-500">➖ Trừ {deductedPoints} điểm ({violations} × {exam.anti_cheat_deduct_per_violation || 5}). Điểm gốc: {result.score} → Điểm cuối: {finalScore}</p>
+                )}
+              </div>
+            )}
+
             {hasEssay && (
               <p className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3">
-                ✏️ Bài có câu tự luận — giáo viên sẽ cập nhật điểm sau.
+                ✏️ Bài có câu tự luận — giáo viên sẽ chấm và cập nhật điểm cuối cùng.
               </p>
             )}
-            <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+
+            {/* Action buttons */}
+            <div className="flex flex-col gap-2 pt-2">
               {exam.show_answers_after && (
-                <Button variant="outline" className="gap-2" onClick={() => setRunMode("review")}>
-                  <Eye className="w-4 h-4" /> Xem đáp án & Đánh giá
+                <Button className="w-full gap-2" variant="outline" onClick={() => setRunMode("review")}>
+                  <Eye className="w-4 h-4" /> 📋 Xem đáp án & giải thích chi tiết
                 </Button>
               )}
-              <Button onClick={() => navigate(-1)}>Quay lại</Button>
+              <Button className="w-full" onClick={() => navigate(-1)}>Quay lại</Button>
             </div>
           </CardContent>
         </Card>

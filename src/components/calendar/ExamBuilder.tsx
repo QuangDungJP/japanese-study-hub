@@ -364,6 +364,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [isPublished, setIsPublished] = useState(false);
   const [antiCheat, setAntiCheat] = useState(false);
   const [antiCheatMaxViolations, setAntiCheatMaxViolations] = useState(3);
+  const [antiCheatPenalty, setAntiCheatPenalty] = useState<'warn_only' | 'auto_submit' | 'reset_answers' | 'deduct_points'>('auto_submit');
+  const [antiCheatDeductPerViolation, setAntiCheatDeductPerViolation] = useState(5);
   const [showAnswersAfter, setShowAnswersAfter] = useState(true);
   const [primaryClass, setPrimaryClass] = useState<string>('all');
   const [extraClassIds, setExtraClassIds] = useState<string[]>([]);
@@ -411,6 +413,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setIsPublished(initial?.is_published ?? false);
       setAntiCheat(initial?.anti_cheat ?? false);
       setAntiCheatMaxViolations(initial?.anti_cheat_max_violations ?? 3);
+      setAntiCheatPenalty(initial?.anti_cheat_penalty || 'auto_submit');
+      setAntiCheatDeductPerViolation(initial?.anti_cheat_deduct_per_violation ?? 5);
       setShowAnswersAfter(initial?.show_answers_after ?? true);
       setPrimaryClass(initial?.class_id || 'all');
       setExtraClassIds([]);
@@ -612,6 +616,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       max_attempts: maxAttempts,
       anti_cheat: antiCheat,
       anti_cheat_max_violations: antiCheatMaxViolations,
+      anti_cheat_penalty: antiCheatPenalty,
+      anti_cheat_deduct_per_violation: antiCheatDeductPerViolation,
       show_answers_after: showAnswersAfter,
       questions: cleanQuestions as any,
     };
@@ -1065,15 +1071,53 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                   <Switch checked={antiCheat} onCheckedChange={setAntiCheat} />
                 </div>
                 {antiCheat && (
-                  <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 ml-4">
-                    <p className="text-sm text-red-700 dark:text-red-400 flex-1">Tự nộp bài sau</p>
-                    <Input
-                      type="number" min={1} max={10}
-                      value={antiCheatMaxViolations}
-                      onChange={(e) => setAntiCheatMaxViolations(Math.max(1, parseInt(e.target.value) || 3))}
-                      className="w-20 h-8"
-                    />
-                    <p className="text-sm text-red-700 dark:text-red-400">lần vi phạm</p>
+                  <div className="ml-4 space-y-3 bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-red-700 dark:text-red-400">⚠️ Chế độ xử lý khi vi phạm</Label>
+                      <Select value={antiCheatPenalty} onValueChange={(v: any) => setAntiCheatPenalty(v)}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="warn_only">⚠️ Chỉ cảnh báo (không phạt)</SelectItem>
+                          <SelectItem value="auto_submit">🚫 Tự nộp bài sau N lần vi phạm</SelectItem>
+                          <SelectItem value="reset_answers">🔄 Xóa hết câu trả lời — làm lại từ đầu</SelectItem>
+                          <SelectItem value="deduct_points">➖ Trừ điểm mỗi lần vi phạm</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {antiCheatPenalty !== 'warn_only' && (
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm text-red-700 dark:text-red-400 flex-1">
+                          {antiCheatPenalty === 'deduct_points' ? 'Thực hiện phạt sau' : 'Phạt sau'}
+                        </p>
+                        <Input
+                          type="number" min={1} max={20}
+                          value={antiCheatMaxViolations}
+                          onChange={(e) => setAntiCheatMaxViolations(Math.max(1, parseInt(e.target.value) || 3))}
+                          className="w-20 h-8"
+                        />
+                        <p className="text-sm text-red-700 dark:text-red-400">lần vi phạm</p>
+                      </div>
+                    )}
+                    {antiCheatPenalty === 'deduct_points' && (
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm text-red-700 dark:text-red-400 flex-1">Trừ mỗi lần</p>
+                        <Input
+                          type="number" min={1} max={50}
+                          value={antiCheatDeductPerViolation}
+                          onChange={(e) => setAntiCheatDeductPerViolation(Math.max(1, parseInt(e.target.value) || 5))}
+                          className="w-20 h-8"
+                        />
+                        <p className="text-sm text-red-700 dark:text-red-400">điểm</p>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground italic">
+                      {antiCheatPenalty === 'warn_only' && 'Học viên chỉ bị cảnh báo, số lần vi phạm ghi lại nhưng không bị phạt.'}
+                      {antiCheatPenalty === 'auto_submit' && `Sau ${antiCheatMaxViolations} lần chuyển tab → tự động nộp bài.`}
+                      {antiCheatPenalty === 'reset_answers' && `Sau ${antiCheatMaxViolations} lần chuyển tab → xóa hết câu trả lời, làm lại từ đầu.`}
+                      {antiCheatPenalty === 'deduct_points' && `Mỗi lần chuyển tab → trừ ${antiCheatDeductPerViolation} điểm. Sau ${antiCheatMaxViolations} lần → tự nộp.`}
+                    </p>
                   </div>
                 )}
                 <div className="flex items-center justify-between rounded-lg border p-3 border-primary/30 bg-primary/5">
