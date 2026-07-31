@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Clock, CheckCircle2, AlertTriangle, Loader2, Trophy, Lock,
   Paperclip, Video as VideoIcon, MessageSquare, X, Wifi, WifiOff, Save,
+  RotateCcw, Eye, ShieldAlert, XCircle,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import { Label } from "@/components/ui/label";
 
 type QuestionType = "multiple_choice" | "true_false" | "short_answer" | "essay";
 type TimerMode = "countdown" | "stopwatch" | "none";
+type RunMode = "exam" | "review" | "retry_wrong" | "retry_all";
 
 interface Question {
   id?: string;
@@ -47,6 +49,9 @@ interface Exam {
   max_score: number | null;
   video_url: string | null;
   is_published: boolean;
+  anti_cheat: boolean;
+  anti_cheat_max_violations: number;
+  show_answers_after: boolean;
 }
 
 const qType = (q: Question): QuestionType => q.type || "multiple_choice";
@@ -60,9 +65,22 @@ const fmt = (s: number) => {
   return h > 0 ? `${h}:${m}:${r}` : `${m}:${r}`;
 };
 
-// Auto-save every 15 seconds
 const AUTO_SAVE_INTERVAL = 15_000;
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function gradeQuestion(q: Question, answer: number | string | undefined | null): boolean {
+  const type = qType(q);
+  if (type === "multiple_choice" || type === "true_false") {
+    return typeof answer === "number" && answer === q.correct_index;
+  }
+  if (type === "short_answer") {
+    const accepted = (q.accepted_answers || []).map(normalizeText).filter(Boolean);
+    return typeof answer === "string" && !!answer.trim() && accepted.includes(normalizeText(answer));
+  }
+  return false; // essay — manual
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 const ExamRunner = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -76,7 +94,10 @@ const ExamRunner = () => {
   const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ score: number; total: number; status: string } | null>(null);
+  const [result, setResult] = useState<{
+    score: number; total: number; status: string;
+    submittedAnswers: (number | string | null)[];
+  } | null>(null);
   const [locked, setLocked] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -85,8 +106,15 @@ const ExamRunner = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
+  // Anti-cheat
+  const [violations, setViolations] = useState(0);
+  const [showViolationWarning, setShowViolationWarning] = useState(false);
+  // Review / Retry
+  const [runMode, setRunMode] = useState<RunMode>("exam");
+  const [retryQuestions, setRetryQuestions] = useState<Question[]>([]);
 
   const submittedRef = useRef(false);
+  const violationsRef = useRef(0);
   const answersRef = useRef(answers);
   const commentRef = useRef(comment);
   const videoUrlRef = useRef(videoUrl);
@@ -94,7 +122,6 @@ const ExamRunner = () => {
   const attemptIdRef = useRef(attemptId);
   const startedAtRef = useRef(startedAt);
 
-  // Keep refs synced
   useEffect(() => { answersRef.current = answers; }, [answers]);
   useEffect(() => { commentRef.current = comment; }, [comment]);
   useEffect(() => { videoUrlRef.current = videoUrl; }, [videoUrl]);
@@ -103,36 +130,68 @@ const ExamRunner = () => {
   useEffect(() => { startedAtRef.current = startedAt; }, [startedAt]);
 
   const orderedQuestions = useMemo(() => {
+    if (runMode === "retry_wrong" || runMode === "retry_all") return retryQuestions;
     if (!exam) return [];
     const list = [...(exam.questions || [])];
     if (exam.shuffle_questions) list.sort(() => Math.random() - 0.5);
     return list;
-  }, [exam]);
+  }, [exam, runMode, retryQuestions]);
 
-  // ── Online / offline ───────────────────────────────────────────────────────
+  // ── Online/offline ──────────────────────────────────────────────────────────
   useEffect(() => {
     const on = () => setIsOnline(true);
     const off = () => setIsOnline(false);
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
   }, []);
 
-  // ── Prevent accidental close ───────────────────────────────────────────────
+  // ── Prevent accidental close ────────────────────────────────────────────────
   useEffect(() => {
-    if (result || locked) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
+    if (result || locked || runMode !== "exam") return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [result, locked]);
+  }, [result, locked, runMode]);
 
-  // ── Auto-save ──────────────────────────────────────────────────────────────
+  // ── Anti-cheat: tab visibility + window blur ────────────────────────────────
+  useEffect(() => {
+    if (!exam?.anti_cheat || result || locked || runMode !== "exam") return;
+
+    const handleViolation = async () => {
+      if (submittedRef.current) return;
+      const newCount = violationsRef.current + 1;
+      violationsRef.current = newCount;
+      setViolations(newCount);
+      setShowViolationWarning(true);
+
+      // Save violation count to DB
+      const aid = attemptIdRef.current;
+      if (aid) {
+        await supabase.from("exam_attempts").update({ violations: newCount }).eq("id", aid);
+      }
+
+      const maxVio = exam.anti_cheat_max_violations || 3;
+      if (newCount >= maxVio) {
+        toast({ title: "🚫 Đã vượt quá số lần vi phạm — tự động nộp bài!", variant: "destructive" });
+        submit(true);
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) handleViolation();
+    };
+    const onBlur = () => handleViolation();
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [exam, result, locked, runMode]);
+
+  // ── Auto-save ───────────────────────────────────────────────────────────────
   const autoSave = useCallback(async () => {
     const aid = attemptIdRef.current;
     if (!aid || submittedRef.current || !navigator.onLine) return;
@@ -142,39 +201,32 @@ const ExamRunner = () => {
         const a = answersRef.current[i];
         return a !== undefined ? a : null;
       });
-      const timeSpent = startedAtRef.current
-        ? Math.floor((Date.now() - startedAtRef.current) / 1000)
-        : 0;
+      const timeSpent = startedAtRef.current ? Math.floor((Date.now() - startedAtRef.current) / 1000) : 0;
       await supabase.from("exam_attempts").update({
-        answers: answersArr,
-        time_spent_seconds: timeSpent,
+        answers: answersArr, time_spent_seconds: timeSpent,
         student_comment: commentRef.current || null,
         video_url: videoUrlRef.current || null,
         attachment_url: attachmentRef.current?.url || null,
         attachment_name: attachmentRef.current?.name || null,
       }).eq("id", aid);
       setLastSaved(new Date());
-    } catch {
-      // silently fail auto-save
-    } finally {
-      setSaving(false);
-    }
+    } catch { /* silent */ }
+    finally { setSaving(false); }
   }, [orderedQuestions]);
 
   useEffect(() => {
-    if (!attemptId || result || locked) return;
+    if (!attemptId || result || locked || runMode !== "exam") return;
     const t = setInterval(autoSave, AUTO_SAVE_INTERVAL);
     return () => clearInterval(t);
-  }, [attemptId, result, locked, autoSave]);
+  }, [attemptId, result, locked, autoSave, runMode]);
 
-  // ── Init exam & attempt ────────────────────────────────────────────────────
+  // ── Init exam & attempt ─────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
       if (!id || !user) return;
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("exams").select("*").eq("id", id).maybeSingle();
+      const { data, error } = await supabase.from("exams").select("*").eq("id", id).maybeSingle();
       if (error || !data) {
         toast({ title: "Không tìm thấy bài kiểm tra", variant: "destructive" });
         navigate("/learn");
@@ -183,8 +235,7 @@ const ExamRunner = () => {
       const ex = data as unknown as Exam;
 
       if (!ex.is_published) {
-        setLocked("Bài kiểm tra chưa được công bố.");
-        setExam(ex); setLoading(false); return;
+        setLocked("Bài kiểm tra chưa được công bố."); setExam(ex); setLoading(false); return;
       }
       const now = Date.now();
       if (ex.starts_at && new Date(ex.starts_at).getTime() > now) {
@@ -192,80 +243,58 @@ const ExamRunner = () => {
         setExam(ex); setLoading(false); return;
       }
       if (ex.ends_at && ex.lock_after_end && new Date(ex.ends_at).getTime() < now) {
-        setLocked("Bài kiểm tra đã đóng.");
-        setExam(ex); setLoading(false); return;
+        setLocked("Bài kiểm tra đã đóng."); setExam(ex); setLoading(false); return;
       }
 
-      // Fetch all attempts for this student
       const { data: attempts } = await supabase
-        .from("exam_attempts")
-        .select("id,status,started_at")
-        .eq("exam_id", id)
-        .eq("student_id", user.id)
+        .from("exam_attempts").select("id,status,started_at")
+        .eq("exam_id", id).eq("student_id", user.id)
         .order("started_at", { ascending: false });
 
-      // Only COMPLETED attempts count toward the limit
-      const submitted = (attempts || []).filter(
-        (a: any) => a.status !== "in_progress"
-      );
+      const submitted = (attempts || []).filter((a: any) => a.status !== "in_progress");
       const isUnlimited = !ex.max_attempts || ex.max_attempts <= 0;
-
       if (!isUnlimited && submitted.length >= (ex.max_attempts || 1)) {
-        setLocked("Bạn đã dùng hết số lượt làm bài.");
-        setExam(ex); setLoading(false); return;
+        setLocked("Bạn đã dùng hết số lượt làm bài."); setExam(ex); setLoading(false); return;
       }
 
-      // Resume existing in-progress attempt — this does NOT count as a new attempt
       const inProgress = (attempts || []).find((a: any) => a.status === "in_progress");
       let aid = inProgress?.id;
       let start = now;
 
       if (inProgress) {
-        const { data: full } = await supabase
-          .from("exam_attempts").select("*").eq("id", aid).maybeSingle();
+        const { data: full } = await supabase.from("exam_attempts").select("*").eq("id", aid).maybeSingle();
         if (full?.started_at) start = new Date(full.started_at).getTime();
         if (full?.answers) {
           const map: Record<number, number | string> = {};
-          (full.answers as any[]).forEach((v, i) => {
-            if (v !== null && v !== undefined) map[i] = v;
-          });
+          (full.answers as any[]).forEach((v, i) => { if (v !== null && v !== undefined) map[i] = v; });
           setAnswers(map);
         }
         if (full?.student_comment) setComment(full.student_comment);
         if (full?.video_url) setVideoUrl(full.video_url);
-        if (full?.attachment_url)
-          setAttachment({ url: full.attachment_url, name: full.attachment_name || "Tệp đính kèm" });
-        toast({
-          title: "Tiếp tục bài làm",
-          description: "Câu trả lời trước đó đã được khôi phục.",
-        });
+        if (full?.attachment_url) setAttachment({ url: full.attachment_url, name: full.attachment_name || "Tệp đính kèm" });
+        if (full?.violations) { violationsRef.current = full.violations; setViolations(full.violations); }
+        toast({ title: "Tiếp tục bài làm", description: "Câu trả lời trước đó đã được khôi phục." });
       } else {
         const { data: ins, error: insErr } = await supabase
           .from("exam_attempts")
           .insert({ exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString() })
-          .select("id")
-          .single();
+          .select("id").single();
         if (insErr) {
-          toast({ title: "Lỗi khởi tạo bài làm", description: insErr.message, variant: "destructive" });
-          setLoading(false);
-          return;
+          toast({ title: "Lỗi khởi tạo", description: insErr.message, variant: "destructive" });
+          setLoading(false); return;
         }
         aid = ins.id;
       }
 
-      setExam(ex);
-      setAttemptId(aid!);
-      setStartedAt(start);
-      setLoading(false);
+      setExam(ex); setAttemptId(aid!); setStartedAt(start); setLoading(false);
     };
     init();
   }, [id, user?.id]);
 
-  // ── Timer ──────────────────────────────────────────────────────────────────
+  // ── Timer ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!exam || !startedAt) return;
+    if (!exam || !startedAt || runMode !== "exam") return;
     const mode: TimerMode = exam.timer_mode || "countdown";
-
     const tick = () => {
       const sec = Math.floor((Date.now() - startedAt) / 1000);
       setElapsed(sec);
@@ -274,13 +303,12 @@ const ExamRunner = () => {
         if (left <= 0 && !submittedRef.current) submit(true);
       }
     };
-
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
-  }, [exam, startedAt]);
+  }, [exam, startedAt, runMode]);
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
+  // ── Submit ──────────────────────────────────────────────────────────────────
   const submit = async (auto = false) => {
     if (!exam || !attemptId || submittedRef.current) return;
     submittedRef.current = true;
@@ -308,39 +336,26 @@ const ExamRunner = () => {
     const status = auto ? "auto_submitted" : "submitted";
 
     const { error } = await supabase.from("exam_attempts").update({
-      submitted_at: new Date().toISOString(),
-      status,
-      score,
-      total: totalPts,
-      answers: answersArr,
-      time_spent_seconds: timeSpent,
-      student_comment: comment || null,
-      video_url: videoUrl || null,
-      attachment_url: attachment?.url || null,
-      attachment_name: attachment?.name || null,
+      submitted_at: new Date().toISOString(), status, score, total: totalPts,
+      answers: answersArr, time_spent_seconds: timeSpent,
+      violations: violationsRef.current,
+      student_comment: comment || null, video_url: videoUrl || null,
+      attachment_url: attachment?.url || null, attachment_name: attachment?.name || null,
     }).eq("id", attemptId);
 
     if (error) {
-      // Network error — allow retry
       submittedRef.current = false;
       setSubmitting(false);
-      toast({
-        title: "Lỗi nộp bài",
-        description: "Mất kết nối. Câu trả lời đã được lưu tạm. Vui lòng thử lại.",
-        variant: "destructive",
-      });
+      toast({ title: "Lỗi nộp bài", description: "Mất kết nối. Vui lòng thử lại.", variant: "destructive" });
       return;
     }
 
-    setResult({ score, total: totalPts, status });
+    setResult({ score, total: totalPts, status, submittedAnswers: answersArr });
     setSubmitting(false);
-    toast({
-      title: auto ? "Hết giờ — Đã tự nộp" : "Đã nộp bài thành công!",
-      description: `Điểm tự động: ${score}/${totalPts}`,
-    });
+    toast({ title: auto ? "Hết giờ — Đã tự nộp" : "Đã nộp bài!", description: `Điểm: ${score}/${totalPts}` });
   };
 
-  // ── File upload ────────────────────────────────────────────────────────────
+  // ── File upload ─────────────────────────────────────────────────────────────
   const handleAttachment = async (file: File) => {
     if (!user) return;
     setUploading(true);
@@ -354,19 +369,41 @@ const ExamRunner = () => {
       toast({ title: "Đã tải lên", description: file.name });
     } catch (e: any) {
       toast({ title: "Lỗi tải lên", description: e.message, variant: "destructive" });
-    } finally {
-      setUploading(false);
-    }
+    } finally { setUploading(false); }
   };
 
-  // ── Derived values ─────────────────────────────────────────────────────────
+  // ── Retry handlers ──────────────────────────────────────────────────────────
+  const startRetryWrong = () => {
+    if (!exam || !result) return;
+    const wrong = orderedQuestions.filter((q, i) => {
+      const a = result.submittedAnswers[i];
+      return !gradeQuestion(q, a);
+    });
+    if (wrong.length === 0) { toast({ title: "Bạn đã trả lời đúng tất cả câu!" }); return; }
+    setRetryQuestions(wrong);
+    setAnswers({});
+    setRunMode("retry_wrong");
+  };
+
+  const startRetryAll = () => {
+    if (!exam) return;
+    setRetryQuestions([...exam.questions]);
+    setAnswers({});
+    setRunMode("retry_all");
+  };
+
+  const exitRetry = () => {
+    setRunMode("review");
+    setRetryQuestions([]);
+    setAnswers({});
+  };
+
+  // ── Derived values ──────────────────────────────────────────────────────────
   const timerMode: TimerMode = exam?.timer_mode || "countdown";
-  const remaining = timerMode === "countdown"
-    ? Math.max(0, (exam?.duration_minutes || 0) * 60 - elapsed)
-    : 0;
+  const remaining = timerMode === "countdown" ? Math.max(0, (exam?.duration_minutes || 0) * 60 - elapsed) : 0;
   const lowTime = timerMode === "countdown" && remaining > 0 && remaining < 60;
 
-  // ── Render: loading ────────────────────────────────────────────────────────
+  // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -378,7 +415,7 @@ const ExamRunner = () => {
     );
   }
 
-  // ── Render: locked ─────────────────────────────────────────────────────────
+  // ── Locked ──────────────────────────────────────────────────────────────────
   if (locked || !exam) {
     return (
       <div className="max-w-2xl mx-auto p-6">
@@ -394,41 +431,260 @@ const ExamRunner = () => {
     );
   }
 
-  // ── Render: result ─────────────────────────────────────────────────────────
-  if (result) {
+  // ── Retry mode ──────────────────────────────────────────────────────────────
+  if (runMode === "retry_wrong" || runMode === "retry_all") {
+    const totalR = orderedQuestions.length;
+    const answeredR = orderedQuestions.reduce((n, _q, i) => {
+      const a = answers[i];
+      if (typeof a === "number") return n + 1;
+      if (typeof a === "string" && a.trim()) return n + 1;
+      return n;
+    }, 0);
+
+    return (
+      <div className="min-h-screen bg-muted/30">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
+          <div className="max-w-4xl mx-auto p-3 md:p-4 flex items-center justify-between gap-3">
+            <div>
+              <h1 className="text-base font-bold">{runMode === "retry_wrong" ? "🔄 Luyện lại câu sai" : "🔄 Làm lại toàn bộ"}</h1>
+              <p className="text-xs text-muted-foreground">Đã trả lời {answeredR}/{totalR}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={exitRetry}>
+                <X className="w-4 h-4 mr-1" /> Thoát
+              </Button>
+              <Button size="sm" variant="hero" onClick={() => {
+                // grade and show local results
+                let sc = 0;
+                const arr = orderedQuestions.map((q, i) => {
+                  const a = answers[i];
+                  if (gradeQuestion(q, a)) sc += (q.points || 1);
+                  if (qType(q) === "essay") return typeof a === "string" ? a : null;
+                  return typeof a === "number" ? a : (typeof a === "string" ? a : null);
+                });
+                toast({ title: `Kết quả luyện tập: ${sc}/${orderedQuestions.reduce((s, q) => s + (q.points || 1), 0)} điểm` });
+                setRunMode("review");
+              }}>
+                <CheckCircle2 className="w-4 h-4 mr-1" /> Xem kết quả
+              </Button>
+            </div>
+          </div>
+          <Progress value={(answeredR / Math.max(totalR, 1)) * 100} className="h-1 rounded-none" />
+        </div>
+        <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 pb-10">
+          {orderedQuestions.map((q, i) => {
+            const type = qType(q);
+            const isAnswered = typeof answers[i] === "number" || (typeof answers[i] === "string" && (answers[i] as string).trim().length > 0);
+            return (
+              <Card key={i} className={`border-2 ${isAnswered ? "border-green-500/40" : "hover:border-primary/30"}`}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex gap-2 items-start">
+                    <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm shrink-0 font-semibold ${isAnswered ? "bg-green-500 text-white" : "bg-primary text-primary-foreground"}`}>
+                      {isAnswered ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+                    </span>
+                    <span className="flex-1">{q.text}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {(type === "multiple_choice" || type === "true_false") && q.options.map((opt, oi) => {
+                    const selected = answers[i] === oi;
+                    return (
+                      <button key={oi} type="button"
+                        onClick={() => setAnswers(a => ({ ...a, [i]: oi }))}
+                        className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${selected ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 hover:bg-muted/50"}`}>
+                        <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>
+                          {selected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + oi)}
+                        </span>
+                        <span>{opt}</span>
+                      </button>
+                    );
+                  })}
+                  {type === "short_answer" && (
+                    <Input placeholder="Nhập câu trả lời…" value={typeof answers[i] === "string" ? answers[i] as string : ""}
+                      onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))} />
+                  )}
+                  {type === "essay" && (
+                    <Textarea rows={4} placeholder="Viết bài làm…" value={typeof answers[i] === "string" ? answers[i] as string : ""}
+                      onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))} />
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Review mode (post-exam) ─────────────────────────────────────────────────
+  if (runMode === "review" && result) {
+    const qs = exam.questions || [];
     const passing = exam.passing_score || 0;
     const passed = result.score >= passing;
-    const hasEssay = orderedQuestions.some((q) => qType(q) === "essay");
+    const hasEssay = qs.some(q => qType(q) === "essay");
+
+    return (
+      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 pb-10">
+        {/* Score summary */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="text-center sm:text-left">
+                <Trophy className={`w-12 h-12 mx-auto sm:mx-0 mb-2 ${passed ? "text-yellow-500" : "text-muted-foreground"}`} />
+                <h2 className="text-xl font-bold">{passed ? "Chúc mừng!" : "Đã nộp bài"}</h2>
+                <p className="text-4xl font-extrabold text-primary mt-1">{result.score}/{result.total}</p>
+                {passing > 0 && <p className="text-sm text-muted-foreground">Điểm đạt: {passing}</p>}
+                {violations > 0 && <p className="text-xs text-red-500 mt-1">⚠ Vi phạm anti-cheat: {violations} lần</p>}
+              </div>
+              <div className="flex flex-col gap-2 sm:ml-auto w-full sm:w-auto">
+                {exam.show_answers_after && (
+                  <>
+                    <Button variant="outline" className="gap-2" onClick={startRetryWrong}>
+                      <RotateCcw className="w-4 h-4" /> Làm lại câu sai
+                    </Button>
+                    <Button variant="outline" className="gap-2" onClick={startRetryAll}>
+                      <RotateCcw className="w-4 h-4" /> Làm lại toàn bộ
+                    </Button>
+                  </>
+                )}
+                <Button variant="ghost" className="gap-2" onClick={() => navigate(-1)}>
+                  <X className="w-4 h-4" /> Quay lại
+                </Button>
+              </div>
+            </div>
+            {hasEssay && (
+              <p className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 mt-4">
+                ✏️ Bài có câu tự luận — giáo viên sẽ chấm và cập nhật điểm cuối cùng.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Per-question review */}
+        {exam.show_answers_after && qs.map((q, i) => {
+          const studentAns = result.submittedAnswers[i];
+          const type = qType(q);
+          const isCorrect = gradeQuestion(q, studentAns);
+          const isEssay = type === "essay";
+
+          return (
+            <Card key={i} className={`border-2 ${isEssay ? "border-muted" : isCorrect ? "border-green-500/60" : "border-red-400/60"}`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex gap-2 items-start">
+                  <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm shrink-0 font-bold ${isEssay ? "bg-muted text-muted-foreground" : isCorrect ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
+                    {isEssay ? i + 1 : isCorrect ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                  </span>
+                  <span className="flex-1">{q.text}</span>
+                  <Badge variant="outline" className={`shrink-0 text-xs ${isEssay ? "" : isCorrect ? "border-green-500 text-green-600" : "border-red-400 text-red-500"}`}>
+                    {isEssay ? "Tự luận" : isCorrect ? `+${q.points || 1} điểm` : "Sai"}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {(type === "multiple_choice" || type === "true_false") && q.options.map((opt, oi) => {
+                  const isSelected = studentAns === oi;
+                  const isRight = oi === q.correct_index;
+                  return (
+                    <div key={oi} className={`p-3 rounded-lg border-2 flex items-center gap-3 ${isRight ? "border-green-500 bg-green-50 dark:bg-green-950/20" : isSelected && !isRight ? "border-red-400 bg-red-50 dark:bg-red-950/20" : "border-border opacity-60"}`}>
+                      <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${isRight ? "border-green-500 bg-green-500 text-white" : isSelected ? "border-red-400 bg-red-400 text-white" : "border-muted-foreground/40"}`}>
+                        {isRight ? <CheckCircle2 className="w-4 h-4" /> : isSelected ? <XCircle className="w-4 h-4" /> : String.fromCharCode(65 + oi)}
+                      </span>
+                      <span className={isRight ? "font-semibold text-green-700 dark:text-green-400" : isSelected ? "text-red-600 line-through" : ""}>{opt}</span>
+                      {isRight && <Badge className="ml-auto bg-green-500 text-white text-xs">Đáp án đúng</Badge>}
+                      {isSelected && !isRight && <Badge className="ml-auto bg-red-400 text-white text-xs">Bạn chọn</Badge>}
+                    </div>
+                  );
+                })}
+
+                {type === "short_answer" && (
+                  <div className="space-y-2">
+                    <div className={`p-3 rounded-lg border-2 ${isCorrect ? "border-green-500 bg-green-50 dark:bg-green-950/20" : "border-red-400 bg-red-50 dark:bg-red-950/20"}`}>
+                      <p className="text-xs text-muted-foreground mb-1">Câu trả lời của bạn:</p>
+                      <p className={`font-medium ${isCorrect ? "text-green-700 dark:text-green-400" : "text-red-600 line-through"}`}>
+                        {studentAns ? String(studentAns) : "(Không trả lời)"}
+                      </p>
+                    </div>
+                    {!isCorrect && q.accepted_answers && q.accepted_answers.length > 0 && (
+                      <div className="p-3 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-950/20">
+                        <p className="text-xs text-muted-foreground mb-1">Đáp án đúng:</p>
+                        <p className="font-medium text-green-700 dark:text-green-400">{q.accepted_answers.filter(Boolean).join(" / ")}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {type === "essay" && (
+                  <div className="p-3 rounded-lg border bg-muted/30">
+                    <p className="text-xs text-muted-foreground mb-1">Bài làm của bạn:</p>
+                    <p className="text-sm whitespace-pre-wrap">{studentAns ? String(studentAns) : "(Không trả lời)"}</p>
+                    <p className="text-xs text-amber-600 mt-2">Giáo viên sẽ chấm điểm câu này.</p>
+                  </div>
+                )}
+
+                {q.explanation && (
+                  <div className="flex gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                    <Eye className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-700 dark:text-blue-300">{q.explanation}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        <div className="flex justify-center pt-4 gap-3">
+          {exam.show_answers_after && (
+            <>
+              <Button variant="outline" className="gap-2" onClick={startRetryWrong}>
+                <RotateCcw className="w-4 h-4" /> Làm lại câu sai
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={startRetryAll}>
+                <RotateCcw className="w-4 h-4" /> Làm lại toàn bộ
+              </Button>
+            </>
+          )}
+          <Button variant="ghost" onClick={() => navigate(-1)}>Quay lại</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Result screen (transition to review) ────────────────────────────────────
+  if (result && runMode === "exam") {
+    const passing = exam.passing_score || 0;
+    const passed = result.score >= passing;
+    const hasEssay = orderedQuestions.some(q => qType(q) === "essay");
     return (
       <div className="max-w-2xl mx-auto p-6">
         <Card>
           <CardContent className="py-12 text-center space-y-4">
             <Trophy className={`w-14 h-14 mx-auto ${passed ? "text-yellow-500" : "text-muted-foreground"}`} />
             <h2 className="text-2xl font-bold">
-              {result.status === "auto_submitted"
-                ? "Hết giờ — Đã tự nộp"
-                : passed ? "Chúc mừng!" : "Đã nộp bài"}
+              {result.status === "auto_submitted" ? "Hết giờ — Đã tự nộp" : passed ? "Chúc mừng!" : "Đã nộp bài"}
             </h2>
             <p className="text-4xl font-extrabold text-primary">{result.score}/{result.total}</p>
-            {passing > 0 && (
-              <p className="text-muted-foreground">Điểm đạt yêu cầu: {passing}</p>
-            )}
+            {passing > 0 && <p className="text-muted-foreground">Điểm đạt yêu cầu: {passing}</p>}
+            {violations > 0 && <p className="text-sm text-red-500">⚠ Vi phạm: {violations} lần tab switching</p>}
             {hasEssay && (
               <p className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3">
-                ✏️ Bài có câu tự luận — giáo viên sẽ chấm và cập nhật điểm cuối cùng sớm.
+                ✏️ Bài có câu tự luận — giáo viên sẽ cập nhật điểm sau.
               </p>
             )}
-            <p className="text-sm text-muted-foreground">
-              Bạn có thể xem trạng thái trong mục Bài kiểm tra.
-            </p>
-            <Button onClick={() => navigate(-1)}>Quay lại</Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+              {exam.show_answers_after && (
+                <Button variant="outline" className="gap-2" onClick={() => setRunMode("review")}>
+                  <Eye className="w-4 h-4" /> Xem đáp án & Đánh giá
+                </Button>
+              )}
+              <Button onClick={() => navigate(-1)}>Quay lại</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // ── Render: exam ───────────────────────────────────────────────────────────
+  // ── Exam UI ─────────────────────────────────────────────────────────────────
   const totalQ = orderedQuestions.length;
   const answered = orderedQuestions.reduce((n, _q, i) => {
     const a = answers[i];
@@ -439,56 +695,69 @@ const ExamRunner = () => {
 
   const handleSubmitClick = () => {
     if (answered < totalQ) {
-      const unanswered = totalQ - answered;
-      const ok = window.confirm(
-        `Bạn còn ${unanswered} câu chưa trả lời. Bạn có chắc muốn nộp bài không?`
-      );
+      const ok = window.confirm(`Bạn còn ${totalQ - answered} câu chưa trả lời. Bạn có chắc muốn nộp bài không?`);
       if (!ok) return;
     }
     submit(false);
   };
 
+  const maxVio = exam.anti_cheat_max_violations || 3;
+
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* ── Sticky header ── */}
+      {/* Anti-cheat violation warning overlay */}
+      {showViolationWarning && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full border-red-500 shadow-2xl">
+            <CardContent className="p-6 text-center space-y-4">
+              <ShieldAlert className="w-16 h-16 mx-auto text-red-500" />
+              <h2 className="text-xl font-bold text-red-600">⚠️ Cảnh báo gian lận!</h2>
+              <p className="text-muted-foreground">
+                Bạn đã rời khỏi cửa sổ bài kiểm tra.
+                <br />
+                <span className="font-bold text-foreground">Vi phạm: {violations}/{maxVio} lần</span>
+              </p>
+              {violations >= maxVio ? (
+                <p className="text-red-500 font-semibold">Đã vượt quá số lần vi phạm — bài kiểm tra đang được nộp…</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sau {maxVio} lần vi phạm, bài sẽ tự động nộp.</p>
+              )}
+              {violations < maxVio && (
+                <Button className="w-full" onClick={() => setShowViolationWarning(false)}>
+                  Tôi hiểu, tiếp tục làm bài
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
         <div className="max-w-4xl mx-auto p-3 md:p-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0 flex-1">
-            <h1 className="text-base md:text-lg font-bold truncate">
-              {exam.title_vi || exam.title}
-            </h1>
+            <h1 className="text-base md:text-lg font-bold truncate">{exam.title_vi || exam.title}</h1>
             <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
               <span>Đã trả lời {answered}/{totalQ}</span>
-              {saving && (
-                <span className="flex items-center gap-1">
-                  <Save className="w-3 h-3 animate-pulse" /> Đang lưu…
-                </span>
-              )}
+              {saving && <span className="flex items-center gap-1"><Save className="w-3 h-3 animate-pulse" /> Đang lưu…</span>}
               {!saving && lastSaved && (
                 <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Đã lưu {lastSaved.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                  <CheckCircle2 className="w-3 h-3" /> Đã lưu {lastSaved.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                 </span>
               )}
-              {isOnline ? (
-                <span className="flex items-center gap-1 text-green-500">
-                  <Wifi className="w-3 h-3" />
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-red-500">
-                  <WifiOff className="w-3 h-3" /> Mất kết nối
+              {isOnline ? <Wifi className="w-3 h-3 text-green-500" /> : <span className="text-red-500 flex items-center gap-1"><WifiOff className="w-3 h-3" /> Offline</span>}
+              {exam.anti_cheat && violations > 0 && (
+                <span className="text-red-500 flex items-center gap-1">
+                  <ShieldAlert className="w-3 h-3" /> Vi phạm: {violations}/{maxVio}
                 </span>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Timer badge */}
             {timerMode === "countdown" && exam.duration_minutes && (
-              <Badge
-                variant={lowTime ? "destructive" : remaining < 300 ? "outline" : "secondary"}
-                className={`text-base px-3 py-1.5 font-mono ${lowTime ? "animate-pulse" : ""}`}
-              >
+              <Badge variant={lowTime ? "destructive" : remaining < 300 ? "outline" : "secondary"}
+                className={`text-base px-3 py-1.5 font-mono ${lowTime ? "animate-pulse" : ""}`}>
                 <Clock className="w-4 h-4 mr-1" /> {fmt(remaining)}
               </Badge>
             )}
@@ -497,22 +766,11 @@ const ExamRunner = () => {
                 <Clock className="w-4 h-4 mr-1" /> {fmt(elapsed)}
               </Badge>
             )}
-
-            {/* Manual save */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={autoSave}
-              disabled={saving || !isOnline}
-              title="Lưu ngay"
-            >
+            <Button size="sm" variant="outline" onClick={autoSave} disabled={saving || !isOnline} title="Lưu ngay">
               <Save className="w-4 h-4" />
             </Button>
-
             <Button onClick={handleSubmitClick} disabled={submitting} variant="hero">
-              {submitting
-                ? <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
               Nộp bài
             </Button>
           </div>
@@ -520,17 +778,23 @@ const ExamRunner = () => {
         <Progress value={(answered / Math.max(totalQ, 1)) * 100} className="h-1 rounded-none" />
       </div>
 
-      {/* ── Offline banner ── */}
+      {/* Offline banner */}
       {!isOnline && (
         <div className="bg-red-500 text-white text-center py-2 px-4 text-sm flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4 shrink-0" />
-          Mất kết nối internet. Câu trả lời vẫn được giữ — sẽ tự lưu khi có mạng trở lại.
-          Đừng đóng tab này.
+          Mất kết nối internet. Câu trả lời vẫn được giữ — sẽ tự lưu khi có mạng. Đừng đóng tab này.
+        </div>
+      )}
+
+      {/* Anti-cheat notice */}
+      {exam.anti_cheat && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-center py-2 px-4 text-xs flex items-center justify-center gap-2">
+          <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+          Chế độ chống gian lận đang bật. Đừng chuyển sang tab khác — mỗi lần chuyển sẽ bị ghi lại ({violations}/{maxVio} vi phạm).
         </div>
       )}
 
       <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4">
-        {/* Instructions */}
         {(exam.instructions || exam.description_vi) && (
           <Card>
             <CardContent className="p-4 text-sm flex gap-2">
@@ -541,94 +805,47 @@ const ExamRunner = () => {
         )}
 
         {orderedQuestions.length === 0 && (
-          <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              Bài kiểm tra chưa có câu hỏi.
-            </CardContent>
-          </Card>
+          <Card><CardContent className="py-10 text-center text-muted-foreground">Bài kiểm tra chưa có câu hỏi.</CardContent></Card>
         )}
 
-        {/* Questions */}
         {orderedQuestions.map((q, i) => {
           const type = qType(q);
           const pts = q.points || 1;
-          const isAnswered =
-            typeof answers[i] === "number" ||
-            (typeof answers[i] === "string" && (answers[i] as string).trim().length > 0);
-
+          const isAnswered = typeof answers[i] === "number" || (typeof answers[i] === "string" && (answers[i] as string).trim().length > 0);
           return (
-            <Card
-              key={i}
-              className={`border-2 transition-colors duration-200 ${
-                isAnswered
-                  ? "border-green-500/40 bg-green-50/20 dark:bg-green-950/10"
-                  : "hover:border-primary/30"
-              }`}
-            >
+            <Card key={i} className={`border-2 transition-colors duration-200 ${isAnswered ? "border-green-500/40 bg-green-50/20 dark:bg-green-950/10" : "hover:border-primary/30"}`}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex gap-2 items-start">
-                  <span
-                    className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm shrink-0 font-semibold ${
-                      isAnswered
-                        ? "bg-green-500 text-white"
-                        : "bg-primary text-primary-foreground"
-                    }`}
-                  >
+                  <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm shrink-0 font-semibold ${isAnswered ? "bg-green-500 text-white" : "bg-primary text-primary-foreground"}`}>
                     {isAnswered ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
                   </span>
                   <span className="flex-1">{q.text}</span>
                   <Badge variant="outline" className="shrink-0 font-normal">{pts} điểm</Badge>
                 </CardTitle>
-                {!isAutoGraded(q) && (
-                  <p className="text-xs text-muted-foreground pl-9">
-                    Câu tự luận – giáo viên sẽ chấm tay.
-                  </p>
-                )}
+                {!isAutoGraded(q) && <p className="text-xs text-muted-foreground pl-9">Câu tự luận – giáo viên sẽ chấm tay.</p>}
               </CardHeader>
               <CardContent className="space-y-2">
-                {(type === "multiple_choice" || type === "true_false") &&
-                  q.options.map((opt, oi) => {
-                    const selected = answers[i] === oi;
-                    return (
-                      <button
-                        key={oi}
-                        type="button"
-                        onClick={() => setAnswers((a) => ({ ...a, [i]: oi }))}
-                        className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${
-                          selected
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/40 hover:bg-muted/50"
-                        }`}
-                      >
-                        <span
-                          className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${
-                            selected
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-muted-foreground/40"
-                          }`}
-                        >
-                          {selected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + oi)}
-                        </span>
-                        <span>{opt}</span>
-                      </button>
-                    );
-                  })}
-
+                {(type === "multiple_choice" || type === "true_false") && q.options.map((opt, oi) => {
+                  const selected = answers[i] === oi;
+                  return (
+                    <button key={oi} type="button" onClick={() => setAnswers(a => ({ ...a, [i]: oi }))}
+                      className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${selected ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 hover:bg-muted/50"}`}>
+                      <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>
+                        {selected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + oi)}
+                      </span>
+                      <span>{opt}</span>
+                    </button>
+                  );
+                })}
                 {type === "short_answer" && (
-                  <Input
-                    placeholder="Nhập câu trả lời của bạn…"
-                    value={typeof answers[i] === "string" ? (answers[i] as string) : ""}
-                    onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
-                  />
+                  <Input placeholder="Nhập câu trả lời của bạn…"
+                    value={typeof answers[i] === "string" ? answers[i] as string : ""}
+                    onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))} />
                 )}
-
                 {type === "essay" && (
-                  <Textarea
-                    rows={5}
-                    placeholder="Viết bài làm của bạn tại đây…"
-                    value={typeof answers[i] === "string" ? (answers[i] as string) : ""}
-                    onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
-                  />
+                  <Textarea rows={5} placeholder="Viết bài làm của bạn tại đây…"
+                    value={typeof answers[i] === "string" ? answers[i] as string : ""}
+                    onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))} />
                 )}
               </CardContent>
             </Card>
@@ -644,71 +861,33 @@ const ExamRunner = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <Label className="text-sm">Nhận xét / lời nhắn cho giáo viên</Label>
-              <Textarea
-                rows={3}
-                placeholder="Ví dụ: phần câu 5 em chưa chắc, mong cô góp ý..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
+              <Label className="text-sm">Nhận xét cho giáo viên</Label>
+              <Textarea rows={3} placeholder="VD: phần câu 5 em chưa chắc, mong cô góp ý..."
+                value={comment} onChange={e => setComment(e.target.value)} />
             </div>
             <div>
-              <Label className="text-sm flex items-center gap-1">
-                <VideoIcon className="w-4 h-4" /> Link video trả lời (YouTube, Drive, Loom...)
-              </Label>
-              <Input
-                placeholder="https://..."
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
+              <Label className="text-sm flex items-center gap-1"><VideoIcon className="w-4 h-4" /> Link video trả lời</Label>
+              <Input placeholder="https://..." value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
             </div>
             <div>
-              <Label className="text-sm flex items-center gap-1">
-                <Paperclip className="w-4 h-4" /> File đính kèm
-              </Label>
+              <Label className="text-sm flex items-center gap-1"><Paperclip className="w-4 h-4" /> File đính kèm</Label>
               {attachment ? (
                 <div className="flex items-center justify-between rounded-md border p-2 bg-muted/30">
-                  <a
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-primary truncate"
-                  >
-                    {attachment.name}
-                  </a>
-                  <Button type="button" size="icon" variant="ghost" onClick={() => setAttachment(null)}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <a href={attachment.url} target="_blank" rel="noreferrer" className="text-sm text-primary truncate">{attachment.name}</a>
+                  <Button type="button" size="icon" variant="ghost" onClick={() => setAttachment(null)}><X className="w-4 h-4" /></Button>
                 </div>
               ) : (
-                <Input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.txt"
-                  disabled={uploading}
-                  onChange={(e) => e.target.files?.[0] && handleAttachment(e.target.files[0])}
-                />
+                <Input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.txt"
+                  disabled={uploading} onChange={e => e.target.files?.[0] && handleAttachment(e.target.files[0])} />
               )}
-              {uploading && (
-                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Đang tải lên...
-                </p>
-              )}
+              {uploading && <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Đang tải lên...</p>}
             </div>
           </CardContent>
         </Card>
 
-        {/* Bottom submit */}
         <div className="pb-8 flex justify-end">
-          <Button
-            size="lg"
-            onClick={handleSubmitClick}
-            disabled={submitting}
-            variant="hero"
-            className="min-w-[160px]"
-          >
-            {submitting
-              ? <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              : <CheckCircle2 className="w-5 h-5 mr-2" />}
+          <Button size="lg" onClick={handleSubmitClick} disabled={submitting} variant="hero" className="min-w-[160px]">
+            {submitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
             Nộp bài
           </Button>
         </div>

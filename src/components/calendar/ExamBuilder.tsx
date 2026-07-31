@@ -312,11 +312,10 @@ const TimerModeCard = ({ value, onChange }: TimerModeCardProps) => {
             key={opt.v}
             type="button"
             onClick={() => onChange(opt.v)}
-            className={`rounded-xl border-2 p-4 text-left transition-all space-y-1.5 ${
-              active
+            className={`rounded-xl border-2 p-4 text-left transition-all space-y-1.5 ${active
                 ? 'border-primary bg-primary/10 shadow-md'
                 : 'border-border hover:border-primary/40 hover:bg-muted/50'
-            }`}
+              }`}
           >
             <div className={`${active ? 'text-primary' : opt.color}`}>{opt.icon}</div>
             <p className={`font-semibold text-sm ${active ? 'text-primary' : 'text-foreground'}`}>
@@ -658,10 +657,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                   <button
                     type="button"
                     onClick={() => setStep(s.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                      active ? 'bg-primary text-primary-foreground shadow-md'
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${active ? 'bg-primary text-primary-foreground shadow-md'
                         : done ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
-                    }`}
+                      }`}
                   >
                     {done ? <CheckCircle2 className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                     <span className="hidden sm:inline">{s.id}. {s.label}</span>
@@ -691,9 +689,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                       key={o.v}
                       type="button"
                       onClick={() => setExamType(o.v)}
-                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                        examType === o.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
-                      }`}
+                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${examType === o.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
+                        }`}
                     >
                       {o.label}
                     </button>
@@ -841,9 +838,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                                   <button
                                     type="button"
                                     onClick={() => patchQ(i, { correct_index: oi })}
-                                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 ${
-                                      q.correct_index === oi ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-muted-foreground/40'
-                                    }`}
+                                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 ${q.correct_index === oi ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-muted-foreground/40'
+                                      }`}
                                   >
                                     {String.fromCharCode(65 + oi)}
                                   </button>
