@@ -886,7 +886,7 @@ const ExamRunner = () => {
       {exam.anti_cheat && (
         <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-center py-2 px-4 text-xs flex items-center justify-center gap-2">
           <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-          Chế độ chống gian lận đang bật. Đừng chuyển sang tab khác — mỗi lần chuyển sẽ bị ghi lại ({violations}/{maxVio} vi phạm).
+          🛡️ Chống gian lận đang bật. {penaltyLabel[penalty]} {violations > 0 && `(${violations}/${penalty === 'warn_only' ? '∞' : maxVio} vi phạm)`}
         </div>
       )}
 
