@@ -15,8 +15,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { 
-  Building, GraduationCap, Calendar, Video, Clock, 
+import {
+  Building, GraduationCap, Calendar, Video, Clock,
   BookOpen, FileText, CheckCircle2, MessageSquare, Star, ArrowLeft, UserX, AlertCircle,
   Play, ExternalLink, Download, Maximize2, Sparkles, Dumbbell
 } from 'lucide-react';
@@ -89,18 +89,6 @@ interface Exam {
   is_published: boolean;
 }
 
-interface ExamAttempt {
-  id: string;
-  exam_id: string;
-  started_at: string;
-  submitted_at: string | null;
-  status: string;
-  score: number | null;
-  total: number | null;
-  time_spent_seconds: number;
-  student_comment: string | null;
-}
-
 interface Submission {
   id: string;
   content: string;
@@ -120,15 +108,13 @@ const MyClasses = () => {
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
-  
+
   // Dashboard details state
   const [sessions, setSessions] = useState<ClassSession[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [examAttempts, setExamAttempts] = useState<Record<string, ExamAttempt[]>>({});
-  const [expandedExamId, setExpandedExamId] = useState<string | null>(null);
-  
+
   // Active lesson details inside classroom
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [showInlinePresentation, setShowInlinePresentation] = useState(false);
@@ -156,7 +142,7 @@ const MyClasses = () => {
     if (!selectedSessionToAbsence || !selectedClass || !user) return;
     try {
       setSubmittingAbsence(true);
-      
+
       await sendAbsenceNotification({
         studentName: user.user_metadata?.full_name || user.email || 'Học viên',
         studentEmail: user.email,
@@ -280,26 +266,6 @@ const MyClasses = () => {
         .order('exam_date', { ascending: true });
       setExams(examsData || []);
 
-      // 4. Fetch all exam attempts for this student (for all exams in this class)
-      if (examsData && examsData.length > 0 && user) {
-        const examIds = examsData.map((e: any) => e.id);
-        const { data: attemptsData } = await supabase
-          .from('exam_attempts')
-          .select('id, exam_id, started_at, submitted_at, status, score, total, time_spent_seconds, student_comment')
-          .in('exam_id', examIds)
-          .eq('student_id', user.id)
-          .order('started_at', { ascending: false });
-        // Group by exam_id
-        const grouped: Record<string, ExamAttempt[]> = {};
-        for (const attempt of (attemptsData || [])) {
-          if (!grouped[attempt.exam_id]) grouped[attempt.exam_id] = [];
-          grouped[attempt.exam_id].push(attempt as ExamAttempt);
-        }
-        setExamAttempts(grouped);
-      } else {
-        setExamAttempts({});
-      }
-
       // 4. Fetch student submissions for lessons/exercises in this class
       if (lessonsData && lessonsData.length > 0) {
         const lessonIds = lessonsData.map(l => l.id);
@@ -316,7 +282,7 @@ const MyClasses = () => {
             .eq('user_id', user?.id)
             .in('exercise_id', exerciseIds)
             .order('submitted_at', { ascending: false });
-          
+
           const mappedSubs = (subs || []).map(sub => {
             const exercise = exercises.find(ex => ex.id === sub.exercise_id);
             return {
@@ -407,7 +373,7 @@ const MyClasses = () => {
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {cls.description_vi || 'Lớp học Nhật ngữ trực tuyến tương tác cao.'}
                   </p>
-                  
+
                   <div className="flex items-center gap-2 pt-2 border-t text-sm">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs shrink-0">
                       {cls.teacher?.full_name?.charAt(0) || 'G'}
@@ -417,7 +383,7 @@ const MyClasses = () => {
                       <p className="font-semibold text-xs">{cls.teacher?.full_name}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-4 text-xs text-muted-foreground pt-1">
                     {cls.start_date && (
                       <span className="flex items-center gap-1">
@@ -444,9 +410,9 @@ const MyClasses = () => {
   return (
     <div className="space-y-6">
       {/* Back button */}
-      <Button 
-        variant="ghost" 
-        onClick={() => setSelectedClass(null)} 
+      <Button
+        variant="ghost"
+        onClick={() => setSelectedClass(null)}
         className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="w-4 h-4" />
@@ -567,9 +533,9 @@ const MyClasses = () => {
                               }
 
                               return (
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   className="gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                   onClick={() => {
                                     setSelectedSessionToAbsence(session);
@@ -651,9 +617,9 @@ const MyClasses = () => {
                     <div className="flex items-center gap-3 shrink-0 mt-2 md:mt-0">
                       <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-4 h-4" /> {activeLesson.duration_minutes} phút</span>
                       <span className="flex items-center gap-1 text-xs text-yellow-600 font-bold bg-yellow-500/10 px-2.5 py-1 rounded-full"><Star className="w-4 h-4 fill-yellow-500" /> +{activeLesson.xp_reward} XP</span>
-                      <Button 
-                        size="sm" 
-                        variant="hero" 
+                      <Button
+                        size="sm"
+                        variant="hero"
                         className="gap-1.5 font-bold shadow-md"
                         onClick={() => setShowInlinePresentation(true)}
                       >
@@ -667,9 +633,9 @@ const MyClasses = () => {
                   {/* Fullscreen / Slide Presentation Drawer */}
                   {showInlinePresentation && (
                     <div className="rounded-2xl border-2 border-primary/40 overflow-hidden shadow-2xl animate-fade-in">
-                      <InlineLessonPresentation 
-                        lesson={activeLesson} 
-                        onClose={() => setShowInlinePresentation(false)} 
+                      <InlineLessonPresentation
+                        lesson={activeLesson}
+                        onClose={() => setShowInlinePresentation(false)}
                       />
                     </div>
                   )}
@@ -691,19 +657,19 @@ const MyClasses = () => {
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             {pdfUrl && (
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-7 text-xs font-semibold text-muted-foreground hover:text-foreground" 
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs font-semibold text-muted-foreground hover:text-foreground"
                                 onClick={() => setUseGooglePdfEmbed(p => !p)}
                               >
                                 {useGooglePdfEmbed ? 'Native PDF' : 'Google Viewer'}
                               </Button>
                             )}
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              asChild 
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              asChild
                               className="h-7 text-xs font-bold gap-1 border-primary/30 text-primary hover:bg-primary/10"
                             >
                               <a href={activeMediaUrl} target="_blank" rel="noopener noreferrer">
@@ -716,8 +682,8 @@ const MyClasses = () => {
                         <div className="w-full bg-muted/20 relative" style={{ height: 'min(65vh, 580px)' }}>
                           {pdfUrl ? (
                             <iframe
-                              src={useGooglePdfEmbed 
-                                ? `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true` 
+                              src={useGooglePdfEmbed
+                                ? `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`
                                 : pdfUrl}
                               className="w-full h-full border-0"
                               title="Trình chiếu tài liệu PDF"
@@ -750,9 +716,9 @@ const MyClasses = () => {
 
                   {/* Direct Interactive Exercises */}
                   <div className="pt-6 border-t border-border space-y-4">
-                    <InlineLessonExercises 
-                      lessonId={activeLesson.id} 
-                      lessonTitle={activeLesson.title_vi || activeLesson.title} 
+                    <InlineLessonExercises
+                      lessonId={activeLesson.id}
+                      lessonTitle={activeLesson.title_vi || activeLesson.title}
                     />
                   </div>
                 </CardContent>
@@ -762,10 +728,10 @@ const MyClasses = () => {
             /* Lesson list with Session & Week Grouping */
             <div className="space-y-4">
               {selectedClass && (
-                <ClassLessonOrganizer 
-                  classId={selectedClass.id} 
-                  className={selectedClass.name_vi} 
-                  isTeacher={false} 
+                <ClassLessonOrganizer
+                  classId={selectedClass.id}
+                  className={selectedClass.name_vi}
+                  isTeacher={false}
                 />
               )}
             </div>
@@ -876,161 +842,81 @@ const MyClasses = () => {
         {/* Tab 3: Exams (Kiểm tra) */}
         <TabsContent value="exams" className="space-y-4">
           <h2 className="text-lg font-bold text-foreground">Danh sách bài kiểm tra</h2>
-          {exams.filter(e => e.is_published).length === 0 ? (
+          {exams.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                Không có bài kiểm tra nào.
+                Không có bài kiểm tra nào sắp diễn ra.
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
               {exams.filter(e => e.is_published).map((exam) => {
                 const now = new Date();
+                // Use starts_at if set, otherwise fall back to exam_date+start_time
                 const openTime = exam.starts_at
                   ? new Date(exam.starts_at)
                   : new Date(`${exam.exam_date}T${exam.start_time}`);
                 const isLocked = now < openTime;
+                // Check if exam has closed
                 const isClosed = !!(exam.ends_at && exam.lock_after_end && now > new Date(exam.ends_at));
-                const attempts = (examAttempts[exam.id] || []).filter(a => a.status !== 'in_progress');
-                const inProgress = (examAttempts[exam.id] || []).find(a => a.status === 'in_progress');
-                const isExpanded = expandedExamId === exam.id;
-
-                const fmtTime = (sec: number) => {
-                  const m = Math.floor(sec / 60);
-                  const s = sec % 60;
-                  return m > 0 ? `${m}ph ${s}s` : `${s}s`;
-                };
-                const statusLabel = (s: string) => {
-                  if (s === 'submitted') return { text: 'Đã nộp', color: 'text-green-600' };
-                  if (s === 'auto_submitted') return { text: 'Hết giờ - Tự nộp', color: 'text-amber-600' };
-                  if (s === 'graded') return { text: 'Đã chấm', color: 'text-blue-600' };
-                  return { text: s, color: 'text-muted-foreground' };
-                };
-
                 return (
-                  <Card key={exam.id} className={`transition-all ${isLocked ? 'opacity-90 bg-muted/20' : ''}`}>
-                    {/* Main row */}
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="space-y-1 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="secondary" className="capitalize shrink-0">{exam.exam_type}</Badge>
-                            <p className="font-semibold text-sm sm:text-base text-foreground">{exam.title_vi}</p>
-                            {isClosed ? (
-                              <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200 text-xs">
-                                🔴 Đã đóng
-                              </Badge>
-                            ) : isLocked ? (
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">
-                                🕒 Đúng giờ thi mới mở
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 text-xs">
-                                🟢 Đã mở & vào thi
-                              </Badge>
-                            )}
-                            {inProgress && (
-                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200 text-xs animate-pulse">
-                                ⏳ Đang làm dở
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                            <span>Lịch thi: {formatWithJST(`${exam.exam_date}T${exam.start_time}`, true)}</span>
-                            <span>Thời gian: {exam.duration_minutes ? `${exam.duration_minutes} phút` : (exam.timer_mode === 'stopwatch' ? 'Bấm giờ' : 'Không giới hạn')}</span>
-                            {attempts.length > 0 && (
-                              <span className="text-primary font-medium">{attempts.length} lần đã làm</span>
-                            )}
-                          </div>
+                  <Card key={exam.id} className={isLocked ? 'opacity-90 bg-muted/20' : ''}>
+                    <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="capitalize">{exam.exam_type}</Badge>
+                          <p className="font-semibold text-sm sm:text-base text-foreground">{exam.title_vi}</p>
+                          {isClosed ? (
+                            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200 text-xs">
+                              🔴 Đã đóng
+                            </Badge>
+                          ) : isLocked ? (
+                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">
+                              🕒 Đúng giờ thi mới mở
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 text-xs">
+                              🟢 Đã mở xem & vào thi
+                            </Badge>
+                          )}
                         </div>
-
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto">
-                          {/* Lịch sử button */}
-                          {attempts.length > 0 && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="gap-1.5 w-full sm:w-auto"
-                              onClick={() => setExpandedExamId(isExpanded ? null : exam.id)}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Lịch sử ({attempts.length})
-                              <span className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
-                            </Button>
-                          )}
-                          {/* Vào làm bài */}
-                          {!isLocked && !isClosed && (
-                            <Button
-                              size="sm"
-                              variant="hero"
-                              className="gap-2 font-semibold w-full sm:w-auto"
-                              onClick={() => navigate(`/learn/exams/${exam.id}`)}
-                            >
-                              <GraduationCap className="w-4 h-4" />
-                              {inProgress ? 'Tiếp tục bài' : 'Vào làm bài'}
-                            </Button>
-                          )}
-                          {isLocked && (
-                            <Button size="sm" variant="outline" disabled className="gap-2 w-full sm:w-auto">
-                              🕒 Chưa đến giờ
-                            </Button>
-                          )}
-                          {exam.meet_link && !isLocked && (
-                            <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto" asChild>
-                              <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
-                                <Video className="w-4 h-4" /> Zoom
-                              </a>
-                            </Button>
-                          )}
+                        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                          <span>Lịch thi: {formatWithJST(`${exam.exam_date}T${exam.start_time}`, true)}</span>
+                          <span>Thời gian: {exam.duration_minutes ? `${exam.duration_minutes} phút` : (exam.timer_mode === 'stopwatch' ? 'Bấm giờ' : 'Không giới hạn')}</span>
                         </div>
                       </div>
-
-                      {/* History dropdown */}
-                      {isExpanded && attempts.length > 0 && (
-                        <div className="mt-4 pt-4 border-t space-y-2">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Lịch sử làm bài</p>
-                          {attempts.map((att, idx) => {
-                            const sl = statusLabel(att.status);
-                            const hasScore = att.score !== null && att.total !== null;
-                            const pct = hasScore ? Math.round((att.score! / att.total!) * 100) : null;
-                            return (
-                              <div
-                                key={att.id}
-                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-muted/40 border text-sm"
-                              >
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <span className="inline-flex w-6 h-6 rounded-full bg-primary/10 text-primary items-center justify-center text-xs font-bold shrink-0">
-                                    {attempts.length - idx}
-                                  </span>
-                                  <div className="min-w-0">
-                                    <p className="text-xs text-muted-foreground">
-                                      Nộp: {att.submitted_at
-                                        ? new Date(att.submitted_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                        : '—'}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Thời gian làm: {att.time_spent_seconds > 0 ? fmtTime(att.time_spent_seconds) : '—'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0">
-                                  <span className={`text-xs font-medium ${sl.color}`}>{sl.text}</span>
-                                  {hasScore && (
-                                    <div className="text-right">
-                                      <p className="font-bold text-base text-primary">{att.score}/{att.total}</p>
-                                      <p className="text-xs text-muted-foreground">{pct}%</p>
-                                    </div>
-                                  )}
-                                  {!hasScore && (
-                                    <span className="text-xs text-muted-foreground italic">Chờ chấm</span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                      <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
+                        {/* Nút làm bài trực tuyến */}
+                        {!isLocked && !isClosed && exam.is_published && (
+                          <Button
+                            size="sm"
+                            variant="hero"
+                            className="gap-2 font-semibold w-full sm:w-auto"
+                            onClick={() => navigate(`/learn/exams/${exam.id}`)}
+                          >
+                            <GraduationCap className="w-4 h-4" /> Vào làm bài
+                          </Button>
+                        )}
+                        {isLocked && (
+                          <Button size="sm" variant="outline" disabled className="gap-2 w-full sm:w-auto">
+                            🔒 Chưa đến giờ thi
+                          </Button>
+                        )}
+                        {/* Nút phòng Zoom nếu có */}
+                        {exam.meet_link && !isLocked && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-2 w-full sm:w-auto"
+                            asChild
+                          >
+                            <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
+                              <Video className="w-4 h-4" /> Phòng thi Online
+                            </a>
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -1259,9 +1145,9 @@ const MyClasses = () => {
           )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsAbsenceDialogOpen(false)}>Hủy</Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleRequestAbsence} 
+            <Button
+              variant="destructive"
+              onClick={handleRequestAbsence}
               disabled={submittingAbsence}
             >
               {submittingAbsence ? 'Đang gửi...' : 'Gửi thông báo vắng'}
