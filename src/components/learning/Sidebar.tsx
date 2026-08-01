@@ -16,8 +16,7 @@ import {
 import DarkModeToggle from '@/components/theme/DarkModeToggle';
 import { Badge } from '@/components/ui/badge';
 import { getSavedTheme } from '@/lib/themeUtils';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
 
 const allNavigation = [
   { name: 'Bảng điều khiển', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
@@ -26,6 +25,7 @@ const allNavigation = [
   { name: 'Phòng học Meeting', href: '/learn/zoom', icon: Video, key: 'zoom' },
   { name: 'Lịch học', href: '/learn/calendar', icon: Calendar, key: 'calendar' },
   { name: 'Thành tích & BXH', href: '/learn/achievements', icon: Trophy, key: 'achievements' },
+  { name: '🛒 Cửa Hàng & Kho Đồ', href: '/store', icon: ShoppingBag, key: 'store' },
   { name: 'Hướng dẫn học viên', href: '/learn/guide', icon: BookOpen, key: 'guide' },
   { name: 'Hồ sơ cá nhân', href: '/learn/profile', icon: User, key: 'profile' },
 ];
@@ -39,29 +39,10 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
   const { userProgress, currentLanguage } = useLearning();
   const { settings } = usePageVisibility();
 
-  // Check if Store is enabled by admin
-  const { data: isStoreEnabled = false } = useQuery({
-    queryKey: ['store-system-enabled'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('website_content')
-        .select('content')
-        .eq('section_key', 'store_system_settings')
-        .maybeSingle();
-      return Boolean((data?.content as any)?.is_store_enabled);
-    },
-    staleTime: 60_000,
-  });
-
-  const allNavWithStore = [
-    ...allNavigation,
-    ...(isStoreEnabled ? [{ name: '🛒 Cửa Hàng & Kho Đồ', href: '/store', icon: ShoppingBag, key: 'store' }] : []),
-  ];
-
   const languageFlags: Record<string, string> = { japanese: '🇯🇵' };
   const languageNames: Record<string, string> = { japanese: 'Tiếng Nhật' };
 
-  const navigation = allNavWithStore.filter(item => settings.learn_sidebar[item.key] !== false);
+  const navigation = allNavigation.filter(item => settings.learn_sidebar[item.key] !== false);
   const progressPercent = Math.round(Math.min((userProgress.dailyProgress / userProgress.dailyGoal) * 100, 100));
 
   const [activeTheme, setActiveTheme] = useState(() => getSavedTheme());
