@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
+import BadgeShowcase from '@/components/shared/BadgeShowcase';
 
 interface DashboardStats {
   totalLessons: number;
@@ -205,6 +206,11 @@ const TeacherDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Dynamic Teacher Badge Showcase & Level Widget */}
+      {user && (
+        <BadgeShowcase userId={user.id} role="teacher" />
+      )}
 
       {/* Modern Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -50,6 +50,9 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
+  const [bgMusicEnabled, setBgMusicEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('bg_music_enabled') !== 'false';
+  });
 
   // Profile States
   const [profile, setProfile] = useState<ProfileData>({
@@ -532,6 +535,27 @@ const ProfilePage = () => {
                   onChange={(e) => setProfile(p => ({ ...p, bio: e.target.value }))}
                   placeholder="Chia sẻ ngắn gọn mục tiêu học tập Tiếng Nhật hoặc châm ngôn sống của bạn..."
                   rows={4}
+                />
+              </div>
+
+              {/* Background Music Setting Card */}
+              <div className="flex items-center justify-between p-4 rounded-2xl border bg-muted/30">
+                <div className="space-y-1">
+                  <p className="font-bold text-sm text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" /> Nhạc Học Tập Phát Ngầm (Spotify / ZingMP3 Style)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Tự động hiển thị thanh phát nhạc Lo-Fi thư giãn ở góc dưới màn hình khi bạn làm bài thi và học bài.
+                  </p>
+                </div>
+
+                <Switch
+                  checked={bgMusicEnabled}
+                  onCheckedChange={(val) => {
+                    setBgMusicEnabled(val);
+                    localStorage.setItem('bg_music_enabled', String(val));
+                    window.dispatchEvent(new Event('bg_music_toggle'));
+                  }}
                 />
               </div>
 

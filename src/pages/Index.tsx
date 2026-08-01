@@ -1,16 +1,20 @@
 import { useEffect, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Sparkles, Star, Play, BookOpen, Mic, PenTool, Headphones, 
   ArrowRight, Users, Video, Trophy, Brain, Target, Shield, 
-  Zap, Award, ChevronRight
+  Zap, Award, ChevronRight, Calendar, BookText, MessageSquare
 } from "lucide-react";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useHomepageSections } from "@/hooks/useHomepageSections";
+import { useBlogHomeSettings } from "@/hooks/useBlogHomeSettings";
+import TestimonialsSection from "@/components/about/TestimonialsSection";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
@@ -455,6 +459,157 @@ const Index = () => {
     </ScrollReveal>
   );
 
+  // Dynamic queries for Homepage Blog & Events using pinned settings from /admin/blog
+  const { data: blogHomeSettings } = useBlogHomeSettings();
+
+  const { data: blogPosts = [] } = useQuery({
+    queryKey: ['homepage-blogs', blogHomeSettings],
+    queryFn: async () => {
+      let query = supabase.from('blog_posts').select('*').eq('is_published', true);
+
+      const targetIds = [...(blogHomeSettings?.pinned_ids || []), ...(blogHomeSettings?.home_ids || [])];
+      if (targetIds.length > 0) {
+        const { data: pinnedData } = await supabase
+          .from('blog_posts')
+          .select('*')
+          .in('id', targetIds)
+          .eq('is_published', true);
+
+        if (pinnedData && pinnedData.length > 0) {
+          return pinnedData;
+        }
+      }
+
+      const { data } = await query.order('published_at', { ascending: false }).limit(6);
+      return data || [];
+    },
+  });
+
+  const { data: homeEvents = [] } = useQuery({
+    queryKey: ['homepage-events'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('events')
+        .select('*')
+        .eq('is_published', true)
+        .order('event_date', { ascending: true })
+        .limit(3);
+      return data || [];
+    },
+  });
+
+  const blogSection = (
+    <ScrollReveal key="blog">
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 text-xs font-bold mb-3 border border-blue-200">
+                <BookText className="w-4 h-4" /> Tin tức & Bài viết
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold">Kinh nghiệm & Bí quyết học Tiếng Nhật</h2>
+            </div>
+            <Button variant="outline" asChild className="rounded-xl font-bold">
+              <Link to="/blog">Xem tất cả bài viết <ArrowRight className="w-4 h-4 ml-1.5" /></Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {blogPosts.length === 0 ? (
+              <div className="col-span-full text-center py-10 text-muted-foreground">Đang cập nhật bài viết mới...</div>
+            ) : (
+              blogPosts.slice(0, 6).map((post) => (
+                <div key={post.id} className="bg-card rounded-2xl overflow-hidden border shadow-sm hover:shadow-lg transition-all group flex flex-col">
+                  <div className="aspect-[16/9] overflow-hidden bg-muted relative">
+                    {post.thumbnail_url ? (
+                      <img
+                        src={post.thumbnail_url}
+                        alt={post.title_vi || post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          // Fallback to placeholder gradient on error
+                          (e.target as HTMLElement).style.display = 'none';
+                          const parent = (e.target as HTMLElement).parentElement;
+                          if (parent) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'w-full h-full bg-gradient-to-tr from-primary/20 via-japanese/10 to-accent/20 flex items-center justify-center font-bold text-primary text-sm p-4 text-center';
+                            fallback.innerText = post.title_vi || post.title || 'TNQDO Blog';
+                            parent.appendChild(fallback);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-primary/20 via-japanese/10 to-accent/20 flex flex-col items-center justify-center p-4 text-center">
+                        <BookText className="w-8 h-8 text-primary opacity-60 mb-1" />
+                        <span className="font-bold text-xs text-foreground line-clamp-2">{post.title_vi || post.title}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 space-y-2 flex-1 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-wider">{post.category || 'Chia sẻ'}</span>
+                      <h3 className="font-bold text-base line-clamp-2 text-foreground group-hover:text-primary transition-colors">{post.title_vi || post.title}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{post.excerpt_vi || post.excerpt || 'Đọc chi tiết kinh nghiệm học Tiếng Nhật trên TNQDO Japanese Hub'}</p>
+                    </div>
+                    <Link to={`/blog/${post.slug || post.id}`} className="inline-flex items-center text-xs font-bold text-primary pt-3">
+                      Đọc tiếp <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+    </ScrollReveal>
+  );
+
+  const eventsSection = (
+    <ScrollReveal key="events">
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 text-rose-600 text-xs font-bold mb-3 border border-rose-200">
+                <Calendar className="w-4 h-4" /> Sự kiện nổi bật
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold">Hội thảo & Workshop Tiếng Nhật</h2>
+            </div>
+            <Button variant="outline" asChild className="rounded-xl font-bold">
+              <Link to="/su-kien">Xem lịch sự kiện <ArrowRight className="w-4 h-4 ml-1.5" /></Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {homeEvents.length === 0 ? (
+              <div className="col-span-full text-center py-10 text-muted-foreground">Chưa có sự kiện nào diễn ra.</div>
+            ) : (
+              homeEvents.map((evt) => (
+                <div key={evt.id} className="bg-card rounded-2xl overflow-hidden border shadow-sm hover:shadow-lg transition-all p-5 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold text-rose-600">
+                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {evt.event_date || 'Sắp diễn ra'}</span>
+                    <span>{evt.location_type === 'online' ? '🌐 Online' : '📍 Offline'}</span>
+                  </div>
+                  <h3 className="font-bold text-base text-foreground">{evt.title}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{evt.description_vi || evt.description}</p>
+                  <Button size="sm" variant="secondary" className="w-full text-xs font-bold" asChild>
+                    <Link to={`/su-kien/${evt.id}`}>Đăng ký tham gia</Link>
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+    </ScrollReveal>
+  );
+
+  const testimonialsSection = (
+    <div key="testimonials">
+      <TestimonialsSection homepageOnly={true} />
+    </div>
+  );
+
   const sectionMap: Record<string, React.ReactNode> = {
     hero: heroSection,
     skills: skillsSection,
@@ -462,6 +617,9 @@ const Index = () => {
     features: featuresSection,
     zoom: zoomSection,
     teachers: teachersSection,
+    blog: blogSection,
+    events: eventsSection,
+    testimonials: testimonialsSection,
     cta: ctaSection,
   };
 

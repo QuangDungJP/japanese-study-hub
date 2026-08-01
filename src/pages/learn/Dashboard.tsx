@@ -32,6 +32,7 @@ import { useLearning } from '@/contexts/LearningContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
+import BadgeShowcase from '@/components/shared/BadgeShowcase';
 
 interface Lesson {
   id: string;
@@ -293,6 +294,11 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Dynamic Badges Showcase & Level XP Widget */}
+      {user && (
+        <BadgeShowcase userId={user.id} role="student" />
+      )}
 
       {/* Active Upcoming Meeting Quick Join Alert */}
       {nextLiveSession && (
