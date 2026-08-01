@@ -465,7 +465,7 @@ const Index = () => {
   const { data: blogPosts = [] } = useQuery({
     queryKey: ['homepage-blogs', blogHomeSettings],
     queryFn: async () => {
-      let query = supabase.from('blog_posts').select('*').eq('is_published', true);
+      const query = supabase.from('blog_posts').select('*').eq('is_published', true);
 
       const targetIds = [...(blogHomeSettings?.pinned_ids || []), ...(blogHomeSettings?.home_ids || [])];
       if (targetIds.length > 0) {

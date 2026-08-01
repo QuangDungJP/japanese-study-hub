@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +21,8 @@ import { THEME_OPTIONS, applyTheme, getSavedTheme, ThemeOption } from '@/lib/the
 import { useLearning } from '@/contexts/LearningContext';
 
 import BadgeShowcase from '@/components/shared/BadgeShowcase';
+import UserInventoryShowcase from '@/components/shared/UserInventoryShowcase';
+import { Package } from 'lucide-react';
 
 interface ProfileData {
   full_name: string;
@@ -431,6 +434,9 @@ const ProfilePage = () => {
             <TabsTrigger value="badges" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
               <Award className="w-4 h-4 text-amber-500" /> Danh hiệu & XP
             </TabsTrigger>
+            <TabsTrigger value="inventory" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
+              <Package className="w-4 h-4 text-emerald-500" /> Kho đồ cá nhân
+            </TabsTrigger>
             <TabsTrigger value="theme" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
               <Palette className="w-4 h-4 text-rose-500" /> Giao diện & Chủ đề
             </TabsTrigger>
@@ -447,6 +453,11 @@ const ProfilePage = () => {
           {/* Tab: Badges */}
           <TabsContent value="badges">
             <BadgeShowcase userId={user?.id || ''} role={roles[0] || 'student'} />
+          </TabsContent>
+
+          {/* Tab: Inventory */}
+          <TabsContent value="inventory">
+            <UserInventoryShowcase userId={user?.id} />
           </TabsContent>
 
         {/* Tab 1: Personal Info */}

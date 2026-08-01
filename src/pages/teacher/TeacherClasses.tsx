@@ -38,6 +38,7 @@ import {
   GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
   FileText, CheckCircle2, MessageSquare, Play, Upload, Sparkles
 } from 'lucide-react';
+import ClassroomChat from '@/components/classroom/ClassroomChat';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -1144,6 +1145,9 @@ const TeacherClasses = () => {
       <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
         <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto flex flex-wrap gap-1">
           <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
+          <TabsTrigger value="chat" className="rounded-lg text-xs md:text-sm font-bold text-amber-600 dark:text-amber-400 gap-1.5">
+            💬 Thảo Luận Realtime
+          </TabsTrigger>
           <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học (Buổi/Tuần)</TabsTrigger>
           <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1.5">
             🎬 Record Buổi Học
@@ -1154,6 +1158,11 @@ const TeacherClasses = () => {
           <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Chấm bài</TabsTrigger>
           <TabsTrigger value="students" className="rounded-lg text-xs md:text-sm font-semibold">Học viên</TabsTrigger>
         </TabsList>
+
+        {/* Tab Realtime Chat */}
+        <TabsContent value="chat" className="space-y-6">
+          <ClassroomChat classId={selectedClass.id} />
+        </TabsContent>
 
         {/* Tab 1: Stream (Bảng tin) */}
         <TabsContent value="stream" className="space-y-6">
