@@ -77,7 +77,7 @@ const TeacherLayout = () => {
         ...navSections,
         {
           label: 'Cửa Hàng',
-          items: [{ name: '🛒 Cửa Hàng & Kho Đồ', href: '/store', icon: ShoppingBag }],
+          items: [{ name: '🛒 Cửa Hàng & Kho Đồ', href: '/teacher/store', icon: ShoppingBag }],
         },
       ]
     : navSections;

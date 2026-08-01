@@ -53,7 +53,7 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminWebsiteCMS from "./pages/admin/AdminWebsiteCMS";
 import AdminBadges from "./pages/admin/AdminBadges";
 import AdminStore from "./pages/admin/AdminStore";
-import StorePage from "./pages/store/StorePage";
+import StorePage, { StoreContent } from "./pages/store/StorePage";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminContactForm from "./pages/admin/AdminContactForm";
 import AdminFAQ from "./pages/admin/AdminFAQ";
@@ -103,7 +103,7 @@ const App = () => (
                 <Route path="/gioi-thieu" element={<About />} />
                 <Route path="/khoa-hoc" element={<CoursesPage />} />
                 <Route path="/giao-vien" element={<TeachersPage />} />
-                <Route path="/store" element={<StorePage />} />
+
               <Route path="/zoom" element={<ZoomPage />} />
                 <Route path="/lien-he" element={<Contact />} />
                 <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
@@ -134,7 +134,7 @@ const App = () => (
                 <Route path="zoom" element={<Zoom />} />
                 <Route path="calendar" element={<StudentCalendar />} />
                 <Route path="achievements" element={<Achievements />} />
-                <Route path="store" element={<StorePage />} />
+                <Route path="store" element={<StoreContent />} />
                 <Route path="courses" element={<Courses />} />
                 <Route path="guide" element={<StudentGuide />} />
                 <Route path="notifications" element={<StudentNotifications />} />
@@ -176,6 +176,7 @@ const App = () => (
                 <Route path="bug-reports" element={<TeacherBugReports />} />
                 <Route path="guide" element={<TeacherGuide />} />
                 <Route path="profile" element={<TeacherProfile />} />
+                <Route path="store" element={<StoreContent />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
