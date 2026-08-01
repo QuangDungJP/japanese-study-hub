@@ -52,9 +52,7 @@ const Navbar = () => {
     staleTime: 30_000,
   });
 
-  const baseNavLinks = isStoreEnabled
-    ? [...defaultNavLinks.slice(0, 3), { name: "Cửa hàng 🛒", href: "/store", key: "store" }, ...defaultNavLinks.slice(3)]
-    : defaultNavLinks;
+  const baseNavLinks = defaultNavLinks; // Store is only shown in the user sidebar, not on the homepage navbar
 
   const navLinks = baseNavLinks
     .filter(link => settings.navbar_items[link.key] !== false)
