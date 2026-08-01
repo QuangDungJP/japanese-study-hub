@@ -52,6 +52,8 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminWebsiteCMS from "./pages/admin/AdminWebsiteCMS";
 import AdminBadges from "./pages/admin/AdminBadges";
+import AdminStore from "./pages/admin/AdminStore";
+import StorePage from "./pages/store/StorePage";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminContactForm from "./pages/admin/AdminContactForm";
 import AdminFAQ from "./pages/admin/AdminFAQ";
@@ -99,7 +101,8 @@ const App = () => (
                 <Route path="/gioi-thieu" element={<About />} />
                 <Route path="/khoa-hoc" element={<CoursesPage />} />
                 <Route path="/giao-vien" element={<TeachersPage />} />
-                <Route path="/zoom" element={<ZoomPage />} />
+                <Route path="/store" element={<StorePage />} />
+              <Route path="/zoom" element={<ZoomPage />} />
                 <Route path="/lien-he" element={<Contact />} />
                 <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
               <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
@@ -129,6 +132,7 @@ const App = () => (
                 <Route path="zoom" element={<Zoom />} />
                 <Route path="calendar" element={<StudentCalendar />} />
                 <Route path="achievements" element={<Achievements />} />
+                <Route path="store" element={<StorePage />} />
                 <Route path="courses" element={<Courses />} />
                 <Route path="guide" element={<StudentGuide />} />
                 <Route path="notifications" element={<StudentNotifications />} />
@@ -139,6 +143,7 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="website" element={<AdminWebsiteCMS />} />
                 <Route path="badges" element={<AdminBadges />} />
+                <Route path="store" element={<AdminStore />} />
                 <Route path="blog" element={<AdminBlog />} />
                 <Route path="teachers" element={<AdminTeachers />} />
                 <Route path="courses" element={<AdminCourses />} />

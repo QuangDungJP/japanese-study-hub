@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import TestimonialsSection from "@/components/about/TestimonialsSection";
 
 interface FAQ {
   id: string;
@@ -276,6 +277,12 @@ const About = () => {
           </div>
         </div>
       </section>
+
+      {/* Testimonials Section */}
+      <TestimonialsSection
+        heading="Cảm nhận từ Học viên"
+        subheading="Hàng nghìn học viên đã chia sẻ câu chuyện thành công cùng TNQDO Japanese Hub"
+      />
 
       {/* CTA */}
       <ScrollReveal>

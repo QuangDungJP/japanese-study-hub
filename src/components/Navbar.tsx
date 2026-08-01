@@ -17,6 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
 const defaultNavLinks = [
   { name: "Giới thiệu", href: "/gioi-thieu", key: "about" },
   { name: "Khóa học", href: "/khoa-hoc", key: "courses" },
@@ -35,7 +38,25 @@ const Navbar = () => {
   const { data: pageSettings } = usePageSettings();
   const { user, signOut, isModeratorOrAdmin, isAdmin, isTeacherOrAbove } = useAuth();
 
-  const navLinks = defaultNavLinks
+  // Query store system settings to check if Store is enabled by Admin
+  const { data: isStoreEnabled = false } = useQuery({
+    queryKey: ['store-system-enabled'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('website_content')
+        .select('content')
+        .eq('section_key', 'store_system_settings')
+        .maybeSingle();
+      return Boolean((data?.content as any)?.is_store_enabled);
+    },
+    staleTime: 30_000,
+  });
+
+  const baseNavLinks = isStoreEnabled
+    ? [...defaultNavLinks.slice(0, 3), { name: "Cửa hàng 🛒", href: "/store", key: "store" }, ...defaultNavLinks.slice(3)]
+    : defaultNavLinks;
+
+  const navLinks = baseNavLinks
     .filter(link => settings.navbar_items[link.key] !== false)
     .map(link => {
       const ps = pageSettings?.[link.key];

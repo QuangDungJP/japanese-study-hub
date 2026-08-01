@@ -7,7 +7,7 @@ interface SectionConfig {
   visible: boolean;
 }
 
-const defaultOrder = ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
+const defaultOrder = ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'blog', 'events', 'testimonials', 'cta'];
 
 export function useHomepageSections() {
   return useQuery({

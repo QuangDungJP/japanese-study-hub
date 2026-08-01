@@ -14,7 +14,8 @@ import {
   DollarSign,
   Calendar,
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -185,15 +186,15 @@ const AdminDashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
-              to="/admin/classes"
-              className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 hover:bg-primary/10 hover:border-primary/30 border border-transparent transition-all group"
+              to="/admin/badges"
+              className="flex items-center gap-4 p-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all group"
             >
-              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600">
-                <Building className="w-5 h-5" />
+              <div className="p-3 rounded-xl bg-amber-500/20 text-amber-600">
+                <Award className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">Lớp học Classroom</p>
-                <p className="text-xs text-muted-foreground">5 Tab quản lý toàn diện</p>
+                <p className="font-bold text-foreground text-sm group-hover:text-amber-600 transition-colors">Hệ thống XP & Danh hiệu</p>
+                <p className="text-xs text-muted-foreground">Quản lý Badge & Quy tắc XP</p>
               </div>
             </Link>
 

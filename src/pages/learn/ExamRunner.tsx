@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import BackgroundMusicPlayer from "@/components/shared/BackgroundMusicPlayer";
 
 type QuestionType = "multiple_choice" | "true_false" | "short_answer" | "essay";
 type TimerMode = "countdown" | "stopwatch" | "none";
@@ -1197,6 +1198,9 @@ const ExamRunner = () => {
           </Button>
         </div>
       </div>
+
+      {/* Background Study Music Player */}
+      <BackgroundMusicPlayer />
     </div>
   );
 };

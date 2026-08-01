@@ -19,6 +19,7 @@ import {
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
   ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, MessageSquare
 } from 'lucide-react';
+import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import TestimonialsManager from '@/components/admin/TestimonialsManager';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -61,6 +62,9 @@ const sectionLabels: Record<string, string> = {
   'teachers': 'Giảng viên',
   'zoom': 'Lớp học Meeting',
   'features': 'Tính năng',
+  'blog': 'Tin tức & Bài viết (Blog)',
+  'events': 'Sự kiện & Workshop',
+  'testimonials': 'Đánh giá & Testimonials',
   'cta': 'Kêu gọi hành động',
   'pricing': 'Bảng giá',
   'about_hero': 'Giới thiệu - Hero',
@@ -528,10 +532,14 @@ const AdminWebsiteCMS = () => {
       </div>
 
       <Tabs defaultValue="sections" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="sections" className="gap-2">
             <Layout className="w-4 h-4" />
             Sections
+          </TabsTrigger>
+          <TabsTrigger value="order" className="gap-2 font-bold text-primary">
+            <GripVertical className="w-4 h-4" />
+            Sắp xếp Trang chủ
           </TabsTrigger>
           <TabsTrigger value="pricing" className="gap-2">
             <DollarSign className="w-4 h-4" />
@@ -550,6 +558,11 @@ const AdminWebsiteCMS = () => {
             Footer
           </TabsTrigger>
         </TabsList>
+
+        {/* Order Tab */}
+        <TabsContent value="order">
+          <HomepageSectionOrder />
+        </TabsContent>
 
         {/* Sections Tab */}
         <TabsContent value="sections" className="space-y-4">

@@ -13,12 +13,15 @@ interface SectionConfig {
 }
 
 const defaultSections: SectionConfig[] = [
-  { id: 'hero', label: 'Hero Banner', visible: true },
-  { id: 'skills', label: '4 Kỹ năng cốt lõi', visible: true },
+  { id: 'hero', label: 'Hero Banner (Trang chủ)', visible: true },
+  { id: 'skills', label: '4 Kỹ năng cốt lõi (Đọc-Nói-Viết-Nghe)', visible: true },
   { id: 'courses', label: 'Khóa học JLPT', visible: true },
-  { id: 'features', label: 'Tại sao chọn TNQDO?', visible: true },
+  { id: 'features', label: 'Tính năng nổi bật', visible: true },
   { id: 'zoom', label: 'Học Online qua Meeting', visible: true },
   { id: 'teachers', label: 'Đội ngũ giảng viên', visible: true },
+  { id: 'blog', label: 'Tin tức & Bài viết Blog', visible: true },
+  { id: 'events', label: 'Sự kiện & Workshop', visible: true },
+  { id: 'testimonials', label: 'Đánh giá & Testimonials Học viên', visible: true },
   { id: 'cta', label: 'CTA - Đăng ký ngay', visible: true },
 ];
 
