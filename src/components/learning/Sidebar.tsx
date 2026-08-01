@@ -25,7 +25,7 @@ const allNavigation = [
   { name: 'Phòng học Meeting', href: '/learn/zoom', icon: Video, key: 'zoom' },
   { name: 'Lịch học', href: '/learn/calendar', icon: Calendar, key: 'calendar' },
   { name: 'Thành tích & BXH', href: '/learn/achievements', icon: Trophy, key: 'achievements' },
-  { name: '🛒 Cửa Hàng & Kho Đồ', href: '/store', icon: ShoppingBag, key: 'store' },
+  { name: '🛒 Cửa Hàng & Kho Đồ', href: '/learn/store', icon: ShoppingBag, key: 'store' },
   { name: 'Hướng dẫn học viên', href: '/learn/guide', icon: BookOpen, key: 'guide' },
   { name: 'Hồ sơ cá nhân', href: '/learn/profile', icon: User, key: 'profile' },
 ];
