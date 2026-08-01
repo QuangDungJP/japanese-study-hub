@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS public.store_items (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Drop old rigid category check constraint if it exists
+ALTER TABLE public.store_items DROP CONSTRAINT IF EXISTS store_items_category_check;
+
 -- 2. User Inventory Table
 CREATE TABLE IF NOT EXISTS public.user_inventory (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

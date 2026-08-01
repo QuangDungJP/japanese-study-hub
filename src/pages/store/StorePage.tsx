@@ -11,16 +11,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useToast } from '@/hooks/use-toast';
 import { 
   ShoppingBag, Sparkles, Star, Flame, Zap, CheckCircle2, Lock, 
-  Music, Music2, Frame, Palette, Gift, Search, ArrowRight, Shield, Disc, Play
+  Music, Music2, Frame, Palette, Gift, Search, ArrowRight, Shield, Disc, Play, Package
 } from 'lucide-react';
 import BackgroundMusicPlayer from '@/components/shared/BackgroundMusicPlayer';
+import UserInventoryShowcase from '@/components/shared/UserInventoryShowcase';
 
 export interface StoreItem {
   id: string;
   code: string;
   title_vi: string;
   description_vi?: string | null;
-  category: 'music' | 'theme' | 'avatar_frame' | 'study_boost' | 'badge' | 'physical_gift';
+  category: string;
   price_vnd: number;
   price_jpy: number;
   price_xp: number;
@@ -218,27 +219,37 @@ export default function StorePage() {
           </div>
         </div>
 
+        {/* User Backpack / Inventory Showcase */}
+        {user && (
+          <UserInventoryShowcase userId={user.id} />
+        )}
+
         {/* Filter Categories Toolbar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-card p-4 rounded-2xl border">
           <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-            {Object.entries(categoryLabels).map(([key, cat]) => {
-              const Icon = cat.icon;
-              const isSelected = selectedCategory === key;
-              return (
-                <Button
-                  key={key}
-                  variant={isSelected ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedCategory(key)}
-                  className={`rounded-xl font-bold gap-1.5 shrink-0 text-xs ${
-                    isSelected ? '' : 'text-muted-foreground'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {cat.label}
-                </Button>
-              );
-            })}
+            {(() => {
+              const uniqueCategories = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
+              const allCategories = ['all', ...uniqueCategories];
+
+              return allCategories.map((catKey) => {
+                const isSelected = selectedCategory === catKey;
+                const label = catKey === 'all' ? '🌐 Tất cả vật phẩm' : catKey;
+                return (
+                  <Button
+                    key={catKey}
+                    variant={isSelected ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedCategory(catKey)}
+                    className={`rounded-xl font-bold gap-1.5 shrink-0 text-xs ${
+                      isSelected ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                    }`}
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    {label}
+                  </Button>
+                );
+              });
+            })()}
           </div>
 
           <div className="relative w-full md:w-64">

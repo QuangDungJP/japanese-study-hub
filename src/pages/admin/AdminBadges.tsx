@@ -346,53 +346,53 @@ const AdminBadges = () => {
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold flex items-center gap-2">
-            <Trophy className="w-7 h-7 text-amber-500" />
-            Hệ thống XP & Quản lý Danh hiệu
+        <div className="flex flex-col gap-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold flex items-center gap-2">
+            <Trophy className="w-6 h-6 text-amber-500 shrink-0" />
+            <span>Hệ thống XP &amp; Danh hiệu</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Thiết lập danh hiệu, huy hiệu, mốc XP thưởng cho Học viên & Giáo viên
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Thiết lập danh hiệu, huy hiệu, mốc XP thưởng cho Học viên &amp; Giáo viên
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setAwardDialogOpen(true)} className="gap-2">
-            <Gift className="w-4 h-4 text-purple-500" /> Trao danh hiệu
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setAwardDialogOpen(true)} className="gap-1.5 flex-1 sm:flex-none">
+            <Gift className="w-3.5 h-3.5 text-purple-500" /> <span className="hidden sm:inline">Trao</span> Danh hiệu
           </Button>
-          <Button onClick={handleOpenCreate} className="gap-2">
-            <Plus className="w-4 h-4" /> Tạo danh hiệu mới
+          <Button size="sm" onClick={handleOpenCreate} className="gap-1.5 flex-1 sm:flex-none">
+            <Plus className="w-3.5 h-3.5" /> Tạo danh hiệu mới
           </Button>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="badges" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="badges" className="gap-2">
-            <Award className="w-4 h-4" /> Danh mục Huy hiệu ({badges.length})
+        <TabsList className="flex flex-wrap h-auto gap-1 w-full justify-start">
+          <TabsTrigger value="badges" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
+            <Award className="w-3.5 h-3.5" /> Huy hiệu ({badges.length})
           </TabsTrigger>
-          <TabsTrigger value="xp_rules" className="gap-2">
-            <Zap className="w-4 h-4" /> Cấu hình Quy tắc XP & Level
+          <TabsTrigger value="xp_rules" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
+            <Zap className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Cấu hình</span> Quy tắc XP
           </TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Badges List */}
         <TabsContent value="badges" className="space-y-4">
           {/* Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-4 rounded-xl border">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-card p-3 rounded-xl border">
+            <div className="relative flex-1 max-w-full sm:max-w-xs">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
               <Input
                 placeholder="Tìm kiếm danh hiệu..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-9"
+                className="pl-9 h-9 text-sm"
               />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs font-semibold text-muted-foreground">Đối tượng:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground shrink-0">Đối tượng:</span>
               <Select value={roleFilter} onValueChange={(v: any) => setRoleFilter(v)}>
-                <SelectTrigger className="h-9 w-40">
+                <SelectTrigger className="h-9 w-36 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -419,7 +419,7 @@ const AdminBadges = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {filteredBadges.map((b) => {
                 const bmeta = badgeTypeLabels[b.badge_type] || { label: b.badge_type, color: 'bg-muted text-foreground' };
                 return (

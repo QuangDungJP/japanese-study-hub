@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, FileText, Video, Bell, Users, Bug, User, LogOut,
-  GraduationCap, ChevronRight, Calendar, ClipboardCheck, ChevronDown, Menu
+  GraduationCap, ChevronRight, Calendar, ClipboardCheck, ChevronDown, Menu, ShoppingBag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,8 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import DarkModeToggle from '@/components/theme/DarkModeToggle';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const navSections = [
   {
@@ -55,6 +57,30 @@ const TeacherLayout = () => {
     navSections.forEach(s => { init[s.label] = true; });
     return init;
   });
+
+  // Check if Store is enabled by admin
+  const { data: isStoreEnabled = false } = useQuery({
+    queryKey: ['store-system-enabled'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('website_content')
+        .select('content')
+        .eq('section_key', 'store_system_settings')
+        .maybeSingle();
+      return Boolean((data?.content as any)?.is_store_enabled);
+    },
+    staleTime: 60_000,
+  });
+
+  const allNavSections = isStoreEnabled
+    ? [
+        ...navSections,
+        {
+          label: 'Cửa Hàng',
+          items: [{ name: '🛒 Cửa Hàng & Kho Đồ', href: '/store', icon: ShoppingBag }],
+        },
+      ]
+    : navSections;
 
   const teacherRole = isAdmin ? 'admin' : isSeniorTeacher ? 'senior_teacher' : 'teacher';
 
@@ -102,7 +128,7 @@ const TeacherLayout = () => {
       </div>
 
       <nav className="flex-1 py-2 px-2 overflow-y-auto space-y-0.5">
-        {navSections.map((section) => {
+        {allNavSections.map((section) => {
           const isOpen = openSections[section.label] !== false;
           return (
             <Collapsible key={section.label} open={isOpen} onOpenChange={() => toggleSection(section.label)}>

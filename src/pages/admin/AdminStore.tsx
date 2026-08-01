@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import MediaLibraryDialog from '@/components/admin/MediaLibraryDialog';
 import { 
   ShoppingBag, Music, Disc, Star, Flame, Zap, Plus, Edit, Trash2, 
-  Search, CheckCircle2, RefreshCw, Loader2, Image, Upload, Shield, FolderOpen
+  Search, CheckCircle2, RefreshCw, Loader2, Image, Upload, Shield, FolderOpen, Gift
 } from 'lucide-react';
 
 export interface StoreItemAdmin {
@@ -72,10 +72,65 @@ export default function AdminStore() {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<StoreItemAdmin>>(emptyItem);
 
+  // Track Modal State
+  const [trackDialogOpen, setTrackDialogOpen] = useState(false);
+  const [editingTrack, setEditingTrack] = useState<Partial<MusicTrackAdmin>>(emptyTrack);
+
   // Media Library Dialog State
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [mediaPickerTarget, setMediaPickerTarget] = useState<'item_cover' | 'item_audio' | 'track_cover' | 'track_audio'>('item_cover');
   const [uploadingFile, setUploadingFile] = useState(false);
+
+  // Gift Item State
+  const [giftItemCode, setGiftItemCode] = useState('');
+  const [giftUserEmail, setGiftUserEmail] = useState('');
+  const [giftSending, setGiftSending] = useState(false);
+
+  const handleSendGift = async () => {
+    if (!giftItemCode || !giftUserEmail) {
+      toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn vật phẩm và nhập Email học viên', variant: 'destructive' });
+      return;
+    }
+
+    setGiftSending(true);
+    try {
+      // Find user by email from profiles / auth
+      const { data: prof } = await (supabase as any)
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('email', giftUserEmail.trim())
+        .maybeSingle();
+
+      if (!prof) {
+        toast({ title: 'Không tìm thấy học viên', description: `Không tìm thấy tài khoản với email ${giftUserEmail}`, variant: 'destructive' });
+        return;
+      }
+
+      // Find item_id from store_items
+      const itemObj = items.find(i => i.code === giftItemCode);
+
+      // Insert into user_inventory
+      const { error } = await (supabase as any).from('user_inventory').insert({
+        user_id: prof.id,
+        item_id: itemObj?.id,
+        item_code: giftItemCode,
+        purchased_with: 'system_gift',
+        amount_paid: 0,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: '🎁 Gửi tặng quà thành công!',
+        description: `Đã tặng ${itemObj?.title_vi || giftItemCode} cho học viên ${prof.full_name || giftUserEmail}`,
+      });
+      setGiftUserEmail('');
+    } catch (err: any) {
+      toast({ title: 'Lỗi tặng quà', description: err.message, variant: 'destructive' });
+    } finally {
+      setGiftSending(false);
+    }
+  };
 
   const handleDirectFileUpload = async (file: File, target: 'item_cover' | 'item_audio' | 'track_cover' | 'track_audio') => {
     setUploadingFile(true);
@@ -111,11 +166,11 @@ export default function AdminStore() {
     setLoading(true);
     try {
       // 1. Fetch store items
-      const { data: itemData } = await supabase.from('store_items').select('*').order('created_at', { ascending: false });
+      const { data: itemData } = await (supabase as any).from('store_items').select('*').order('created_at', { ascending: false });
       setItems((itemData || []) as StoreItemAdmin[]);
 
       // 2. Fetch music tracks
-      const { data: trackData } = await supabase.from('music_tracks').select('*').order('created_at', { ascending: false });
+      const { data: trackData } = await (supabase as any).from('music_tracks').select('*').order('created_at', { ascending: false });
       setTracks((trackData || []) as MusicTrackAdmin[]);
 
       // 3. Fetch store system settings (is_store_enabled)
@@ -179,9 +234,9 @@ export default function AdminStore() {
     setSaving(true);
     try {
       if (editingItem.id) {
-        await supabase.from('store_items').update(editingItem as any).eq('id', editingItem.id);
+        await (supabase as any).from('store_items').update(editingItem).eq('id', editingItem.id);
       } else {
-        await supabase.from('store_items').insert(editingItem as any);
+        await (supabase as any).from('store_items').insert(editingItem);
       }
       toast({ title: '✅ Đã lưu thông tin vật phẩm' });
       setItemDialogOpen(false);
@@ -195,7 +250,7 @@ export default function AdminStore() {
 
   const handleDeleteItem = async (id: string) => {
     if (!confirm('Bạn có chắc chắn muốn xóa vật phẩm này không?')) return;
-    await supabase.from('store_items').delete().eq('id', id);
+    await (supabase as any).from('store_items').delete().eq('id', id);
     toast({ title: 'Đã xóa vật phẩm' });
     fetchData();
   };
@@ -209,9 +264,9 @@ export default function AdminStore() {
     setSaving(true);
     try {
       if (editingTrack.id) {
-        await supabase.from('music_tracks').update(editingTrack as any).eq('id', editingTrack.id);
+        await (supabase as any).from('music_tracks').update(editingTrack).eq('id', editingTrack.id);
       } else {
-        await supabase.from('music_tracks').insert(editingTrack as any);
+        await (supabase as any).from('music_tracks').insert(editingTrack);
       }
       toast({ title: '✅ Đã lưu bài nhạc học tập' });
       setTrackDialogOpen(false);
@@ -225,7 +280,7 @@ export default function AdminStore() {
 
   const handleDeleteTrack = async (id: string) => {
     if (!confirm('Bạn có chắc chắn muốn xóa bài nhạc này không?')) return;
-    await supabase.from('music_tracks').delete().eq('id', id);
+    await (supabase as any).from('music_tracks').delete().eq('id', id);
     toast({ title: 'Đã xóa bài nhạc' });
     fetchData();
   };
@@ -233,31 +288,34 @@ export default function AdminStore() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold flex items-center gap-2">
-            <ShoppingBag className="w-7 h-7 text-amber-500" />
-            Quản Lý Cửa Hàng & Nhạc Học Tập
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Cấu hình bật/tắt Cửa hàng, quản lý vật phẩm bán bằng VNĐ/XP/Streak & nhạc nền học tập
-          </p>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+          <ShoppingBag className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500" />
+          <span>Quản Lý Cửa Hàng &amp; Nhạc</span>
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Cấu hình bật/tắt Cửa hàng, quản lý vật phẩm bán bằng VNĐ/XP/Streak &amp; nhạc nền học tập
+        </p>
+      </div>
 
-        <Button variant="outline" onClick={fetchData} className="gap-2">
-          <RefreshCw className="w-4 h-4" /> Làm mới
-        </Button>
+      <Button variant="outline" onClick={fetchData} size="sm" className="gap-2 self-end sm:self-auto">
+        <RefreshCw className="w-4 h-4" /> Làm mới
+      </Button>
       </div>
 
       <Tabs defaultValue="settings" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="settings" className="gap-2 font-bold">
-            <Shield className="w-4 h-4 text-primary" /> Bật/Tắt Cửa Hàng
+        <TabsList className="flex flex-wrap h-auto gap-1 w-full justify-start">
+          <TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm font-bold flex-1 sm:flex-none">
+            <Shield className="w-3.5 h-3.5 text-primary" /> <span className="hidden sm:inline">Bật/Tắt</span> Cửa Hàng
           </TabsTrigger>
-          <TabsTrigger value="items" className="gap-2">
-            <ShoppingBag className="w-4 h-4" /> Danh mục Vật phẩm ({items.length})
+          <TabsTrigger value="items" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
+            <ShoppingBag className="w-3.5 h-3.5" /> <span className="hidden xs:inline">Vật phẩm</span> ({items.length})
           </TabsTrigger>
-          <TabsTrigger value="music" className="gap-2">
-            <Music className="w-4 h-4 text-amber-500" /> Kho Nhạc Học Tập ({tracks.length})
+          <TabsTrigger value="music" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
+            <Music className="w-3.5 h-3.5 text-amber-500" /> <span className="hidden xs:inline">Kho Nhạc</span> ({tracks.length})
+          </TabsTrigger>
+          <TabsTrigger value="gift" className="gap-1.5 text-xs sm:text-sm font-bold flex-1 sm:flex-none">
+            <Gift className="w-3.5 h-3.5 text-purple-500" /> <span className="hidden sm:inline">🎁 Tặng Vật Phẩm</span><span className="sm:hidden">🎁</span>
           </TabsTrigger>
         </TabsList>
 
@@ -275,12 +333,12 @@ export default function AdminStore() {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between p-4 rounded-2xl border bg-card">
                 <div className="space-y-1">
-                  <p className="font-bold text-sm flex items-center gap-2">
+                  <div className="font-bold text-sm flex items-center gap-2">
                     Trạng thái Cửa Hàng (/store):
                     <Badge variant={isStoreEnabled ? 'default' : 'secondary'} className={isStoreEnabled ? 'bg-emerald-500 text-white' : ''}>
                       {isStoreEnabled ? '🟢 ĐANG BẬT (Hiển thị)' : '🔴 ĐANG TẮT (Đã ẩn)'}
                     </Badge>
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Giao diện Cửa hàng bán các vật phẩm khung avatar, nhạc Lo-Fi, bài học boost đổi bằng XP & VNĐ.
                   </p>
@@ -306,7 +364,7 @@ export default function AdminStore() {
           </div>
 
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -361,7 +419,7 @@ export default function AdminStore() {
           </div>
 
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -393,6 +451,50 @@ export default function AdminStore() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 4: Gift Item to Student */}
+        <TabsContent value="gift" className="space-y-4">
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Gift className="w-5 h-5 text-purple-500" /> Tặng Vật Phẩm Trực Tiếp Cho Học Viên / Sự Kiện
+              </CardTitle>
+              <CardDescription>
+                Gửi tặng sách giáo trình, khung avatar 3D hoặc thẻ boost XP trực tiếp vào Kho đồ cá nhân của học viên.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 max-w-lg">
+              <div className="space-y-1 text-xs">
+                <Label className="font-bold">Chọn vật phẩm tặng *</Label>
+                <Select value={giftItemCode} onValueChange={setGiftItemCode}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="-- Chọn vật phẩm --" /></SelectTrigger>
+                  <SelectContent>
+                    {items.map(it => (
+                      <SelectItem key={it.id} value={it.code}>
+                        {it.title_vi} ({it.category})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1 text-xs">
+                <Label className="font-bold">Email Học viên nhận quà *</Label>
+                <Input
+                  value={giftUserEmail}
+                  onChange={(e) => setGiftUserEmail(e.target.value)}
+                  placeholder="VD: hocvien@gmail.com"
+                  className="h-10"
+                />
+              </div>
+
+              <Button onClick={handleSendGift} disabled={giftSending} className="w-full font-bold gap-2 bg-purple-600 hover:bg-purple-700 text-white">
+                {giftSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gift className="w-4 h-4" />}
+                {giftSending ? 'Đang gửi tặng...' : 'Gửi Tặng Quà Ngay'}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

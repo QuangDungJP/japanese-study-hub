@@ -85,6 +85,8 @@ import EventDetailPage from "./pages/EventDetail";
 import AdminEvents from "./pages/admin/AdminEvents";
 import ScrollToTop from "./components/ScrollToTop";
 
+import BackgroundMusicPlayer from "./components/shared/BackgroundMusicPlayer";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -177,6 +179,7 @@ const App = () => (
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <BackgroundMusicPlayer />
           </BrowserRouter>
         </LearningProvider>
       </AuthProvider>

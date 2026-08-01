@@ -17,7 +17,7 @@ import SectionEditorFields from '@/components/admin/SectionEditorFields';
 import { 
   Layout, Image, Video, Eye, EyeOff, Save, Upload, Trash2, 
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
-  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, MessageSquare
+  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, MessageSquare, Bell
 } from 'lucide-react';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import TestimonialsManager from '@/components/admin/TestimonialsManager';
@@ -110,6 +110,47 @@ const AdminWebsiteCMS = () => {
   const [footerRecordId, setFooterRecordId] = useState<string | null>(null);
   const [footerLoading, setFooterLoading] = useState(false);
   const [footerSaving, setFooterSaving] = useState(false);
+
+  // Announcement Bar State
+  const [announcementData, setAnnouncementData] = useState({
+    enabled: true,
+    text_vi: '🎉 Ưu đãi 20% Học phí JLPT N5-N1 - Đăng ký ngay hôm nay!',
+    button_text_vi: 'Xem ưu đãi',
+    button_url: '/khoa-hoc',
+    bg_gradient: 'sakura',
+  });
+  const [announcementSaving, setAnnouncementSaving] = useState(false);
+
+  const saveAnnouncementBar = async () => {
+    setAnnouncementSaving(true);
+    try {
+      const { data: existing } = await supabase
+        .from('website_content')
+        .select('id')
+        .eq('section_key', 'announcement_bar')
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('website_content')
+          .update({ content: announcementData as any, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('website_content').insert({
+          section_key: 'announcement_bar',
+          title: 'Announcement Bar',
+          content: announcementData as any,
+          is_active: true,
+        });
+      }
+
+      toast({ title: '✅ Đã lưu cấu hình Thanh thông báo!' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi lưu thông báo', description: err.message, variant: 'destructive' });
+    } finally {
+      setAnnouncementSaving(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     title: '',
@@ -552,6 +593,10 @@ const AdminWebsiteCMS = () => {
           <TabsTrigger value="testimonials" className="gap-2">
             <MessageSquare className="w-4 h-4 text-amber-500" />
             Feedback
+          </TabsTrigger>
+          <TabsTrigger value="announcement" className="gap-2 font-bold text-amber-500">
+            <Bell className="w-4 h-4" />
+            Thanh Thông Báo
           </TabsTrigger>
           <TabsTrigger value="footer" className="gap-2">
             <Footprints className="w-4 h-4" />
@@ -1140,6 +1185,68 @@ const AdminWebsiteCMS = () => {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Announcement Bar Tab */}
+        <TabsContent value="announcement" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-amber-500" />
+                Cấu hình Thanh Thông Báo Khuyến Mãi (Announcement Bar)
+              </CardTitle>
+              <CardDescription>
+                Thanh thông báo nổi bật nằm trên cùng trang web (trên Navbar)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 max-w-xl">
+              <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
+                <div>
+                  <p className="font-bold text-sm">Trạng thái Thanh thông báo:</p>
+                  <p className="text-xs text-muted-foreground">Bật hoặc Tắt hiển thị trên đầu trang web</p>
+                </div>
+                <Switch
+                  checked={announcementData.enabled}
+                  onCheckedChange={(val) => setAnnouncementData(prev => ({ ...prev, enabled: val }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-bold">Nội dung thông báo (Tiếng Việt)</Label>
+                <Input
+                  value={announcementData.text_vi}
+                  onChange={(e) => setAnnouncementData(prev => ({ ...prev, text_vi: e.target.value }))}
+                  placeholder="VD: 🎉 Khuyến mãi 20% Học phí JLPT N5-N1!"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-bold">Tên nút bấm</Label>
+                  <Input
+                    value={announcementData.button_text_vi}
+                    onChange={(e) => setAnnouncementData(prev => ({ ...prev, button_text_vi: e.target.value }))}
+                    placeholder="VD: Xem ngay"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-bold">Đường dẫn nút bấm</Label>
+                  <Input
+                    value={announcementData.button_url}
+                    onChange={(e) => setAnnouncementData(prev => ({ ...prev, button_url: e.target.value }))}
+                    placeholder="VD: /khoa-hoc"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex justify-end">
+                <Button onClick={saveAnnouncementBar} disabled={announcementSaving} className="font-bold gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                  <Save className="w-4 h-4" /> {announcementSaving ? 'Đang lưu...' : 'Lưu Thanh Thông Báo'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
