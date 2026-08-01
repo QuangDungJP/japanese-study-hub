@@ -26,7 +26,20 @@ const Footer = () => {
   const facebookUrl = footerContent?.facebook_url || "#";
   const youtubeUrl = footerContent?.youtube_url || "#";
   const instagramUrl = footerContent?.instagram_url || "#";
+  const tiktokUrl = footerContent?.tiktok_url || "";
+  const zaloUrl = footerContent?.zalo_url || "";
   const copyrightText = footerContent?.copyright_text || "© 2026 TNQDO. All rights reserved.";
+  const customPagesLinks: { label: string; url: string }[] = Array.isArray(footerContent?.custom_links_pages) ? footerContent.custom_links_pages : [];
+  const customSupportLinks: { label: string; url: string }[] = Array.isArray(footerContent?.custom_links_support) ? footerContent.custom_links_support : [];
+
+  const renderLink = (url: string, label: string, key?: string | number) => {
+    const isExternal = url.startsWith('http');
+    const cls = "text-primary-foreground/70 hover:text-primary-foreground transition-colors";
+    if (isExternal) {
+      return <li key={key}><a href={url} target="_blank" rel="noopener noreferrer" className={cls}>{label}</a></li>;
+    }
+    return <li key={key}><Link to={url} className={cls}>{label}</Link></li>;
+  };
 
   return (
     <footer className="bg-foreground text-primary-foreground py-16">
@@ -38,16 +51,32 @@ const Footer = () => {
             <p className="text-primary-foreground/70 mb-6 text-sm leading-relaxed">
               {brandDescription}
             </p>
-            <div className="flex gap-4">
-              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                <Youtube className="w-5 h-5" />
-              </a>
-              <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
+            <div className="flex gap-3">
+              {facebookUrl && facebookUrl !== '#' && (
+                <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <Facebook className="w-5 h-5" />
+                </a>
+              )}
+              {youtubeUrl && youtubeUrl !== '#' && (
+                <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <Youtube className="w-5 h-5" />
+                </a>
+              )}
+              {instagramUrl && instagramUrl !== '#' && (
+                <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <Instagram className="w-5 h-5" />
+                </a>
+              )}
+              {tiktokUrl && (
+                <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" title="TikTok">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.88-2.88 2.89 2.89 0 012.88-2.88c.28 0 .56.04.82.12V9.01a6.37 6.37 0 00-.82-.05A6.34 6.34 0 003.15 15.3 6.34 6.34 0 009.49 21.64a6.34 6.34 0 006.34-6.34V8.7a8.28 8.28 0 004.84 1.55V6.8a4.84 4.84 0 01-1.08-.11z"/></svg>
+                </a>
+              )}
+              {zaloUrl && (
+                <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors text-xs font-bold" title="Zalo">
+                  Zalo
+                </a>
+              )}
             </div>
           </div>
 
@@ -60,6 +89,7 @@ const Footer = () => {
               <li><Link to="/giao-vien" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Giáo viên</Link></li>
               <li><Link to="/zoom" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Học qua Meeting</Link></li>
               <li><Link to="/blog" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Blog</Link></li>
+              {customPagesLinks.filter(l => l.label && l.url).map((l, i) => renderLink(l.url, l.label, `cp-${i}`))}
             </ul>
           </div>
 
@@ -71,6 +101,7 @@ const Footer = () => {
               <li><Link to="/lien-he" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Liên hệ</Link></li>
               <li><Link to="/chinh-sach-bao-mat" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Chính sách bảo mật</Link></li>
               <li><Link to="/dieu-khoan" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Điều khoản sử dụng</Link></li>
+              {customSupportLinks.filter(l => l.label && l.url).map((l, i) => renderLink(l.url, l.label, `cs-${i}`))}
             </ul>
           </div>
 
@@ -120,3 +151,4 @@ const Footer = () => {
 };
 
 export default Footer;
+

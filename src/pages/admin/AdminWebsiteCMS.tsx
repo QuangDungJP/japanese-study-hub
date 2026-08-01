@@ -20,6 +20,11 @@ import {
   ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, MessageSquare
 } from 'lucide-react';
 import TestimonialsManager from '@/components/admin/TestimonialsManager';
+import { Separator } from '@/components/ui/separator';
+import {
+  Facebook, Youtube, Instagram, Mail, Phone, MapPin, Globe as GlobeIcon2,
+  Link as LinkIcon, Plus, X as XIcon, Footprints
+} from 'lucide-react';
 
 
 interface WebsiteContent {
@@ -82,6 +87,26 @@ const AdminWebsiteCMS = () => {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Footer editor state
+  const [footerData, setFooterData] = useState<Record<string, any>>({
+    brand_description: '',
+    address: '',
+    phone: '',
+    email: '',
+    website_domain: '',
+    facebook_url: '',
+    youtube_url: '',
+    instagram_url: '',
+    tiktok_url: '',
+    zalo_url: '',
+    copyright_text: '',
+    custom_links_pages: [] as { label: string; url: string }[],
+    custom_links_support: [] as { label: string; url: string }[],
+  });
+  const [footerRecordId, setFooterRecordId] = useState<string | null>(null);
+  const [footerLoading, setFooterLoading] = useState(false);
+  const [footerSaving, setFooterSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     title: '',
     title_vi: '',
@@ -138,7 +163,82 @@ const AdminWebsiteCMS = () => {
   useEffect(() => {
     fetchSections();
     fetchCourses();
+    fetchFooter();
   }, [fetchSections, fetchCourses]);
+
+  // Footer fetch
+  const fetchFooter = async () => {
+    setFooterLoading(true);
+    try {
+      const { data } = await supabase
+        .from('website_content')
+        .select('id, content')
+        .eq('section_key', 'footer')
+        .maybeSingle();
+
+      if (data) {
+        setFooterRecordId(data.id);
+        const c = (data.content || {}) as Record<string, any>;
+        setFooterData({
+          brand_description: c.brand_description || '',
+          address: c.address || '',
+          phone: c.phone || '',
+          email: c.email || '',
+          website_domain: c.website_domain || '',
+          facebook_url: c.facebook_url || '',
+          youtube_url: c.youtube_url || '',
+          instagram_url: c.instagram_url || '',
+          tiktok_url: c.tiktok_url || '',
+          zalo_url: c.zalo_url || '',
+          copyright_text: c.copyright_text || '',
+          custom_links_pages: Array.isArray(c.custom_links_pages) ? c.custom_links_pages : [],
+          custom_links_support: Array.isArray(c.custom_links_support) ? c.custom_links_support : [],
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching footer:', err);
+    } finally {
+      setFooterLoading(false);
+    }
+  };
+
+  // Footer save
+  const saveFooter = async () => {
+    setFooterSaving(true);
+    try {
+      if (footerRecordId) {
+        const { error } = await supabase
+          .from('website_content')
+          .update({ content: footerData as any, updated_at: new Date().toISOString() })
+          .eq('id', footerRecordId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('website_content')
+          .insert({
+            section_key: 'footer',
+            title_vi: 'Footer',
+            is_active: true,
+            order_index: 999,
+            content: footerData as any,
+          })
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data) setFooterRecordId(data.id);
+      }
+      toast({ title: '✅ Đã lưu Footer', description: 'Nội dung footer đã được cập nhật thành công.' });
+    } catch (err) {
+      console.error('Footer save error:', err);
+      toast({ title: 'Lỗi', description: 'Không thể lưu footer', variant: 'destructive' });
+    } finally {
+      setFooterSaving(false);
+    }
+  };
+
+  const updateFooterField = (key: string, value: any) => {
+    setFooterData(prev => ({ ...prev, [key]: value }));
+  };
 
   const createTeachersSection = async () => {
     setCreatingTeachersSection(true);
@@ -443,7 +543,11 @@ const AdminWebsiteCMS = () => {
           </TabsTrigger>
           <TabsTrigger value="testimonials" className="gap-2">
             <MessageSquare className="w-4 h-4 text-amber-500" />
-            Feedback học viên
+            Feedback
+          </TabsTrigger>
+          <TabsTrigger value="footer" className="gap-2">
+            <Footprints className="w-4 h-4" />
+            Footer
           </TabsTrigger>
         </TabsList>
 
@@ -708,6 +812,323 @@ const AdminWebsiteCMS = () => {
         {/* Feedback Tab */}
         <TabsContent value="testimonials" className="space-y-4">
           <TestimonialsManager />
+        </TabsContent>
+
+        {/* Footer Tab */}
+        <TabsContent value="footer" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Footprints className="w-5 h-5" /> Chỉnh sửa Footer
+                  </CardTitle>
+                  <CardDescription>Tùy biến toàn bộ nội dung chân trang website</CardDescription>
+                </div>
+                <Button onClick={saveFooter} disabled={footerSaving} className="gap-2">
+                  <Save className="w-4 h-4" />
+                  {footerSaving ? 'Đang lưu...' : 'Lưu Footer'}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {footerLoading ? (
+                <div className="text-center py-12 text-muted-foreground">Loading...</div>
+              ) : (
+                <>
+                  {/* Brand Description */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <Layout className="w-4 h-4" /> Thương hiệu
+                    </h3>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Mô tả ngắn về thương hiệu</Label>
+                      <Textarea
+                        value={footerData.brand_description}
+                        onChange={(e) => updateFooterField('brand_description', e.target.value)}
+                        placeholder="Trung tâm đào tạo Tiếng Nhật hàng đầu..."
+                        rows={3}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Bản quyền (Copyright)</Label>
+                      <Input
+                        value={footerData.copyright_text}
+                        onChange={(e) => updateFooterField('copyright_text', e.target.value)}
+                        placeholder="© 2026 TNQDO. All rights reserved."
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Contact Info */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <Phone className="w-4 h-4" /> Thông tin liên hệ
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Địa chỉ</Label>
+                        <Input
+                          value={footerData.address}
+                          onChange={(e) => updateFooterField('address', e.target.value)}
+                          placeholder="123 Nguyễn Huệ, Q.1, TP.HCM"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> Số điện thoại</Label>
+                        <Input
+                          value={footerData.phone}
+                          onChange={(e) => updateFooterField('phone', e.target.value)}
+                          placeholder="1900 1234"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> Email</Label>
+                        <Input
+                          value={footerData.email}
+                          onChange={(e) => updateFooterField('email', e.target.value)}
+                          placeholder="hello@tnqdo.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1.5"><GlobeIcon2 className="w-3.5 h-3.5" /> Website</Label>
+                        <Input
+                          value={footerData.website_domain}
+                          onChange={(e) => updateFooterField('website_domain', e.target.value)}
+                          placeholder="https://quangdungjp.com"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Social Links */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4" /> Mạng xã hội
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1.5"><Facebook className="w-3.5 h-3.5 text-blue-600" /> Facebook</Label>
+                        <Input
+                          value={footerData.facebook_url}
+                          onChange={(e) => updateFooterField('facebook_url', e.target.value)}
+                          placeholder="https://facebook.com/..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1.5"><Youtube className="w-3.5 h-3.5 text-red-600" /> YouTube</Label>
+                        <Input
+                          value={footerData.youtube_url}
+                          onChange={(e) => updateFooterField('youtube_url', e.target.value)}
+                          placeholder="https://youtube.com/@..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1.5"><Instagram className="w-3.5 h-3.5 text-pink-600" /> Instagram</Label>
+                        <Input
+                          value={footerData.instagram_url}
+                          onChange={(e) => updateFooterField('instagram_url', e.target.value)}
+                          placeholder="https://instagram.com/..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">TikTok</Label>
+                        <Input
+                          value={footerData.tiktok_url}
+                          onChange={(e) => updateFooterField('tiktok_url', e.target.value)}
+                          placeholder="https://tiktok.com/@..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Zalo</Label>
+                        <Input
+                          value={footerData.zalo_url}
+                          onChange={(e) => updateFooterField('zalo_url', e.target.value)}
+                          placeholder="https://zalo.me/..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Custom Nav Links - Pages */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                        <FileText className="w-4 h-4" /> Cột "Trang" (tuỳ chỉnh link)
+                      </h3>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 h-7 text-xs"
+                        onClick={() => updateFooterField('custom_links_pages', [...(footerData.custom_links_pages || []), { label: '', url: '' }])}
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Thêm link
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Mặc định: Giới thiệu, Khóa học, Giáo viên, Meeting, Blog. Thêm link tùy chỉnh bên dưới (sẽ hiện thêm sau danh sách mặc định).</p>
+                    {(footerData.custom_links_pages || []).length > 0 && (
+                      <div className="space-y-2">
+                        {(footerData.custom_links_pages as { label: string; url: string }[]).map((link, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Input
+                              placeholder="Tên hiển thị"
+                              value={link.label}
+                              onChange={(e) => {
+                                const updated = [...footerData.custom_links_pages];
+                                updated[idx] = { ...updated[idx], label: e.target.value };
+                                updateFooterField('custom_links_pages', updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Input
+                              placeholder="/duong-dan hoặc https://..."
+                              value={link.url}
+                              onChange={(e) => {
+                                const updated = [...footerData.custom_links_pages];
+                                updated[idx] = { ...updated[idx], url: e.target.value };
+                                updateFooterField('custom_links_pages', updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => {
+                                const updated = footerData.custom_links_pages.filter((_: any, i: number) => i !== idx);
+                                updateFooterField('custom_links_pages', updated);
+                              }}
+                            >
+                              <XIcon className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Custom Nav Links - Support */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                        <FileText className="w-4 h-4" /> Cột "Hỗ trợ" (tuỳ chỉnh link)
+                      </h3>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 h-7 text-xs"
+                        onClick={() => updateFooterField('custom_links_support', [...(footerData.custom_links_support || []), { label: '', url: '' }])}
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Thêm link
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Mặc định: Hỏi & Đáp, Liên hệ, Chính sách bảo mật, Điều khoản. Thêm link tùy chỉnh bên dưới.</p>
+                    {(footerData.custom_links_support || []).length > 0 && (
+                      <div className="space-y-2">
+                        {(footerData.custom_links_support as { label: string; url: string }[]).map((link, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Input
+                              placeholder="Tên hiển thị"
+                              value={link.label}
+                              onChange={(e) => {
+                                const updated = [...footerData.custom_links_support];
+                                updated[idx] = { ...updated[idx], label: e.target.value };
+                                updateFooterField('custom_links_support', updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Input
+                              placeholder="/duong-dan hoặc https://..."
+                              value={link.url}
+                              onChange={(e) => {
+                                const updated = [...footerData.custom_links_support];
+                                updated[idx] = { ...updated[idx], url: e.target.value };
+                                updateFooterField('custom_links_support', updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => {
+                                const updated = footerData.custom_links_support.filter((_: any, i: number) => i !== idx);
+                                updateFooterField('custom_links_support', updated);
+                              }}
+                            >
+                              <XIcon className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Live Preview */}
+                  <Separator />
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <Monitor className="w-4 h-4" /> Preview Footer
+                    </h3>
+                    <div className="bg-gray-900 text-white rounded-xl p-6 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div>
+                          <p className="font-bold text-base mb-2">TNQDO</p>
+                          <p className="text-gray-400 text-xs leading-relaxed">{footerData.brand_description || 'Mô tả thương hiệu...'}</p>
+                          <div className="flex gap-2 mt-3">
+                            {footerData.facebook_url && <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"><Facebook className="w-3.5 h-3.5" /></div>}
+                            {footerData.youtube_url && <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"><Youtube className="w-3.5 h-3.5" /></div>}
+                            {footerData.instagram_url && <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"><Instagram className="w-3.5 h-3.5" /></div>}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-bold mb-2">Trang</p>
+                          <ul className="space-y-1 text-gray-400 text-xs">
+                            <li>Giới thiệu</li>
+                            <li>Khóa học</li>
+                            <li>Giáo viên</li>
+                            <li>Meeting</li>
+                            <li>Blog</li>
+                            {(footerData.custom_links_pages || []).filter((l: any) => l.label).map((l: any, i: number) => <li key={i}>{l.label}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-bold mb-2">Hỗ trợ</p>
+                          <ul className="space-y-1 text-gray-400 text-xs">
+                            <li>Hỏi & Đáp</li>
+                            <li>Liên hệ</li>
+                            <li>Bảo mật</li>
+                            <li>Điều khoản</li>
+                            {(footerData.custom_links_support || []).filter((l: any) => l.label).map((l: any, i: number) => <li key={i}>{l.label}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-bold mb-2">Liên hệ</p>
+                          <ul className="space-y-1.5 text-gray-400 text-xs">
+                            {footerData.address && <li className="flex items-start gap-1.5"><MapPin className="w-3 h-3 mt-0.5 shrink-0" />{footerData.address}</li>}
+                            {footerData.phone && <li className="flex items-center gap-1.5"><Phone className="w-3 h-3 shrink-0" />{footerData.phone}</li>}
+                            {footerData.email && <li className="flex items-center gap-1.5"><Mail className="w-3 h-3 shrink-0" />{footerData.email}</li>}
+                            {footerData.website_domain && <li className="flex items-center gap-1.5"><GlobeIcon2 className="w-3 h-3 shrink-0" />{footerData.website_domain.replace(/^https?:\/\//, '').replace(/\/$/, '')}</li>}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="border-t border-white/10 mt-4 pt-3 text-center text-gray-500 text-xs">
+                        {footerData.copyright_text || '© 2026 TNQDO'}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

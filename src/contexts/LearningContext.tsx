@@ -80,6 +80,66 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
         if (profileData?.current_language) {
           setCurrentLanguage(profileData.current_language as Language);
         }
+        // ── Daily Check-in (+10 XP) & Auto Badge Unlocking ─────────────────────────
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const { data: existingCheckin } = await supabase
+          .from('daily_checkins')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('checkin_date', todayStr)
+          .maybeSingle();
+
+        let updatedXp = progressData?.total_xp || 0;
+        let updatedStreak = progressData?.streak || 0;
+
+        if (!existingCheckin) {
+          const newStreak = updatedStreak + 1;
+          const checkinXp = 10;
+          updatedXp += checkinXp;
+          updatedStreak = newStreak;
+
+          await supabase.from('daily_checkins').insert({
+            user_id: user.id,
+            checkin_date: todayStr,
+            xp_earned: checkinXp,
+            streak: newStreak,
+          });
+
+          await supabase.from('user_progress').upsert({
+            user_id: user.id,
+            total_xp: updatedXp,
+            streak: newStreak,
+            last_activity_date: todayStr,
+            updated_at: new Date().toISOString(),
+          });
+        }
+
+        // Auto Badge Unlocker Check
+        const { data: allBadges } = await supabase.from('badges').select('*').eq('is_active', true);
+        const { data: userBadgesData } = await supabase.from('user_badges').select('badge_id').eq('user_id', user.id);
+        const unlockedBadgeIds = new Set((userBadgesData || []).map(b => b.badge_id));
+
+        if (allBadges) {
+          for (const b of allBadges) {
+            if (unlockedBadgeIds.has(b.id)) continue;
+            let conditionMet = false;
+            if (b.req_type === 'total_xp' && updatedXp >= b.req_value) conditionMet = true;
+            if (b.req_type === 'streak_days' && updatedStreak >= b.req_value) conditionMet = true;
+            if (b.req_type === 'lessons_completed' && (progressData?.lessons_completed || 0) >= b.req_value) conditionMet = true;
+
+            if (conditionMet) {
+              await supabase.from('user_badges').insert({
+                user_id: user.id,
+                badge_id: b.id,
+                unlocked_by: 'system',
+              });
+              if (b.bonus_xp > 0) {
+                updatedXp += b.bonus_xp;
+                await supabase.from('user_progress').update({ total_xp: updatedXp }).eq('user_id', user.id);
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error('Error fetching user progress:', error);
       } finally {

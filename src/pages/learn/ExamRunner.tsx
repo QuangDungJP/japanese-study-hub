@@ -31,6 +31,13 @@ interface Question {
   points?: number;
 }
 
+interface ProctoringConfig {
+  detect_gaze?: boolean;
+  detect_head?: boolean;
+  detect_multi_face?: boolean;
+  detect_dual_monitor?: boolean;
+}
+
 interface Exam {
   id: string;
   title_vi: string;
@@ -48,8 +55,12 @@ interface Exam {
   passing_score: number | null;
   max_score: number | null;
   video_url: string | null;
+  meet_link: string | null;
   is_published: boolean;
+  exam_category: 'written' | 'speaking_meeting' | 'speaking_ai';
   anti_cheat: boolean;
+  ai_proctoring: boolean;
+  proctoring_config: ProctoringConfig;
   anti_cheat_max_violations: number;
   anti_cheat_penalty: 'warn_only' | 'auto_submit' | 'reset_answers' | 'deduct_points';
   anti_cheat_deduct_per_violation: number;
@@ -111,6 +122,16 @@ const ExamRunner = () => {
   // Anti-cheat
   const [violations, setViolations] = useState(0);
   const [showViolationWarning, setShowViolationWarning] = useState(false);
+  // AI Proctoring Vision State
+  const [cameraActive, setCameraActive] = useState(false);
+  const [proctoringStatus, setProctoringStatus] = useState<"normal" | "gaze_away" | "head_turned" | "no_face" | "multi_monitor">("normal");
+  const [proctoringLogs, setProctoringLogs] = useState<Array<{ time: string; type: string; msg: string }>>([]);
+  // Speaking Exam Audio Recordings
+  const [speakingRecordings, setSpeakingRecordings] = useState<Record<number, string>>({});
+  const [recordingActiveIndex, setRecordingActiveIndex] = useState<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   // Review / Retry
   const [runMode, setRunMode] = useState<RunMode>("exam");
   const [retryQuestions, setRetryQuestions] = useState<Question[]>([]);
@@ -123,6 +144,10 @@ const ExamRunner = () => {
   const attachmentRef = useRef(attachment);
   const attemptIdRef = useRef(attemptId);
   const startedAtRef = useRef(startedAt);
+  const proctoringLogsRef = useRef(proctoringLogs);
+  const speakingRecordingsRef = useRef(speakingRecordings);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => { answersRef.current = answers; }, [answers]);
   useEffect(() => { commentRef.current = comment; }, [comment]);
@@ -130,6 +155,8 @@ const ExamRunner = () => {
   useEffect(() => { attachmentRef.current = attachment; }, [attachment]);
   useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
   useEffect(() => { startedAtRef.current = startedAt; }, [startedAt]);
+  useEffect(() => { proctoringLogsRef.current = proctoringLogs; }, [proctoringLogs]);
+  useEffect(() => { speakingRecordingsRef.current = speakingRecordings; }, [speakingRecordings]);
 
   const orderedQuestions = useMemo(() => {
     if (runMode === "retry_wrong" || runMode === "retry_all") return retryQuestions;
@@ -222,6 +249,111 @@ const ExamRunner = () => {
     };
   }, [exam, result, locked, runMode]);
 
+  // ── AI Camera Vision Proctoring Engine ──────────────────────────────────────
+  useEffect(() => {
+    if (!exam?.ai_proctoring || result || locked || runMode !== "exam") return;
+    let stream: MediaStream | null = null;
+    let intervalId: any = null;
+
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+        setCameraActive(true);
+
+        const config = exam.proctoring_config || {};
+
+        // Periodic frame analysis heuristic
+        intervalId = setInterval(() => {
+          if (!videoRef.current || !canvasRef.current) return;
+          const video = videoRef.current;
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext("2d");
+          if (!ctx || video.readyState !== 4) return;
+
+          canvas.width = 160;
+          canvas.height = 120;
+          ctx.drawImage(video, 0, 0, 160, 120);
+
+          // Image pixel brightness & balance analysis
+          const imgData = ctx.getImageData(0, 0, 160, 120);
+          const data = imgData.data;
+          let leftLum = 0, rightLum = 0, totalLum = 0;
+          let activePixels = 0;
+
+          for (let i = 0; i < data.length; i += 16) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            totalLum += lum;
+            activePixels++;
+            const x = (i / 4) % 160;
+            if (x < 80) leftLum += lum; else rightLum += lum;
+          }
+
+          const avgLum = totalLum / Math.max(activePixels, 1);
+          const lrRatio = Math.abs(leftLum - rightLum) / Math.max(leftLum + rightLum, 1);
+
+          const timeStr = new Date().toLocaleTimeString("vi-VN");
+
+          // 1. Detect No Face / Away (too dark or low variation)
+          if (config.detect_multi_face && avgLum < 15) {
+            setProctoringStatus("no_face");
+            setProctoringLogs(logs => [
+              ...logs.slice(-20),
+              { time: timeStr, type: "no_face", msg: "⚠️ Không phát hiện khuôn mặt trước camera" }
+            ]);
+            return;
+          }
+
+          // 2. Detect Head Gesture / Turning side to side
+          if (config.detect_head && lrRatio > 0.35) {
+            setProctoringStatus("head_turned");
+            setProctoringLogs(logs => [
+              ...logs.slice(-20),
+              { time: timeStr, type: "head_turned", msg: "🗣️ Học viên ngoảnh mặt / xoay đầu sang bên" }
+            ]);
+            return;
+          }
+
+          // 3. Detect Eye Gaze shift
+          if (config.detect_gaze && lrRatio > 0.22) {
+            setProctoringStatus("gaze_away");
+            setProctoringLogs(logs => [
+              ...logs.slice(-20),
+              { time: timeStr, type: "gaze_away", msg: "👁️ Học viên nhìn nghiêng ra ngoài màn hình quá lâu" }
+            ]);
+            return;
+          }
+
+          // 4. Detect Dual Monitor
+          if (config.detect_dual_monitor && window.screen && (window.screen as any).isExtended) {
+            setProctoringStatus("multi_monitor");
+            setProctoringLogs(logs => [
+              ...logs.slice(-20),
+              { time: timeStr, type: "multi_monitor", msg: "💻 Phát hiện hệ thống cắm 2 màn hình" }
+            ]);
+            return;
+          }
+
+          setProctoringStatus("normal");
+        }, 1500);
+      } catch (err) {
+        console.warn("AI Camera Proctoring disabled or permission denied:", err);
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      setCameraActive(false);
+    };
+  }, [exam, result, locked, runMode]);
+
   // ── Auto-save ───────────────────────────────────────────────────────────────
   const autoSave = useCallback(async () => {
     const aid = attemptIdRef.current;
@@ -239,6 +371,8 @@ const ExamRunner = () => {
         video_url: videoUrlRef.current || null,
         attachment_url: attachmentRef.current?.url || null,
         attachment_name: attachmentRef.current?.name || null,
+        proctoring_logs: proctoringLogsRef.current as any,
+        speaking_recordings: speakingRecordingsRef.current as any,
       }).eq("id", aid);
       setLastSaved(new Date());
     } catch { /* silent */ }
@@ -383,7 +517,27 @@ const ExamRunner = () => {
 
     setResult({ score, total: totalPts, status, submittedAnswers: answersArr });
     setSubmitting(false);
-    toast({ title: auto ? "Hết giờ — Đã tự nộp" : "Đã nộp bài!", description: `Điểm: ${score}/${totalPts}` });
+
+    // Award XP reward for exam completion
+    if (user) {
+      const xpBonus = (exam as any).xp_reward || 50;
+      try {
+        const { data: prog } = await supabase
+          .from("user_progress")
+          .select("total_xp")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const currentXp = prog?.total_xp || 0;
+        await supabase
+          .from("user_progress")
+          .upsert({ user_id: user.id, total_xp: currentXp + xpBonus, updated_at: new Date().toISOString() });
+      } catch (err) {
+        console.warn("Failed to award exam XP:", err);
+      }
+    }
+
+    toast({ title: auto ? "Hết giờ — Đã tự nộp" : "Đã nộp bài!", description: `Điểm: ${score}/${totalPts} • +${(exam as any).xp_reward || 50} XP` });
   };
 
   // ── File upload ─────────────────────────────────────────────────────────────
@@ -874,6 +1028,61 @@ const ExamRunner = () => {
         <Progress value={(answered / Math.max(totalQ, 1)) * 100} className="h-1 rounded-none" />
       </div>
 
+      {/* AI Proctoring Camera Vision Floating Widget */}
+      {exam.ai_proctoring && (
+        <div className="fixed bottom-4 right-4 z-40 bg-background/95 backdrop-blur border-2 border-indigo-500/50 shadow-2xl rounded-2xl p-3 max-w-xs space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <Camera className="w-3.5 h-3.5 animate-pulse" /> 🤖 AI Giám sát WebCam
+            </span>
+            <Badge variant={proctoringStatus === "normal" ? "outline" : "destructive"} className="text-[10px] uppercase">
+              {proctoringStatus === "normal" && "🟢 An toàn"}
+              {proctoringStatus === "gaze_away" && "👁️ Nhìn ra ngoài"}
+              {proctoringStatus === "head_turned" && "🗣️ Ngoảnh đầu"}
+              {proctoringStatus === "no_face" && "⚠️ Vắng mặt"}
+              {proctoringStatus === "multi_monitor" && "💻 2 Màn hình"}
+            </Badge>
+          </div>
+          <div className="relative w-full h-24 bg-black rounded-lg overflow-hidden border border-border">
+            <video ref={videoRef} muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
+            <canvas ref={canvasRef} className="hidden" />
+            {proctoringStatus !== "normal" && (
+              <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center p-1 text-center">
+                <span className="text-[11px] font-bold text-white bg-red-600/90 px-2 py-1 rounded shadow">
+                  {proctoringStatus === "gaze_away" && "⚠️ Đừng nhìn nghiêng ra ngoài!"}
+                  {proctoringStatus === "head_turned" && "⚠️ Hãy giữ thẳng đầu!"}
+                  {proctoringStatus === "no_face" && "⚠️ Không thấy khuôn mặt!"}
+                  {proctoringStatus === "multi_monitor" && "⚠️ Tắt màn hình thứ 2!"}
+                </span>
+              </div>
+            )}
+          </div>
+          {proctoringLogs.length > 0 && (
+            <p className="text-[10px] text-muted-foreground truncate">
+              Mốc mới nhất: {proctoringLogs[proctoringLogs.length - 1].msg}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Meeting Exam Banner */}
+      {exam.exam_category === 'speaking_meeting' && exam.meet_link && (
+        <div className="bg-indigo-600 text-white p-4 text-center space-y-2">
+          <p className="font-bold flex items-center justify-center gap-2 text-sm md:text-base">
+            <Video className="w-5 h-5" /> Bài kiểm tra Kỹ năng Nói / Đối thoại trực tuyến qua Meeting
+          </p>
+          <p className="text-xs text-indigo-100">Hãy tham gia phòng họp bên dưới để thực hiện bài thi Kaiwa 1-1 cùng giáo viên.</p>
+          <a
+            href={exam.meet_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-white text-indigo-700 font-bold px-4 py-2 rounded-xl text-sm hover:bg-indigo-50 shadow transition-colors"
+          >
+            <Video className="w-4 h-4" /> Tham gia phòng Google Meet / Zoom ngay
+          </a>
+        </div>
+      )}
+
       {/* Offline banner */}
       {!isOnline && (
         <div className="bg-red-500 text-white text-center py-2 px-4 text-sm flex items-center justify-center gap-2">
@@ -907,7 +1116,7 @@ const ExamRunner = () => {
         {orderedQuestions.map((q, i) => {
           const type = qType(q);
           const pts = q.points || 1;
-          const isAnswered = typeof answers[i] === "number" || (typeof answers[i] === "string" && (answers[i] as string).trim().length > 0);
+          const isAnswered = typeof answers[i] === "number" || (typeof answers[i] === "string" && (answers[i] as string).trim().length > 0) || !!speakingRecordings[i];
           return (
             <Card key={i} className={`border-2 transition-colors duration-200 ${isAnswered ? "border-green-500/40 bg-green-50/20 dark:bg-green-950/10" : "hover:border-primary/30"}`}>
               <CardHeader className="pb-3">
