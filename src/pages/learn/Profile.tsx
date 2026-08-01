@@ -19,6 +19,8 @@ import {
 import { THEME_OPTIONS, applyTheme, getSavedTheme, ThemeOption } from '@/lib/themeUtils';
 import { useLearning } from '@/contexts/LearningContext';
 
+import BadgeShowcase from '@/components/shared/BadgeShowcase';
+
 interface ProfileData {
   full_name: string;
   avatar_url: string | null;
@@ -417,24 +419,32 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Main Tabs Container */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-muted p-1.5 rounded-2xl border border-border flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="personal" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
-            <User className="w-4 h-4 text-primary" /> Thông tin cá nhân
-          </TabsTrigger>
-          <TabsTrigger value="theme" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
-            <Palette className="w-4 h-4 text-rose-500" /> Giao diện & Chủ đề
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
-            <Sparkles className="w-4 h-4 text-amber-500" /> Tiến độ học tập
-          </TabsTrigger>
-          {isTeacherOrAbove && (
-            <TabsTrigger value="teacher" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
-              <GraduationCap className="w-4 h-4 text-blue-500" /> Hồ sơ Giảng viên
+        {/* Main Tabs Container */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-muted p-1.5 rounded-2xl border border-border flex flex-wrap h-auto gap-1">
+            <TabsTrigger value="personal" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
+              <User className="w-4 h-4 text-primary" /> Thông tin cá nhân
             </TabsTrigger>
-          )}
-        </TabsList>
+            <TabsTrigger value="badges" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
+              <Award className="w-4 h-4 text-amber-500" /> Danh hiệu & XP
+            </TabsTrigger>
+            <TabsTrigger value="theme" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
+              <Palette className="w-4 h-4 text-rose-500" /> Giao diện & Chủ đề
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
+              <Sparkles className="w-4 h-4 text-amber-500" /> Tiến độ học tập
+            </TabsTrigger>
+            {isTeacherOrAbove && (
+              <TabsTrigger value="teacher" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
+                <GraduationCap className="w-4 h-4 text-blue-500" /> Hồ sơ Giảng viên
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          {/* Tab: Badges */}
+          <TabsContent value="badges">
+            <BadgeShowcase userId={user?.id || ''} role={roles[0] || 'student'} />
+          </TabsContent>
 
         {/* Tab 1: Personal Info */}
         <TabsContent value="personal">

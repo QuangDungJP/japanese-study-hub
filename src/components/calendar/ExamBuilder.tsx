@@ -15,11 +15,12 @@ import {
   X, ClipboardList, ListChecks, CalendarClock, CheckCircle2, ArrowRight, ArrowLeft,
   Wand2, Sparkles, Plus, Trash2, Copy, Loader2, Users, CircleDot, ToggleRight,
   Type, AlignLeft, GripVertical, Clipboard, Music, Upload, Volume2, Timer,
-  Infinity as InfinityIcon, Clock,
+  Infinity as InfinityIcon, Clock, Mic, MessageSquare, Video, Eye, Camera, ShieldAlert, Laptop
 } from 'lucide-react';
 
-export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay';
+export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay' | 'speaking' | 'roleplay';
 export type TimerMode = 'none' | 'stopwatch' | 'countdown';
+export type ExamCategory = 'written' | 'speaking_meeting' | 'speaking_ai';
 
 export interface ExamQuestion {
   _key?: string;
@@ -50,11 +51,13 @@ const steps = [
   { id: 3, label: 'Lịch & Giao', icon: CalendarClock },
 ];
 
-const questionTypeMeta: Record<QuestionType, { label: string; icon: typeof CircleDot; auto: boolean }> = {
+const questionTypeMeta: Record<QuestionType, { label: string; icon: any; auto: boolean }> = {
   multiple_choice: { label: 'Trắc nghiệm', icon: CircleDot, auto: true },
   true_false: { label: 'Đúng / Sai', icon: ToggleRight, auto: true },
   short_answer: { label: 'Trả lời ngắn', icon: Type, auto: true },
   essay: { label: 'Tự luận', icon: AlignLeft, auto: false },
+  speaking: { label: 'Thu âm / Thi nói', icon: Mic, auto: false },
+  roleplay: { label: 'Đối thoại Kaiwa', icon: MessageSquare, auto: false },
 };
 
 const generateKey = () => Math.random().toString(36).substring(2, 9);
@@ -340,6 +343,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [title, setTitle] = useState('');
   const [titleVi, setTitleVi] = useState('');
   const [examType, setExamType] = useState<'quiz' | 'midterm' | 'final' | 'placement'>('quiz');
+  const [examCategory, setExamCategory] = useState<ExamCategory>('written');
   const [level, setLevel] = useState('N5');
   const [instructions, setInstructions] = useState('');
   const [descriptionVi, setDescriptionVi] = useState('');
@@ -356,6 +360,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [timerMode, setTimerMode] = useState<TimerMode>('countdown');
   const [maxScore, setMaxScore] = useState(100);
   const [passingScore, setPassingScore] = useState(50);
+  const [xpReward, setXpReward] = useState(50);
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [lockAfterEnd, setLockAfterEnd] = useState(true);
@@ -363,6 +368,13 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [isPublished, setIsPublished] = useState(false);
   const [antiCheat, setAntiCheat] = useState(false);
+  const [aiProctoring, setAiProctoring] = useState(false);
+  const [proctoringConfig, setProctoringConfig] = useState({
+    detect_gaze: true,
+    detect_head: true,
+    detect_multi_face: true,
+    detect_dual_monitor: true,
+  });
   const [antiCheatMaxViolations, setAntiCheatMaxViolations] = useState(3);
   const [antiCheatPenalty, setAntiCheatPenalty] = useState<'warn_only' | 'auto_submit' | 'reset_answers' | 'deduct_points'>('auto_submit');
   const [antiCheatDeductPerViolation, setAntiCheatDeductPerViolation] = useState(5);
@@ -393,6 +405,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setTitle(initial?.title || '');
       setTitleVi(initial?.title_vi || '');
       setExamType(initial?.exam_type || 'quiz');
+      setExamCategory(initial?.exam_category || 'written');
       setLevel('N5');
       setInstructions(initial?.instructions || '');
       setDescriptionVi(initial?.description_vi || '');
@@ -405,6 +418,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setTimerMode((initial?.timer_mode as TimerMode) || 'countdown');
       setMaxScore(initial?.max_score ?? 100);
       setPassingScore(initial?.passing_score ?? 50);
+      setXpReward(initial?.xp_reward ?? 50);
       setStartsAt(initial?.starts_at ? initial.starts_at.slice(0, 16) : '');
       setEndsAt(initial?.ends_at ? initial.ends_at.slice(0, 16) : '');
       setLockAfterEnd(initial?.lock_after_end ?? true);
@@ -412,6 +426,13 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setMaxAttempts(initial?.max_attempts ?? 1);
       setIsPublished(initial?.is_published ?? false);
       setAntiCheat(initial?.anti_cheat ?? false);
+      setAiProctoring(initial?.ai_proctoring ?? false);
+      setProctoringConfig(initial?.proctoring_config || {
+        detect_gaze: true,
+        detect_head: true,
+        detect_multi_face: true,
+        detect_dual_monitor: true,
+      });
       setAntiCheatMaxViolations(initial?.anti_cheat_max_violations ?? 3);
       setAntiCheatPenalty(initial?.anti_cheat_penalty || 'auto_submit');
       setAntiCheatDeductPerViolation(initial?.anti_cheat_deduct_per_violation ?? 5);
@@ -600,6 +621,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       instructions: instructions || null,
       video_url: videoUrl || null,
       exam_type: examType,
+      exam_category: examCategory,
       exam_date: examDate,
       start_time: startTime,
       duration_minutes: timerMode === 'countdown' ? duration : null,
@@ -607,6 +629,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       meet_link: meetLink || null,
       max_score: maxScore,
       passing_score: passingScore,
+      xp_reward: xpReward,
       is_published: isPublished,
       teacher_id: teacherId,
       starts_at: startsAt ? new Date(startsAt).toISOString() : null,
@@ -615,6 +638,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       shuffle_questions: shuffle,
       max_attempts: maxAttempts,
       anti_cheat: antiCheat,
+      ai_proctoring: aiProctoring,
+      proctoring_config: proctoringConfig,
       anti_cheat_max_violations: antiCheatMaxViolations,
       anti_cheat_penalty: antiCheatPenalty,
       anti_cheat_deduct_per_violation: antiCheatDeductPerViolation,
@@ -691,6 +716,28 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
           {/* ── Step 1: Cơ bản ── */}
           {step === 1 && (
             <div className="space-y-5 max-w-2xl mx-auto">
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Hình thức thi & Đánh giá</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1.5">
+                  {([
+                    { v: 'written', label: '📝 Trắc nghiệm & Viết', desc: 'Đề thi trắc nghiệm, trả lời ngắn, tự luận.' },
+                    { v: 'speaking_meeting', label: '🎙️ Thi Nói qua Meeting', desc: 'Học viên & GV vào phòng Google Meet/Zoom thi trực tiếp 1-1.' },
+                    { v: 'speaking_ai', label: '🤖 Thi Nói Thu âm / AI', desc: 'Học viên thu âm đoạn đối thoại / phát âm để nộp bài.' },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setExamCategory(o.v)}
+                      className={`p-3 rounded-xl border-2 text-left transition-all space-y-1 ${examCategory === o.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
+                        }`}
+                    >
+                      <p className="font-semibold text-sm">{o.label}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{o.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">Loại bài kiểm tra</Label>
                 <div className="grid grid-cols-4 gap-2 mt-1">
@@ -958,6 +1005,23 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                 )}
               </div>
 
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Thang điểm tối đa</Label>
+                  <Input type="number" value={maxScore} onChange={(e) => setMaxScore(parseInt(e.target.value) || 0)} className="mt-1 font-semibold" />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Điểm đạt (Passing)</Label>
+                  <Input type="number" value={passingScore} onChange={(e) => setPassingScore(parseInt(e.target.value) || 0)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                    ⭐ XP Thưởng bài thi
+                  </Label>
+                  <Input type="number" min={0} value={xpReward} onChange={(e) => setXpReward(parseInt(e.target.value) || 0)} className="mt-1 font-bold text-amber-600" />
+                </div>
+              </div>
+
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Ngày kiểm tra *</Label>
@@ -1118,6 +1182,64 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                       {antiCheatPenalty === 'reset_answers' && `Sau ${antiCheatMaxViolations} lần chuyển tab → xóa hết câu trả lời, làm lại từ đầu.`}
                       {antiCheatPenalty === 'deduct_points' && `Mỗi lần chuyển tab → trừ ${antiCheatDeductPerViolation} điểm. Sau ${antiCheatMaxViolations} lần → tự nộp.`}
                     </p>
+                  </div>
+                )}
+
+                {/* Advanced AI Proctoring */}
+                <div className="flex items-center justify-between rounded-lg border p-3 border-indigo-500/30 bg-indigo-500/5">
+                  <div>
+                    <p className="font-medium text-sm flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
+                      <Camera className="w-4 h-4" /> 🤖 AI Giám sát chuyên sâu (Camera Vision)
+                    </p>
+                    <p className="text-xs text-muted-foreground">Quét ánh mắt, cử chỉ/ngoảnh đầu, vắng mặt & phát hiện 2 màn hình qua WebCam.</p>
+                  </div>
+                  <Switch checked={aiProctoring} onCheckedChange={setAiProctoring} />
+                </div>
+                {aiProctoring && (
+                  <div className="ml-4 space-y-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4 text-xs">
+                    <p className="font-semibold text-indigo-700 dark:text-indigo-400">🔍 Chọn các chế độ AI quét lỗi gian lận:</p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border bg-background hover:border-indigo-400">
+                        <Checkbox
+                          checked={proctoringConfig.detect_gaze}
+                          onCheckedChange={(v) => setProctoringConfig(c => ({ ...c, detect_gaze: !!v }))}
+                        />
+                        <div>
+                          <p className="font-semibold text-foreground">👁️ Quét đôi mắt (Gaze)</p>
+                          <p className="text-[11px] text-muted-foreground">Bắt lỗi nhìn nghiêng/ra ngoài quá 3s</p>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border bg-background hover:border-indigo-400">
+                        <Checkbox
+                          checked={proctoringConfig.detect_head}
+                          onCheckedChange={(v) => setProctoringConfig(c => ({ ...c, detect_head: !!v }))}
+                        />
+                        <div>
+                          <p className="font-semibold text-foreground">🗣️ Cử chỉ & Xoay đầu</p>
+                          <p className="text-[11px] text-muted-foreground">Cảnh báo khi quay mặt, cúi đầu</p>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border bg-background hover:border-indigo-400">
+                        <Checkbox
+                          checked={proctoringConfig.detect_multi_face}
+                          onCheckedChange={(v) => setProctoringConfig(c => ({ ...c, detect_multi_face: !!v }))}
+                        />
+                        <div>
+                          <p className="font-semibold text-foreground">👥 Vắng mặt / Nhiều người</p>
+                          <p className="text-[11px] text-muted-foreground">Bắt lỗi rời vị trí hoặc có người thứ 2</p>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border bg-background hover:border-indigo-400">
+                        <Checkbox
+                          checked={proctoringConfig.detect_dual_monitor}
+                          onCheckedChange={(v) => setProctoringConfig(c => ({ ...c, detect_dual_monitor: !!v }))}
+                        />
+                        <div>
+                          <p className="font-semibold text-foreground">💻 Màn hình kép & Focus</p>
+                          <p className="text-[11px] text-muted-foreground">Bắt lỗi cắm 2 màn hình hoặc mất focus</p>
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 )}
                 <div className="flex items-center justify-between rounded-lg border p-3 border-primary/30 bg-primary/5">

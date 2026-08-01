@@ -876,13 +876,43 @@ const TeacherSubmissions = () => {
                 </Card>
               )}
 
-              {/* Questions Breakdown */}
+              {/* AI Proctoring Logs & Violations Section */}
+              {((selectedExamAttempt.violations ?? 0) > 0 || (selectedExamAttempt.proctoring_logs || []).length > 0) && (
+                <Card className="border-indigo-500/40 bg-indigo-500/5">
+                  <CardHeader className="py-2.5 px-4">
+                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        🤖 Nhật ký AI Giám sát Chống gian lận (AI Proctoring Logs)
+                      </span>
+                      <Badge variant="destructive" className="text-xs">
+                        Vi phạm: {selectedExamAttempt.violations || (selectedExamAttempt.proctoring_logs || []).length} lần
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-3 space-y-2 text-xs">
+                    <p className="text-muted-foreground">Mốc thời gian phát hiện bất thường qua WebCam / Trình duyệt:</p>
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                      {(selectedExamAttempt.proctoring_logs || []).map((log: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-2 rounded bg-background border text-xs">
+                          <span className="font-mono text-muted-foreground">{log.time || 'Mốc time'}</span>
+                          <span className="font-semibold text-foreground">{log.msg || log.type}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Questions Breakdown & Speaking Audio Playback */}
               <div className="space-y-3">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Chi tiết câu trả lời của học viên</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Chi tiết câu trả lời & Bài ghi âm của học viên</Label>
                 <div className="space-y-3">
                   {(selectedExamAttempt.exam?.questions || []).map((q: any, i: number) => {
                     const studentAns = (selectedExamAttempt.answers || [])[i];
                     const isEssay = q.type === 'essay';
+                    const isSpeaking = q.type === 'speaking' || q.type === 'roleplay';
+                    const audioUrl = selectedExamAttempt.speaking_recordings?.[i] || (typeof studentAns === 'string' && studentAns.startsWith('http') ? studentAns : null);
+
                     return (
                       <div key={i} className="rounded-xl border p-3 bg-card space-y-2">
                         <div className="flex items-start justify-between gap-2">
@@ -893,16 +923,29 @@ const TeacherSubmissions = () => {
                           <Badge variant="outline" className="text-xs">{q.points || 1} điểm</Badge>
                         </div>
                         <div className="pl-8 text-sm">
+                          {isSpeaking && (
+                            <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-lg space-y-2">
+                              <p className="text-xs font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1">
+                                🎙️ Bài thi Nói / Đối thoại Kaiwa đã ghi âm:
+                              </p>
+                              {audioUrl ? (
+                                <audio controls src={audioUrl} className="h-9 w-full" />
+                              ) : (
+                                <p className="text-xs text-muted-foreground italic">Học viên chưa gửi bản thu âm</p>
+                              )}
+                            </div>
+                          )}
+
                           {isEssay ? (
                             <div className="p-3 bg-muted/40 rounded-lg border text-sm whitespace-pre-wrap">
                               <span className="text-xs text-muted-foreground block mb-1 font-semibold">Bài làm tự luận:</span>
                               {typeof studentAns === 'string' && studentAns.trim() ? studentAns : <span className="italic text-muted-foreground">Chưa có bài viết</span>}
                             </div>
-                          ) : (
+                          ) : !isSpeaking ? (
                             <p className="text-xs text-muted-foreground">
                               Trả lời: <span className="font-semibold text-foreground">{studentAns !== undefined && studentAns !== null ? String(studentAns) : 'Bỏ trống'}</span>
                             </p>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     );

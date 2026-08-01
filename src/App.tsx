@@ -51,6 +51,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminWebsiteCMS from "./pages/admin/AdminWebsiteCMS";
+import AdminBadges from "./pages/admin/AdminBadges";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminContactForm from "./pages/admin/AdminContactForm";
 import AdminFAQ from "./pages/admin/AdminFAQ";
@@ -137,6 +138,7 @@ const App = () => (
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="website" element={<AdminWebsiteCMS />} />
+                <Route path="badges" element={<AdminBadges />} />
                 <Route path="blog" element={<AdminBlog />} />
                 <Route path="teachers" element={<AdminTeachers />} />
                 <Route path="courses" element={<AdminCourses />} />
