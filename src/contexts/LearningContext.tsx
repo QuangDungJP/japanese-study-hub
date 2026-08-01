@@ -42,13 +42,26 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        // Fetch user progress
-        const { data: progressData } = await supabase
-          .from('user_progress')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const todayStr = new Date().toISOString().slice(0, 10);
 
+        // ── Chạy song song tất cả queries ban đầu ──────────────────────────────────
+        const [
+          { data: progressData },
+          { data: lessonsData },
+          { data: profileData },
+          { data: existingCheckin },
+          { data: allBadges },
+          { data: userBadgesData },
+        ] = await Promise.all([
+          supabase.from('user_progress').select('*').eq('user_id', user.id).maybeSingle(),
+          supabase.from('completed_lessons').select('lesson_id').eq('user_id', user.id),
+          supabase.from('profiles').select('current_language').eq('user_id', user.id).maybeSingle(),
+          supabase.from('daily_checkins').select('id').eq('user_id', user.id).eq('checkin_date', todayStr).maybeSingle(),
+          supabase.from('badges').select('*').eq('is_active', true),
+          supabase.from('user_badges').select('badge_id').eq('user_id', user.id),
+        ]);
+
+        // Áp dụng kết quả
         if (progressData) {
           setUserProgress({
             totalXp: progressData.total_xp || 0,
@@ -60,35 +73,15 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
           });
         }
 
-        // Fetch completed lessons
-        const { data: lessonsData } = await supabase
-          .from('completed_lessons')
-          .select('lesson_id')
-          .eq('user_id', user.id);
-
         if (lessonsData) {
           setCompletedLessons(lessonsData.map(l => l.lesson_id));
         }
 
-        // Fetch current language from profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('current_language')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
         if (profileData?.current_language) {
           setCurrentLanguage(profileData.current_language as Language);
         }
-        // ── Daily Check-in (+10 XP) & Auto Badge Unlocking ─────────────────────────
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const { data: existingCheckin } = await supabase
-          .from('daily_checkins')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('checkin_date', todayStr)
-          .maybeSingle();
 
+        // ── Daily Check-in (+10 XP) ────────────────────────────────────────────────
         let updatedXp = progressData?.total_xp || 0;
         let updatedStreak = progressData?.streak || 0;
 
@@ -98,28 +91,29 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
           updatedXp += checkinXp;
           updatedStreak = newStreak;
 
-          await supabase.from('daily_checkins').insert({
-            user_id: user.id,
-            checkin_date: todayStr,
-            xp_earned: checkinXp,
-            streak: newStreak,
-          });
-
-          await supabase.from('user_progress').upsert({
-            user_id: user.id,
-            total_xp: updatedXp,
-            streak: newStreak,
-            last_activity_date: todayStr,
-            updated_at: new Date().toISOString(),
-          });
+          // Chạy song song insert check-in & update progress
+          await Promise.all([
+            supabase.from('daily_checkins').insert({
+              user_id: user.id,
+              checkin_date: todayStr,
+              xp_earned: checkinXp,
+              streak: newStreak,
+            }),
+            supabase.from('user_progress').upsert({
+              user_id: user.id,
+              total_xp: updatedXp,
+              streak: newStreak,
+              last_activity_date: todayStr,
+              updated_at: new Date().toISOString(),
+            }),
+          ]);
         }
 
-        // Auto Badge Unlocker Check
-        const { data: allBadges } = await supabase.from('badges').select('*').eq('is_active', true);
-        const { data: userBadgesData } = await supabase.from('user_badges').select('badge_id').eq('user_id', user.id);
+        // ── Auto Badge Unlocker (chạy song song tất cả badge inserts) ─────────────
         const unlockedBadgeIds = new Set((userBadgesData || []).map(b => b.badge_id));
 
         if (allBadges) {
+          const badgeInserts: Promise<any>[] = [];
           for (const b of allBadges) {
             if (unlockedBadgeIds.has(b.id)) continue;
             let conditionMet = false;
@@ -128,15 +122,21 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
             if (b.req_type === 'lessons_completed' && (progressData?.lessons_completed || 0) >= b.req_value) conditionMet = true;
 
             if (conditionMet) {
-              await supabase.from('user_badges').insert({
-                user_id: user.id,
-                badge_id: b.id,
-                unlocked_by: 'system',
-              });
-              if (b.bonus_xp > 0) {
-                updatedXp += b.bonus_xp;
-                await supabase.from('user_progress').update({ total_xp: updatedXp }).eq('user_id', user.id);
-              }
+              badgeInserts.push(
+                supabase.from('user_badges').insert({
+                  user_id: user.id,
+                  badge_id: b.id,
+                  unlocked_by: 'system',
+                })
+              );
+              if (b.bonus_xp > 0) updatedXp += b.bonus_xp;
+            }
+          }
+          if (badgeInserts.length > 0) {
+            await Promise.all(badgeInserts);
+            // Cập nhật XP một lần nếu có badge bonus
+            if (updatedXp > (progressData?.total_xp || 0)) {
+              await supabase.from('user_progress').update({ total_xp: updatedXp }).eq('user_id', user.id);
             }
           }
         }
