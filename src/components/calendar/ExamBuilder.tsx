@@ -15,7 +15,8 @@ import {
   X, ClipboardList, ListChecks, CalendarClock, CheckCircle2, ArrowRight, ArrowLeft,
   Wand2, Sparkles, Plus, Trash2, Copy, Loader2, Users, CircleDot, ToggleRight,
   Type, AlignLeft, GripVertical, Clipboard, Music, Upload, Volume2, Timer,
-  Infinity as InfinityIcon, Clock, Mic, MessageSquare, Video, Eye, Camera, ShieldAlert, Laptop
+  Infinity as InfinityIcon, Clock, Mic, MessageSquare, Video, Eye, Camera, ShieldAlert, Laptop,
+  Save, AlertTriangle, Maximize2, Minimize2
 } from 'lucide-react';
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay' | 'speaking' | 'roleplay';
@@ -332,12 +333,20 @@ const TimerModeCard = ({ value, onChange }: TimerModeCardProps) => {
   );
 };
 
+// ─── Draft key helper ─────────────────────────────────────────────────────────
+const DRAFT_KEY = 'exambuilder_draft';
+
 // ─── Main ExamBuilder ──────────────────────────────────────────────────────────
 const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved }: Props) => {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState<string | null>(null);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [draftRestorePrompt, setDraftRestorePrompt] = useState(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDirtyRef = useRef(false);
 
   // Step 1
   const [title, setTitle] = useState('');
@@ -358,8 +367,12 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [startTime, setStartTime] = useState('09:00');
   const [duration, setDuration] = useState(60);
   const [timerMode, setTimerMode] = useState<TimerMode>('countdown');
-  const [maxScore, setMaxScore] = useState(100);
-  const [passingScore, setPassingScore] = useState(50);
+  const [maxScore, setMaxScore] = useState(10);
+  const [passingScore, setPassingScore] = useState(6);
+  // scoreMode: 'raw' = compare score directly; 'scaled' = scale score to maxScore first
+  const [scoreMode, setScoreMode] = useState<'raw' | 'scaled'>('scaled');
+  // scoreRounding: how to round when scaled
+  const [scoreRounding, setScoreRounding] = useState<'round' | 'floor' | 'ceil' | 'none'>('round');
   const [xpReward, setXpReward] = useState(50);
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
@@ -387,9 +400,82 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const prevOpenRef = useRef(false);
   const prevInitialIdRef = useRef<string | undefined>(undefined);
 
+  // ── Build draft snapshot for autosave ────────────────────────────────────────
+  const buildDraft = useCallback(() => ({
+    step, title, titleVi, examType, examCategory, level, instructions, descriptionVi,
+    meetLink, videoUrl, questions, examDate, startTime, duration, timerMode,
+    maxScore, passingScore, scoreMode, scoreRounding, xpReward, startsAt, endsAt,
+    lockAfterEnd, shuffle, maxAttempts, isPublished, antiCheat, aiProctoring,
+    proctoringConfig, antiCheatMaxViolations, antiCheatPenalty,
+    antiCheatDeductPerViolation, showAnswersAfter, primaryClass, extraClassIds,
+    savedAt: Date.now(),
+  }), [step, title, titleVi, examType, examCategory, level, instructions, descriptionVi,
+    meetLink, videoUrl, questions, examDate, startTime, duration, timerMode,
+    maxScore, passingScore, scoreMode, scoreRounding, xpReward, startsAt, endsAt,
+    lockAfterEnd, shuffle, maxAttempts, isPublished, antiCheat, aiProctoring,
+    proctoringConfig, antiCheatMaxViolations, antiCheatPenalty,
+    antiCheatDeductPerViolation, showAnswersAfter, primaryClass, extraClassIds]);
+
+  // ── Autosave to localStorage (debounced 3s) ───────────────────────────────────
+  useEffect(() => {
+    if (!open || !isDirtyRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(buildDraft()));
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  }, [open, buildDraft]);
+
+  // ── Mark dirty whenever content changes ──────────────────────────────────────
+  useEffect(() => { if (open) isDirtyRef.current = true; }, [
+    title, titleVi, questions, examDate, maxScore, passingScore, instructions
+  ]);
+
+  const restoreDraft = (draft: any) => {
+    if (!draft) return;
+    setStep(draft.step || 1);
+    setTitle(draft.title || '');
+    setTitleVi(draft.titleVi || '');
+    setExamType(draft.examType || 'quiz');
+    setExamCategory(draft.examCategory || 'written');
+    setLevel(draft.level || 'N5');
+    setInstructions(draft.instructions || '');
+    setDescriptionVi(draft.descriptionVi || '');
+    setMeetLink(draft.meetLink || '');
+    setVideoUrl(draft.videoUrl || '');
+    setQuestions(Array.isArray(draft.questions) ? draft.questions.map(normalizeQuestion) : []);
+    setExamDate(draft.examDate || new Date().toISOString().slice(0, 10));
+    setStartTime(draft.startTime || '09:00');
+    setDuration(draft.duration || 60);
+    setTimerMode(draft.timerMode || 'countdown');
+    setMaxScore(draft.maxScore ?? 10);
+    setPassingScore(draft.passingScore ?? 6);
+    setScoreMode(draft.scoreMode || 'scaled');
+    setScoreRounding(draft.scoreRounding || 'round');
+    setXpReward(draft.xpReward ?? 50);
+    setStartsAt(draft.startsAt || '');
+    setEndsAt(draft.endsAt || '');
+    setLockAfterEnd(draft.lockAfterEnd ?? true);
+    setShuffle(draft.shuffle ?? false);
+    setMaxAttempts(draft.maxAttempts ?? 1);
+    setIsPublished(draft.isPublished ?? false);
+    setAntiCheat(draft.antiCheat ?? false);
+    setAiProctoring(draft.aiProctoring ?? false);
+    setProctoringConfig(draft.proctoringConfig || { detect_gaze: true, detect_head: true, detect_multi_face: true, detect_dual_monitor: true });
+    setAntiCheatMaxViolations(draft.antiCheatMaxViolations ?? 3);
+    setAntiCheatPenalty(draft.antiCheatPenalty || 'auto_submit');
+    setAntiCheatDeductPerViolation(draft.antiCheatDeductPerViolation ?? 5);
+    setShowAnswersAfter(draft.showAnswersAfter ?? true);
+    setPrimaryClass(draft.primaryClass || 'all');
+    setExtraClassIds(draft.extraClassIds || []);
+  };
+
   useEffect(() => {
     if (!open) {
       prevOpenRef.current = false;
+      isDirtyRef.current = false;
       return;
     }
 
@@ -400,6 +486,23 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     if (isNewOpen || isDifferentExam) {
       prevOpenRef.current = true;
       prevInitialIdRef.current = initialId;
+      isDirtyRef.current = false;
+
+      // If no initial data (new exam), check for unsaved draft
+      if (!initialId) {
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY);
+          if (raw) {
+            const draft = JSON.parse(raw);
+            const ageMin = (Date.now() - (draft.savedAt || 0)) / 60000;
+            if (ageMin < 1440 && (draft.titleVi || draft.title || draft.questions?.length > 0)) {
+              setDraftRestorePrompt(true);
+            } else {
+              localStorage.removeItem(DRAFT_KEY);
+            }
+          }
+        } catch { /* ignore */ }
+      }
 
       setStep(1);
       setTitle(initial?.title || '');
@@ -416,8 +519,10 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       setStartTime(initial?.start_time || '09:00');
       setDuration(initial?.duration_minutes || 60);
       setTimerMode((initial?.timer_mode as TimerMode) || 'countdown');
-      setMaxScore(initial?.max_score ?? 100);
-      setPassingScore(initial?.passing_score ?? 50);
+      setMaxScore(initial?.max_score ?? 10);
+      setPassingScore(initial?.passing_score ?? 6);
+      setScoreMode((initial as any)?.score_mode || 'scaled');
+      setScoreRounding((initial as any)?.score_rounding || 'round');
       setXpReward(initial?.xp_reward ?? 50);
       setStartsAt(initial?.starts_at ? initial.starts_at.slice(0, 16) : '');
       setEndsAt(initial?.ends_at ? initial.ends_at.slice(0, 16) : '');
@@ -445,9 +550,20 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const totalPoints = useMemo(() => questions.reduce((s, q) => s + (q.points || 0), 0), [questions]);
   const autoGraded = useMemo(() => questions.filter((q) => questionTypeMeta[q.type].auto).length, [questions]);
 
-  useEffect(() => {
-    if (totalPoints > 0) setMaxScore(totalPoints);
-  }, [totalPoints]);
+  // ── Score preview calculation ─────────────────────────────────────────────────
+  const scorePreview = useMemo(() => {
+    if (totalPoints === 0) return null;
+    // Example: student answers 18/25 correct (each 1pt)
+    const exampleCorrect = Math.ceil(totalPoints * 0.72); // ~72%
+    if (scoreMode === 'scaled') {
+      const raw = (exampleCorrect / totalPoints) * maxScore;
+      const fn = scoreRounding === 'round' ? Math.round : scoreRounding === 'floor' ? Math.floor : scoreRounding === 'ceil' ? Math.ceil : (x: number) => x;
+      return { raw: exampleCorrect, total: totalPoints, scaled: fn(raw), outOf: maxScore, passing: passingScore, passed: fn(raw) >= passingScore };
+    }
+    return { raw: exampleCorrect, total: totalPoints, scaled: null, outOf: totalPoints, passing: passingScore, passed: exampleCorrect >= passingScore };
+  }, [totalPoints, maxScore, passingScore, scoreMode, scoreRounding]);
+
+  // NOTE: Removed auto-override of maxScore to preserve admin settings
 
   const patchQ = (i: number, patch: Partial<ExamQuestion>) =>
     setQuestions((arr) => arr.map((q, idx) => (idx === i ? { ...q, ...patch } : q)));
@@ -629,6 +745,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       meet_link: meetLink || null,
       max_score: maxScore,
       passing_score: passingScore,
+      score_mode: scoreMode,
+      score_rounding: scoreRounding,
       xp_reward: xpReward,
       is_published: isPublished,
       teacher_id: teacherId,
@@ -666,6 +784,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       toast({ title: 'Lỗi lưu bài kiểm tra', description: error.message, variant: 'destructive' });
       return;
     }
+    // Clear draft after successful save
+    localStorage.removeItem(DRAFT_KEY);
+    isDirtyRef.current = false;
     toast({ title: isEdit ? 'Đã cập nhật bài kiểm tra' : 'Đã tạo bài kiểm tra' });
     onSaved();
     onOpenChange(false);
@@ -673,9 +794,93 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
 
   const canNext = step === 1 ? title.trim().length > 0 || titleVi.trim().length > 0 : true;
 
+  // ── Handle close attempt (with confirmation) ──────────────────────────────────
+  const handleCloseAttempt = () => {
+    if (isDirtyRef.current && (titleVi || title || questions.length > 0)) {
+      setShowConfirmClose(true);
+    } else {
+      // Save draft just in case then close
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(buildDraft())); } catch { /* ignore */ }
+      onOpenChange(false);
+    }
+  };
+
+  const handleForceClose = () => {
+    setShowConfirmClose(false);
+    localStorage.removeItem(DRAFT_KEY);
+    isDirtyRef.current = false;
+    onOpenChange(false);
+  };
+
+  const handleSaveDraftAndClose = () => {
+    setShowConfirmClose(false);
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(buildDraft())); } catch { /* ignore */ }
+    toast({ title: '💾 Draft đã được lưu tự động', description: 'Bạn có thể tiếp tục lần sau.' });
+    isDirtyRef.current = false;
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="max-w-4xl h-[92vh] p-0 overflow-hidden gap-0 flex flex-col">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleCloseAttempt(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className={`p-0 overflow-hidden gap-0 flex flex-col transition-all duration-200 ${
+          isFullscreen
+            ? 'fixed inset-0 max-w-none h-screen w-screen rounded-none'
+            : 'max-w-4xl h-[92vh]'
+        }`}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => { e.preventDefault(); handleCloseAttempt(); }}
+      >
+        {/* Draft restore banner */}
+        {draftRestorePrompt && (
+          <div className="flex items-center gap-3 px-6 py-2.5 bg-amber-500/10 border-b border-amber-500/30 text-sm">
+            <Save className="w-4 h-4 text-amber-600 shrink-0" />
+            <span className="flex-1 text-amber-700 dark:text-amber-400 font-medium">📝 Tìm thấy bản nháp chưa lưu. Khôi phục?</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs border-amber-500/50 text-amber-700"
+              onClick={() => {
+                try {
+                  const raw = localStorage.getItem(DRAFT_KEY);
+                  if (raw) restoreDraft(JSON.parse(raw));
+                } catch { /* ignore */ }
+                setDraftRestorePrompt(false);
+                toast({ title: '✅ Đã khôi phục bản nháp' });
+              }}
+            >Khôi phục</Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs"
+              onClick={() => { localStorage.removeItem(DRAFT_KEY); setDraftRestorePrompt(false); }}
+            >Bỏ qua</Button>
+          </div>
+        )}
+
+        {/* Confirm Close Dialog (inline overlay) */}
+        {showConfirmClose && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="bg-card border rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-base">Thoát khỏi bài kiểm tra?</p>
+                  <p className="text-sm text-muted-foreground">Bạn có thay đổi chưa được lưu.</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button onClick={handleSaveDraftAndClose} className="gap-2">
+                  <Save className="w-4 h-4" /> Lưu nháp & Thoát
+                </Button>
+                <Button variant="destructive" onClick={handleForceClose} className="gap-2">
+                  <X className="w-4 h-4" /> Thoát không lưu
+                </Button>
+                <Button variant="ghost" onClick={() => setShowConfirmClose(false)}>
+                  Tiếp tục chỉnh sửa
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header + stepper */}
         <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent space-y-3">
           <div className="flex items-center justify-between">
@@ -685,7 +890,20 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
               </div>
               {isEdit ? 'Chỉnh sửa bài kiểm tra' : 'Tạo bài kiểm tra mới'}
             </DialogTitle>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}><X className="w-4 h-4" /></Button>
+            <div className="flex items-center gap-1">
+              {/* Autosave indicator */}
+              <span className="text-[10px] text-muted-foreground hidden sm:flex items-center gap-1 mr-2">
+                <Save className="w-3 h-3" /> Tự động lưu
+              </span>
+              {/* Fullscreen toggle */}
+              <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(f => !f)} title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}>
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+              {/* Close button with confirmation */}
+              <Button variant="ghost" size="icon" onClick={handleCloseAttempt}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {steps.map((s, i) => {
@@ -1005,14 +1223,14 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                 )}
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-3">
+              <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Thang điểm tối đa</Label>
-                  <Input type="number" value={maxScore} onChange={(e) => setMaxScore(parseInt(e.target.value) || 0)} className="mt-1 font-semibold" />
+                  <Input type="number" min={1} value={maxScore} onChange={(e) => setMaxScore(parseInt(e.target.value) || 10)} className="mt-1 font-semibold" />
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Điểm đạt (Passing)</Label>
-                  <Input type="number" value={passingScore} onChange={(e) => setPassingScore(parseInt(e.target.value) || 0)} className="mt-1" />
+                  <Input type="number" min={0} value={passingScore} onChange={(e) => setPassingScore(parseInt(e.target.value) || 0)} className="mt-1" />
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
@@ -1046,16 +1264,51 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Điểm tối đa</Label>
-                  <Input type="number" value={maxScore} onChange={(e) => setMaxScore(parseInt(e.target.value) || 0)} className="mt-1" />
-                  <p className="text-xs text-muted-foreground mt-1">Tự tính từ tổng điểm câu hỏi ({totalPoints}).</p>
+              {/* Score System */}
+              <div className="rounded-2xl border-2 border-primary/20 bg-primary/3 p-4 space-y-4">
+                <Label className="text-sm font-bold flex items-center gap-2 text-primary">🎯 Chế độ tính điểm</Label>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <button type="button" onClick={() => setScoreMode('scaled')}
+                    className={`p-3 rounded-xl border-2 text-left space-y-1 transition-all ${scoreMode === 'scaled' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <p className="font-semibold text-sm">🔢 Quy đổi thang điểm (Khuyên dùng)</p>
+                    <p className="text-xs text-muted-foreground">Đúng 18/25 câu → {Math.round(18/25*maxScore)}/{maxScore} điểm. So với điểm đạt {passingScore}.</p>
+                  </button>
+                  <button type="button" onClick={() => setScoreMode('raw')}
+                    className={`p-3 rounded-xl border-2 text-left space-y-1 transition-all ${scoreMode === 'raw' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <p className="font-semibold text-sm">📊 Tính thẳng (raw score)</p>
+                    <p className="text-xs text-muted-foreground">Đúng 18/25 câu → 18 điểm. So với điểm đạt {passingScore}.</p>
+                  </button>
                 </div>
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Điểm đạt</Label>
-                  <Input type="number" value={passingScore} onChange={(e) => setPassingScore(parseInt(e.target.value) || 0)} className="mt-1" />
-                </div>
+                {scoreMode === 'scaled' && (
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Làm tròn điểm</Label>
+                    <Select value={scoreRounding} onValueChange={(v: any) => setScoreRounding(v)}>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="round">≈ Làm tròn thường (7.5 → 8)</SelectItem>
+                        <SelectItem value="floor">↓ Làm tròn xuống (7.9 → 7)</SelectItem>
+                        <SelectItem value="ceil">↑ Làm tròn lên (7.1 → 8)</SelectItem>
+                        <SelectItem value="none">📄 Giữ nguyên thập phân (7.2)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {scorePreview && (
+                  <div className={`rounded-xl p-3 border text-sm flex items-center gap-3 ${scorePreview.passed ? 'border-green-500/40 bg-green-500/5' : 'border-red-400/40 bg-red-400/5'}`}>
+                    <div className="flex-1">
+                      <p className="font-semibold text-xs text-muted-foreground mb-1">🔍 Ví dụ: học viên làm đúng 72% ({scorePreview.raw}/{scorePreview.total} câu)</p>
+                      <p className="font-bold text-base">
+                        {scoreMode === 'scaled' ? `Điểm: ${scorePreview.scaled}/${scorePreview.outOf}` : `Điểm: ${scorePreview.raw}/${scorePreview.outOf}`}
+                        <span className={`ml-2 text-sm font-medium ${scorePreview.passed ? 'text-green-600' : 'text-red-500'}`}>
+                          {scorePreview.passed ? '✅ Đạt' : '❌ Chưa đạt'}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">Cần đạt: {scorePreview.passing}/{scorePreview.outOf}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">

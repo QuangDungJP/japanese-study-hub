@@ -55,6 +55,8 @@ interface Exam {
   questions: Question[];
   passing_score: number | null;
   max_score: number | null;
+  score_mode: 'raw' | 'scaled' | null;
+  score_rounding: 'round' | 'floor' | 'ceil' | 'none' | null;
   video_url: string | null;
   meet_link: string | null;
   is_published: boolean;
@@ -71,6 +73,22 @@ interface Exam {
 const qType = (q: Question): QuestionType => q.type || "multiple_choice";
 const isAutoGraded = (q: Question) => qType(q) !== "essay";
 const normalizeText = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+
+// Apply score scaling + rounding based on exam settings
+function computeDisplayScore(rawScore: number, totalPts: number, exam: Exam): { display: number; outOf: number } {
+  const mode = exam.score_mode || 'raw';
+  const maxScore = exam.max_score || totalPts;
+  if (mode === 'scaled' && totalPts > 0) {
+    const scaled = (rawScore / totalPts) * maxScore;
+    const rounding = exam.score_rounding || 'round';
+    const rounded = rounding === 'round' ? Math.round(scaled)
+      : rounding === 'floor' ? Math.floor(scaled)
+      : rounding === 'ceil' ? Math.ceil(scaled)
+      : scaled;
+    return { display: rounded, outOf: maxScore };
+  }
+  return { display: rawScore, outOf: totalPts };
+}
 
 const fmt = (s: number) => {
   const h = Math.floor(s / 3600);
@@ -501,8 +519,15 @@ const ExamRunner = () => {
     const timeSpent = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
     const status = auto ? "auto_submitted" : "submitted";
 
+    // Compute displayed/scaled score for DB
+    const scoreData = computeDisplayScore(score, totalPts, exam);
+
     const { error } = await supabase.from("exam_attempts").update({
-      submitted_at: new Date().toISOString(), status, score, total: totalPts,
+      submitted_at: new Date().toISOString(), status,
+      score: scoreData.display,
+      total: scoreData.outOf,
+      raw_score: score,
+      raw_total: totalPts,
       answers: answersArr, time_spent_seconds: timeSpent,
       violations: violationsRef.current,
       student_comment: comment || null, video_url: videoUrl || null,
@@ -516,7 +541,7 @@ const ExamRunner = () => {
       return;
     }
 
-    setResult({ score, total: totalPts, status, submittedAnswers: answersArr });
+    setResult({ score: scoreData.display, total: scoreData.outOf, status, submittedAnswers: answersArr });
     setSubmitting(false);
 
     // Award XP reward for exam completion
