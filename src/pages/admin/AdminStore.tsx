@@ -17,6 +17,7 @@ import MediaLibraryDialog from '@/components/admin/MediaLibraryDialog';
 import { 
   ShoppingBag, Music, Disc, Star, Flame, Zap, Plus, Edit, Trash2, 
   Search, CheckCircle2, RefreshCw, Loader2, Image, Upload, Shield, FolderOpen, Gift
+  Sparkles,
 } from 'lucide-react';
 
 export interface StoreItemAdmin {
@@ -269,6 +270,7 @@ export default function AdminStore() {
       } else {
         await (supabase as any).from('music_tracks').insert(editingTrack);
       }
+      window.dispatchEvent(new Event('music_updated'));
       toast({ title: '✅ Đã lưu bài nhạc học tập' });
       setTrackDialogOpen(false);
       fetchData();
