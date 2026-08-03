@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, 
-  Music2, Disc, ListMusic, X, Sparkles, Radio
+  Music2, Disc, ListMusic, X, Sparkles, Radio, GripHorizontal, RotateCcw
 } from 'lucide-react';
 
 export interface Track {
@@ -39,6 +39,72 @@ export const BackgroundMusicPlayer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
+
+  // Draggable position state (YouTube Premium style)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem('bg_music_player_pos');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+  const hasMovedRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Only left click or single touch
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    const currentX = pos?.x ?? (window.innerWidth / 2 - 100);
+    const currentY = pos?.y ?? (window.innerHeight - 80);
+
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      posX: currentX,
+      posY: currentY,
+    };
+    hasMovedRef.current = false;
+    setIsDragging(true);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      hasMovedRef.current = true;
+    }
+
+    let newX = dragStartRef.current.posX + dx;
+    let newY = dragStartRef.current.posY + dy;
+
+    // Clamp within viewport bounds
+    newX = Math.max(12, Math.min(window.innerWidth - 180, newX));
+    newY = Math.max(12, Math.min(window.innerHeight - 70, newY));
+
+    setPos({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+    if (pos) {
+      localStorage.setItem('bg_music_player_pos', JSON.stringify(pos));
+    }
+  };
+
+  const resetPos = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPos(null);
+    localStorage.removeItem('bg_music_player_pos');
+  };
 
   useEffect(() => {
     const fetchMusic = async () => {
@@ -198,27 +264,57 @@ export const BackgroundMusicPlayer = () => {
         style={{ display: 'none' }}
       />
 
-      {/* Floating Trigger Button on bottom-right when minimized or closed */}
+      {/* Floating Trigger Button (Draggable YouTube Premium style) */}
       {(isMinimized || !visible) && (
-        <button
-          onClick={() => { setVisible(true); setIsMinimized(false); }}
-          title="Mở trình phát nhạc Lo-Fi học tập"
-          className="fixed bottom-6 right-6 z-[999] group flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-2xl hover:scale-105 transition-all duration-300 ring-4 ring-amber-400/20 active:scale-95"
+        <div
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={
+            pos
+              ? { left: `${pos.x}px`, top: `${pos.y}px` }
+              : { left: '50%', transform: 'translateX(-50%)', bottom: '24px' }
+          }
+          className={`fixed z-[999] touch-none select-none ${isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab'}`}
         >
-          <div className="relative">
-            <Music2 className={`w-5 h-5 ${isPlaying ? 'animate-bounce text-yellow-200' : ''}`} />
-            {isPlaying && (
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                <span className="relative flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
-              </span>
+          <div
+            onClick={(e) => {
+              if (hasMovedRef.current) return;
+              setVisible(true);
+              setIsMinimized(false);
+            }}
+            title="Kéo thả vị trí tùy ý hoặc nhấp để mở Nhạc Học Tập"
+            className="group flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-2xl hover:scale-105 transition-transform duration-200 ring-4 ring-amber-400/30 border border-amber-300/40"
+          >
+            <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+              <GripHorizontal className="w-3.5 h-3.5 text-yellow-100" />
+            </div>
+
+            <div className="relative">
+              <Music2 className={`w-4 h-4 ${isPlaying ? 'animate-bounce text-yellow-200' : ''}`} />
+              {isPlaying && (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                </span>
+              )}
+            </div>
+            <span className="text-xs font-black tracking-wide hidden sm:inline">
+              {isPlaying ? 'Đang phát Lo-Fi' : 'Nhạc Học Tập'}
+            </span>
+            <Radio className="w-3.5 h-3.5 text-yellow-200 animate-pulse" />
+
+            {pos && (
+              <button
+                onClick={resetPos}
+                title="Đặt lại vị trí giữa màn hình"
+                className="ml-1 p-0.5 rounded-full bg-black/20 hover:bg-black/40 text-yellow-100 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
             )}
           </div>
-          <span className="text-xs font-black tracking-wide hidden sm:inline">
-            {isPlaying ? 'Đang phát Lo-Fi' : 'Nhạc Học Tập'}
-          </span>
-          <Radio className="w-3.5 h-3.5 text-yellow-200 animate-pulse" />
-        </button>
+        </div>
       )}
 
       {/* Main Full Music Player Popup Bar */}

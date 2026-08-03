@@ -52,6 +52,7 @@ import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 import AttendanceManager from '@/components/teacher/AttendanceManager';
 import TeacherTimesheet from '@/components/teacher/TeacherTimesheet';
 import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
+import MediaUploader from '@/components/shared/MediaUploader';
 
 interface ClassData {
   id: string;
@@ -64,6 +65,8 @@ interface ClassData {
   max_students: number;
   start_date: string | null;
   end_date: string | null;
+  cover_image_url?: string | null;
+  thumbnail_url?: string | null;
   is_active: boolean;
   created_at: string;
   student_count?: number;
@@ -177,7 +180,8 @@ const TeacherClasses = () => {
     max_students: 30,
     total_sessions: 24,
     start_date: '',
-    end_date: ''
+    end_date: '',
+    cover_image_url: ''
   });
 
   // --- GOOGLE CLASSROOM INTEGRATION STATE ---
@@ -707,6 +711,8 @@ const TeacherClasses = () => {
         course_id: formData.course_id === 'none' || !formData.course_id ? null : formData.course_id,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
+        cover_image_url: formData.cover_image_url || null,
+        thumbnail_url: formData.cover_image_url || null,
         is_active: true
       };
 
@@ -719,22 +725,42 @@ const TeacherClasses = () => {
         if (error) throw error;
         toast({ title: 'Thành công', description: 'Đã cập nhật lớp học' });
       } else {
-        const { error } = await supabase
+        const { data: createdClasses, error } = await supabase
           .from('classes')
-          .insert(classData);
+          .insert(classData)
+          .select('*');
 
         if (error) throw error;
-        toast({ title: 'Thành công', description: 'Đã tạo lớp học mới' });
+        toast({ title: '🎉 Thành công', description: 'Đã tạo lớp học mới!' });
+
+        const newClass = createdClasses?.[0];
+        if (newClass) {
+          const fullNewClass = { ...newClass, student_count: 0 };
+          setSelectedClass(fullNewClass as any);
+          fetchClassroomDetails(newClass.id);
+        }
       }
 
       setIsDialogOpen(false);
-      resetForm();
-      fetchClasses();
-    } catch (error) {
+      setFormData({
+        name: '',
+        name_vi: '',
+        description: '',
+        description_vi: '',
+        course_id: '',
+        max_students: 30,
+        total_sessions: 24,
+        start_date: '',
+        end_date: '',
+        cover_image_url: ''
+      });
+      setEditingClass(null);
+      await fetchClasses();
+    } catch (error: any) {
       console.error('Error saving class:', error);
       toast({ 
         title: 'Lỗi', 
-        description: 'Không thể lưu lớp học', 
+        description: error.message || 'Không thể lưu lớp học', 
         variant: 'destructive' 
       });
     }
@@ -991,17 +1017,33 @@ const TeacherClasses = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {classes.map((classItem) => (
-              <Card key={classItem.id} className="hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden border border-border">
-                <div className="h-1.5 bg-primary w-full" />
+              <Card key={classItem.id} className="hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden border border-border group">
+                {classItem.cover_image_url || classItem.thumbnail_url ? (
+                  <div className="h-36 w-full overflow-hidden bg-muted relative shrink-0">
+                    <img
+                      src={classItem.cover_image_url || classItem.thumbnail_url || ''}
+                      alt={classItem.name_vi}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                    <Badge className={`absolute top-3 right-3 ${classItem.is_active ? 'bg-emerald-600 text-white font-bold' : 'bg-muted text-muted-foreground'}`}>
+                      {classItem.is_active ? '🟢 Đang hoạt động' : '⚪ Đã kết thúc'}
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="h-2 bg-gradient-to-r from-primary via-indigo-500 to-purple-500 w-full" />
+                )}
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <CardTitle className="text-lg font-bold line-clamp-1">{classItem.name_vi}</CardTitle>
                       <p className="text-sm text-muted-foreground">{classItem.name}</p>
                     </div>
-                    <Badge className={classItem.is_active ? 'bg-green-500/10 text-green-600 border-green-200' : 'bg-muted text-muted-foreground'}>
-                      {classItem.is_active ? 'Đang hoạt động' : 'Đã kết thúc'}
-                    </Badge>
+                    {!(classItem.cover_image_url || classItem.thumbnail_url) && (
+                      <Badge className={classItem.is_active ? 'bg-green-500/10 text-green-600 border-green-200' : 'bg-muted text-muted-foreground'}>
+                        {classItem.is_active ? 'Đang hoạt động' : 'Đã kết thúc'}
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pb-4 flex-1 space-y-3">
@@ -1905,6 +1947,20 @@ const TeacherClasses = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                🖼️ Ảnh bìa lớp học (Cover Banner)
+              </Label>
+              <MediaUploader
+                value={formData.cover_image_url}
+                onChange={(url) => setFormData({ ...formData, cover_image_url: url })}
+                accept="image"
+                bucket="course-media"
+                placeholder="Tải ảnh bìa lớp học mới hoặc chọn từ Thư viện ảnh đã có"
+                aspectRatio="banner"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

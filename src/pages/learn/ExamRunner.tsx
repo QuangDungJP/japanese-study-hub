@@ -202,7 +202,11 @@ const ExamRunner = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, [result, locked, runMode]);
 
-  // ── Anti-cheat: tab visibility + window blur ────────────────────────────────
+  // ── Anti-cheat: tab visibility refinement ──────────────────────────────────
+  const lastViolationTimeRef = useRef<number>(0);
+  const hiddenTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const proctorFailStreakRef = useRef<number>(0);
+
   useEffect(() => {
     if (!exam?.anti_cheat || result || locked || runMode !== "exam") return;
 
@@ -211,6 +215,11 @@ const ExamRunner = () => {
 
     const handleViolation = async () => {
       if (submittedRef.current) return;
+      const now = Date.now();
+      // Cooldown: prevent multiple triggers within 8 seconds
+      if (now - lastViolationTimeRef.current < 8000) return;
+      lastViolationTimeRef.current = now;
+
       const newCount = violationsRef.current + 1;
       violationsRef.current = newCount;
       setViolations(newCount);
@@ -223,13 +232,9 @@ const ExamRunner = () => {
       }
 
       // Apply penalty
-      if (penalty === 'warn_only') {
-        // Just warn, do nothing else
-        return;
-      }
+      if (penalty === 'warn_only') return;
 
       if (penalty === 'reset_answers' && newCount >= maxVio) {
-        // Reset all answers
         setAnswers({});
         toast({ title: "🔄 Vi phạm quá nhiều — tất cả câu trả lời đã bị xóa!", description: "Bạn phải làm lại từ đầu.", variant: "destructive" });
         violationsRef.current = 0;
@@ -256,15 +261,27 @@ const ExamRunner = () => {
     };
 
     const onVisibilityChange = () => {
-      if (document.hidden) handleViolation();
+      if (document.hidden) {
+        // Require tab to be hidden continuously for 1.5s (grace period for accidental clicks/IME)
+        if (hiddenTimerRef.current) clearTimeout(hiddenTimerRef.current);
+        hiddenTimerRef.current = setTimeout(() => {
+          if (document.hidden) {
+            handleViolation();
+          }
+        }, 1500);
+      } else {
+        // Tab came back visible before 1.5s timeout expired
+        if (hiddenTimerRef.current) {
+          clearTimeout(hiddenTimerRef.current);
+          hiddenTimerRef.current = null;
+        }
+      }
     };
-    const onBlur = () => handleViolation();
 
     document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("blur", onBlur);
     return () => {
+      if (hiddenTimerRef.current) clearTimeout(hiddenTimerRef.current);
       document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("blur", onBlur);
     };
   }, [exam, result, locked, runMode]);
 
@@ -318,47 +335,47 @@ const ExamRunner = () => {
           const timeStr = new Date().toLocaleTimeString("vi-VN");
 
           // 1. Detect No Face / Away (too dark or low variation)
-          if (config.detect_multi_face && avgLum < 15) {
-            setProctoringStatus("no_face");
-            setProctoringLogs(logs => [
-              ...logs.slice(-20),
-              { time: timeStr, type: "no_face", msg: "⚠️ Không phát hiện khuôn mặt trước camera" }
-            ]);
+          if (config.detect_multi_face && avgLum < 12) {
+            proctorFailStreakRef.current++;
+            if (proctorFailStreakRef.current >= 3) {
+              setProctoringStatus("no_face");
+              setProctoringLogs(logs => [
+                ...logs.slice(-20),
+                { time: timeStr, type: "no_face", msg: "⚠️ Không phát hiện khuôn mặt trước camera" }
+              ]);
+            }
             return;
           }
 
           // 2. Detect Head Gesture / Turning side to side
-          if (config.detect_head && lrRatio > 0.35) {
-            setProctoringStatus("head_turned");
-            setProctoringLogs(logs => [
-              ...logs.slice(-20),
-              { time: timeStr, type: "head_turned", msg: "🗣️ Học viên ngoảnh mặt / xoay đầu sang bên" }
-            ]);
+          if (config.detect_head && lrRatio > 0.50) {
+            proctorFailStreakRef.current++;
+            if (proctorFailStreakRef.current >= 3) {
+              setProctoringStatus("head_turned");
+              setProctoringLogs(logs => [
+                ...logs.slice(-20),
+                { time: timeStr, type: "head_turned", msg: "🗣️ Học viên ngoảnh mặt / xoay đầu sang bên" }
+              ]);
+            }
             return;
           }
 
           // 3. Detect Eye Gaze shift
-          if (config.detect_gaze && lrRatio > 0.22) {
-            setProctoringStatus("gaze_away");
-            setProctoringLogs(logs => [
-              ...logs.slice(-20),
-              { time: timeStr, type: "gaze_away", msg: "👁️ Học viên nhìn nghiêng ra ngoài màn hình quá lâu" }
-            ]);
+          if (config.detect_gaze && lrRatio > 0.40) {
+            proctorFailStreakRef.current++;
+            if (proctorFailStreakRef.current >= 3) {
+              setProctoringStatus("gaze_away");
+              setProctoringLogs(logs => [
+                ...logs.slice(-20),
+                { time: timeStr, type: "gaze_away", msg: "👁️ Học viên nhìn nghiêng ra ngoài màn hình quá lâu" }
+              ]);
+            }
             return;
           }
 
-          // 4. Detect Dual Monitor
-          if (config.detect_dual_monitor && window.screen && (window.screen as any).isExtended) {
-            setProctoringStatus("multi_monitor");
-            setProctoringLogs(logs => [
-              ...logs.slice(-20),
-              { time: timeStr, type: "multi_monitor", msg: "💻 Phát hiện hệ thống cắm 2 màn hình" }
-            ]);
-            return;
-          }
-
+          proctorFailStreakRef.current = 0;
           setProctoringStatus("normal");
-        }, 1500);
+        }, 2000);
       } catch (err) {
         console.warn("AI Camera Proctoring disabled or permission denied:", err);
       }

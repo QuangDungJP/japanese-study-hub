@@ -1380,63 +1380,90 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                   </div>
                   <Switch checked={showAnswersAfter} onCheckedChange={setShowAnswersAfter} />
                 </div>
-                <div className="flex items-center justify-between rounded-lg border p-3 border-red-500/30 bg-red-500/5">
-                  <div>
-                    <p className="font-medium text-sm flex items-center gap-1.5">🛡️ Chống gian lận (Anti-cheat)</p>
-                    <p className="text-xs text-muted-foreground">Cảnh báo khi học viên chuyển tab / rời khỏi cửa sổ bài thi.</p>
-                  </div>
-                  <Switch checked={antiCheat} onCheckedChange={setAntiCheat} />
-                </div>
-                {antiCheat && (
-                  <div className="ml-4 space-y-3 bg-red-500/5 border border-red-500/20 rounded-xl p-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-red-700 dark:text-red-400">⚠️ Chế độ xử lý khi vi phạm</Label>
-                      <Select value={antiCheatPenalty} onValueChange={(v: any) => setAntiCheatPenalty(v)}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="warn_only">⚠️ Chỉ cảnh báo (không phạt)</SelectItem>
-                          <SelectItem value="auto_submit">🚫 Tự nộp bài sau N lần vi phạm</SelectItem>
-                          <SelectItem value="reset_answers">🔄 Xóa hết câu trả lời — làm lại từ đầu</SelectItem>
-                          <SelectItem value="deduct_points">➖ Trừ điểm mỗi lần vi phạm</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {antiCheatPenalty !== 'warn_only' && (
-                      <div className="flex items-center gap-3">
-                        <p className="text-sm text-red-700 dark:text-red-400 flex-1">
-                          {antiCheatPenalty === 'deduct_points' ? 'Thực hiện phạt sau' : 'Phạt sau'}
+                {/* Master Anti-cheat Switch Card */}
+                <div className={`p-4 rounded-2xl border-2 transition-all duration-300 ${antiCheat ? 'bg-gradient-to-br from-red-500/10 via-amber-500/5 to-rose-500/10 border-red-500/40 shadow-md ring-2 ring-red-500/20' : 'bg-card border-border hover:border-muted-foreground/30'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-sm transition-colors ${antiCheat ? 'bg-red-500 text-white ring-4 ring-red-500/20' : 'bg-muted text-muted-foreground'}`}>
+                        🛡️
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-extrabold text-sm text-foreground">Phần Mềm Chống Gian Lận (Anti-Cheat 3.0)</p>
+                          <Badge variant={antiCheat ? 'default' : 'outline'} className={antiCheat ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px]' : 'text-muted-foreground text-[10px]'}>
+                            {antiCheat ? '🟢 ĐANG BẬT' : '⚪ ĐANG TẮT'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {antiCheat
+                            ? 'Giám sát chuyển tab thông minh (Grace period 1.5s - Chống báo nhầm).'
+                            : 'Tắt chống gian lận — học viên làm bài thoải mái không bị giới hạn.'}
                         </p>
-                        <Input
-                          type="number" min={1} max={20}
-                          value={antiCheatMaxViolations}
-                          onChange={(e) => setAntiCheatMaxViolations(Math.max(1, parseInt(e.target.value) || 3))}
-                          className="w-20 h-8"
-                        />
-                        <p className="text-sm text-red-700 dark:text-red-400">lần vi phạm</p>
                       </div>
-                    )}
-                    {antiCheatPenalty === 'deduct_points' && (
-                      <div className="flex items-center gap-3">
-                        <p className="text-sm text-red-700 dark:text-red-400 flex-1">Trừ mỗi lần</p>
-                        <Input
-                          type="number" min={1} max={50}
-                          value={antiCheatDeductPerViolation}
-                          onChange={(e) => setAntiCheatDeductPerViolation(Math.max(1, parseInt(e.target.value) || 5))}
-                          className="w-20 h-8"
-                        />
-                        <p className="text-sm text-red-700 dark:text-red-400">điểm</p>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground italic">
-                      {antiCheatPenalty === 'warn_only' && 'Học viên chỉ bị cảnh báo, số lần vi phạm ghi lại nhưng không bị phạt.'}
-                      {antiCheatPenalty === 'auto_submit' && `Sau ${antiCheatMaxViolations} lần chuyển tab → tự động nộp bài.`}
-                      {antiCheatPenalty === 'reset_answers' && `Sau ${antiCheatMaxViolations} lần chuyển tab → xóa hết câu trả lời, làm lại từ đầu.`}
-                      {antiCheatPenalty === 'deduct_points' && `Mỗi lần chuyển tab → trừ ${antiCheatDeductPerViolation} điểm. Sau ${antiCheatMaxViolations} lần → tự nộp.`}
-                    </p>
+                    </div>
+                    <Switch
+                      checked={antiCheat}
+                      onCheckedChange={setAntiCheat}
+                      className="data-[state=checked]:bg-red-500"
+                    />
                   </div>
-                )}
+
+                  {antiCheat && (
+                    <div className="mt-3 space-y-3 bg-background/80 backdrop-blur border border-red-500/30 rounded-xl p-3.5 shadow-inner">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-bold text-red-700 dark:text-red-400 flex items-center gap-1.5">
+                          ⚡ Chế độ xử lý phạt khi vi phạm:
+                        </Label>
+                        <Select value={antiCheatPenalty} onValueChange={(v: any) => setAntiCheatPenalty(v)}>
+                          <SelectTrigger className="h-9 bg-card font-medium">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="warn_only">⚠️ Chỉ cảnh báo (không trừ điểm, không nộp bài)</SelectItem>
+                            <SelectItem value="auto_submit">🚫 Tự nộp bài sau N lần vi phạm</SelectItem>
+                            <SelectItem value="reset_answers">🔄 Xóa hết câu trả lời — làm lại từ đầu</SelectItem>
+                            <SelectItem value="deduct_points">➖ Trừ điểm mỗi lần vi phạm</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {antiCheatPenalty !== 'warn_only' && (
+                        <div className="flex items-center gap-3 bg-red-500/5 p-2 rounded-lg border border-red-500/10">
+                          <p className="text-xs font-semibold text-red-700 dark:text-red-400 flex-1">
+                            {antiCheatPenalty === 'deduct_points' ? 'Nộp bài tự động sau' : 'Áp dụng hình phạt sau'}
+                          </p>
+                          <Input
+                            type="number" min={1} max={20}
+                            value={antiCheatMaxViolations}
+                            onChange={(e) => setAntiCheatMaxViolations(Math.max(1, parseInt(e.target.value) || 3))}
+                            className="w-20 h-8 font-bold text-center"
+                          />
+                          <p className="text-xs font-semibold text-red-700 dark:text-red-400">lần vi phạm</p>
+                        </div>
+                      )}
+
+                      {antiCheatPenalty === 'deduct_points' && (
+                        <div className="flex items-center gap-3 bg-red-500/5 p-2 rounded-lg border border-red-500/10">
+                          <p className="text-xs font-semibold text-red-700 dark:text-red-400 flex-1">Số điểm trừ mỗi lần chuyển tab &gt; 1.5s</p>
+                          <Input
+                            type="number" min={1} max={50}
+                            value={antiCheatDeductPerViolation}
+                            onChange={(e) => setAntiCheatDeductPerViolation(Math.max(1, parseInt(e.target.value) || 5))}
+                            className="w-20 h-8 font-bold text-center"
+                          />
+                          <p className="text-xs font-semibold text-red-700 dark:text-red-400">điểm</p>
+                        </div>
+                      )}
+
+                      <p className="text-[11px] text-muted-foreground italic bg-muted/40 p-2 rounded-lg">
+                        {antiCheatPenalty === 'warn_only' && '💡 Học viên chỉ nhìn thấy thông báo cảnh báo, hệ thống không tự nộp hay trừ điểm.'}
+                        {antiCheatPenalty === 'auto_submit' && `💡 Khi chuyển tab quá 1.5s tới ${antiCheatMaxViolations} lần → bài thi sẽ tự nộp.`}
+                        {antiCheatPenalty === 'reset_answers' && `💡 Khi vi phạm tới ${antiCheatMaxViolations} lần → toàn bộ câu trả lời sẽ bị xóa để làm lại.`}
+                        {antiCheatPenalty === 'deduct_points' && `💡 Mỗi lần vi phạm trừ ${antiCheatDeductPerViolation} điểm. Tối đa ${antiCheatMaxViolations} lần sẽ tự động nộp.`}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Advanced AI Proctoring */}
                 <div className="flex items-center justify-between rounded-lg border p-3 border-indigo-500/30 bg-indigo-500/5">
