@@ -30,15 +30,16 @@ const PageBanner = ({
 }: PageBannerProps) => {
   const { data: page } = usePageSetting(pageKey);
 
-  const badge = page?.hero_badge_vi || defaultBadge;
-  const title = page?.hero_title_vi || defaultTitle;
-  const subtitle = page?.hero_subtitle_vi || defaultSubtitle;
-  const image = page?.hero_image_url || defaultImage;
-  const overlay = Math.max(0, Math.min(100, Number(page?.hero_overlay ?? 50))) / 100;
-  const primaryLabel = page?.hero_cta_primary_label || defaultPrimaryLabel;
-  const primaryUrl = page?.hero_cta_primary_url || defaultPrimaryUrl;
-  const secondaryLabel = page?.hero_cta_secondary_label || defaultSecondaryLabel;
-  const secondaryUrl = page?.hero_cta_secondary_url || defaultSecondaryUrl;
+  const pg = page as any;
+  const badge = pg?.hero_badge_vi || defaultBadge;
+  const title = pg?.hero_title_vi || defaultTitle;
+  const subtitle = pg?.hero_subtitle_vi || defaultSubtitle;
+  const image = pg?.hero_image_url || defaultImage;
+  const overlay = Math.max(0, Math.min(100, Number(pg?.hero_overlay ?? 50))) / 100;
+  const primaryLabel = pg?.hero_cta_primary_label || defaultPrimaryLabel;
+  const primaryUrl = pg?.hero_cta_primary_url || defaultPrimaryUrl;
+  const secondaryLabel = pg?.hero_cta_secondary_label || defaultSecondaryLabel;
+  const secondaryUrl = pg?.hero_cta_secondary_url || defaultSecondaryUrl;
 
   const renderTitle = () => {
     if (highlight && title.includes(highlight)) {

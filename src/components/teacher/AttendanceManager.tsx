@@ -15,8 +15,10 @@ import {
   Clock, 
   CalendarCheck,
   Save,
-  Users
+  Users,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportToCSV } from '@/lib/exportUtils';
 
 interface ClassInfo {
   id: string;

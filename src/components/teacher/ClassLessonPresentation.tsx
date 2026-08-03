@@ -64,7 +64,7 @@ export const ClassLessonPresentation = ({ lesson, isOpen, onClose }: ClassLesson
         .eq('lesson_id', lessonId);
 
       if (error) throw error;
-      setExercises(data || []);
+      setExercises((data || []) as any);
     } catch (err) {
       console.error('Error fetching presentation exercises:', err);
     } finally {

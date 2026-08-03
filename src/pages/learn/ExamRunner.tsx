@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Clock, CheckCircle2, AlertTriangle, Loader2, Trophy, Lock,
+  Clock, CheckCircle2, AlertTriangle, Loader2, Trophy, Lock, Camera, Video,
   Paperclip, Video as VideoIcon, MessageSquare, X, Wifi, WifiOff, Save,
   RotateCcw, Eye, ShieldAlert, XCircle,
 } from "lucide-react";

@@ -44,7 +44,7 @@ import { vi } from 'date-fns/locale';
 
 // New imports
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
-import { exportToGoogleSheetsCSV, exportToGoogleDocs } from '@/lib/exportUtils';
+import { exportToGoogleSheetsCSV } from '@/lib/exportUtils';
 import { ExamManager } from '@/components/calendar/ExamManager';
 import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 import LessonEditor from '@/components/teacher/LessonEditor';
@@ -264,7 +264,7 @@ const TeacherClasses = () => {
         })
       );
 
-      setClasses(classesWithCounts);
+      setClasses(classesWithCounts as any);
     } catch (error) {
       console.error('Error fetching classes:', error);
     } finally {

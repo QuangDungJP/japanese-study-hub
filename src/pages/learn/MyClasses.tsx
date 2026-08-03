@@ -291,7 +291,7 @@ const MyClasses = () => {
         .select('*')
         .eq('class_id', cls.id)
         .order('exam_date', { ascending: true });
-      setExams(examsData || []);
+      setExams((examsData || []) as any);
 
       // 4. Fetch exam attempts for this student (grouped by exam)
       if (examsData && examsData.length > 0 && user) {

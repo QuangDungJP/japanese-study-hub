@@ -73,7 +73,7 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
         }
       }
 
-      const formatted: ClassMessage[] = (data || []).map(m => ({
+      const formatted: ClassMessage[] = ((data || []) as any[]).map((m: any) => ({
         ...m,
         sender_profile: profileMap.get(m.sender_id) || { full_name: 'Thành viên' },
       }));
