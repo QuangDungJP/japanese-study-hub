@@ -141,6 +141,15 @@ export const BackgroundMusicPlayer = () => {
 
   const currentTrack = tracks[currentTrackIndex] || null;
 
+  // Bust the browser cache when admin replaces a cover image at the same URL
+  const coverSrc = (track: Track | null) => {
+    if (!track?.cover_image) return null;
+    const version = (track as any).updated_at || (track as any).created_at;
+    if (!version) return track.cover_image;
+    const stamp = encodeURIComponent(String(version));
+    return track.cover_image.includes('?') ? `${track.cover_image}&v=${stamp}` : `${track.cover_image}?v=${stamp}`;
+  };
+
   const togglePlay = () => {
     if (!audioRef.current) return;
     if (isPlaying) {
@@ -218,6 +227,14 @@ export const BackgroundMusicPlayer = () => {
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] max-w-2xl w-[94vw] sm:w-[680px] transition-all duration-300 animate-in fade-in slide-in-from-bottom-6"
         >
           <div className="relative bg-card/95 backdrop-blur-2xl border-2 border-amber-500/40 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)] overflow-hidden">
+            {/* Cover artwork backdrop */}
+            {currentTrack?.cover_image && (
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-25 blur-xl scale-110 pointer-events-none transition-all duration-700"
+                style={{ backgroundImage: `url(${coverSrc(currentTrack)})` }}
+              />
+            )}
+
             {/* Background Ambient Glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 pointer-events-none" />
 
@@ -233,7 +250,8 @@ export const BackgroundMusicPlayer = () => {
                 <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 border-amber-400/40 shadow-md bg-muted flex items-center justify-center ${isPlaying ? 'ring-4 ring-amber-400/30' : ''}`}>
                   {currentTrack?.cover_image ? (
                     <img
-                      src={currentTrack.cover_image}
+                      key={coverSrc(currentTrack) || ''}
+                      src={coverSrc(currentTrack) || ''}
                       alt={currentTrack.title}
                       className={`w-full h-full object-cover transition-transform duration-700 ${isPlaying ? 'scale-105' : 'brightness-75'}`}
                     />
