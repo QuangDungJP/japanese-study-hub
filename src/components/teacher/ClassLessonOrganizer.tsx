@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
@@ -22,6 +23,7 @@ import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { InlineLessonPresentation } from './InlineLessonPresentation';
+import MediaUploader from '@/components/shared/MediaUploader';
 
 export interface LessonItem {
   id: string;
@@ -67,8 +69,10 @@ interface Props {
 }
 
 export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, onRefreshNeeded }: Props) => {
-  const { user } = useAuth();
+  const { user, isTeacherOrAbove, isAdmin } = useAuth();
   const { toast } = useToast();
+
+  const effectiveIsTeacher = isTeacher || !!isTeacherOrAbove || !!isAdmin;
 
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [items, setItems] = useState<LessonItem[]>([]);
@@ -99,6 +103,111 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
   const [targetFolderId, setTargetFolderId] = useState<string>('curriculum');
   const [materialForm, setMaterialForm] = useState({ title: '', link_url: '', category: 'giáo_trình' });
   const [uploading, setUploading] = useState(false);
+
+  // Delete material confirmation state
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<LessonItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Deep Lesson / Material Edit state
+  const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
+  const [editLessonForm, setEditLessonForm] = useState<{
+    title_vi: string;
+    description: string;
+    skill: string;
+    level: string;
+    duration_minutes: number;
+    slide_url: string;
+    document_url: string;
+    video_url: string;
+    xp_reward: number;
+  }>({
+    title_vi: '',
+    description: '',
+    skill: 'reading',
+    level: 'N4',
+    duration_minutes: 15,
+    slide_url: '',
+    document_url: '',
+    video_url: '',
+    xp_reward: 10,
+  });
+
+  const openEditLessonModal = (item: LessonItem) => {
+    setEditingLesson(item);
+    setEditLessonForm({
+      title_vi: item.title_vi || item.title || '',
+      description: item.description || '',
+      skill: item.skill || 'reading',
+      level: item.level || 'N4',
+      duration_minutes: item.duration_minutes || 15,
+      slide_url: item.slide_url || item.document_url || item.file_url || '',
+      document_url: item.document_url || item.slide_url || item.file_url || '',
+      video_url: item.file_url || '',
+      xp_reward: 10,
+    });
+  };
+
+  const handleSaveLessonEdit = async () => {
+    if (!editingLesson || !editLessonForm) return;
+    try {
+      const sb: any = supabase;
+      if (editingLesson.type === 'material') {
+        const { error } = await sb.from('lesson_materials').update({
+          title: editLessonForm.title_vi,
+          description: editLessonForm.description,
+          file_url: editLessonForm.slide_url || editLessonForm.document_url || editingLesson.file_url,
+        }).eq('id', editingLesson.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('lessons').update({
+          title: editLessonForm.title_vi,
+          title_vi: editLessonForm.title_vi,
+          description: editLessonForm.description,
+          description_vi: editLessonForm.description,
+          skill: editLessonForm.skill,
+          level: editLessonForm.level,
+          duration_minutes: Number(editLessonForm.duration_minutes) || 15,
+          slide_url: editLessonForm.slide_url || null,
+          document_url: editLessonForm.document_url || editLessonForm.slide_url || null,
+          video_url: editLessonForm.video_url || null,
+          xp_reward: Number(editLessonForm.xp_reward) || 10,
+        }).eq('id', editingLesson.id);
+        if (error) throw error;
+      }
+
+      toast({ title: '✅ Đã cập nhật bài học thành công!' });
+      setEditingLesson(null);
+      loadData();
+      if (onRefreshNeeded) onRefreshNeeded();
+    } catch (e: any) {
+      console.error('Error updating lesson:', e);
+      toast({ title: 'Lỗi cập nhật bài học', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (!deleteConfirmItem) return;
+    setDeleting(true);
+    try {
+      const sb: any = supabase;
+      if (deleteConfirmItem.type === 'material') {
+        const { error } = await sb.from('lesson_materials').delete().eq('id', deleteConfirmItem.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('lessons').delete().eq('id', deleteConfirmItem.id);
+        if (error) throw error;
+      }
+      toast({ title: '✅ Đã xóa tài liệu / bài học thành công!' });
+      setItems((prev) => prev.filter((i) => i.id !== deleteConfirmItem.id));
+      if (onRefreshNeeded) onRefreshNeeded();
+    } catch (e: any) {
+      console.error('Error deleting item:', e);
+      toast({ title: 'Lỗi khi xóa tài liệu', description: e.message, variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmItem(null);
+    }
+  };
 
   useEffect(() => {
     if (classId) {
@@ -1086,8 +1195,12 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
                                     </DropdownMenuItem>
                                   )}
 
-                                  {isTeacher && (
+                                  {effectiveIsTeacher && (
                                     <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => openEditLessonModal(item)} className="font-semibold text-primary">
+                                        <Edit3 className="w-3.5 h-3.5 mr-2 text-primary" /> Chỉnh sửa bài học / tài liệu
+                                      </DropdownMenuItem>
                                       <DropdownMenuSeparator />
                                       <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                                         Chuyển danh mục:
@@ -1114,6 +1227,13 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
                                       </DropdownMenuItem>
                                       <DropdownMenuItem disabled={idx === itemsList.length - 1} onClick={() => moveItemUpDown(item, folderId, 1)}>
                                         <ArrowDown className="w-3.5 h-3.5 mr-2" /> Chuyển xuống dưới
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => setDeleteConfirmItem(item)}
+                                        className="text-destructive focus:bg-destructive/10 focus:text-destructive font-medium cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 mr-2 text-destructive" /> Xóa tài liệu / bài học
                                       </DropdownMenuItem>
                                     </>
                                   )}
@@ -1274,6 +1394,158 @@ export const ClassLessonOrganizer = ({ classId, className, isTeacher = false, on
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Item Confirmation Dialog */}
+      {deleteConfirmItem && (
+        <Dialog open={!!deleteConfirmItem} onOpenChange={() => setDeleteConfirmItem(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="w-5 h-5" />
+                Xác nhận xóa tài liệu / bài học
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 py-2">
+              <p className="text-sm text-foreground font-medium">
+                Bạn có chắc chắn muốn xóa <span className="font-bold text-destructive">"{deleteConfirmItem.title}"</span> khỏi danh sách buổi học này không?
+              </p>
+              <p className="text-xs text-muted-foreground bg-destructive/5 p-2.5 rounded-lg border border-destructive/20">
+                ⚠️ Hành động này sẽ gỡ hoàn toàn tệp/bài học này khỏi lớp học. Học viên sẽ không còn xem được tài liệu này nữa.
+              </p>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={() => setDeleteConfirmItem(null)} disabled={deleting}>
+                Hủy
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteItem} disabled={deleting}>
+                {deleting ? 'Đang xóa...' : 'Xóa ngay'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Deep Lesson / Material Editor Dialog */}
+      {editingLesson && (
+        <Dialog open={!!editingLesson} onOpenChange={() => setEditingLesson(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-primary font-extrabold text-base">
+                <Edit3 className="w-5 h-5" />
+                Chỉnh sửa bài học / tài liệu chuyên sâu: {editingLesson.title}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase">Tiêu đề bài học / Tài liệu (Tiếng Việt)</label>
+                <Input
+                  value={editLessonForm.title_vi}
+                  onChange={(e) => setEditLessonForm({ ...editLessonForm, title_vi: e.target.value })}
+                  placeholder="VD: Từ vựng Minna N4 - Bài 31"
+                  className="font-bold text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase">Mô tả tóm tắt nội dung</label>
+                <Textarea
+                  value={editLessonForm.description}
+                  onChange={(e) => setEditLessonForm({ ...editLessonForm, description: e.target.value })}
+                  placeholder="Nhập mô tả tóm tắt cho bài học..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Kỹ năng</label>
+                  <Select value={editLessonForm.skill} onValueChange={(v) => setEditLessonForm({ ...editLessonForm, skill: v })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="reading">📖 Đọc hiểu (Reading)</SelectItem>
+                      <SelectItem value="listening">🎧 Nghe hiểu (Listening)</SelectItem>
+                      <SelectItem value="speaking">🗣️ Nói Kaiwa (Speaking)</SelectItem>
+                      <SelectItem value="writing">✍️ Viết (Writing)</SelectItem>
+                      <SelectItem value="vocabulary">🎴 Từ vựng (Vocabulary)</SelectItem>
+                      <SelectItem value="grammar">📚 Ngữ pháp (Grammar)</SelectItem>
+                      <SelectItem value="kanji">🈁 Kanji (Hán tự)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Trình độ (Level)</label>
+                  <Select value={editLessonForm.level} onValueChange={(v) => setEditLessonForm({ ...editLessonForm, level: v })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="N5">N5 Sơ cấp 1</SelectItem>
+                      <SelectItem value="N4">N4 Sơ cấp 2</SelectItem>
+                      <SelectItem value="N3">N3 Trung cấp</SelectItem>
+                      <SelectItem value="N2">N2 Cao cấp</SelectItem>
+                      <SelectItem value="N1">N1 Chuyên sâu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Thời lượng (Phút)</label>
+                  <Input
+                    type="number"
+                    value={editLessonForm.duration_minutes}
+                    onChange={(e) => setEditLessonForm({ ...editLessonForm, duration_minutes: parseInt(e.target.value) || 15 })}
+                    className="mt-1"
+                    min={1}
+                  />
+                </div>
+              </div>
+
+              {/* Uploaders for Slide / Document / Video */}
+              <div className="space-y-3 pt-2 border-t">
+                <div>
+                  <label className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase flex items-center gap-1.5 mb-1.5">
+                    <Presentation className="w-4 h-4" /> Link Trình Chiếu Slide (Canva / Google Slides / PDF / PPTX)
+                  </label>
+                  <Input
+                    value={editLessonForm.slide_url}
+                    onChange={(e) => setEditLessonForm({ ...editLessonForm, slide_url: e.target.value })}
+                    placeholder="https://docs.google.com/presentation/d/... hoặc link Canva"
+                    className="font-mono text-xs mb-2"
+                  />
+                  <MediaUploader
+                    value={editLessonForm.slide_url}
+                    onChange={(url) => setEditLessonForm({ ...editLessonForm, slide_url: url })}
+                    accept="document"
+                    bucket="lesson-assets"
+                    placeholder="Tải tệp PDF / Slide mới hoặc chọn từ Thư viện"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase flex items-center gap-1.5 mb-1.5">
+                    <Play className="w-4 h-4" /> Link Video bài giảng (YouTube / MP4)
+                  </label>
+                  <Input
+                    value={editLessonForm.video_url}
+                    onChange={(e) => setEditLessonForm({ ...editLessonForm, video_url: e.target.value })}
+                    placeholder="https://www.youtube.com/watch?v=... hoặc URL mp4"
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={() => setEditingLesson(null)}>Hủy</Button>
+              <Button onClick={handleSaveLessonEdit} className="font-bold">Lưu thay đổi bài học</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

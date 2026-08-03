@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
-import { Upload, X, Image, Film, Loader2, Check, AlertCircle, FileText } from 'lucide-react';
+import { Upload, X, Image, Film, Loader2, Check, AlertCircle, FileText, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { MediaLibraryModal } from './MediaLibraryModal';
 
 interface MediaUploaderProps {
   value?: string;
@@ -15,6 +16,7 @@ interface MediaUploaderProps {
   placeholder?: string;
   className?: string;
   aspectRatio?: 'video' | 'square' | 'banner' | 'auto';
+  showLibraryBtn?: boolean;
 }
 
 const MediaUploader = ({
@@ -27,10 +29,12 @@ const MediaUploader = ({
   placeholder = 'Kéo thả file hoặc click để upload',
   className,
   aspectRatio = 'auto',
+  showLibraryBtn = true,
 }: MediaUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -220,10 +224,27 @@ const MediaUploader = ({
                   {' • '}Tối đa {maxSizeMB}MB
                 </p>
               </div>
-              <Button type="button" variant="outline" size="sm" className="h-7 text-xs px-3 mt-1">
-                <Upload className="w-3.5 h-3.5 mr-1" />
-                Chọn file
-              </Button>
+              <div className="flex items-center gap-2 mt-1 flex-wrap justify-center">
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs px-3">
+                  <Upload className="w-3.5 h-3.5 mr-1" />
+                  Upload file mới
+                </Button>
+                {showLibraryBtn && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-7 text-xs px-3 bg-primary/10 text-primary hover:bg-primary/20 font-bold border border-primary/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLibraryOpen(true);
+                    }}
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 mr-1 text-primary" />
+                    Thư viện ảnh đã có
+                  </Button>
+                )}
+              </div>
             </>
           )}
 
@@ -242,6 +263,19 @@ const MediaUploader = ({
           <AlertCircle className="w-3.5 h-3.5" />
           {error}
         </div>
+      )}
+
+      {/* Reusable Asset Media Library Modal */}
+      {libraryOpen && (
+        <MediaLibraryModal
+          open={libraryOpen}
+          onOpenChange={setLibraryOpen}
+          filterType={accept === 'image' ? 'image' : accept === 'video' ? 'video' : accept === 'document' ? 'document' : 'all'}
+          onSelect={(selectedUrl) => {
+            onChange(selectedUrl);
+            toast({ title: '✅ Đã chọn tệp từ thư viện', description: 'Tái sử dụng tệp thành công!' });
+          }}
+        />
       )}
     </div>
   );
