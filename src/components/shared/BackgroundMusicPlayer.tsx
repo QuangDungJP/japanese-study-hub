@@ -72,6 +72,20 @@ export const BackgroundMusicPlayer = () => {
       }
     };
     fetchMusic();
+
+    // Refresh when admin updates tracks (cover image, title, audio...)
+    const onMusicUpdated = () => fetchMusic();
+    window.addEventListener('music_updated', onMusicUpdated);
+
+    const channel = (supabase as any)
+      .channel(`music-tracks-rt-${Math.random().toString(36).slice(2, 9)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'music_tracks' }, () => fetchMusic())
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('music_updated', onMusicUpdated);
+      (supabase as any).removeChannel(channel);
+    };
   }, [user]);
 
   useEffect(() => {
@@ -84,10 +98,13 @@ export const BackgroundMusicPlayer = () => {
       setIsMinimized(false);
 
       setTracks(prev => {
-        const existingIdx = prev.findIndex(t => t.audio_url === newTrack.audio_url);
+        const existingIdx = prev.findIndex(t => t.audio_url === newTrack.audio_url || (newTrack.id && t.id === newTrack.id));
         if (existingIdx !== -1) {
           setCurrentTrackIndex(existingIdx);
-          return prev;
+          // always take the freshest metadata (cover image, title, artist)
+          const updated = [...prev];
+          updated[existingIdx] = { ...updated[existingIdx], ...newTrack };
+          return updated;
         } else {
           const updated = [newTrack, ...prev];
           setCurrentTrackIndex(0);
