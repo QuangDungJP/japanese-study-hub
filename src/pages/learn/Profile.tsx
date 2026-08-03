@@ -22,6 +22,8 @@ import { useLearning } from '@/contexts/LearningContext';
 
 import BadgeShowcase from '@/components/shared/BadgeShowcase';
 import UserInventoryShowcase from '@/components/shared/UserInventoryShowcase';
+import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
+import AvatarFrameCustomizer from '@/components/shared/AvatarFrameCustomizer';
 import { Package } from 'lucide-react';
 
 interface ProfileData {
@@ -338,12 +340,24 @@ const ProfilePage = () => {
         <div className="relative px-6 pb-6 md:px-8 md:pb-8 -mt-16 flex flex-col md:flex-row items-center md:items-end justify-between gap-6">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-5 text-center md:text-left">
             <div className="relative group">
-              <Avatar className="w-28 h-28 md:w-32 md:h-32 border-4 border-background shadow-2xl">
-                <AvatarImage src={profile.avatar_url || ''} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-extrabold">
-                  {profile.full_name?.charAt(0)?.toUpperCase() || '?'}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarWithDecoration
+                userId={user?.id}
+                avatarUrl={profile.avatar_url}
+                name={profile.full_name}
+                size="3xl"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer backdrop-blur-xs z-20"
+                title="Thay đổi ảnh đại diện"
+              >
+                {uploading ? (
+                  <Loader2 className="w-7 h-7 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-7 h-7 text-white" />
+                )}
+              </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
@@ -434,6 +448,9 @@ const ProfilePage = () => {
             <TabsTrigger value="badges" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
               <Award className="w-4 h-4 text-amber-500" /> Danh hiệu & XP
             </TabsTrigger>
+            <TabsTrigger value="avatar_frame" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
+              <Sparkles className="w-4 h-4 text-purple-500" /> Khung Avatar & Trang trí
+            </TabsTrigger>
             <TabsTrigger value="inventory" className="rounded-xl font-bold gap-2 text-xs md:text-sm py-2 px-4">
               <Package className="w-4 h-4 text-emerald-500" /> Kho đồ cá nhân
             </TabsTrigger>
@@ -453,6 +470,11 @@ const ProfilePage = () => {
           {/* Tab: Badges */}
           <TabsContent value="badges">
             <BadgeShowcase userId={user?.id || ''} role={roles[0] || 'student'} />
+          </TabsContent>
+
+          {/* Tab: Avatar Frame Customizer */}
+          <TabsContent value="avatar_frame">
+            <AvatarFrameCustomizer />
           </TabsContent>
 
           {/* Tab: Inventory */}
