@@ -16,8 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import MediaLibraryDialog from '@/components/admin/MediaLibraryDialog';
 import { 
   ShoppingBag, Music, Disc, Star, Flame, Zap, Plus, Edit, Trash2, 
-  Search, CheckCircle2, RefreshCw, Loader2, Image, Upload, Shield, FolderOpen, Gift
-  Sparkles,
+  Search, CheckCircle2, RefreshCw, Loader2, Image, Upload, Shield, FolderOpen, Gift, Sparkles
 } from 'lucide-react';
 
 export interface StoreItemAdmin {
