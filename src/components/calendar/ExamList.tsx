@@ -189,7 +189,7 @@ export const ExamList = ({ showRegistered = false, onRegister }: ExamListProps) 
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        <span>{exam.start_time} ({exam.duration_minutes ? `${exam.duration_minutes} phút` : (exam.timer_mode === 'stopwatch' ? 'Bấm giờ' : 'Không giới hạn')})</span>
+                        <span>{exam.start_time} ({exam.duration_minutes ? `${exam.duration_minutes} phút` : ((exam as any).timer_mode === 'stopwatch' ? 'Bấm giờ' : 'Không giới hạn')})</span>
                       </div>
                       {exam.location && (
                         <div className="flex items-center gap-1">

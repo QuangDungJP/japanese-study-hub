@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Image, Film, Link, FolderOpen, X, Check, ChevronDown, ChevronUp, GripVertical, Star } from "lucide-react";
+import { Plus, Trash2, Image, Film, Link, FolderOpen, X, Check, ChevronDown, ChevronUp, GripVertical, Star, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

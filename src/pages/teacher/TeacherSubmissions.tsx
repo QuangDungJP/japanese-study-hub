@@ -227,7 +227,7 @@ const TeacherSubmissions = () => {
         });
       });
 
-      const mappedSubmissions: Submission[] = (submissionsData || []).map((sub) => {
+      const mappedSubmissions: Submission[] = ((submissionsData || []) as any[]).map((sub: any) => {
         const exercise = exercises.find((e) => e.id === sub.exercise_id);
         const lesson = lessons.find((l) => l.id === exercise?.lesson_id);
         const profile = profiles.find((p) => p.user_id === sub.user_id || p.id === sub.user_id);
@@ -314,7 +314,7 @@ const TeacherSubmissions = () => {
         });
       });
 
-      const mappedAttempts: ExamAttemptItem[] = (attemptsData || []).map((att) => {
+      const mappedAttempts: ExamAttemptItem[] = ((attemptsData || []) as any[]).map((att: any) => {
         const exam = examsData.find((e) => e.id === att.exam_id);
         const profile = profiles.find((p) => p.user_id === att.student_id || p.id === att.student_id);
 
@@ -400,7 +400,7 @@ const TeacherSubmissions = () => {
           teacher_feedback: examFeedback,
           status: 'graded',
           graded_at: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', selectedExamAttempt.id);
 
       if (error) throw error;
