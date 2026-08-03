@@ -127,7 +127,7 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
                   user_id: user.id,
                   badge_id: b.id,
                   unlocked_by: 'system',
-                })
+                }) as any
               );
               if (b.bonus_xp > 0) updatedXp += b.bonus_xp;
             }
