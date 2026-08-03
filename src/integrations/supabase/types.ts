@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      absence_requests: {
+        Row: {
+          class_id: string | null
+          created_at: string | null
+          id: string
+          makeup_session_id: string | null
+          reason: string | null
+          session_date: string
+          status: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string | null
+          id?: string
+          makeup_session_id?: string | null
+          reason?: string | null
+          session_date: string
+          status?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string | null
+          id?: string
+          makeup_session_id?: string | null
+          reason?: string | null
+          session_date?: string
+          status?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "absence_requests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absence_requests_makeup_session_id_fkey"
+            columns: ["makeup_session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           booking_id: string | null
@@ -24,6 +75,7 @@ export type Database = {
           marked_by: string | null
           notes: string | null
           session_date: string
+          session_id: string | null
           status: string
           student_id: string
           updated_at: string
@@ -37,6 +89,7 @@ export type Database = {
           marked_by?: string | null
           notes?: string | null
           session_date: string
+          session_id?: string | null
           status?: string
           student_id: string
           updated_at?: string
@@ -50,6 +103,7 @@ export type Database = {
           marked_by?: string | null
           notes?: string | null
           session_date?: string
+          session_id?: string | null
           status?: string
           student_id?: string
           updated_at?: string
@@ -69,7 +123,68 @@ export type Database = {
             referencedRelation: "classes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      badges: {
+        Row: {
+          badge_type: string
+          bonus_xp: number
+          code: string
+          created_at: string | null
+          description: string | null
+          description_vi: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean
+          req_type: string
+          req_value: number
+          target_role: string
+          title: string
+          title_vi: string
+          updated_at: string | null
+        }
+        Insert: {
+          badge_type?: string
+          bonus_xp?: number
+          code: string
+          created_at?: string | null
+          description?: string | null
+          description_vi?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean
+          req_type?: string
+          req_value?: number
+          target_role?: string
+          title: string
+          title_vi: string
+          updated_at?: string | null
+        }
+        Update: {
+          badge_type?: string
+          bonus_xp?: number
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          description_vi?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean
+          req_type?: string
+          req_value?: number
+          target_role?: string
+          title?: string
+          title_vi?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       blog_categories: {
         Row: {
@@ -284,6 +399,7 @@ export type Database = {
       class_assignment_submissions: {
         Row: {
           assignment_id: string
+          attachments: Json | null
           content: string | null
           feedback: string | null
           file_url: string | null
@@ -291,6 +407,8 @@ export type Database = {
           graded_by: string | null
           id: string
           link_url: string | null
+          returned_at: string | null
+          rubric_scores: Json | null
           score: number | null
           status: string
           student_id: string
@@ -299,6 +417,7 @@ export type Database = {
         }
         Insert: {
           assignment_id: string
+          attachments?: Json | null
           content?: string | null
           feedback?: string | null
           file_url?: string | null
@@ -306,6 +425,8 @@ export type Database = {
           graded_by?: string | null
           id?: string
           link_url?: string | null
+          returned_at?: string | null
+          rubric_scores?: Json | null
           score?: number | null
           status?: string
           student_id: string
@@ -314,6 +435,7 @@ export type Database = {
         }
         Update: {
           assignment_id?: string
+          attachments?: Json | null
           content?: string | null
           feedback?: string | null
           file_url?: string | null
@@ -321,6 +443,8 @@ export type Database = {
           graded_by?: string | null
           id?: string
           link_url?: string | null
+          returned_at?: string | null
+          rubric_scores?: Json | null
           score?: number | null
           status?: string
           student_id?: string
@@ -331,6 +455,8 @@ export type Database = {
       }
       class_assignments: {
         Row: {
+          assigned_to: Json | null
+          attachments: Json | null
           class_id: string
           created_at: string
           created_by: string
@@ -339,13 +465,22 @@ export type Database = {
           exercise_id: string | null
           file_url: string | null
           id: string
+          instructions: string | null
+          kind: string | null
           lesson_id: string | null
           link_url: string | null
+          max_attempts: number | null
+          order_index: number | null
+          points: number | null
+          rubric: Json | null
           start_at: string | null
           title: string
+          topic_id: string | null
           updated_at: string
         }
         Insert: {
+          assigned_to?: Json | null
+          attachments?: Json | null
           class_id: string
           created_at?: string
           created_by: string
@@ -354,13 +489,22 @@ export type Database = {
           exercise_id?: string | null
           file_url?: string | null
           id?: string
+          instructions?: string | null
+          kind?: string | null
           lesson_id?: string | null
           link_url?: string | null
+          max_attempts?: number | null
+          order_index?: number | null
+          points?: number | null
+          rubric?: Json | null
           start_at?: string | null
           title: string
+          topic_id?: string | null
           updated_at?: string
         }
         Update: {
+          assigned_to?: Json | null
+          attachments?: Json | null
           class_id?: string
           created_at?: string
           created_by?: string
@@ -369,13 +513,139 @@ export type Database = {
           exercise_id?: string | null
           file_url?: string | null
           id?: string
+          instructions?: string | null
+          kind?: string | null
           lesson_id?: string | null
           link_url?: string | null
+          max_attempts?: number | null
+          order_index?: number | null
+          points?: number | null
+          rubric?: Json | null
           start_at?: string | null
           title?: string
+          topic_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "class_assignments_topic_fk"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "class_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_materials: {
+        Row: {
+          attachments: Json
+          class_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          order_index: number
+          title: string
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_index?: number
+          title: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_index?: number
+          title?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_materials_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_materials_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "class_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_messages: {
+        Row: {
+          attachments: Json | null
+          class_id: string
+          created_at: string | null
+          id: string
+          is_deleted: boolean
+          is_edited: boolean
+          message_text: string
+          reactions: Json | null
+          reply_to_id: string | null
+          sender_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          class_id: string
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          message_text: string
+          reactions?: Json | null
+          reply_to_id?: string | null
+          sender_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          class_id?: string
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          message_text?: string
+          reactions?: Json | null
+          reply_to_id?: string | null
+          sender_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_messages_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "class_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       class_sessions: {
         Row: {
@@ -384,14 +654,20 @@ export type Database = {
           created_by: string | null
           end_time: string | null
           id: string
+          is_makeup: boolean | null
           location: string | null
           meet_link: string | null
           notes: string | null
+          order_index: number | null
+          record_url: string | null
           session_date: string
           start_time: string
           status: string
           topic: string | null
+          topic_group: string | null
           updated_at: string
+          week_number: number | null
+          xp_reward: number | null
         }
         Insert: {
           class_id: string
@@ -399,14 +675,20 @@ export type Database = {
           created_by?: string | null
           end_time?: string | null
           id?: string
+          is_makeup?: boolean | null
           location?: string | null
           meet_link?: string | null
           notes?: string | null
+          order_index?: number | null
+          record_url?: string | null
           session_date: string
           start_time: string
           status?: string
           topic?: string | null
+          topic_group?: string | null
           updated_at?: string
+          week_number?: number | null
+          xp_reward?: number | null
         }
         Update: {
           class_id?: string
@@ -414,14 +696,20 @@ export type Database = {
           created_by?: string | null
           end_time?: string | null
           id?: string
+          is_makeup?: boolean | null
           location?: string | null
           meet_link?: string | null
           notes?: string | null
+          order_index?: number | null
+          record_url?: string | null
           session_date?: string
           start_time?: string
           status?: string
           topic?: string | null
+          topic_group?: string | null
           updated_at?: string
+          week_number?: number | null
+          xp_reward?: number | null
         }
         Relationships: [
           {
@@ -429,6 +717,160 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_stream_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_stream_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_stream_posts: {
+        Row: {
+          assignment_id: string | null
+          attachments: Json
+          author_id: string
+          body: string | null
+          class_id: string
+          created_at: string
+          id: string
+          kind: string
+          material_id: string | null
+          pinned: boolean
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          attachments?: Json
+          author_id: string
+          body?: string | null
+          class_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          material_id?: string | null
+          pinned?: boolean
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string | null
+          attachments?: Json
+          author_id?: string
+          body?: string | null
+          class_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          material_id?: string | null
+          pinned?: boolean
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_stream_posts_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "class_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_posts_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_posts_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "class_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_stream_reactions: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          emoji: string
+          id: string
+          post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          emoji?: string
+          id?: string
+          post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          emoji?: string
+          id?: string
+          post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_stream_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_stream_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "class_stream_posts"
             referencedColumns: ["id"]
           },
         ]
@@ -465,11 +907,48 @@ export type Database = {
           },
         ]
       }
+      class_topics: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_topics_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           approval_status: string
           approved_at: string | null
           approved_by: string | null
+          banner_url: string | null
+          color: string | null
           course_id: string | null
           created_at: string
           custom_fields: Json
@@ -478,6 +957,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean | null
+          join_code: string | null
           max_students: number | null
           name: string
           name_vi: string
@@ -486,12 +966,15 @@ export type Database = {
           slug: string | null
           start_date: string | null
           teacher_id: string
+          total_sessions: number | null
           updated_at: string
         }
         Insert: {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
+          banner_url?: string | null
+          color?: string | null
           course_id?: string | null
           created_at?: string
           custom_fields?: Json
@@ -500,6 +983,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          join_code?: string | null
           max_students?: number | null
           name: string
           name_vi: string
@@ -508,12 +992,15 @@ export type Database = {
           slug?: string | null
           start_date?: string | null
           teacher_id: string
+          total_sessions?: number | null
           updated_at?: string
         }
         Update: {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
+          banner_url?: string | null
+          color?: string | null
           course_id?: string | null
           created_at?: string
           custom_fields?: Json
@@ -522,6 +1009,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          join_code?: string | null
           max_students?: number | null
           name?: string
           name_vi?: string
@@ -530,6 +1018,7 @@ export type Database = {
           slug?: string | null
           start_date?: string | null
           teacher_id?: string
+          total_sessions?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -733,8 +1222,10 @@ export type Database = {
           features: Json | null
           gallery_urls: Json
           highlights: Json
+          homepage_order: number
           id: string
           intro_video_url: string | null
+          is_featured: boolean
           is_published: boolean | null
           language: string
           level: string
@@ -749,6 +1240,7 @@ export type Database = {
           schedule_text: string | null
           schedule_text_vi: string | null
           section_visibility: Json
+          show_on_homepage: boolean
           slug: string | null
           start_date: string | null
           subtitle: string | null
@@ -774,8 +1266,10 @@ export type Database = {
           features?: Json | null
           gallery_urls?: Json
           highlights?: Json
+          homepage_order?: number
           id?: string
           intro_video_url?: string | null
+          is_featured?: boolean
           is_published?: boolean | null
           language?: string
           level?: string
@@ -790,6 +1284,7 @@ export type Database = {
           schedule_text?: string | null
           schedule_text_vi?: string | null
           section_visibility?: Json
+          show_on_homepage?: boolean
           slug?: string | null
           start_date?: string | null
           subtitle?: string | null
@@ -815,8 +1310,10 @@ export type Database = {
           features?: Json | null
           gallery_urls?: Json
           highlights?: Json
+          homepage_order?: number
           id?: string
           intro_video_url?: string | null
+          is_featured?: boolean
           is_published?: boolean | null
           language?: string
           level?: string
@@ -831,6 +1328,7 @@ export type Database = {
           schedule_text?: string | null
           schedule_text_vi?: string | null
           section_visibility?: Json
+          show_on_homepage?: boolean
           slug?: string | null
           start_date?: string | null
           subtitle?: string | null
@@ -841,6 +1339,33 @@ export type Database = {
           title?: string
           title_vi?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_checkins: {
+        Row: {
+          checkin_date: string | null
+          created_at: string | null
+          id: string
+          streak: number | null
+          user_id: string
+          xp_earned: number | null
+        }
+        Insert: {
+          checkin_date?: string | null
+          created_at?: string | null
+          id?: string
+          streak?: number | null
+          user_id: string
+          xp_earned?: number | null
+        }
+        Update: {
+          checkin_date?: string | null
+          created_at?: string | null
+          id?: string
+          streak?: number | null
+          user_id?: string
+          xp_earned?: number | null
         }
         Relationships: []
       }
@@ -1049,6 +1574,95 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_attempts: {
+        Row: {
+          answers: Json
+          attachment_name: string | null
+          attachment_url: string | null
+          created_at: string
+          exam_id: string
+          id: string
+          proctoring_logs: Json | null
+          raw_score: number | null
+          raw_total: number | null
+          review_status: string
+          reviewed_at: string | null
+          score: number | null
+          speaking_recordings: Json | null
+          started_at: string
+          status: string
+          student_comment: string | null
+          student_id: string
+          submitted_at: string | null
+          teacher_feedback: string | null
+          time_spent_seconds: number
+          total: number | null
+          updated_at: string
+          video_url: string | null
+          violations: number
+        }
+        Insert: {
+          answers?: Json
+          attachment_name?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          exam_id: string
+          id?: string
+          proctoring_logs?: Json | null
+          raw_score?: number | null
+          raw_total?: number | null
+          review_status?: string
+          reviewed_at?: string | null
+          score?: number | null
+          speaking_recordings?: Json | null
+          started_at?: string
+          status?: string
+          student_comment?: string | null
+          student_id: string
+          submitted_at?: string | null
+          teacher_feedback?: string | null
+          time_spent_seconds?: number
+          total?: number | null
+          updated_at?: string
+          video_url?: string | null
+          violations?: number
+        }
+        Update: {
+          answers?: Json
+          attachment_name?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          exam_id?: string
+          id?: string
+          proctoring_logs?: Json | null
+          raw_score?: number | null
+          raw_total?: number | null
+          review_status?: string
+          reviewed_at?: string | null
+          score?: number | null
+          speaking_recordings?: Json | null
+          started_at?: string
+          status?: string
+          student_comment?: string | null
+          student_id?: string
+          submitted_at?: string | null
+          teacher_feedback?: string | null
+          time_spent_seconds?: number
+          total?: number | null
+          updated_at?: string
+          video_url?: string | null
+          violations?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_attempts_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_registrations: {
         Row: {
           created_at: string
@@ -1086,67 +1700,127 @@ export type Database = {
       }
       exams: {
         Row: {
+          ai_proctoring: boolean
+          anti_cheat: boolean
+          anti_cheat_deduct_per_violation: number
+          anti_cheat_max_violations: number
+          anti_cheat_penalty: string
           class_id: string | null
           created_at: string
           description: string | null
           description_vi: string | null
-          duration_minutes: number
+          duration_minutes: number | null
           end_time: string | null
+          ends_at: string | null
+          exam_category: string
           exam_date: string
           exam_type: string
           id: string
+          instructions: string | null
           is_published: boolean | null
           location: string | null
+          lock_after_end: boolean
+          max_attempts: number
           max_score: number | null
           meet_link: string | null
           passing_score: number | null
+          proctoring_config: Json | null
+          questions: Json
+          score_mode: string | null
+          score_rounding: string | null
+          show_answers_after: boolean
+          shuffle_questions: boolean
           start_time: string
+          starts_at: string | null
           teacher_id: string
+          timer_mode: string
           title: string
           title_vi: string
           updated_at: string
+          video_url: string | null
+          xp_reward: number | null
         }
         Insert: {
+          ai_proctoring?: boolean
+          anti_cheat?: boolean
+          anti_cheat_deduct_per_violation?: number
+          anti_cheat_max_violations?: number
+          anti_cheat_penalty?: string
           class_id?: string | null
           created_at?: string
           description?: string | null
           description_vi?: string | null
-          duration_minutes?: number
+          duration_minutes?: number | null
           end_time?: string | null
+          ends_at?: string | null
+          exam_category?: string
           exam_date: string
           exam_type?: string
           id?: string
+          instructions?: string | null
           is_published?: boolean | null
           location?: string | null
+          lock_after_end?: boolean
+          max_attempts?: number
           max_score?: number | null
           meet_link?: string | null
           passing_score?: number | null
+          proctoring_config?: Json | null
+          questions?: Json
+          score_mode?: string | null
+          score_rounding?: string | null
+          show_answers_after?: boolean
+          shuffle_questions?: boolean
           start_time: string
+          starts_at?: string | null
           teacher_id: string
+          timer_mode?: string
           title: string
           title_vi: string
           updated_at?: string
+          video_url?: string | null
+          xp_reward?: number | null
         }
         Update: {
+          ai_proctoring?: boolean
+          anti_cheat?: boolean
+          anti_cheat_deduct_per_violation?: number
+          anti_cheat_max_violations?: number
+          anti_cheat_penalty?: string
           class_id?: string | null
           created_at?: string
           description?: string | null
           description_vi?: string | null
-          duration_minutes?: number
+          duration_minutes?: number | null
           end_time?: string | null
+          ends_at?: string | null
+          exam_category?: string
           exam_date?: string
           exam_type?: string
           id?: string
+          instructions?: string | null
           is_published?: boolean | null
           location?: string | null
+          lock_after_end?: boolean
+          max_attempts?: number
           max_score?: number | null
           meet_link?: string | null
           passing_score?: number | null
+          proctoring_config?: Json | null
+          questions?: Json
+          score_mode?: string | null
+          score_rounding?: string | null
+          show_answers_after?: boolean
+          shuffle_questions?: boolean
           start_time?: string
+          starts_at?: string | null
           teacher_id?: string
+          timer_mode?: string
           title?: string
           title_vi?: string
           updated_at?: string
+          video_url?: string | null
+          xp_reward?: number | null
         }
         Relationships: [
           {
@@ -1175,6 +1849,7 @@ export type Database = {
           title: string
           title_vi: string
           updated_at: string | null
+          xp_reward: number | null
         }
         Insert: {
           audio_url?: string | null
@@ -1192,6 +1867,7 @@ export type Database = {
           title: string
           title_vi: string
           updated_at?: string | null
+          xp_reward?: number | null
         }
         Update: {
           audio_url?: string | null
@@ -1209,6 +1885,7 @@ export type Database = {
           title?: string
           title_vi?: string
           updated_at?: string | null
+          xp_reward?: number | null
         }
         Relationships: [
           {
@@ -1295,80 +1972,211 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_materials: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          description: string | null
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          is_published: boolean
+          lesson_id: string | null
+          order_index: number
+          session_id: string | null
+          teacher_id: string
+          title: string
+          updated_at: string
+          week_number: number | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_size?: number | null
+          file_type?: string
+          file_url: string
+          id?: string
+          is_published?: boolean
+          lesson_id?: string | null
+          order_index?: number
+          session_id?: string | null
+          teacher_id: string
+          title: string
+          updated_at?: string
+          week_number?: number | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          is_published?: boolean
+          lesson_id?: string | null
+          order_index?: number
+          session_id?: string | null
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+          week_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_materials_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_materials_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_materials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
+          category: string | null
           class_id: string | null
           content: Json | null
           content_html: string | null
+          course_id: string | null
           created_at: string | null
           description: string | null
           description_vi: string | null
+          difficulty: string | null
           duration_minutes: number | null
           end_at: string | null
+          estimated_minutes: number | null
           id: string
           is_published: boolean | null
-          language: string
-          level: string
+          language: string | null
+          level: string | null
+          objectives: string | null
           order_index: number | null
-          skill: string
+          prerequisites: string | null
+          session_id: string | null
+          session_number: number | null
+          skill: string | null
           start_at: string | null
+          tags: string[] | null
           teacher_id: string | null
           thumbnail_url: string | null
           title: string
           title_vi: string
+          topic_group: string | null
           updated_at: string | null
           video_url: string | null
+          week_number: number | null
           xp_reward: number | null
         }
         Insert: {
+          category?: string | null
           class_id?: string | null
           content?: Json | null
           content_html?: string | null
+          course_id?: string | null
           created_at?: string | null
           description?: string | null
           description_vi?: string | null
+          difficulty?: string | null
           duration_minutes?: number | null
           end_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           is_published?: boolean | null
-          language: string
-          level: string
+          language?: string | null
+          level?: string | null
+          objectives?: string | null
           order_index?: number | null
-          skill: string
+          prerequisites?: string | null
+          session_id?: string | null
+          session_number?: number | null
+          skill?: string | null
           start_at?: string | null
+          tags?: string[] | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title: string
           title_vi: string
+          topic_group?: string | null
           updated_at?: string | null
           video_url?: string | null
+          week_number?: number | null
           xp_reward?: number | null
         }
         Update: {
+          category?: string | null
           class_id?: string | null
           content?: Json | null
           content_html?: string | null
+          course_id?: string | null
           created_at?: string | null
           description?: string | null
           description_vi?: string | null
+          difficulty?: string | null
           duration_minutes?: number | null
           end_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           is_published?: boolean | null
-          language?: string
-          level?: string
+          language?: string | null
+          level?: string | null
+          objectives?: string | null
           order_index?: number | null
-          skill?: string
+          prerequisites?: string | null
+          session_id?: string | null
+          session_number?: number | null
+          skill?: string | null
           start_at?: string | null
+          tags?: string[] | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title?: string
           title_vi?: string
+          topic_group?: string | null
           updated_at?: string | null
           video_url?: string | null
+          week_number?: number | null
           xp_reward?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lessons_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meetings: {
         Row: {
@@ -1407,6 +2215,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      music_tracks: {
+        Row: {
+          artist: string | null
+          associated_item_code: string | null
+          audio_url: string
+          cover_image: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          is_active: boolean
+          is_free: boolean
+          order_index: number | null
+          price_xp: number | null
+          title: string
+        }
+        Insert: {
+          artist?: string | null
+          associated_item_code?: string | null
+          audio_url: string
+          cover_image?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          is_free?: boolean
+          order_index?: number | null
+          price_xp?: number | null
+          title: string
+        }
+        Update: {
+          artist?: string | null
+          associated_item_code?: string | null
+          audio_url?: string
+          cover_image?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          is_free?: boolean
+          order_index?: number | null
+          price_xp?: number | null
+          title?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -1496,6 +2349,13 @@ export type Database = {
           created_at: string
           display_name: string
           display_name_vi: string
+          hero_badge_vi: string | null
+          hero_cta_primary_label: string | null
+          hero_cta_primary_url: string | null
+          hero_cta_secondary_label: string | null
+          hero_cta_secondary_url: string | null
+          hero_image_url: string | null
+          hero_overlay: number | null
           hero_subtitle: string | null
           hero_subtitle_vi: string | null
           hero_title: string | null
@@ -1514,6 +2374,13 @@ export type Database = {
           created_at?: string
           display_name: string
           display_name_vi: string
+          hero_badge_vi?: string | null
+          hero_cta_primary_label?: string | null
+          hero_cta_primary_url?: string | null
+          hero_cta_secondary_label?: string | null
+          hero_cta_secondary_url?: string | null
+          hero_image_url?: string | null
+          hero_overlay?: number | null
           hero_subtitle?: string | null
           hero_subtitle_vi?: string | null
           hero_title?: string | null
@@ -1532,6 +2399,13 @@ export type Database = {
           created_at?: string
           display_name?: string
           display_name_vi?: string
+          hero_badge_vi?: string | null
+          hero_cta_primary_label?: string | null
+          hero_cta_primary_url?: string | null
+          hero_cta_secondary_label?: string | null
+          hero_cta_secondary_url?: string | null
+          hero_image_url?: string | null
+          hero_overlay?: number | null
           hero_subtitle?: string | null
           hero_subtitle_vi?: string | null
           hero_title?: string | null
@@ -1548,11 +2422,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pdf_presenter_state: {
+        Row: {
+          file_url: string
+          page: number
+          updated_at: string
+          user_id: string
+          zoom: number
+        }
+        Insert: {
+          file_url: string
+          page?: number
+          updated_at?: string
+          user_id: string
+          zoom?: number
+        }
+        Update: {
+          file_url?: string
+          page?: number
+          updated_at?: string
+          user_id?: string
+          zoom?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string | null
           current_language: string | null
+          equipped_frame_code: string | null
           full_name: string | null
           id: string
           theme_color: string | null
@@ -1566,6 +2465,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           current_language?: string | null
+          equipped_frame_code?: string | null
           full_name?: string | null
           id?: string
           theme_color?: string | null
@@ -1579,6 +2479,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           current_language?: string | null
+          equipped_frame_code?: string | null
           full_name?: string | null
           id?: string
           theme_color?: string | null
@@ -1587,6 +2488,66 @@ export type Database = {
           theme_scale?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      store_items: {
+        Row: {
+          audio_url: string | null
+          category: string
+          code: string
+          content_data: Json | null
+          cover_image: string | null
+          created_at: string | null
+          description_vi: string | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          order_index: number
+          price_jpy: number
+          price_vnd: number
+          price_xp: number
+          req_streak: number
+          title_vi: string
+          updated_at: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          category?: string
+          code: string
+          content_data?: Json | null
+          cover_image?: string | null
+          created_at?: string | null
+          description_vi?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          order_index?: number
+          price_jpy?: number
+          price_vnd?: number
+          price_xp?: number
+          req_streak?: number
+          title_vi: string
+          updated_at?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          category?: string
+          code?: string
+          content_data?: Json | null
+          cover_image?: string | null
+          created_at?: string | null
+          description_vi?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          order_index?: number
+          price_jpy?: number
+          price_vnd?: number
+          price_xp?: number
+          req_streak?: number
+          title_vi?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1756,6 +2717,7 @@ export type Database = {
           languages: Json | null
           location: string | null
           order_index: number | null
+          per_session_rate: number | null
           rating: number | null
           section_visibility: Json
           slug: string | null
@@ -1792,6 +2754,7 @@ export type Database = {
           languages?: Json | null
           location?: string | null
           order_index?: number | null
+          per_session_rate?: number | null
           rating?: number | null
           section_visibility?: Json
           slug?: string | null
@@ -1828,6 +2791,7 @@ export type Database = {
           languages?: Json | null
           location?: string | null
           order_index?: number | null
+          per_session_rate?: number | null
           rating?: number | null
           section_visibility?: Json
           slug?: string | null
@@ -1886,6 +2850,100 @@ export type Database = {
           },
         ]
       }
+      teacher_timesheets: {
+        Row: {
+          approved_at: string | null
+          bonus: number | null
+          created_at: string
+          deduction: number | null
+          id: string
+          month_year: string
+          notes: string | null
+          rate_per_session: number | null
+          status: string
+          submitted_at: string | null
+          teacher_id: string
+          total_earnings: number | null
+          total_hours: number | null
+          total_sessions: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          bonus?: number | null
+          created_at?: string
+          deduction?: number | null
+          id?: string
+          month_year: string
+          notes?: string | null
+          rate_per_session?: number | null
+          status?: string
+          submitted_at?: string | null
+          teacher_id: string
+          total_earnings?: number | null
+          total_hours?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          bonus?: number | null
+          created_at?: string
+          deduction?: number | null
+          id?: string
+          month_year?: string
+          notes?: string | null
+          rate_per_session?: number | null
+          status?: string
+          submitted_at?: string | null
+          teacher_id?: string
+          total_earnings?: number | null
+          total_hours?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_timesheets_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          id: string
+          unlocked_at: string | null
+          unlocked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          id?: string
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          id?: string
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_courses: {
         Row: {
           course_id: string
@@ -1924,6 +2982,44 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_inventory: {
+        Row: {
+          amount_paid: number | null
+          id: string
+          item_code: string
+          item_id: string | null
+          purchased_at: string | null
+          purchased_with: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          id?: string
+          item_code: string
+          item_id?: string | null
+          purchased_at?: string | null
+          purchased_with?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          id?: string
+          item_code?: string
+          item_id?: string | null
+          purchased_at?: string | null
+          purchased_with?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_inventory_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "store_items"
             referencedColumns: ["id"]
           },
         ]
