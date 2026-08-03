@@ -1,37 +1,33 @@
-import { useState, useEffect } from 'react';
-import { Trophy, Flame, Zap, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Trophy, Zap, Flame, Award } from 'lucide-react';
+import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
 
 interface LeaderboardEntry {
   user_id: string;
   total_xp: number;
   streak: number;
   lessons_completed: number;
-  profile: {
-    full_name: string | null;
-  } | null;
+  profile?: {
+    full_name?: string | null;
+    avatar_url?: string | null;
+    equipped_frame_code?: string | null;
+  };
 }
 
-const Leaderboard = () => {
+export const Leaderboard = () => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchLeaderboard();
-    
-    // Subscribe to realtime updates
+
     const channel = supabase
-      .channel('leaderboard-changes')
+      .channel('leaderboard-realtime')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_progress',
-        },
-        () => {
-          fetchLeaderboard();
-        }
+        { event: '*', schema: 'public', table: 'user_progress' },
+        () => fetchLeaderboard()
       )
       .subscribe();
 
@@ -42,17 +38,44 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_leaderboard', { _limit: 10 });
-      if (error) throw error;
-      if (data) {
-        const mapped = (data as any[]).map((row, i) => ({
-          user_id: `rank-${i}`,
+      setLoading(true);
+      // Fetch top 10 from user_progress with profiles join
+      const { data, error } = await (supabase as any)
+        .from('user_progress')
+        .select('user_id, total_xp, streak, lessons_completed, profiles(full_name, avatar_url, equipped_frame_code)')
+        .order('total_xp', { ascending: false })
+        .limit(10);
+
+      if (!error && data && data.length > 0) {
+        const mapped = (data as any[]).map((row) => ({
+          user_id: row.user_id,
           total_xp: row.total_xp ?? 0,
           streak: row.streak ?? 0,
           lessons_completed: row.lessons_completed ?? 0,
-          profile: { full_name: row.display_name ?? null },
+          profile: {
+            full_name: row.profiles?.full_name ?? null,
+            avatar_url: row.profiles?.avatar_url ?? null,
+            equipped_frame_code: row.profiles?.equipped_frame_code ?? null,
+          },
         }));
         setEntries(mapped);
+      } else {
+        // Fallback to rpc if query fails
+        const { data: rpcData } = await supabase.rpc('get_leaderboard', { _limit: 10 });
+        if (rpcData) {
+          const mapped = (rpcData as any[]).map((row, i) => ({
+            user_id: row.user_id || `rank-${i}`,
+            total_xp: row.total_xp ?? 0,
+            streak: row.streak ?? 0,
+            lessons_completed: row.lessons_completed ?? 0,
+            profile: {
+              full_name: row.display_name ?? null,
+              avatar_url: row.avatar_url ?? null,
+              equipped_frame_code: row.equipped_frame_code ?? null,
+            },
+          }));
+          setEntries(mapped);
+        }
       }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -63,57 +86,81 @@ const Leaderboard = () => {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-2xl p-6 border border-border shadow-soft">
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="bg-card rounded-2xl p-6 border shadow-soft animate-pulse">
+        <div className="h-6 w-36 bg-muted rounded mb-4" />
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-12 bg-muted rounded-xl" />
+          ))}
         </div>
       </div>
     );
   }
 
-  if (entries.length === 0) {
-    return null;
-  }
-
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
-      <div className="p-4 border-b border-border bg-gradient-primary text-primary-foreground">
-        <h2 className="font-bold flex items-center gap-2">
-          <Trophy className="w-5 h-5" />
-          Bảng xếp hạng
-        </h2>
+    <div className="bg-card rounded-3xl p-6 border shadow-soft space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-amber-500" />
+          <h3 className="font-extrabold text-lg">Bảng Xếp Hạng XP</h3>
+        </div>
+        <Award className="w-5 h-5 text-muted-foreground opacity-50" />
       </div>
-      
-      <div className="divide-y divide-border">
+
+      <div className="space-y-2">
         {entries.map((entry, index) => (
-          <div 
-            key={entry.user_id}
-            className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors"
+          <div
+            key={entry.user_id || index}
+            className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+              index === 0
+                ? 'bg-amber-500/10 border-amber-400/40 shadow-sm'
+                : index === 1
+                ? 'bg-slate-500/10 border-slate-300/40'
+                : index === 2
+                ? 'bg-amber-700/10 border-amber-600/30'
+                : 'hover:bg-muted/50 border-transparent'
+            }`}
           >
-            {/* Rank */}
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-              index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
-              index === 1 ? 'bg-gray-300/30 text-gray-500' :
-              index === 2 ? 'bg-orange-500/20 text-orange-600' :
-              'bg-muted text-muted-foreground'
-            }`}>
+            {/* Rank badge */}
+            <div
+              className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                index === 0
+                  ? 'bg-amber-500 text-white shadow-md'
+                  : index === 1
+                  ? 'bg-slate-400 text-white'
+                  : index === 2
+                  ? 'bg-amber-700 text-white'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+            >
               {index + 1}
             </div>
 
-            {/* Avatar & Name */}
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
-                {entry.profile?.full_name?.[0]?.toUpperCase() || '?'}
+            {/* Avatar with Decoration & Name */}
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <AvatarWithDecoration
+                userId={entry.user_id}
+                avatarUrl={entry.profile?.avatar_url}
+                name={entry.profile?.full_name}
+                frameCode={entry.profile?.equipped_frame_code}
+                size="sm"
+              />
+              <div className="min-w-0">
+                <p className="font-bold text-foreground text-sm truncate leading-tight">
+                  {entry.profile?.full_name || 'Học viên'}
+                </p>
+                {entry.streak > 0 && (
+                  <p className="text-[10px] text-orange-500 font-semibold flex items-center gap-0.5">
+                    <Flame className="w-3 h-3 fill-current" /> {entry.streak} ngày streak
+                  </p>
+                )}
               </div>
-              <span className="font-medium text-foreground text-sm truncate">
-                {entry.profile?.full_name || 'Học viên'}
-              </span>
             </div>
 
-            {/* XP */}
-            <div className="flex items-center gap-1 text-sm">
-              <Zap className="w-4 h-4 text-accent" />
-              <span className="font-bold text-primary">{entry.total_xp.toLocaleString()}</span>
+            {/* XP score */}
+            <div className="flex items-center gap-1 text-sm font-extrabold text-amber-500 font-mono shrink-0">
+              <Zap className="w-4 h-4 fill-current" />
+              <span>{entry.total_xp.toLocaleString()}</span>
             </div>
           </div>
         ))}

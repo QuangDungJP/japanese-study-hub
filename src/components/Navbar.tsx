@@ -19,6 +19,7 @@ import {
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import AvatarWithDecoration from "@/components/shared/AvatarWithDecoration";
 
 const defaultNavLinks = [
   { name: "Giới thiệu", href: "/gioi-thieu", key: "about" },
@@ -98,9 +99,7 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/40 transition-colors">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold shadow-md">
-                      {initial}
-                    </div>
+                    <AvatarWithDecoration userId={user.id} name={displayName} size="sm" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">

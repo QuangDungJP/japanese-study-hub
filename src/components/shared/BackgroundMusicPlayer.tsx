@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, 
-  Music2, Disc, ListMusic, X, Music
+  Music2, Disc, ListMusic, X, Sparkles, Radio
 } from 'lucide-react';
 
 export interface Track {
@@ -26,18 +26,19 @@ export const BackgroundMusicPlayer = () => {
   const { user } = useAuth();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [visible, setVisible] = useState(false);
+  // Initialize visible to true by default if music is enabled in localStorage
+  const [visible, setVisible] = useState<boolean>(() => {
+    return localStorage.getItem('bg_music_enabled') !== 'false';
+  });
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.6);
+  const [volume, setVolume] = useState(0.7);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
-  const [closing, setClosing] = useState(false);
-  // True after user has opened the player at least once (to show mini-button)
-  const [hasBeenOpened, setHasBeenOpened] = useState(false);
 
   useEffect(() => {
     const fetchMusic = async () => {
@@ -56,7 +57,7 @@ export const BackgroundMusicPlayer = () => {
             .from('user_inventory')
             .select('item_code')
             .eq('user_id', user.id);
-          if (inv) unlockedCodes = new Set(inv.map((i: any) => i.item_code));
+          if (inv) unlockedCodes = new Set((inv as any[]).map((i: any) => i.item_code));
         }
 
         const available = (allTracks as Track[]).filter(t => {
@@ -79,9 +80,8 @@ export const BackgroundMusicPlayer = () => {
       const newTrack = customEvent.detail;
       if (!newTrack || !newTrack.audio_url) return;
 
-      setClosing(false);
       setVisible(true);
-      setHasBeenOpened(true);
+      setIsMinimized(false);
 
       setTracks(prev => {
         const existingIdx = prev.findIndex(t => t.audio_url === newTrack.audio_url);
@@ -103,33 +103,24 @@ export const BackgroundMusicPlayer = () => {
     };
 
     const handleToggleEvent = () => {
-      const enabled = localStorage.getItem('bg_music_enabled') === 'true';
+      const enabled = localStorage.getItem('bg_music_enabled') !== 'false';
       if (enabled) {
-        setClosing(false);
         setVisible(true);
-        setHasBeenOpened(true);
-        // Auto-play first track when toggled on
-        setTracks(prev => {
-          if (prev.length > 0 && audioRef.current) {
-            setCurrentTrackIndex(0);
-            setIsPlaying(true);
-            audioRef.current.src = prev[0].audio_url;
-            audioRef.current.play().catch(err => console.warn('Audio playback error:', err));
-          }
-          return prev;
-        });
+        setIsMinimized(false);
       } else {
-        handleClose();
+        setVisible(false);
+        setIsPlaying(false);
+        audioRef.current?.pause();
       }
     };
 
     window.addEventListener('play_bg_track', handlePlayTrackEvent);
     window.addEventListener('bg_music_toggle', handleToggleEvent);
     return () => {
-        window.removeEventListener('play_bg_track', handlePlayTrackEvent);
-        window.removeEventListener('bg_music_toggle', handleToggleEvent);
+      window.removeEventListener('play_bg_track', handlePlayTrackEvent);
+      window.removeEventListener('bg_music_toggle', handleToggleEvent);
     };
-  }, [visible]);
+  }, []);
 
   const currentTrack = tracks[currentTrackIndex] || null;
 
@@ -167,26 +158,8 @@ export const BackgroundMusicPlayer = () => {
     }
   }, [currentTrackIndex]);
 
-  const handleClose = () => {
-    setClosing(true);
-    setIsPlaying(false);
-    audioRef.current?.pause();
-    setTimeout(() => {
-      setVisible(false);
-      setClosing(false);
-    }, 350);
-  };
-
-  // Show mini floating button only when player was previously opened and now hidden
-  if (!visible) return hasBeenOpened && tracks.length > 0 ? (
-    <button
-      onClick={() => { setVisible(true); setClosing(false); }}
-      title="Mở lại trình phát nhạc"
-      className="fixed bottom-4 right-4 z-[100] w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-2xl flex items-center justify-center hover:scale-110 transition-transform ring-2 ring-primary/30"
-    >
-      <Music2 className="w-5 h-5" />
-    </button>
-  ) : null;
+  // If component is not enabled, do not render
+  if (!visible && tracks.length === 0) return null;
 
   return (
     <>
@@ -199,148 +172,210 @@ export const BackgroundMusicPlayer = () => {
         style={{ display: 'none' }}
       />
 
-      <div
-        className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] max-w-2xl w-[94vw] sm:w-[680px] transition-all duration-350 ${
-          closing ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0'
-        }`}
-        style={{ animation: visible && !closing ? 'slideUp 0.35s cubic-bezier(.21,1.02,.73,1) both' : undefined }}
-      >
-        <style>{`
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(32px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-          }
-        `}</style>
+      {/* Floating Trigger Button on bottom-right when minimized or closed */}
+      {(isMinimized || !visible) && (
+        <button
+          onClick={() => { setVisible(true); setIsMinimized(false); }}
+          title="Mở trình phát nhạc Lo-Fi học tập"
+          className="fixed bottom-6 right-6 z-[999] group flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-2xl hover:scale-105 transition-all duration-300 ring-4 ring-amber-400/20 active:scale-95"
+        >
+          <div className="relative">
+            <Music2 className={`w-5 h-5 ${isPlaying ? 'animate-bounce text-yellow-200' : ''}`} />
+            {isPlaying && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                <span className="relative flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+              </span>
+            )}
+          </div>
+          <span className="text-xs font-black tracking-wide hidden sm:inline">
+            {isPlaying ? 'Đang phát Lo-Fi' : 'Nhạc Học Tập'}
+          </span>
+          <Radio className="w-3.5 h-3.5 text-yellow-200 animate-pulse" />
+        </button>
+      )}
 
-        <div className="relative bg-card/95 backdrop-blur-2xl border border-primary/30 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/8 via-amber-400/8 to-rose-500/8 pointer-events-none" />
-          <div className="absolute top-0 left-0 h-[2px] bg-gradient-to-r from-primary via-amber-400 to-rose-400 transition-all duration-300"
-            style={{ width: duration ? `${(currentTime / duration) * 100}%` : '0%' }} />
+      {/* Main Full Music Player Popup Bar */}
+      {visible && !isMinimized && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] max-w-2xl w-[94vw] sm:w-[680px] transition-all duration-300 animate-in fade-in slide-in-from-bottom-6"
+        >
+          <div className="relative bg-card/95 backdrop-blur-2xl border-2 border-amber-500/40 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)] overflow-hidden">
+            {/* Background Ambient Glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 pointer-events-none" />
 
-          <div className="relative z-10 flex items-center gap-2 sm:gap-3 p-3 sm:p-3.5">
-            <div className="relative shrink-0">
-              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden border border-border shadow-lg bg-muted flex items-center justify-center ${isPlaying ? 'ring-2 ring-primary/50 ring-offset-1' : ''}`}>
-                {currentTrack?.cover_image
-                  ? <img src={currentTrack.cover_image} alt={currentTrack.title} className={`w-full h-full object-cover transition-all ${isPlaying ? 'brightness-110' : 'brightness-75'}`} />
-                  : <Disc className={`w-5 h-5 text-primary ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '4s' }} />
-                }
-              </div>
-              {isPlaying && (
-                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                </span>
-              )}
-            </div>
+            {/* Top Progress Line */}
+            <div
+              className="absolute top-0 left-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 transition-all duration-300"
+              style={{ width: duration ? `${(currentTime / duration) * 100}%` : '0%' }}
+            />
 
-            <div className="min-w-0 flex-1">
-              <p className="font-bold text-xs sm:text-sm truncate text-foreground flex items-center gap-1.5">
-                <Music2 className="w-3 h-3 text-primary shrink-0 animate-pulse" />
-                {currentTrack?.title || 'No Track'}
-              </p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{currentTrack?.artist || 'Unknown'}</p>
-            </div>
-
-            <div className="hidden sm:flex flex-col items-center gap-1 flex-shrink-0 w-44">
-              <div className="flex items-center gap-2">
-                <button onClick={playPrev} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted">
-                  <SkipBack className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:scale-105 transition-transform">
-                  {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
-                </button>
-                <button onClick={playNext} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted">
-                  <SkipForward className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="w-full flex items-center gap-1.5 text-[9px] text-muted-foreground font-mono">
-                <span>{Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}</span>
-                <Slider
-                  value={[currentTime]}
-                  max={duration || 100}
-                  step={1}
-                  onValueChange={val => { if (audioRef.current) audioRef.current.currentTime = val[0]; }}
-                  className="flex-1 h-1"
-                />
-                <span>{Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')}</span>
-              </div>
-            </div>
-
-            <div className="flex sm:hidden items-center">
-              <button onClick={togglePlay} className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:scale-105 transition-transform">
-                {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1 shrink-0">
-              <div className="hidden md:flex items-center gap-1">
-                <button onClick={() => setIsMuted(!isMuted)} className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors">
-                  {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                </button>
-                <Slider
-                  value={[isMuted ? 0 : volume]}
-                  max={1}
-                  step={0.05}
-                  onValueChange={val => setVolume(val[0])}
-                  className="w-14 h-1"
-                />
+            <div className="relative z-10 flex items-center gap-3 p-3.5 sm:p-4">
+              {/* Disc / Cover Image */}
+              <div className="relative shrink-0">
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 border-amber-400/40 shadow-md bg-muted flex items-center justify-center ${isPlaying ? 'ring-4 ring-amber-400/30' : ''}`}>
+                  {currentTrack?.cover_image ? (
+                    <img
+                      src={currentTrack.cover_image}
+                      alt={currentTrack.title}
+                      className={`w-full h-full object-cover transition-transform duration-700 ${isPlaying ? 'scale-105' : 'brightness-75'}`}
+                    />
+                  ) : (
+                    <Disc
+                      className={`w-6 h-6 text-amber-500 ${isPlaying ? 'animate-spin' : ''}`}
+                      style={{ animationDuration: '4s' }}
+                    />
+                  )}
+                </div>
               </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
-                onClick={() => setIsPlaylistOpen(true)}
-              >
-                <ListMusic className="w-3.5 h-3.5" />
-              </Button>
+              {/* Title & Info */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-[9px] bg-amber-500/15 text-amber-600 border-amber-400/30 font-bold px-1.5 py-0">
+                    Lo-Fi Hub
+                  </Badge>
+                  {isPlaying && (
+                    <span className="flex items-center gap-0.5">
+                      <span className="w-1 h-3 bg-amber-500 rounded-full animate-pulse" />
+                      <span className="w-1 h-4 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                      <span className="w-1 h-2 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                    </span>
+                  )}
+                </div>
+                <p className="font-extrabold text-xs sm:text-sm truncate text-foreground mt-0.5">
+                  {currentTrack?.title || 'Chưa chọn bài nhạc'}
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate font-medium">
+                  {currentTrack?.artist || 'TNQDO Studio'}
+                </p>
+              </div>
 
-              <button
-                onClick={handleClose}
-                className="group relative h-8 w-8 flex items-center justify-center rounded-xl border border-rose-400/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 hover:shadow-lg hover:shadow-rose-500/30 transition-all duration-200 hover:scale-105"
-              >
-                <X className="w-3.5 h-3.5 font-bold" />
-              </button>
+              {/* Center Controls & Scrubber */}
+              <div className="hidden sm:flex flex-col items-center gap-1.5 flex-shrink-0 w-48">
+                <div className="flex items-center gap-2">
+                  <button onClick={playPrev} className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors">
+                    <SkipBack className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={togglePlay}
+                    className="w-9 h-9 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
+                  >
+                    {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                  </button>
+                  <button onClick={playNext} className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors">
+                    <SkipForward className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="w-full flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
+                  <span>{Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}</span>
+                  <Slider
+                    value={[currentTime]}
+                    max={duration || 100}
+                    step={1}
+                    onValueChange={val => { if (audioRef.current) audioRef.current.currentTime = val[0]; }}
+                    className="flex-1 h-1"
+                  />
+                  <span>{Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')}</span>
+                </div>
+              </div>
+
+              {/* Mobile Play Button */}
+              <div className="flex sm:hidden items-center">
+                <button
+                  onClick={togglePlay}
+                  className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md active:scale-95"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                </button>
+              </div>
+
+              {/* Right Utility Buttons */}
+              <div className="flex items-center gap-1 shrink-0">
+                <div className="hidden md:flex items-center gap-1.5 mr-1">
+                  <button onClick={() => setIsMuted(!isMuted)} className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors">
+                    {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </button>
+                  <Slider
+                    value={[isMuted ? 0 : volume]}
+                    max={1}
+                    step={0.05}
+                    onValueChange={val => setVolume(val[0])}
+                    className="w-14 h-1"
+                  />
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-xl"
+                  onClick={() => setIsPlaylistOpen(true)}
+                  title="Danh sách bài nhạc"
+                >
+                  <ListMusic className="w-4 h-4" />
+                </Button>
+
+                <button
+                  onClick={() => setIsMinimized(true)}
+                  title="Thu nhỏ trình phát"
+                  className="h-8 w-8 flex items-center justify-center rounded-xl bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                >
+                  <X className="w-4 h-4 font-bold" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
+      {/* Playlist Selector Modal */}
       <Dialog open={isPlaylistOpen} onOpenChange={setIsPlaylistOpen}>
-        <DialogContent className="max-w-sm sm:max-w-md">
+        <DialogContent className="max-w-sm sm:max-w-md rounded-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <ListMusic className="w-4 h-4 text-amber-500" />
-              Danh sách Nhạc ({tracks.length})
+              <ListMusic className="w-5 h-5 text-amber-500" />
+              Danh sách Nhạc Lo-Fi ({tracks.length})
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-1.5 max-h-72 overflow-y-auto py-1">
+          <div className="space-y-2 max-h-80 overflow-y-auto py-1 pr-1">
             {tracks.map((t, idx) => {
               const isSelected = idx === currentTrackIndex;
               return (
                 <div
                   key={t.id}
-                  onClick={() => { setCurrentTrackIndex(idx); setIsPlaying(true); setIsPlaylistOpen(false); }}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-all ${
-                    isSelected ? 'bg-primary/10 border-primary/40 text-primary font-bold' : 'hover:bg-muted border-transparent'
+                  onClick={() => {
+                    setCurrentTrackIndex(idx);
+                    setIsPlaying(true);
+                    setIsPlaylistOpen(false);
+                  }}
+                  className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
+                    isSelected
+                      ? 'bg-amber-500/10 border-amber-400/50 text-amber-600 dark:text-amber-400 font-bold shadow-sm'
+                      : 'hover:bg-muted border-transparent'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-lg overflow-hidden bg-muted shrink-0 flex items-center justify-center">
-                    {t.cover_image
-                      ? <img src={t.cover_image} alt={t.title} className="w-full h-full object-cover" />
-                      : <Disc className="w-4 h-4 text-primary" />
-                    }
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted shrink-0 flex items-center justify-center border">
+                    {t.cover_image ? (
+                      <img src={t.cover_image} alt={t.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Disc className="w-4 h-4 text-amber-500" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs truncate">{t.title}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{t.artist}</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {t.is_free
-                      ? <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-1.5">Miễn phí</Badge>
-                      : <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 border-amber-500/20 px-1.5">Đã mở</Badge>
-                    }
-                    {isSelected && isPlaying && <Music2 className="w-3.5 h-3.5 text-primary animate-bounce" />}
+                    {t.is_free ? (
+                      <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-1.5">
+                        Miễn phí
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 border-amber-500/20 px-1.5">
+                        Đã mở
+                      </Badge>
+                    )}
+                    {isSelected && isPlaying && <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />}
                   </div>
                 </div>
               );

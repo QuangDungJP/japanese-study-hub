@@ -1,35 +1,37 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  FileText, CheckCircle, Clock, AlertCircle, Star, User, BookOpen, Calendar,
-  MessageSquare, Search, Filter, Sparkles, GraduationCap, Paperclip, Video,
-  ExternalLink, Loader2, RefreshCw, Layers
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  CheckCircle, Clock, FileText, Filter, Search, Loader2, Sparkles, 
+  BookOpen, GraduationCap, RefreshCw, Paperclip, Video, MessageSquare, ExternalLink,
+  CheckCircle2, XCircle, HelpCircle, Flame, Calendar, Award, Check, AlertCircle, ArrowUpRight
+} from 'lucide-react';
 import { formatWithJST } from '@/lib/dateUtils';
-import { exportToGoogleSheetsCSV } from '@/lib/exportUtils';
+import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
 
 export interface Submission {
   id: string;
   user_id: string;
   exercise_id: string;
-  content: string;
+  content: string | null;
+  file_url: string | null;
+  status: 'pending' | 'graded';
   score: number | null;
   feedback: string | null;
-  status: string;
   submitted_at: string;
   graded_at: string | null;
   graded_by: string | null;
+  attempt_number?: number;
+  total_attempts_count?: number;
   exercise?: {
     id: string;
     title: string;
@@ -47,6 +49,7 @@ export interface Submission {
   profile?: {
     full_name: string | null;
     avatar_url: string | null;
+    equipped_frame_code?: string | null;
   };
 }
 
@@ -67,6 +70,10 @@ export interface ExamAttemptItem {
   attachment_url: string | null;
   attachment_name: string | null;
   teacher_feedback?: string | null;
+  proctoring_logs?: any[];
+  violations?: number;
+  attempt_number?: number;
+  total_attempts_count?: number;
   exam?: {
     id: string;
     title: string;
@@ -79,7 +86,45 @@ export interface ExamAttemptItem {
   profile?: {
     full_name: string | null;
     avatar_url: string | null;
+    equipped_frame_code?: string | null;
   };
+}
+
+// Helper to format duration
+function formatDuration(seconds: number | null, startedAt?: string, submittedAt?: string) {
+  let sec = seconds;
+  if ((!sec || sec <= 0) && startedAt && submittedAt) {
+    sec = Math.max(0, Math.floor((new Date(submittedAt).getTime() - new Date(startedAt).getTime()) / 1000));
+  }
+  if (!sec || sec <= 0) return '—';
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m > 0) return `${m} phút ${s}s`;
+  return `${s} giây`;
+}
+
+// Helper to calculate correct/incorrect counts
+function getQuestionStats(questions: any[] = [], answers: any[] = []) {
+  let correct = 0;
+  let incorrect = 0;
+  let total = questions.length;
+
+  if (Array.isArray(questions) && questions.length > 0) {
+    questions.forEach((q: any, i: number) => {
+      const ans = answers[i];
+      if (ans !== undefined && ans !== null && ans !== '') {
+        const correctAns = q.correct_answer ?? q.answer ?? q.correctAnswer;
+        if (correctAns !== undefined && correctAns !== null) {
+          if (String(ans).trim().toLowerCase() === String(correctAns).trim().toLowerCase()) {
+            correct++;
+          } else {
+            incorrect++;
+          }
+        }
+      }
+    });
+  }
+  return { correct, incorrect, total };
 }
 
 const TeacherSubmissions = () => {
@@ -107,7 +152,6 @@ const TeacherSubmissions = () => {
   // Filter & Search
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
 
   useEffect(() => {
     fetchAllData();
@@ -138,7 +182,7 @@ const TeacherSubmissions = () => {
 
       const { data: exercises } = await supabase
         .from('exercises')
-        .select('id, title, title_vi, exercise_type, instructions, instructions_vi, lesson_id')
+        .select('id, title, title_vi, exercise_type, instructions, instructions_vi, lesson_id, correct_answers')
         .in('lesson_id', lessonIds)
         .eq('requires_grading', true);
 
@@ -160,17 +204,33 @@ const TeacherSubmissions = () => {
       const userIds = [...new Set(submissionsData?.map((s) => s.user_id) || [])];
       let profiles: any[] = [];
       if (userIds.length > 0) {
-        const { data: profs } = await supabase
+        const { data: profs } = await (supabase as any)
           .from('profiles')
-          .select('user_id, full_name, avatar_url')
-          .in('user_id', userIds);
+          .select('user_id, id, full_name, avatar_url, equipped_frame_code')
+          .or(userIds.map(id => `user_id.eq.${id},id.eq.${id}`).join(','));
         profiles = profs || [];
       }
+
+      // Group by user & exercise to calculate attempt numbers
+      const attemptMap: Record<string, any[]> = {};
+      (submissionsData || []).forEach(sub => {
+        const key = `${sub.user_id}_${sub.exercise_id}`;
+        if (!attemptMap[key]) attemptMap[key] = [];
+        attemptMap[key].push(sub);
+      });
+
+      Object.values(attemptMap).forEach(list => {
+        list.sort((a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime());
+        list.forEach((item, index) => {
+          item.attempt_number = index + 1;
+          item.total_attempts_count = list.length;
+        });
+      });
 
       const mappedSubmissions: Submission[] = (submissionsData || []).map((sub) => {
         const exercise = exercises.find((e) => e.id === sub.exercise_id);
         const lesson = lessons.find((l) => l.id === exercise?.lesson_id);
-        const profile = profiles.find((p) => p.user_id === sub.user_id);
+        const profile = profiles.find((p) => p.user_id === sub.user_id || p.id === sub.user_id);
 
         return {
           ...sub,
@@ -191,6 +251,7 @@ const TeacherSubmissions = () => {
           profile: profile ? {
             full_name: profile.full_name,
             avatar_url: profile.avatar_url,
+            equipped_frame_code: profile.equipped_frame_code,
           } : undefined,
         };
       });
@@ -230,16 +291,32 @@ const TeacherSubmissions = () => {
       const studentIds = [...new Set(attemptsData?.map((a) => a.student_id) || [])];
       let profiles: any[] = [];
       if (studentIds.length > 0) {
-        const { data: profs } = await supabase
+        const { data: profs } = await (supabase as any)
           .from('profiles')
-          .select('user_id, full_name, avatar_url')
-          .in('user_id', studentIds);
+          .select('user_id, id, full_name, avatar_url, equipped_frame_code')
+          .or(studentIds.map(id => `user_id.eq.${id},id.eq.${id}`).join(','));
         profiles = profs || [];
       }
 
+      // Calculate attempt numbers per student & exam
+      const attemptMap: Record<string, any[]> = {};
+      (attemptsData || []).forEach(att => {
+        const key = `${att.student_id}_${att.exam_id}`;
+        if (!attemptMap[key]) attemptMap[key] = [];
+        attemptMap[key].push(att);
+      });
+
+      Object.values(attemptMap).forEach(list => {
+        list.sort((a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime());
+        list.forEach((item, index) => {
+          item.attempt_number = index + 1;
+          item.total_attempts_count = list.length;
+        });
+      });
+
       const mappedAttempts: ExamAttemptItem[] = (attemptsData || []).map((att) => {
         const exam = examsData.find((e) => e.id === att.exam_id);
-        const profile = profiles.find((p) => p.user_id === att.student_id);
+        const profile = profiles.find((p) => p.user_id === att.student_id || p.id === att.student_id);
 
         return {
           ...att,
@@ -255,6 +332,7 @@ const TeacherSubmissions = () => {
           profile: profile ? {
             full_name: profile.full_name,
             avatar_url: profile.avatar_url,
+            equipped_frame_code: profile.equipped_frame_code,
           } : undefined,
         };
       });
@@ -279,7 +357,63 @@ const TeacherSubmissions = () => {
     setExamGradingDialogOpen(true);
   };
 
-  // AI Assistant for Exercise Grading
+  const handleGradeExercise = async () => {
+    if (!selectedSubmission) return;
+    setGrading(true);
+    try {
+      const numScore = parseInt(score);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { error } = await supabase
+        .from('student_submissions')
+        .update({
+          score: numScore,
+          feedback,
+          status: 'graded',
+          graded_at: new Date().toISOString(),
+          graded_by: user?.id || null,
+        })
+        .eq('id', selectedSubmission.id);
+
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã lưu kết quả chấm bài tập!' });
+      setGradingDialogOpen(false);
+      fetchSubmissions();
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setGrading(false);
+    }
+  };
+
+  const handleGradeExamAttempt = async () => {
+    if (!selectedExamAttempt) return;
+    setExamGrading(true);
+    try {
+      const numScore = parseInt(examScore);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { error } = await supabase
+        .from('exam_attempts')
+        .update({
+          score: numScore,
+          teacher_feedback: examFeedback,
+          status: 'graded',
+          graded_at: new Date().toISOString(),
+        })
+        .eq('id', selectedExamAttempt.id);
+
+      if (error) throw error;
+      toast({ title: 'Thành công', description: 'Đã cập nhật điểm số & nhận xét cho học viên!' });
+      setExamGradingDialogOpen(false);
+      fetchExamAttempts();
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setExamGrading(false);
+    }
+  };
+
   const runAiExerciseGrading = async () => {
     if (!selectedSubmission) return;
     setAiGradingLoading(true);
@@ -311,311 +445,126 @@ const TeacherSubmissions = () => {
       else recScore = 50;
 
       setScore(String(recScore));
-      setFeedback(`[Gợi ý từ AI]: Bài làm ngắn gọn (${words} từ). Đạt cơ bản yêu cầu bài tập. Cần mở rộng ý tưởng và dùng ngữ pháp giàu từ vựng hơn.`);
+      setFeedback(`[Gợi ý từ AI]: Bài làm ngắn gọn (${words} từ). Đạt cơ bản yêu cầu bài tập.`);
       toast({ title: '✨ Đã tạo gợi ý nhận xét từ AI' });
     } finally {
       setAiGradingLoading(false);
     }
   };
 
-  // AI Assistant for Exam Attempt Grading
-  const runAiExamGrading = async () => {
-    if (!selectedExamAttempt) return;
-    setAiGradingLoading(true);
-    try {
-      const questions = selectedExamAttempt.exam?.questions || [];
-      const answers = selectedExamAttempt.answers || [];
-      
-      let essaySummary = '';
-      questions.forEach((q: any, i: number) => {
-        if (q.type === 'essay') {
-          essaySummary += `\nCâu ${i + 1} (${q.text}): ${answers[i] || 'Chưa trả lời'}`;
-        }
-      });
-
-      const { data, error } = await supabase.functions.invoke('classroom-ai', {
-        body: {
-          action: 'grade_essay',
-          content: essaySummary || 'Bài kiểm tra tổng hợp',
-          prompt: 'Chấm điểm tổng thể các câu hỏi tự luận trong đề thi tiếng Nhật',
-        },
-      });
-
-      if (error) throw error;
-      if (data?.score !== undefined) {
-        const curScore = selectedExamAttempt.score || 0;
-        const total = selectedExamAttempt.total || 100;
-        const aiPts = parseInt(data.score) || 80;
-        setExamScore(String(Math.min(total, Math.max(curScore, Math.round((aiPts / 100) * total)))));
-      }
-      if (data?.feedback) setExamFeedback(data.feedback);
-      toast({ title: '✨ AI đã chấm & gợi ý nhận xét đề thi!' });
-    } catch (e: any) {
-      const total = selectedExamAttempt.total || 10;
-      const curScore = selectedExamAttempt.score || 0;
-      const finalScore = Math.min(total, curScore + Math.ceil(total * 0.2));
-      setExamScore(String(finalScore));
-      setExamFeedback(`[Gợi ý AI]: Học viên đã hoàn thành các câu trắc nghiệm và câu tự luận bài kiểm tra. Bài làm sạch đẹp, trình bày rõ ràng.`);
-      toast({ title: '✨ Đã tạo gợi ý chấm đề thi từ AI' });
-    } finally {
-      setAiGradingLoading(false);
-    }
-  };
-
-  const handleGradeExercise = async () => {
-    if (!selectedSubmission) return;
-
-    const scoreNum = parseInt(score);
-    if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
-      toast({ title: 'Lỗi', description: 'Điểm phải từ 0 đến 100', variant: 'destructive' });
-      return;
-    }
-
-    try {
-      setGrading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from('student_submissions')
-        .update({
-          score: scoreNum,
-          feedback: feedback.trim() || null,
-          status: 'graded',
-          graded_at: new Date().toISOString(),
-          graded_by: user.id,
-        })
-        .eq('id', selectedSubmission.id);
-
-      if (error) throw error;
-
-      await supabase.from('notifications').insert({
-        user_id: selectedSubmission.user_id,
-        title: 'Bài nộp đã được chấm',
-        message: `Bài "${selectedSubmission.exercise?.title_vi || selectedSubmission.exercise?.title}" đã được chấm điểm: ${scoreNum}/100`,
-        type: scoreNum >= 80 ? 'success' : scoreNum >= 50 ? 'info' : 'warning',
-        link: '/learn/achievements',
-      });
-
-      toast({ title: 'Thành công', description: 'Đã chấm bài nộp thành công' });
-      setGradingDialogOpen(false);
-      fetchSubmissions();
-    } catch (error: any) {
-      toast({ title: 'Lỗi', description: error.message || 'Không thể chấm bài', variant: 'destructive' });
-    } finally {
-      setGrading(false);
-    }
-  };
-
-  const handleGradeExam = async () => {
-    if (!selectedExamAttempt) return;
-
-    const scoreNum = parseInt(examScore);
-    const max = selectedExamAttempt.total || 100;
-    if (isNaN(scoreNum) || scoreNum < 0) {
-      toast({ title: 'Lỗi', description: 'Vui lòng nhập điểm số hợp lệ', variant: 'destructive' });
-      return;
-    }
-
-    try {
-      setExamGrading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from('exam_attempts')
-        .update({
-          score: scoreNum,
-          teacher_feedback: examFeedback.trim() || null,
-          status: 'graded',
-          graded_at: new Date().toISOString(),
-          graded_by: user.id,
-        })
-        .eq('id', selectedExamAttempt.id);
-
-      if (error) throw error;
-
-      await supabase.from('notifications').insert({
-        user_id: selectedExamAttempt.student_id,
-        title: 'Bài kiểm tra đã được giáo viên chấm',
-        message: `Bài kiểm tra "${selectedExamAttempt.exam?.title_vi || selectedExamAttempt.exam?.title}" đã được chấm: ${scoreNum}/${max}`,
-        type: scoreNum >= (selectedExamAttempt.exam?.passing_score || 50) ? 'success' : 'warning',
-        link: '/learn',
-      });
-
-      toast({ title: 'Thành công', description: 'Đã lưu điểm và gửi nhận xét bài kiểm tra' });
-      setExamGradingDialogOpen(false);
-      fetchExamAttempts();
-    } catch (error: any) {
-      toast({ title: 'Lỗi', description: error.message || 'Không thể chấm bài kiểm tra', variant: 'destructive' });
-    } finally {
-      setExamGrading(false);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-      case 'submitted':
-      case 'auto_submitted':
-        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30"><Clock className="w-3 h-3 mr-1" /> Chờ chấm</Badge>;
-      case 'graded':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" /> Đã chấm</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getScoreBadge = (score: number | null, max: number = 100) => {
-    if (score === null || score === undefined) return <Badge variant="outline" className="text-muted-foreground">—</Badge>;
-    const pct = (score / Math.max(1, max)) * 100;
-
-    let colorClass = 'bg-red-500/10 text-red-600 border-red-500/30';
-    if (pct >= 80) colorClass = 'bg-green-500/10 text-green-600 border-green-500/30';
-    else if (pct >= 60) colorClass = 'bg-blue-500/10 text-blue-600 border-blue-500/30';
-    else if (pct >= 40) colorClass = 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
-
-    return <Badge variant="outline" className={colorClass}><Star className="w-3 h-3 mr-1" /> {score}/{max}</Badge>;
-  };
-
-  // Filters for exercises
   const filteredSubmissions = submissions.filter((sub) => {
-    const matchesSearch = !searchTerm ||
+    const matchesSearch =
       (sub.profile?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sub.exercise?.title_vi || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sub.lesson?.title_vi || '').toLowerCase().includes(searchTerm.toLowerCase());
-
+      (sub.exercise?.title_vi || sub.exercise?.title || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || sub.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  // Filters for exam attempts
   const filteredExamAttempts = examAttempts.filter((att) => {
-    const matchesSearch = !searchTerm ||
+    const matchesSearch =
       (att.profile?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (att.exam?.title_vi || '').toLowerCase().includes(searchTerm.toLowerCase());
-
-    const isGraded = att.status === 'graded';
-    const matchesStatus = filterStatus === 'all' || (filterStatus === 'graded' ? isGraded : !isGraded);
+      (att.exam?.title_vi || att.exam?.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || att.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
   const pendingExerciseCount = submissions.filter((s) => s.status === 'pending').length;
-  const pendingExamCount = examAttempts.filter((a) => a.status !== 'graded').length;
-  const totalPending = pendingExerciseCount + pendingExamCount;
+  const pendingExamCount = examAttempts.filter((a) => a.status === 'submitted' || a.status === 'pending').length;
+
+  const getStatusBadge = (status: string) => {
+    if (status === 'graded') {
+      return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-300 font-bold gap-1"><CheckCircle className="w-3 h-3" /> Đã chấm</Badge>;
+    }
+    return <Badge className="bg-amber-500/10 text-amber-600 border-amber-300 font-bold gap-1 animate-pulse"><Clock className="w-3 h-3" /> Chờ chấm</Badge>;
+  };
+
+  const getScoreBadge = (sc: number | null, total: number = 100) => {
+    if (sc === null || sc === undefined) return <span className="text-muted-foreground font-mono text-xs">—</span>;
+    const pct = Math.round((sc / total) * 100);
+    const color = pct >= 80 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : pct >= 50 ? 'text-amber-600 bg-amber-50 border-amber-200' : 'text-rose-600 bg-rose-50 border-rose-200';
+    return (
+      <Badge variant="outline" className={`font-mono font-black text-xs px-2 py-0.5 ${color}`}>
+        {sc}/{total} ({pct}%)
+      </Badge>
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <FileText className="w-7 h-7 text-primary" />
-            Trung tâm Chấm bài
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Chấm điểm bài tập bài học & bài kiểm tra của học viên với sự trợ giúp từ AI
-            {totalPending > 0 && (
-              <Badge variant="destructive" className="ml-2 shadow-sm font-semibold">{totalPending} bài cần chấm</Badge>
-            )}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {submissions.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                const headers = ['Họ và tên học viên', 'Loại bài', 'Tên bài', 'Trạng thái', 'Điểm số', 'Thời gian nộp', 'Nhận xét'];
-                const rows = [
-                  ...submissions.map((s) => [
-                    s.profile?.full_name || 'Không rõ',
-                    'Bài tập',
-                    s.exercise?.title_vi || s.exercise?.title || 'N/A',
-                    s.status === 'graded' ? 'Đã chấm' : 'Chờ chấm',
-                    s.score !== null ? `${s.score}/100` : 'Chưa có',
-                    formatWithJST(s.submitted_at, true),
-                    s.feedback || '',
-                  ]),
-                  ...examAttempts.map((a) => [
-                    a.profile?.full_name || 'Không rõ',
-                    'Bài kiểm tra',
-                    a.exam?.title_vi || a.exam?.title || 'N/A',
-                    a.status === 'graded' ? 'Đã chấm' : 'Chờ chấm',
-                    a.score !== null ? `${a.score}/${a.total || 100}` : 'Chưa có',
-                    formatWithJST(a.submitted_at, true),
-                    a.teacher_feedback || '',
-                  ]),
-                ];
-                exportToGoogleSheetsCSV('Bang_Diem_Tong_Hop_Hoc_Vien', headers, rows);
-              }}
-              className="gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm font-semibold"
-            >
-              📊 Xuất Bảng Điểm (Excel/CSV)
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Header Banner */}
+      <div className="rounded-3xl bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-950 text-white p-6 sm:p-8 shadow-xl border border-white/10 relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <Badge className="bg-amber-400/20 text-yellow-300 border-amber-300/30 text-xs font-bold px-3 py-1">
+              🎓 Trung Tâm Quản Lý Chấm Bài Giảng Viên
+            </Badge>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight">Chấm Bài Nộp & Kiểm Tra Chi Tiết</h1>
+            <p className="text-white/80 text-sm max-w-xl">
+              Theo dõi chính xác thời gian làm bài, mốc bắt đầu/kết thúc, số câu đúng/sai và lịch sử số lần nộp bài của học viên.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Button onClick={fetchAllData} disabled={loading} variant="secondary" className="font-bold gap-2 rounded-xl">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Làm mới dữ liệu
             </Button>
-          )}
-          <Button variant="outline" onClick={fetchAllData} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Làm mới
-          </Button>
+          </div>
         </div>
       </div>
 
-      {/* Main Categories Switcher */}
-      <div className="grid grid-cols-2 gap-3 bg-muted/40 p-1.5 rounded-xl border">
+      {/* Main Category Tabs: Separate Homework Exercises vs Exams */}
+      <div className="grid grid-cols-2 gap-3 bg-muted/60 p-1.5 rounded-2xl border">
         <button
           type="button"
           onClick={() => setActiveCategory('exercises')}
-          className={`flex items-center justify-center gap-2 p-3 rounded-lg font-semibold text-sm transition-all ${
+          className={`flex items-center justify-center gap-2.5 p-3.5 rounded-xl font-black text-sm transition-all ${
             activeCategory === 'exercises'
-              ? 'bg-background text-foreground shadow-md border'
+              ? 'bg-card text-foreground shadow-md border border-primary/30'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <BookOpen className="w-4 h-4 text-blue-500" />
-          Bài tập bài học ({submissions.length})
-          {pendingExerciseCount > 0 && <Badge variant="destructive" className="ml-1 text-xs">{pendingExerciseCount}</Badge>}
+          <BookOpen className="w-5 h-5 text-blue-500" />
+          📝 Bài Tập Bài Học ({submissions.length})
+          {pendingExerciseCount > 0 && <Badge variant="destructive" className="ml-1 text-xs font-extrabold animate-pulse">{pendingExerciseCount} chờ chấm</Badge>}
         </button>
         <button
           type="button"
           onClick={() => setActiveCategory('exams')}
-          className={`flex items-center justify-center gap-2 p-3 rounded-lg font-semibold text-sm transition-all ${
+          className={`flex items-center justify-center gap-2.5 p-3.5 rounded-xl font-black text-sm transition-all ${
             activeCategory === 'exams'
-              ? 'bg-background text-foreground shadow-md border'
+              ? 'bg-card text-foreground shadow-md border border-purple-500/30'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <GraduationCap className="w-4 h-4 text-purple-500" />
-          Bài kiểm tra / Đề thi ({examAttempts.length})
-          {pendingExamCount > 0 && <Badge variant="destructive" className="ml-1 text-xs">{pendingExamCount}</Badge>}
+          <GraduationCap className="w-5 h-5 text-purple-500" />
+          🎓 Bài Kiểm Tra / Đề Thi ({examAttempts.length})
+          {pendingExamCount > 0 && <Badge variant="destructive" className="ml-1 text-xs font-extrabold animate-pulse">{pendingExamCount} chờ chấm</Badge>}
         </button>
       </div>
 
-      {/* Filters Bar */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm theo tên học viên, tiêu đề bài tập..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+      {/* Filter & Search Bar */}
+      <Card className="rounded-2xl border shadow-xs">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Tìm theo tên học viên, tiêu đề..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10 rounded-xl"
+              />
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="w-4 h-4 mr-2" />
+                <SelectTrigger className="w-[170px] h-10 rounded-xl font-medium text-xs">
+                  <Filter className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="pending">Chờ chấm</SelectItem>
-                  <SelectItem value="graded">Đã chấm</SelectItem>
+                  <SelectItem value="pending">⏳ Chờ chấm điểm</SelectItem>
+                  <SelectItem value="graded">✓ Đã chấm điểm</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -623,369 +572,364 @@ const TeacherSubmissions = () => {
         </CardContent>
       </Card>
 
-      {/* CONTENT: EXERCISES CATEGORY */}
+      {/* CATEGORY 1: LESSON EXERCISES */}
       {activeCategory === 'exercises' && (
-        <>
+        <Card className="rounded-2xl border overflow-hidden shadow-soft">
           {loading ? (
-            <Card><CardContent className="py-12 text-center text-muted-foreground"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />Đang tải bài tập...</CardContent></Card>
+            <CardContent className="py-20 text-center text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+              Đang tải danh sách bài tập...
+            </CardContent>
           ) : filteredSubmissions.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-muted-foreground"><FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />Chưa có bài tập nộp nào.</CardContent></Card>
+            <CardContent className="py-20 text-center text-muted-foreground space-y-2">
+              <FileText className="w-12 h-12 mx-auto opacity-30" />
+              <p className="font-bold text-foreground">Không có bài tập nào cần hiển thị.</p>
+            </CardContent>
           ) : (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Học viên</TableHead>
-                    <TableHead>Bài tập</TableHead>
-                    <TableHead>Bài học</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Điểm số</TableHead>
-                    <TableHead>Thời gian nộp</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSubmissions.map((sub) => (
-                    <TableRow key={sub.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-bold">
-                            {sub.profile?.full_name?.[0] || 'U'}
-                          </div>
-                          {sub.profile?.full_name || 'Học viên'}
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="font-bold">Học viên</TableHead>
+                  <TableHead className="font-bold">Bài tập & Bài học</TableHead>
+                  <TableHead className="font-bold">Lượt nộp</TableHead>
+                  <TableHead className="font-bold">Bắt đầu / Nộp bài</TableHead>
+                  <TableHead className="font-bold">Trạng thái</TableHead>
+                  <TableHead className="font-bold">Điểm số</TableHead>
+                  <TableHead className="text-right font-bold">Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSubmissions.map((sub) => (
+                  <TableRow key={sub.id} className="hover:bg-muted/40 transition-colors">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <AvatarWithDecoration
+                          userId={sub.user_id}
+                          avatarUrl={sub.profile?.avatar_url}
+                          name={sub.profile?.full_name}
+                          frameCode={sub.profile?.equipped_frame_code}
+                          size="md"
+                        />
+                        <div>
+                          <p className="font-bold text-sm text-foreground leading-tight">{sub.profile?.full_name || 'Học viên'}</p>
                         </div>
-                      </TableCell>
-                      <TableCell>{sub.exercise?.title_vi || sub.exercise?.title}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{sub.lesson?.title_vi || sub.lesson?.title}</TableCell>
-                      <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                      <TableCell>{getScoreBadge(sub.score)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{formatWithJST(sub.submitted_at, true)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant={sub.status === 'graded' ? 'outline' : 'default'}
-                          onClick={() => openGradingDialog(sub)}
-                        >
-                          {sub.status === 'graded' ? 'Xem / Sửa điểm' : 'Chấm bài'}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-extrabold text-sm text-foreground">{sub.exercise?.title_vi || sub.exercise?.title}</p>
+                      <p className="text-xs text-muted-foreground">{sub.lesson?.title_vi || sub.lesson?.title}</p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] font-bold bg-blue-500/10 text-blue-600 border-blue-200">
+                        Lượt #{sub.attempt_number || 1} / {sub.total_attempts_count || 1}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs space-y-0.5">
+                      <p className="text-muted-foreground font-mono flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-emerald-500" />
+                        {formatWithJST(sub.submitted_at, true)}
+                      </p>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                    <TableCell>{getScoreBadge(sub.score)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant={sub.status === 'graded' ? 'outline' : 'default'}
+                        onClick={() => openGradingDialog(sub)}
+                        className="rounded-xl font-bold text-xs"
+                      >
+                        {sub.status === 'graded' ? 'Xem / Chỉnh sửa' : 'Chấm bài ngay'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
-        </>
+        </Card>
       )}
 
-      {/* CONTENT: EXAMS CATEGORY */}
+      {/* CATEGORY 2: EXAM ATTEMPTS (IN-DEPTH METRICS) */}
       {activeCategory === 'exams' && (
-        <>
+        <Card className="rounded-2xl border overflow-hidden shadow-soft">
           {loading ? (
-            <Card><CardContent className="py-12 text-center text-muted-foreground"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />Đang tải bài kiểm tra...</CardContent></Card>
+            <CardContent className="py-20 text-center text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-purple-600" />
+              Đang tải danh sách bài kiểm tra...
+            </CardContent>
           ) : filteredExamAttempts.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-muted-foreground"><GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-40" />Chưa có lượt nộp bài kiểm tra nào.</CardContent></Card>
+            <CardContent className="py-20 text-center text-muted-foreground space-y-2">
+              <GraduationCap className="w-12 h-12 mx-auto opacity-30" />
+              <p className="font-bold text-foreground">Chưa có lượt nộp bài kiểm tra nào.</p>
+            </CardContent>
           ) : (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Học viên</TableHead>
-                    <TableHead>Đề kiểm tra</TableHead>
-                    <TableHead>Bổ sung</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Điểm số</TableHead>
-                    <TableHead>Thời gian nộp</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredExamAttempts.map((att) => (
-                    <TableRow key={att.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-purple-500/15 text-purple-600 flex items-center justify-center text-xs font-bold">
-                            {att.profile?.full_name?.[0] || 'S'}
-                          </div>
-                          {att.profile?.full_name || 'Học viên'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{att.exam?.title_vi || att.exam?.title}</TableCell>
+            <Table>
+              <TableHeader className="bg-purple-500/10">
+                <TableRow>
+                  <TableHead className="font-bold">Học viên</TableHead>
+                  <TableHead className="font-bold">Đề kiểm tra</TableHead>
+                  <TableHead className="font-bold">Lần làm bài</TableHead>
+                  <TableHead className="font-bold">Thời gian làm</TableHead>
+                  <TableHead className="font-bold">Bắt đầu & Kết thúc</TableHead>
+                  <TableHead className="font-bold">Kết quả trắc nghiệm</TableHead>
+                  <TableHead className="font-bold">Điểm số</TableHead>
+                  <TableHead className="text-right font-bold">Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredExamAttempts.map((att) => {
+                  const stats = getQuestionStats(att.exam?.questions, att.answers);
+                  const durText = formatDuration(att.time_spent_seconds, att.started_at, att.submitted_at);
+
+                  return (
+                    <TableRow key={att.id} className="hover:bg-muted/40 transition-colors">
                       <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          {att.attachment_url && <Badge variant="outline" className="text-[10px] gap-1"><Paperclip className="w-3 h-3 text-blue-500" />File</Badge>}
-                          {att.video_url && <Badge variant="outline" className="text-[10px] gap-1"><Video className="w-3 h-3 text-red-500" />Video</Badge>}
-                          {att.student_comment && <Badge variant="outline" className="text-[10px] gap-1"><MessageSquare className="w-3 h-3 text-emerald-500" />Lời nhắn</Badge>}
-                          {!att.attachment_url && !att.video_url && !att.student_comment && <span className="text-xs text-muted-foreground">—</span>}
+                        <div className="flex items-center gap-3">
+                          <AvatarWithDecoration
+                            userId={att.student_id}
+                            avatarUrl={att.profile?.avatar_url}
+                            name={att.profile?.full_name}
+                            frameCode={att.profile?.equipped_frame_code}
+                            size="md"
+                          />
+                          <div>
+                            <p className="font-bold text-sm text-foreground leading-tight">{att.profile?.full_name || 'Học viên'}</p>
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(att.status)}</TableCell>
+                      <TableCell>
+                        <p className="font-extrabold text-sm text-foreground">{att.exam?.title_vi || att.exam?.title}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {att.attachment_url && <Badge variant="outline" className="text-[9px] gap-1"><Paperclip className="w-3 h-3 text-blue-500" />File</Badge>}
+                          {att.video_url && <Badge variant="outline" className="text-[9px] gap-1"><Video className="w-3 h-3 text-red-500" />Video</Badge>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] font-extrabold bg-purple-500/10 text-purple-700 border-purple-300">
+                          Lần #{att.attempt_number || 1} / {att.total_attempts_count || 1}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs font-bold text-purple-600 dark:text-purple-400">
+                        ⏱️ {durText}
+                      </TableCell>
+                      <TableCell className="text-[11px] space-y-0.5 font-mono text-muted-foreground">
+                        <p className="flex items-center gap-1 text-emerald-600"><Clock className="w-3 h-3" /> BĐ: {formatWithJST(att.started_at, true)}</p>
+                        <p className="flex items-center gap-1 text-blue-600"><CheckCircle2 className="w-3 h-3" /> KT: {formatWithJST(att.submitted_at, true)}</p>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">✓ {stats.correct}</span>
+                          <span className="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">✗ {stats.incorrect}</span>
+                          <span className="text-muted-foreground text-[10px]">({stats.total} câu)</span>
+                        </div>
+                      </TableCell>
                       <TableCell>{getScoreBadge(att.score, att.total || 100)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{formatWithJST(att.submitted_at, true)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="sm"
                           variant={att.status === 'graded' ? 'outline' : 'default'}
                           onClick={() => openExamGradingDialog(att)}
+                          className="rounded-xl font-bold text-xs bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
                         >
-                          {att.status === 'graded' ? 'Xem / Chỉnh điểm' : 'Chấm bài đính kèm'}
+                          {att.status === 'graded' ? 'Xem & Chỉnh điểm' : 'Chấm bài đính kèm'}
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
-        </>
+        </Card>
       )}
 
       {/* EXERCISE GRADING DIALOG */}
       <Dialog open={gradingDialogOpen} onOpenChange={setGradingDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <BookOpen className="w-5 h-5 text-blue-500" />
-              Chấm bài tập bài học
+              Chấm Bài Tập Bài Học Chi Tiết
             </DialogTitle>
           </DialogHeader>
 
           {selectedSubmission && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-3 bg-muted/30 p-3 rounded-lg text-sm">
+              <div className="grid grid-cols-3 gap-3 bg-muted/40 p-4 rounded-2xl border text-xs">
                 <div>
-                  <span className="text-xs text-muted-foreground block">Học viên</span>
-                  <p className="font-semibold">{selectedSubmission.profile?.full_name || 'Chưa rõ'}</p>
+                  <span className="text-muted-foreground block font-medium">Học viên</span>
+                  <p className="font-bold text-sm text-foreground">{selectedSubmission.profile?.full_name || 'Chưa rõ'}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block">Bài tập</span>
-                  <p className="font-semibold">{selectedSubmission.exercise?.title_vi || selectedSubmission.exercise?.title}</p>
+                  <span className="text-muted-foreground block font-medium">Lượt làm bài</span>
+                  <p className="font-bold text-sm text-primary">Lượt #{selectedSubmission.attempt_number || 1} / {selectedSubmission.total_attempts_count || 1}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block font-medium">Thời gian nộp</span>
+                  <p className="font-bold text-sm text-emerald-600 font-mono">{formatWithJST(selectedSubmission.submitted_at, true)}</p>
                 </div>
               </div>
 
-              {selectedSubmission.exercise?.instructions_vi && (
-                <div className="rounded-lg border p-3 bg-muted/20 space-y-1">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase">Yêu cầu bài tập:</span>
-                  <p className="text-sm">{selectedSubmission.exercise.instructions_vi}</p>
-                </div>
-              )}
-
               <div className="space-y-1">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Bài làm của học viên</Label>
-                <div className="p-4 rounded-xl border bg-card whitespace-pre-wrap text-sm leading-relaxed">
-                  {selectedSubmission.content || 'Không có nội dung'}
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Bài làm của học viên</Label>
+                <div className="p-4 rounded-2xl border bg-card whitespace-pre-wrap text-sm leading-relaxed font-sans">
+                  {selectedSubmission.content || 'Không có nội dung văn bản'}
                 </div>
               </div>
 
               {/* AI Assistant Button */}
-              <div className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-3 flex items-center justify-between gap-3">
+              <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs">
-                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
-                  <span>Dùng AI phân tích bài làm để tự động đề xuất điểm số & câu nhận xét chi tiết.</span>
+                  <Sparkles className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+                  <span>Dùng AI phân tích bài làm để tự động gợi ý điểm & nhận xét chi tiết.</span>
                 </div>
-                <Button type="button" size="sm" onClick={runAiExerciseGrading} disabled={aiGradingLoading} className="shrink-0 gap-1">
+                <Button type="button" size="sm" onClick={runAiExerciseGrading} disabled={aiGradingLoading} className="shrink-0 gap-1 rounded-xl font-bold">
                   {aiGradingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  ✨ AI Gợi ý chấm & nhận xét
+                  ✨ AI Chấm bài
                 </Button>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Điểm số (0-100)</Label>
-                  <Input type="number" min={0} max={100} value={score} onChange={(e) => setScore(e.target.value)} className="font-bold text-lg" />
-                  <div className="flex gap-1 mt-1">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Điểm số (0-100)</Label>
+                  <Input type="number" min={0} max={100} value={score} onChange={(e) => setScore(e.target.value)} className="font-bold text-xl h-12 rounded-xl" />
+                  <div className="flex gap-1.5">
                     {[100, 90, 80, 70, 60, 50].map((s) => (
-                      <Button key={s} type="button" variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setScore(String(s))}>
+                      <Button key={s} type="button" variant="outline" size="sm" className="h-8 text-xs font-bold rounded-lg flex-1" onClick={() => setScore(String(s))}>
                         {s}
                       </Button>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nhận xét của giáo viên</Label>
-                  <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3} placeholder="Viết góp ý bài làm cho học viên..." />
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Nhận xét của giảng viên</Label>
+                  <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3} className="rounded-xl" placeholder="Viết nhận xét đóng góp ý kiến cho học viên..." />
                 </div>
               </div>
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setGradingDialogOpen(false)}>Hủy</Button>
-            <Button onClick={handleGradeExercise} disabled={grading || !score}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => setGradingDialogOpen(false)}>Hủy</Button>
+            <Button onClick={handleGradeExercise} disabled={grading || !score} className="rounded-xl font-bold bg-primary text-primary-foreground">
               {grading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              Lưu điểm & Nhận xét
+              Lưu Điểm & Nhận Xét
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* EXAM ATTEMPT GRADING DIALOG */}
+      {/* EXAM ATTEMPT IN-DEPTH GRADING & METRICS DIALOG */}
       <Dialog open={examGradingDialogOpen} onOpenChange={setExamGradingDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <GraduationCap className="w-5 h-5 text-purple-600" />
-              Chấm bài kiểm tra / Đề thi
+            <DialogTitle className="flex items-center gap-2 text-lg font-black">
+              <GraduationCap className="w-6 h-6 text-purple-600" />
+              Chi Tiết Kết Quả & Chấm Đề Thi / Kiểm Tra
             </DialogTitle>
           </DialogHeader>
 
-          {selectedExamAttempt && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-3 gap-3 bg-purple-500/10 border border-purple-500/20 p-3 rounded-lg text-sm">
-                <div>
-                  <span className="text-xs text-muted-foreground block">Học viên</span>
-                  <p className="font-semibold">{selectedExamAttempt.profile?.full_name || 'Chưa rõ'}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">Đề thi</span>
-                  <p className="font-semibold">{selectedExamAttempt.exam?.title_vi || selectedExamAttempt.exam?.title}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">Tổng điểm tự động</span>
-                  <p className="font-semibold text-primary">{selectedExamAttempt.score ?? 0} / {selectedExamAttempt.total || 100} điểm</p>
-                </div>
-              </div>
+          {selectedExamAttempt && (() => {
+            const stats = getQuestionStats(selectedExamAttempt.exam?.questions, selectedExamAttempt.answers);
+            const durText = formatDuration(selectedExamAttempt.time_spent_seconds, selectedExamAttempt.started_at, selectedExamAttempt.submitted_at);
 
-              {/* Attachments & Student Note */}
-              {(selectedExamAttempt.attachment_url || selectedExamAttempt.video_url || selectedExamAttempt.student_comment) && (
-                <Card className="border-primary/30 bg-primary/5">
-                  <CardHeader className="py-2.5 px-4"><CardTitle className="text-xs font-bold uppercase tracking-wider text-primary">Tệp đính kèm & Lời nhắn của học viên</CardTitle></CardHeader>
-                  <CardContent className="px-4 pb-3 space-y-2 text-sm">
-                    {selectedExamAttempt.student_comment && (
-                      <div><span className="font-semibold text-xs text-muted-foreground">Lời nhắn:</span><p className="italic bg-background p-2 rounded border mt-0.5">{selectedExamAttempt.student_comment}</p></div>
-                    )}
-                    {selectedExamAttempt.attachment_url && (
-                      <div className="flex items-center gap-2">
-                        <Paperclip className="w-4 h-4 text-blue-500" />
-                        <span className="text-xs font-medium">File đính kèm:</span>
-                        <a href={selectedExamAttempt.attachment_url} target="_blank" rel="noreferrer" className="text-primary hover:underline text-xs flex items-center gap-1 font-semibold">
-                          {selectedExamAttempt.attachment_name || 'Tải file đính kèm'}<ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
-                    {selectedExamAttempt.video_url && (
-                      <div className="flex items-center gap-2">
-                        <Video className="w-4 h-4 text-red-500" />
-                        <span className="text-xs font-medium">Link video:</span>
-                        <a href={selectedExamAttempt.video_url} target="_blank" rel="noreferrer" className="text-red-600 hover:underline text-xs flex items-center gap-1 font-semibold truncate">
-                          {selectedExamAttempt.video_url}<ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+            return (
+              <div className="space-y-6 py-2">
 
-              {/* AI Proctoring Logs & Violations Section */}
-              {((selectedExamAttempt.violations ?? 0) > 0 || (selectedExamAttempt.proctoring_logs || []).length > 0) && (
-                <Card className="border-indigo-500/40 bg-indigo-500/5">
-                  <CardHeader className="py-2.5 px-4">
-                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        🤖 Nhật ký AI Giám sát Chống gian lận (AI Proctoring Logs)
-                      </span>
-                      <Badge variant="destructive" className="text-xs">
-                        Vi phạm: {selectedExamAttempt.violations || (selectedExamAttempt.proctoring_logs || []).length} lần
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-3 space-y-2 text-xs">
-                    <p className="text-muted-foreground">Mốc thời gian phát hiện bất thường qua WebCam / Trình duyệt:</p>
-                    <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                      {(selectedExamAttempt.proctoring_logs || []).map((log: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded bg-background border text-xs">
-                          <span className="font-mono text-muted-foreground">{log.time || 'Mốc time'}</span>
-                          <span className="font-semibold text-foreground">{log.msg || log.type}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Questions Breakdown & Speaking Audio Playback */}
-              <div className="space-y-3">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Chi tiết câu trả lời & Bài ghi âm của học viên</Label>
-                <div className="space-y-3">
-                  {(selectedExamAttempt.exam?.questions || []).map((q: any, i: number) => {
-                    const studentAns = (selectedExamAttempt.answers || [])[i];
-                    const isEssay = q.type === 'essay';
-                    const isSpeaking = q.type === 'speaking' || q.type === 'roleplay';
-                    const audioUrl = selectedExamAttempt.speaking_recordings?.[i] || (typeof studentAns === 'string' && studentAns.startsWith('http') ? studentAns : null);
-
-                    return (
-                      <div key={i} className="rounded-xl border p-3 bg-card space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs">{i + 1}</span>
-                            {q.text}
-                          </p>
-                          <Badge variant="outline" className="text-xs">{q.points || 1} điểm</Badge>
-                        </div>
-                        <div className="pl-8 text-sm">
-                          {isSpeaking && (
-                            <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-lg space-y-2">
-                              <p className="text-xs font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1">
-                                🎙️ Bài thi Nói / Đối thoại Kaiwa đã ghi âm:
-                              </p>
-                              {audioUrl ? (
-                                <audio controls src={audioUrl} className="h-9 w-full" />
-                              ) : (
-                                <p className="text-xs text-muted-foreground italic">Học viên chưa gửi bản thu âm</p>
-                              )}
-                            </div>
-                          )}
-
-                          {isEssay ? (
-                            <div className="p-3 bg-muted/40 rounded-lg border text-sm whitespace-pre-wrap">
-                              <span className="text-xs text-muted-foreground block mb-1 font-semibold">Bài làm tự luận:</span>
-                              {typeof studentAns === 'string' && studentAns.trim() ? studentAns : <span className="italic text-muted-foreground">Chưa có bài viết</span>}
-                            </div>
-                          ) : !isSpeaking ? (
-                            <p className="text-xs text-muted-foreground">
-                              Trả lời: <span className="font-semibold text-foreground">{studentAns !== undefined && studentAns !== null ? String(studentAns) : 'Bỏ trống'}</span>
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* AI Assistant */}
-              <div className="rounded-xl border-2 border-dashed border-purple-500/30 bg-purple-500/5 p-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs">
-                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span>AI sẽ đọc bài tự luận & bài làm kiểm tra để gợi ý tổng điểm và câu nhận xét.</span>
-                </div>
-                <Button type="button" size="sm" onClick={runAiExamGrading} disabled={aiGradingLoading} className="shrink-0 gap-1 bg-purple-600 hover:bg-purple-700 text-white">
-                  {aiGradingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  ✨ AI Chấm bài kiểm tra
-                </Button>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Điểm tổng kết bài kiểm tra</Label>
-                  <div className="flex items-center gap-2">
-                    <Input type="number" min={0} value={examScore} onChange={(e) => setExamScore(e.target.value)} className="font-bold text-lg" />
-                    <span className="text-sm text-muted-foreground font-semibold">/ {selectedExamAttempt.total || 100}</span>
+                {/* Comprehensive Metrics Bar */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-purple-950 text-white p-5 rounded-2xl shadow-md border border-purple-800/50">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-purple-300 tracking-wider">Lượt làm bài</span>
+                    <p className="text-base font-extrabold text-amber-300 mt-0.5">
+                      Lần #{selectedExamAttempt.attempt_number || 1} / {selectedExamAttempt.total_attempts_count || 1}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-purple-300 tracking-wider">Thời gian làm</span>
+                    <p className="text-base font-extrabold text-white mt-0.5">⏱️ {durText}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-purple-300 tracking-wider">Câu Đúng / Sai</span>
+                    <p className="text-base font-extrabold text-white mt-0.5 flex items-center gap-1">
+                      <span className="text-emerald-400">✓ {stats.correct}</span>
+                      <span className="text-rose-400">✗ {stats.incorrect}</span>
+                      <span className="text-xs font-normal text-purple-200">({stats.total} câu)</span>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-purple-300 tracking-wider">Điểm / Tỷ lệ</span>
+                    <p className="text-base font-extrabold text-yellow-300 mt-0.5">
+                      {selectedExamAttempt.score ?? 0} / {selectedExamAttempt.total || 100} điểm
+                    </p>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nhận xét bài kiểm tra</Label>
-                  <Textarea value={examFeedback} onChange={(e) => setExamFeedback(e.target.value)} rows={3} placeholder="Viết nhận xét bài thi cho học viên..." />
-                </div>
-              </div>
-            </div>
-          )}
 
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setExamGradingDialogOpen(false)}>Hủy</Button>
-            <Button onClick={handleGradeExam} disabled={examGrading || !examScore}>
+                {/* Timeline Timestamps Strip */}
+                <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-muted border text-xs font-mono">
+                  <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
+                    🚀 Bắt đầu làm: {formatWithJST(selectedExamAttempt.started_at, true)}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-blue-600 font-bold">
+                    🏁 Nộp bài lúc: {formatWithJST(selectedExamAttempt.submitted_at, true)}
+                  </span>
+                </div>
+
+                {/* Question-by-Question Detailed Breakdown */}
+                {selectedExamAttempt.exam?.questions && selectedExamAttempt.exam.questions.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-extrabold text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-purple-600" />
+                      Chi tiết từng câu hỏi ({selectedExamAttempt.exam.questions.length} câu)
+                    </h4>
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {selectedExamAttempt.exam.questions.map((q: any, i: number) => {
+                        const ans = selectedExamAttempt.answers?.[i];
+                        const correctAns = q.correct_answer ?? q.answer ?? q.correctAnswer;
+                        const isCorrect = ans !== undefined && String(ans).trim().toLowerCase() === String(correctAns).trim().toLowerCase();
+
+                        return (
+                          <div key={i} className={`p-3 rounded-xl border text-xs space-y-1.5 ${isCorrect ? 'bg-emerald-500/5 border-emerald-300' : 'bg-rose-500/5 border-rose-300'}`}>
+                            <div className="flex items-start justify-between gap-2 font-bold">
+                              <span>Câu {i + 1}: {q.text || q.question}</span>
+                              {isCorrect ? (
+                                <Badge className="bg-emerald-500 text-white font-bold text-[10px]">Chính xác (+{q.points || 10}đ)</Badge>
+                              ) : (
+                                <Badge variant="destructive" className="font-bold text-[10px]">Chưa đúng</Badge>
+                              )}
+                            </div>
+                            <div className="grid sm:grid-cols-2 gap-2 pt-1 border-t border-dashed">
+                              <p className="text-muted-foreground">Học viên chọn: <span className="font-extrabold text-foreground">{ans !== undefined && ans !== null && ans !== '' ? String(ans) : '(Bỏ trống)'}</span></p>
+                              <p className="text-muted-foreground">Đáp án đúng: <span className="font-extrabold text-emerald-600">{correctAns !== undefined ? String(correctAns) : 'N/A'}</span></p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Score Override & Teacher Feedback */}
+                <div className="grid sm:grid-cols-2 gap-4 border-t pt-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Chỉnh sửa điểm tổng số</Label>
+                    <Input type="number" value={examScore} onChange={(e) => setExamScore(e.target.value)} className="font-bold text-xl h-12 rounded-xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Nhận xét của giảng viên</Label>
+                    <Textarea value={examFeedback} onChange={(e) => setExamFeedback(e.target.value)} rows={3} className="rounded-xl" placeholder="Viết đánh giá tổng thể bài làm cho học viên..." />
+                  </div>
+                </div>
+
+              </div>
+            );
+          })()}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => setExamGradingDialogOpen(false)}>Hủy</Button>
+            <Button onClick={handleGradeExamAttempt} disabled={examGrading} className="rounded-xl font-bold bg-purple-600 hover:bg-purple-700 text-white">
               {examGrading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              Lưu điểm bài kiểm tra
+              Lưu Điểm & Nhận Xét
             </Button>
           </DialogFooter>
         </DialogContent>
