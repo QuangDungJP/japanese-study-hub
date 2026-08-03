@@ -391,7 +391,7 @@ export const BackgroundMusicPlayer = () => {
                 >
                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted shrink-0 flex items-center justify-center border">
                     {t.cover_image ? (
-                      <img src={t.cover_image} alt={t.title} className="w-full h-full object-cover" />
+                      <img src={coverSrc(t) || ''} alt={t.title} className="w-full h-full object-cover" />
                     ) : (
                       <Disc className="w-4 h-4 text-amber-500" />
                     )}
