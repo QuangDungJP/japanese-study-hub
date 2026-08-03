@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Crown, Heart, Star, Sun, Moon } from 'lucide-react';
+import CustomAvatarFrame from './CustomAvatarFrame';
+import { CustomFrameRecord, getCachedCustomFrame, loadCustomFrames } from '@/lib/customAvatarFrames';
 
 export interface AvatarFrameInfo {
   code: string;
@@ -55,6 +57,25 @@ export const AvatarWithDecoration = ({
   const [frameCode, setFrameCode] = useState<string | null>(propFrameCode || null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(propAvatarUrl || null);
   const [name, setName] = useState<string | undefined>(propName);
+  const [customFrame, setCustomFrame] = useState<CustomFrameRecord | undefined>(() => getCachedCustomFrame(propFrameCode));
+
+  useEffect(() => {
+    let alive = true;
+    const sync = async () => {
+      if (!frameCode || frameCode.startsWith('http') || frameCode.startsWith('/')) {
+        setCustomFrame(undefined);
+        return;
+      }
+      const cached = getCachedCustomFrame(frameCode);
+      if (cached) { setCustomFrame(cached); return; }
+      const map = await loadCustomFrames();
+      if (alive) setCustomFrame(map[frameCode]);
+    };
+    sync();
+    const onUpdated = () => { loadCustomFrames(true).then(map => { if (alive) setCustomFrame(frameCode ? map[frameCode] : undefined); }); };
+    window.addEventListener('custom_frames_updated', onUpdated);
+    return () => { alive = false; window.removeEventListener('custom_frames_updated', onUpdated); };
+  }, [frameCode]);
 
   const sizeCfg = sizeClasses[size] || sizeClasses.md;
 
@@ -118,6 +139,12 @@ export const AvatarWithDecoration = ({
   // Render SVG / CSS Frame Overlay Effects matching reference designs
   const renderFrameEffect = () => {
     if (!frameCode) return null;
+
+    // Admin-designed custom frame (from store_items)
+    if (customFrame) {
+      const scaleMap: Record<string, number> = { sm: 0.5, md: 0.62, lg: 0.85, xl: 1, '2xl': 1.1, '3xl': 1.2 };
+      return <CustomAvatarFrame config={customFrame.config} scale={scaleMap[size] ?? 1} />;
+    }
 
     // Direct Image URL Frame
     if (frameCode.startsWith('http://') || frameCode.startsWith('https://') || frameCode.startsWith('/')) {

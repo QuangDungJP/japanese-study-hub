@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AvatarFrameDesigner from '@/components/admin/AvatarFrameDesigner';
 import { useToast } from '@/hooks/use-toast';
 import MediaLibraryDialog from '@/components/admin/MediaLibraryDialog';
 import { 
   ShoppingBag, Music, Disc, Star, Flame, Zap, Plus, Edit, Trash2, 
-  Search, CheckCircle2, RefreshCw, Loader2, Image, Upload, Shield, FolderOpen, Gift
+  Search, CheckCircle2, RefreshCw, Loader2, Image, Upload, Shield, FolderOpen, Gift, Sparkles
 } from 'lucide-react';
 
 export interface StoreItemAdmin {
@@ -268,6 +269,7 @@ export default function AdminStore() {
       } else {
         await (supabase as any).from('music_tracks').insert(editingTrack);
       }
+      window.dispatchEvent(new Event('music_updated'));
       toast({ title: '✅ Đã lưu bài nhạc học tập' });
       setTrackDialogOpen(false);
       fetchData();
@@ -313,6 +315,9 @@ export default function AdminStore() {
           </TabsTrigger>
           <TabsTrigger value="music" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
             <Music className="w-3.5 h-3.5 text-amber-500" /> <span className="hidden xs:inline">Kho Nhạc</span> ({tracks.length})
+          </TabsTrigger>
+          <TabsTrigger value="frames" className="gap-1.5 text-xs sm:text-sm font-bold flex-1 sm:flex-none">
+            <Sparkles className="w-4 h-4 text-amber-500" /> Khung Avatar
           </TabsTrigger>
           <TabsTrigger value="gift" className="gap-1.5 text-xs sm:text-sm font-bold flex-1 sm:flex-none">
             <Gift className="w-3.5 h-3.5 text-purple-500" /> <span className="hidden sm:inline">🎁 Tặng Vật Phẩm</span><span className="sm:hidden">🎁</span>
@@ -456,6 +461,10 @@ export default function AdminStore() {
         </TabsContent>
 
         {/* Tab 4: Gift Item to Student */}
+        <TabsContent value="frames" className="space-y-4">
+          <AvatarFrameDesigner />
+        </TabsContent>
+
         <TabsContent value="gift" className="space-y-4">
           <Card className="border-2">
             <CardHeader>
