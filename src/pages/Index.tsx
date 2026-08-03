@@ -588,7 +588,7 @@ const Index = () => {
                 <div key={evt.id} className="bg-card rounded-2xl overflow-hidden border shadow-sm hover:shadow-lg transition-all p-5 space-y-3">
                   <div className="flex items-center justify-between text-xs font-bold text-rose-600">
                     <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {evt.event_date || 'Sắp diễn ra'}</span>
-                    <span>{evt.location_type === 'online' ? '🌐 Online' : '📍 Offline'}</span>
+                    <span>{(evt as any).location_type === 'online' ? '🌐 Online' : '📍 Offline'}</span>
                   </div>
                   <h3 className="font-bold text-base text-foreground">{evt.title}</h3>
                   <p className="text-xs text-muted-foreground line-clamp-2">{evt.description_vi || evt.description}</p>

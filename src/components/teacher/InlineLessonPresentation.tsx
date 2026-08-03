@@ -84,7 +84,7 @@ export const InlineLessonPresentation = ({ lesson, slideUrl: propSlideUrl, title
         .from('exercises')
         .select('id, title, title_vi, exercise_type, instructions_vi, content, audio_url, requires_grading, order_index, lesson_id')
         .eq('lesson_id', lessonId);
-      setExercises(data || []);
+      setExercises((data || []) as any);
     } catch (err) {
       console.error('Error fetching exercises:', err);
     } finally {

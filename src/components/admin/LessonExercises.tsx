@@ -82,7 +82,7 @@ const LessonExercises = ({ lessonId, lessonTitle }: LessonExercisesProps) => {
         .order('order_index', { ascending: true });
 
       if (error) throw error;
-      setExercises(data || []);
+      setExercises((data || []) as any);
     } catch (error: any) {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     } finally {

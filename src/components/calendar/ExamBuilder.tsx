@@ -826,8 +826,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
         showCloseButton={false}
         className={`p-0 overflow-hidden gap-0 flex flex-col transition-all duration-200 ${
           isFullscreen
-            ? 'fixed inset-0 max-w-none h-screen w-screen rounded-none'
-            : 'max-w-4xl h-[92vh]'
+            ? '!left-0 !top-0 !translate-x-0 !translate-y-0 !max-w-none w-screen h-[100dvh] rounded-none border-0'
+            : 'max-w-4xl w-[calc(100vw-2rem)] h-[92dvh] max-h-[92dvh]'
         }`}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => { e.preventDefault(); handleCloseAttempt(); }}
