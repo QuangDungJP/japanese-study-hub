@@ -10,6 +10,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
 
 const UserDropdown = () => {
   const { user, signOut, isAdmin, isModeratorOrAdmin } = useAuth();
@@ -43,10 +44,8 @@ const UserDropdown = () => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-muted/50 transition-colors">
-          <div className="w-9 h-9 rounded-full bg-gradient-accent flex items-center justify-center text-accent-foreground font-bold shadow-md">
-            {getInitial()}
-          </div>
+        <button className="flex items-center gap-2 p-1.5 pl-3 rounded-xl hover:bg-muted/50 transition-colors">
+          <AvatarWithDecoration userId={user?.id} name={getDisplayName()} size="md" />
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
