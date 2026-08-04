@@ -94,7 +94,9 @@ export const BackgroundMusicPlayer = () => {
     setIsDragging(false);
     try {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
+    } catch {
+      /* ignore pointer release error */
+    }
     if (pos) {
       localStorage.setItem('bg_music_player_pos', JSON.stringify(pos));
     }
