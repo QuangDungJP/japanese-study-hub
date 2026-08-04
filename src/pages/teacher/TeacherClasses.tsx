@@ -47,8 +47,8 @@ import {
   Users, Plus, Edit, Eye, Calendar, UserPlus, Trash2, 
   BookOpen, Star, Trophy, TrendingUp, Search, X,
   GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
-  FileText, CheckCircle2, MessageSquare, Play, Upload, Sparkles,
-  Mail, Send, Loader2, Save, RotateCcw, CheckSquare, Square, Award
+  FileText, CheckCircle2, XCircle, MessageSquare, Play, Upload, Sparkles,
+  Mail, Send, Loader2, Save, RotateCcw, CheckSquare, Award
 } from 'lucide-react';
 import ClassroomChat from '@/components/classroom/ClassroomChat';
 import { sendGradingNotification } from '@/lib/emailService';

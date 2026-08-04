@@ -684,7 +684,7 @@ function TeacherScheduleModal({
       // 3. Fetch 1-on-1 bookings for this teacher
       const { data: bookingData } = await supabase
         .from('bookings')
-        .select('*, profiles:user_id(full_name), meetings(meet_link)')
+        .select('*, meetings(meet_link)')
         .or(`teacher_id.eq.${teacher.user_id || teacher.id},teacher_name.ilike.%${teacher.display_name}%`)
         .order('booking_date', { ascending: false });
 
