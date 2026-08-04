@@ -251,6 +251,8 @@ export const BackgroundMusicPlayer = () => {
   }, [currentTrackIndex]);
 
   // If component is not enabled, do not render
+  // Chỉ hiển thị trình phát nhạc cho người dùng đã đăng nhập
+  if (!user) return null;
   if (!visible && tracks.length === 0) return null;
 
   return (

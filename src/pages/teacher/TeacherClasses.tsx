@@ -719,7 +719,7 @@ const TeacherClasses = () => {
       if (editingClass) {
         const { error } = await supabase
           .from('classes')
-          .update(classData)
+          .update(classData as any)
           .eq('id', editingClass.id);
 
         if (error) throw error;
@@ -727,7 +727,7 @@ const TeacherClasses = () => {
       } else {
         const { data: createdClasses, error } = await supabase
           .from('classes')
-          .insert(classData)
+          .insert(classData as any)
           .select('*');
 
         if (error) throw error;
@@ -735,9 +735,13 @@ const TeacherClasses = () => {
 
         const newClass = createdClasses?.[0];
         if (newClass) {
-          const fullNewClass = { ...newClass, student_count: 0 };
-          setSelectedClass(fullNewClass as any);
-          fetchClassroomDetails(newClass.id);
+          const fullNewClass = { ...newClass, student_count: 0 } as any;
+          // Show it instantly in the list without waiting for the refetch
+          setClasses(prev => [fullNewClass, ...prev]);
+          if (selectedClass) {
+            setSelectedClass(fullNewClass);
+            fetchClassroomDetails(newClass.id);
+          }
         }
       }
 
@@ -928,7 +932,8 @@ const TeacherClasses = () => {
       max_students: classItem.max_students || 30,
       total_sessions: classItem.total_sessions || classItem.custom_fields?.total_sessions || 24,
       start_date: classItem.start_date || '',
-      end_date: classItem.end_date || ''
+      end_date: classItem.end_date || '',
+      cover_image_url: (classItem as any).cover_image_url || ''
     });
     setIsDialogOpen(true);
   };
@@ -963,7 +968,8 @@ const TeacherClasses = () => {
       max_students: 30,
       total_sessions: 24,
       start_date: '',
-      end_date: ''
+      end_date: '',
+      cover_image_url: ''
     });
   };
 
@@ -982,6 +988,136 @@ const TeacherClasses = () => {
     };
     return labels[skill] || skill;
   };
+
+  const classFormDialog = (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingClass ? 'Chỉnh sửa lớp học' : 'Tạo lớp học mới'}</DialogTitle>
+            </DialogHeader>
+  
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tên lớp (Tiếng Anh - Không bắt buộc)</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Tự động lấy tên tiếng Việt nếu trống"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tên lớp học (Tiếng Việt)</Label>
+                  <Input
+                    value={formData.name_vi}
+                    onChange={(e) => setFormData({ ...formData, name_vi: e.target.value })}
+                    placeholder="Ví dụ: Lớp N5 Căn Bản T2-T4-T6"
+                  />
+                </div>
+              </div>
+  
+              <div className="space-y-2">
+                <Label>Khóa học liên kết</Label>
+                <Select 
+                  value={formData.course_id} 
+                  onValueChange={(value) => setFormData({ ...formData, course_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn khóa học (không bắt buộc)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Không liên kết</SelectItem>
+                    {courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.title_vi}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+  
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                  🖼️ Ảnh bìa lớp học (Cover Banner)
+                </Label>
+                <MediaUploader
+                  value={formData.cover_image_url}
+                  onChange={(url) => setFormData({ ...formData, cover_image_url: url })}
+                  accept="image"
+                  bucket="course-media"
+                  placeholder="Tải ảnh bìa lớp học mới hoặc chọn từ Thư viện ảnh đã có"
+                  aspectRatio="banner"
+                />
+              </div>
+  
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Mô tả (Tiếng Anh)</Label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Class description"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mô tả (Tiếng Việt)</Label>
+                  <Textarea
+                    value={formData.description_vi}
+                    onChange={(e) => setFormData({ ...formData, description_vi: e.target.value })}
+                    placeholder="Mô tả lớp học"
+                    rows={2}
+                  />
+                </div>
+              </div>
+  
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Sĩ số tối đa</Label>
+                  <Input
+                    type="number"
+                    value={formData.max_students}
+                    onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 30 })}
+                    min={1}
+                    max={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tổng số buổi học</Label>
+                  <Input
+                    type="number"
+                    value={formData.total_sessions}
+                    onChange={(e) => setFormData({ ...formData, total_sessions: parseInt(e.target.value) || 24 })}
+                    min={1}
+                    max={200}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ngày bắt đầu</Label>
+                  <Input
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ngày kết thúc</Label>
+                  <Input
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+  
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
+              <Button onClick={handleSubmit}>{editingClass ? 'Cập nhật' : 'Tạo lớp'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+  );
 
   // --- 1. CLASS LIST DASHBOARD ---
   if (!selectedClass) {
@@ -1093,6 +1229,8 @@ const TeacherClasses = () => {
             ))}
           </div>
         )}
+
+        {classFormDialog}
       </div>
     );
   }
@@ -1902,134 +2040,6 @@ const TeacherClasses = () => {
       </Dialog>
 
       {/* Student Progress Dialog */}
-      {/* Create/Edit Class Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingClass ? 'Chỉnh sửa lớp học' : 'Tạo lớp học mới'}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tên lớp (Tiếng Anh - Không bắt buộc)</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Tự động lấy tên tiếng Việt nếu trống"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Tên lớp học (Tiếng Việt)</Label>
-                <Input
-                  value={formData.name_vi}
-                  onChange={(e) => setFormData({ ...formData, name_vi: e.target.value })}
-                  placeholder="Ví dụ: Lớp N5 Căn Bản T2-T4-T6"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Khóa học liên kết</Label>
-              <Select 
-                value={formData.course_id} 
-                onValueChange={(value) => setFormData({ ...formData, course_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khóa học (không bắt buộc)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Không liên kết</SelectItem>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.title_vi}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                🖼️ Ảnh bìa lớp học (Cover Banner)
-              </Label>
-              <MediaUploader
-                value={formData.cover_image_url}
-                onChange={(url) => setFormData({ ...formData, cover_image_url: url })}
-                accept="image"
-                bucket="course-media"
-                placeholder="Tải ảnh bìa lớp học mới hoặc chọn từ Thư viện ảnh đã có"
-                aspectRatio="banner"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Mô tả (Tiếng Anh)</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Class description"
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Mô tả (Tiếng Việt)</Label>
-                <Textarea
-                  value={formData.description_vi}
-                  onChange={(e) => setFormData({ ...formData, description_vi: e.target.value })}
-                  placeholder="Mô tả lớp học"
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label>Sĩ số tối đa</Label>
-                <Input
-                  type="number"
-                  value={formData.max_students}
-                  onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 30 })}
-                  min={1}
-                  max={100}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Tổng số buổi học</Label>
-                <Input
-                  type="number"
-                  value={formData.total_sessions}
-                  onChange={(e) => setFormData({ ...formData, total_sessions: parseInt(e.target.value) || 24 })}
-                  min={1}
-                  max={200}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Ngày bắt đầu</Label>
-                <Input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Ngày kết thúc</Label>
-                <Input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
-            <Button onClick={handleSubmit}>{editingClass ? 'Cập nhật' : 'Tạo lớp'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
         <DialogContent className="max-w-md">
@@ -2173,6 +2183,8 @@ const TeacherClasses = () => {
           onClose={() => setPlayingVideoRecord(null)}
         />
       )}
+
+      {classFormDialog}
     </div>
   );
 };
