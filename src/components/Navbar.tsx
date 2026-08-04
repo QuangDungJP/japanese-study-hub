@@ -53,7 +53,21 @@ const Navbar = () => {
     staleTime: 30_000,
   });
 
-  const baseNavLinks = defaultNavLinks; // Store is only shown in the user sidebar, not on the homepage navbar
+  // Query Announcement Bar content
+  const { data: announcementBar } = useQuery({
+    queryKey: ['announcement-bar-content'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('website_content')
+        .select('content')
+        .eq('section_key', 'announcement_bar')
+        .maybeSingle();
+      return (data?.content as { enabled?: boolean; text_vi?: string; button_text_vi?: string; button_url?: string }) || null;
+    },
+    staleTime: 30_000,
+  });
+
+  const baseNavLinks = defaultNavLinks;
 
   const navLinks = baseNavLinks
     .filter(link => settings.navbar_items[link.key] !== false)
@@ -70,8 +84,26 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const isAnnouncementActive = announcementBar?.enabled !== false && Boolean(announcementBar?.text_vi);
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-green-200 via-teal-200 to-blue-200 shadow-md">
+    <>
+      {/* Live Announcement Bar Banner */}
+      {isAnnouncementActive && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-white text-xs font-bold py-1.5 px-4 text-center flex items-center justify-center gap-2 shadow-md">
+          <span className="bg-white/25 text-white px-2 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-wider">🔥 Khuyến Mãi</span>
+          <span className="truncate max-w-2xl">{announcementBar?.text_vi}</span>
+          {announcementBar?.button_text_vi && (
+            <Link to={announcementBar.button_url || "/auth"} className="ml-1 underline hover:text-amber-100 shrink-0 font-extrabold flex items-center bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded-md transition-all">
+              {announcementBar.button_text_vi} →
+            </Link>
+          )}
+        </div>
+      )}
+
+      <nav className={cn("fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b shadow-xs transition-all",
+        isAnnouncementActive ? "top-8" : "top-0"
+      )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Logo className="flex items-center gap-2" imgClassName="w-10 h-10 rounded-xl object-cover shadow-md" />
@@ -205,7 +237,8 @@ const Navbar = () => {
         )}
       </div>
     </nav>
-  );
+  </>
+);
 };
 
 export default Navbar;

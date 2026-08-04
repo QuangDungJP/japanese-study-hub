@@ -286,7 +286,7 @@ const TeacherDashboard = () => {
               <Video className="w-5 h-5 text-primary" /> Lịch dạy Meeting & Đặt lịch sắp tới
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/teacher/zoom">Xem tất cả <ArrowRight className="w-4 h-4 ml-1" /></Link>
+              <Link to="/teacher/meeting">Xem tất cả <ArrowRight className="w-4 h-4 ml-1" /></Link>
             </Button>
           </CardHeader>
           <CardContent>

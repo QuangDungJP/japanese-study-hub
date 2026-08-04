@@ -22,37 +22,19 @@ import { vi } from 'date-fns/locale';
 interface ClassInfo {
   id: string;
   name_vi: string;
+  is_active?: boolean | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
-interface StudentAttendanceStats {
-  student_id: string;
-  student_name: string;
-  present_count: number;
-  absent_count: number;
-  late_count: number;
-  excused_count: number;
-  total_sessions: number;
-  attendance_rate: number;
+interface AttendanceStatsProps {
+  initialStatusFilter?: 'all' | 'active' | 'upcoming' | 'completed';
 }
 
-interface ClassStats {
-  total_sessions: number;
-  total_students: number;
-  avg_attendance_rate: number;
-  present_total: number;
-  absent_total: number;
-  late_total: number;
-  excused_total: number;
-}
-
-interface AttendanceRecord {
-  session_date: string;
-  status: string;
-}
-
-const AttendanceStats = () => {
-  const { user } = useAuth();
+const AttendanceStats = ({ initialStatusFilter = 'all' }: AttendanceStatsProps) => {
+  const { user, isAdmin } = useAuth();
   const [classes, setClasses] = useState<ClassInfo[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'upcoming' | 'completed'>(initialStatusFilter);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
   const [chartViewMode, setChartViewMode] = useState<'week' | 'month'>('week');
@@ -60,6 +42,10 @@ const AttendanceStats = () => {
   const [classStats, setClassStats] = useState<ClassStats | null>(null);
   const [allAttendanceData, setAllAttendanceData] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
 
   useEffect(() => {
     if (user) {
@@ -74,19 +60,26 @@ const AttendanceStats = () => {
   }, [selectedClass, dateRange]);
 
   const fetchClasses = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('classes')
-      .select('id, name_vi')
-      .eq('teacher_id', user?.id);
+      .select('id, name_vi, is_active, start_date, end_date')
+      .order('created_at', { ascending: false });
+
+    if (!isAdmin && user?.id) {
+      query = query.eq('teacher_id', user.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching classes:', error);
       return;
     }
 
-    setClasses(data || []);
-    if (data && data.length > 0) {
-      setSelectedClass(data[0].id);
+    const fetched = data || [];
+    setClasses(fetched);
+    if (fetched.length > 0 && !selectedClass) {
+      setSelectedClass(fetched[0].id);
     }
   };
 
@@ -212,11 +205,72 @@ const AttendanceStats = () => {
     return 'bg-red-500';
   };
 
+  const getClassStatus = (cls: ClassInfo): 'active' | 'upcoming' | 'completed' => {
+    const today = new Date().toISOString().split('T')[0];
+    if (cls.start_date && cls.start_date > today) return 'upcoming';
+    if (cls.is_active === false || (cls.end_date && cls.end_date < today)) return 'completed';
+    return 'active';
+  };
+
+  const renderClassStatusBadge = (cls: ClassInfo) => {
+    const st = getClassStatus(cls);
+    if (st === 'upcoming') {
+      return <Badge variant="outline" className="ml-2 bg-indigo-500/10 text-indigo-600 border-indigo-500/30 text-[10px]">Sắp tới</Badge>;
+    }
+    if (st === 'completed') {
+      return <Badge variant="outline" className="ml-2 bg-slate-500/10 text-slate-600 border-slate-500/30 text-[10px]">Đã xong</Badge>;
+    }
+    return <Badge variant="outline" className="ml-2 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]">Đang dạy</Badge>;
+  };
+
+  const filteredClasses = classes.filter(cls => {
+    if (statusFilter === 'all') return true;
+    return getClassStatus(cls) === statusFilter;
+  });
+
   return (
     <div className="space-y-6">
       {/* Filters */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-2">Lọc trạng thái:</span>
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all')}
+                className="h-8 text-xs font-bold rounded-full"
+              >
+                Tất cả ({classes.length})
+              </Button>
+              <Button
+                variant={statusFilter === 'active' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('active')}
+                className={`h-8 text-xs font-bold rounded-full ${statusFilter === 'active' ? 'bg-emerald-600 hover:bg-emerald-700' : 'text-emerald-600'}`}
+              >
+                🟢 Đang giảng dạy ({classes.filter(c => getClassStatus(c) === 'active').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'upcoming' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('upcoming')}
+                className={`h-8 text-xs font-bold rounded-full ${statusFilter === 'upcoming' ? 'bg-indigo-600 hover:bg-indigo-700' : 'text-indigo-600'}`}
+              >
+                🔵 Sắp tới ({classes.filter(c => getClassStatus(c) === 'upcoming').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'completed' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('completed')}
+                className={`h-8 text-xs font-bold rounded-full ${statusFilter === 'completed' ? 'bg-slate-600 hover:bg-slate-700' : 'text-slate-600'}`}
+              >
+                ⚪ Đã hoàn thành ({classes.filter(c => getClassStatus(c) === 'completed').length})
+              </Button>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -227,11 +281,18 @@ const AttendanceStats = () => {
                   <SelectValue placeholder="Chọn lớp học" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name_vi}
-                    </SelectItem>
-                  ))}
+                  {filteredClasses.length === 0 ? (
+                    <SelectItem value="none" disabled>Không tìm thấy lớp phù hợp</SelectItem>
+                  ) : (
+                    filteredClasses.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{cls.name_vi}</span>
+                          {renderClassStatusBadge(cls)}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
