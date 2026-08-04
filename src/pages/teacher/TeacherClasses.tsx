@@ -719,7 +719,7 @@ const TeacherClasses = () => {
       if (editingClass) {
         const { error } = await supabase
           .from('classes')
-          .update(classData)
+          .update(classData as any)
           .eq('id', editingClass.id);
 
         if (error) throw error;
@@ -727,7 +727,7 @@ const TeacherClasses = () => {
       } else {
         const { data: createdClasses, error } = await supabase
           .from('classes')
-          .insert(classData)
+          .insert(classData as any)
           .select('*');
 
         if (error) throw error;
@@ -967,7 +967,8 @@ const TeacherClasses = () => {
       max_students: 30,
       total_sessions: 24,
       start_date: '',
-      end_date: ''
+      end_date: '',
+      cover_image_url: ''
     });
   };
 
