@@ -103,12 +103,16 @@ const AUTO_SAVE_INTERVAL = 15_000;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function gradeQuestion(q: Question, answer: number | string | undefined | null): boolean {
+  if (answer === undefined || answer === null || answer === "") return false;
   const type = qType(q);
   if (type === "multiple_choice" || type === "true_false") {
-    return typeof answer === "number" && answer === q.correct_index;
+    const val = typeof answer === "number" ? answer : (typeof answer === "string" && !isNaN(Number(answer)) ? Number(answer) : null);
+    return val !== null && val === q.correct_index;
   }
   if (type === "short_answer") {
     const accepted = (q.accepted_answers || []).map(normalizeText).filter(Boolean);
+    if (q.correct_answer) accepted.push(normalizeText(q.correct_answer));
+    if (q.answer) accepted.push(normalizeText(q.answer));
     return typeof answer === "string" && !!answer.trim() && accepted.includes(normalizeText(answer));
   }
   return false; // essay — manual
@@ -124,7 +128,7 @@ const ExamRunner = () => {
   const [exam, setExam] = useState<Exam | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<Record<number, number | string>>({});
+  const [answers, setAnswers] = useState<Record<string | number, number | string | null>>({});
   const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -180,12 +184,24 @@ const ExamRunner = () => {
   useEffect(() => { speakingRecordingsRef.current = speakingRecordings; }, [speakingRecordings]);
 
   const orderedQuestions = useMemo(() => {
-    if (runMode === "retry_wrong" || runMode === "retry_all") return retryQuestions;
-    if (!exam) return [];
-    const list = [...(exam.questions || [])];
-    if (exam.shuffle_questions) list.sort(() => Math.random() - 0.5);
+    if (!exam || !exam.questions) return [];
+    if (runMode === "retry_wrong" || runMode === "retry_all") {
+      return retryQuestions.map((q, idx) => ({
+        ...q,
+        origIdx: (q as any).origIdx ?? idx,
+        qKey: q.id || `q_${(q as any).origIdx ?? idx}`
+      }));
+    }
+    const list = exam.questions.map((q, origIdx) => ({
+      ...q,
+      origIdx,
+      qKey: q.id || `q_${origIdx}`
+    }));
+    if (exam.shuffle_questions) {
+      list.sort(() => Math.random() - 0.5);
+    }
     return list;
-  }, [exam, runMode, retryQuestions]);
+  }, [exam?.id, runMode, retryQuestions]);
 
   // ── Online/offline ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -517,18 +533,25 @@ const ExamRunner = () => {
     submittedRef.current = true;
     setSubmitting(true);
 
-    const totalPts = orderedQuestions.reduce((s, q) => s + (q.points || 1), 0);
+    const originalQuestions = exam.questions || [];
+    const totalPts = originalQuestions.reduce((s, q) => s + (q.points || 1), 0);
     let score = 0;
-    const answersArr: (number | string | null)[] = orderedQuestions.map((q, i) => {
-      const a = answers[i];
+
+    const answersArr: (number | string | null)[] = originalQuestions.map((q, origIdx) => {
+      const qKey = q.id || `q_${origIdx}`;
+      const a = answers[qKey] ?? answers[origIdx] ?? answers[String(origIdx)];
       const pts = q.points || 1;
       const type = qType(q);
+
       if (type === "multiple_choice" || type === "true_false") {
-        if (typeof a === "number" && a === q.correct_index) score += pts;
-        return typeof a === "number" ? a : null;
+        const val = typeof a === "number" ? a : (typeof a === "string" && a !== "" && !isNaN(Number(a)) ? Number(a) : null);
+        if (val !== null && val === q.correct_index) score += pts;
+        return val;
       }
       if (type === "short_answer") {
         const accepted = (q.accepted_answers || []).map(normalizeText).filter(Boolean);
+        if (q.correct_answer) accepted.push(normalizeText(q.correct_answer));
+        if (q.answer) accepted.push(normalizeText(q.answer));
         if (typeof a === "string" && a.trim() && accepted.includes(normalizeText(a))) score += pts;
         return typeof a === "string" ? a : null;
       }
@@ -596,8 +619,9 @@ const ExamRunner = () => {
   // ── Retry handlers ──────────────────────────────────────────────────────────
   const startRetryWrong = () => {
     if (!exam || !result) return;
-    const wrong = orderedQuestions.filter((q, i) => {
-      const a = result.submittedAnswers[i];
+    const originalQuestions = exam.questions || [];
+    const wrong = originalQuestions.filter((q, origIdx) => {
+      const a = result.submittedAnswers[origIdx];
       return !gradeQuestion(q, a);
     });
     if (wrong.length === 0) { toast({ title: "Bạn đã trả lời đúng tất cả câu!" }); return; }
@@ -1149,10 +1173,19 @@ const ExamRunner = () => {
           <Card><CardContent className="py-10 text-center text-muted-foreground">Bài kiểm tra chưa có câu hỏi.</CardContent></Card>
         )}
 
-        {orderedQuestions.map((q, i) => {
+        {orderedQuestions.map((q: any, i: number) => {
           const type = qType(q);
           const pts = q.points || 1;
-          const isAnswered = typeof answers[i] === "number" || (typeof answers[i] === "string" && (answers[i] as string).trim().length > 0) || !!speakingRecordings[i];
+          const origIdx = q.origIdx ?? i;
+          const qKey = q.qKey || q.id || `q_${origIdx}`;
+
+          const currentAns = answers[qKey] ?? answers[origIdx] ?? answers[i];
+          const isAnswered = typeof currentAns === "number" || (typeof currentAns === "string" && (currentAns as string).trim().length > 0) || !!speakingRecordings[i];
+
+          const updateAns = (val: number | string) => {
+            setAnswers(a => ({ ...a, [qKey]: val, [origIdx]: val, [i]: val }));
+          };
+
           return (
             <Card key={i} className={`border-2 transition-colors duration-200 ${isAnswered ? "border-green-500/40 bg-green-50/20 dark:bg-green-950/10" : "hover:border-primary/30"}`}>
               <CardHeader className="pb-3">
@@ -1166,10 +1199,10 @@ const ExamRunner = () => {
                 {!isAutoGraded(q) && <p className="text-xs text-muted-foreground pl-9">Câu tự luận – giáo viên sẽ chấm tay.</p>}
               </CardHeader>
               <CardContent className="space-y-2">
-                {(type === "multiple_choice" || type === "true_false") && q.options.map((opt, oi) => {
-                  const selected = answers[i] === oi;
+                {(type === "multiple_choice" || type === "true_false") && q.options.map((opt: string, oi: number) => {
+                  const selected = currentAns === oi || currentAns === String(oi);
                   return (
-                    <button key={oi} type="button" onClick={() => setAnswers(a => ({ ...a, [i]: oi }))}
+                    <button key={oi} type="button" onClick={() => updateAns(oi)}
                       className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${selected ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 hover:bg-muted/50"}`}>
                       <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>
                         {selected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + oi)}
@@ -1180,13 +1213,13 @@ const ExamRunner = () => {
                 })}
                 {type === "short_answer" && (
                   <Input placeholder="Nhập câu trả lời của bạn…"
-                    value={typeof answers[i] === "string" ? answers[i] as string : ""}
-                    onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))} />
+                    value={typeof currentAns === "string" ? currentAns : ""}
+                    onChange={e => updateAns(e.target.value)} />
                 )}
                 {type === "essay" && (
                   <Textarea rows={5} placeholder="Viết bài làm của bạn tại đây…"
-                    value={typeof answers[i] === "string" ? answers[i] as string : ""}
-                    onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))} />
+                    value={typeof currentAns === "string" ? currentAns : ""}
+                    onChange={e => updateAns(e.target.value)} />
                 )}
               </CardContent>
             </Card>

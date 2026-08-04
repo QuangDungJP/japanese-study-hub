@@ -18,7 +18,7 @@ import {
 import {
   Building, GraduationCap, Calendar, Video, Clock,
   BookOpen, FileText, CheckCircle2, MessageSquare, Star, ArrowLeft, UserX, AlertCircle,
-  Play, ExternalLink, Download, Maximize2, Sparkles, Dumbbell
+  Play, ExternalLink, Download, Maximize2, Sparkles, Dumbbell, Trash2
 } from 'lucide-react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 import { sendAbsenceNotification } from '@/lib/emailService';
@@ -29,6 +29,8 @@ import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPrese
 import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
 import FormattedText from '@/components/shared/FormattedText';
+import ClassroomChat from '@/components/classroom/ClassroomChat';
+import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
 
 interface ClassData {
   id: string;
@@ -133,6 +135,7 @@ const MyClasses = () => {
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
+  const [currentEnrollment, setCurrentEnrollment] = useState<any>(null);
 
   // Dashboard details state
   const [sessions, setSessions] = useState<ClassSession[]>([]);
@@ -147,6 +150,106 @@ const MyClasses = () => {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [showInlinePresentation, setShowInlinePresentation] = useState(false);
   const [useGooglePdfEmbed, setUseGooglePdfEmbed] = useState(false);
+
+  // Detailed Analysis Modal state for student view
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
+  const [analysisModalData, setAnalysisModalData] = useState<StudentSubmissionAnalysisData | null>(null);
+
+  const openStudentAttemptAnalysis = (exam: Exam, att: ExamAttempt, attemptIndex: number, totalAttempts: number) => {
+    const answersObj = Array.isArray(att.answers) ? att.answers : (att as any).answers || {};
+    const questions = exam.questions || [];
+
+    let correct = 0;
+    let incorrect = 0;
+
+    const questionBreakdown = questions.map((q: any, i: number) => {
+      const uAnsRaw = Array.isArray(answersObj) ? answersObj[i] : (answersObj[i] ?? answersObj[String(i)] ?? answersObj[q.id]);
+      const type = q.type || 'multiple_choice';
+
+      let user_answer = '(Chưa trả lời)';
+      let correct_answer = 'N/A';
+      let isRight = false;
+
+      if (type === 'multiple_choice' || type === 'true_false') {
+        const options = q.options || [];
+        if (typeof uAnsRaw === 'number' || (typeof uAnsRaw === 'string' && uAnsRaw !== '' && !isNaN(Number(uAnsRaw)))) {
+          const idx = Number(uAnsRaw);
+          user_answer = options[idx] ? `${String.fromCharCode(65 + idx)}. ${options[idx]}` : `Lựa chọn ${String.fromCharCode(65 + idx)}`;
+          isRight = idx === q.correct_index;
+        } else if (typeof uAnsRaw === 'string' && uAnsRaw.trim()) {
+          user_answer = uAnsRaw;
+          const cIdx = typeof q.correct_index === 'number' ? q.correct_index : -1;
+          isRight = cIdx >= 0 ? (String(cIdx) === uAnsRaw || String(options[cIdx]) === uAnsRaw) : false;
+        }
+
+        const cIdx = typeof q.correct_index === 'number' ? q.correct_index : 0;
+        correct_answer = options[cIdx] ? `${String.fromCharCode(65 + cIdx)}. ${options[cIdx]}` : `Đáp án ${String.fromCharCode(65 + cIdx)}`;
+      } else if (type === 'short_answer') {
+        user_answer = uAnsRaw ? String(uAnsRaw) : '(Bỏ trống)';
+        const accepted = (q.accepted_answers || [q.correct_answer || q.answer]).filter(Boolean);
+        correct_answer = accepted.join(' / ');
+        isRight = accepted.some((a: string) => a.trim().toLowerCase() === String(uAnsRaw || '').trim().toLowerCase());
+      } else {
+        user_answer = uAnsRaw ? String(uAnsRaw) : '(Bỏ trống bài làm)';
+        correct_answer = 'Bài viết tự luận (Giáo viên chấm điểm)';
+        isRight = (att.score || 0) > 0;
+      }
+
+      if (isRight) correct++;
+      else incorrect++;
+
+      return {
+        id: q.id || String(i + 1),
+        question_text: q.text || q.question || q.question_text || `Câu hỏi ${i + 1}`,
+        user_answer,
+        correct_answer,
+        is_correct: isRight,
+        explanation: q.explanation || undefined,
+        skill: q.skill || exam.exam_type || 'Bài kiểm tra',
+      };
+    });
+
+    let durationStr = '';
+    if (att.time_spent_seconds > 0) {
+      const m = Math.floor(att.time_spent_seconds / 60);
+      const s = att.time_spent_seconds % 60;
+      durationStr = m > 0 ? `${m} phút ${s}s` : `${s}s`;
+    }
+
+    const maxScore = att.total || exam.max_score || (questions.length > 0 ? questions.length : 100);
+
+    setAnalysisModalData({
+      id: att.id,
+      is_exam_attempt: true,
+      student_name: user?.user_metadata?.full_name || user?.email || 'Học viên',
+      avatar_url: user?.user_metadata?.avatar_url || undefined,
+      title: exam.title_vi || 'Bài kiểm tra',
+      submitted_at: att.submitted_at || att.started_at,
+      attempt_number: attemptIndex,
+      total_attempts: totalAttempts,
+      duration_str: durationStr,
+      score: att.score || 0,
+      max_score: maxScore,
+      passing_score: exam.passing_score || Math.round(maxScore * 0.6),
+      correct_count: correct,
+      incorrect_count: incorrect,
+      feedback: att.student_comment || undefined,
+      questions: questionBreakdown,
+    });
+    setAnalysisModalOpen(true);
+  };
+
+  const handleDeleteStudentAttempt = async (attemptId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa lượt làm bài này khỏi lịch sử không?')) return;
+    try {
+      const { error } = await supabase.from('exam_attempts').delete().eq('id', attemptId);
+      if (error) throw error;
+      toast({ title: 'Đã xóa lượt làm bài' });
+      if (selectedClass) fetchClassroomDetails(selectedClass.id);
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message || 'Không thể xóa lượt thi', variant: 'destructive' });
+    }
+  };
 
   // Absence & Makeup state
   const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = useState(false);
@@ -268,6 +371,16 @@ const MyClasses = () => {
     setActiveLesson(null);
     fetchAttendanceRecords(cls.id);
     try {
+      // Fetch student enrollment evaluation
+      const { data: csRecord } = await supabase
+        .from('class_students')
+        .select('*')
+        .eq('class_id', cls.id)
+        .eq('student_id', user?.id)
+        .maybeSingle();
+
+      setCurrentEnrollment(csRecord || null);
+
       // 1. Fetch class sessions (stream schedule)
       const { data: sessionsData } = await supabase
         .from('class_sessions')
@@ -492,9 +605,40 @@ const MyClasses = () => {
         </div>
       </div>
 
+      {/* Graduation / Course Evaluation Card */}
+      {currentEnrollment?.evaluation_result && (
+        <Card className={`p-5 border-2 shadow-sm rounded-2xl ${
+          currentEnrollment.evaluation_result === 'pass' 
+            ? 'border-emerald-500/50 bg-emerald-500/10' 
+            : 'border-rose-500/50 bg-rose-500/10'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <GraduationCap className={`w-6 h-6 ${currentEnrollment.evaluation_result === 'pass' ? 'text-emerald-600' : 'text-rose-600'}`} />
+                <h3 className="font-extrabold text-base md:text-lg">
+                  Kết Quả Hoàn Thành Khóa Học: {currentEnrollment.evaluation_result === 'pass' ? '🟢 ĐẠT KHÓA HỌC (PASS)' : '🔴 CHƯA ĐẠT (FAIL)'}
+                </h3>
+                {currentEnrollment.evaluation_grade && (
+                  <Badge className="bg-primary text-primary-foreground font-bold text-xs">
+                    Xếp loại: {currentEnrollment.evaluation_grade}
+                  </Badge>
+                )}
+              </div>
+              {currentEnrollment.evaluation_comment && (
+                <p className="text-sm text-foreground/90 italic pl-8">
+                  💬 Nhận xét từ giảng viên: "{currentEnrollment.evaluation_comment}"
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
       <Tabs defaultValue="stream" className="space-y-6">
         <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto flex flex-wrap gap-1">
           <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
+          <TabsTrigger value="chat" className="rounded-lg text-xs md:text-sm font-semibold">Thảo luận</TabsTrigger>
           <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học</TabsTrigger>
           <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1.5">
             🎬 Record Buổi Học
@@ -505,6 +649,11 @@ const MyClasses = () => {
           <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Bài nộp</TabsTrigger>
         </TabsList>
+
+        {/* Tab Chat: Thảo luận */}
+        <TabsContent value="chat" className="space-y-4">
+          <ClassroomChat classId={selectedClass.id} />
+        </TabsContent>
 
         {/* Tab 1: Stream (Bảng tin) */}
         <TabsContent value="stream" className="space-y-6">
@@ -1032,25 +1181,45 @@ const MyClasses = () => {
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2 shrink-0">
+                                  <div className="flex items-center gap-1.5 shrink-0">
                                     {hasScore ? (
-                                      <div className="text-right">
-                                        <p className="font-bold text-lg text-primary leading-none">{att.score}/{att.total}</p>
+                                      <div className="text-right mr-1">
+                                        <p className="font-bold text-base md:text-lg text-primary leading-none">{att.score}/{att.total}</p>
                                         <p className="text-xs text-muted-foreground">{pct}%</p>
                                       </div>
                                     ) : (
-                                      <span className="text-xs text-muted-foreground italic">Chờ chấm</span>
+                                      <span className="text-xs text-muted-foreground italic mr-1">Chờ chấm</span>
                                     )}
+
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="gap-1 text-xs h-8 font-bold"
+                                      onClick={() => openStudentAttemptAnalysis(exam, att, attempts.length - idx, attempts.length)}
+                                    >
+                                      📋 Chi tiết
+                                    </Button>
+
                                     {canShowReview && (
                                       <Button
                                         size="sm"
                                         variant={isReviewOpen ? 'secondary' : 'outline'}
-                                        className="gap-1.5 text-xs h-8"
+                                        className="gap-1 text-xs h-8"
                                         onClick={() => setExpandedReviewAttemptId(isReviewOpen ? null : att.id)}
                                       >
-                                        {isReviewOpen ? '▲ Đóng' : '📋 Xem đáp án'}
+                                        {isReviewOpen ? '▲' : 'Đáp án'}
                                       </Button>
                                     )}
+
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      title="Xóa lượt làm bài này"
+                                      onClick={() => handleDeleteStudentAttempt(att.id)}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
                                   </div>
                                 </div>
 
@@ -1417,6 +1586,13 @@ const MyClasses = () => {
           onClose={() => setPlayingVideoRecord(null)}
         />
       )}
+
+      {/* Student Detailed Submission Analysis Modal */}
+      <StudentSubmissionAnalysisModal
+        open={analysisModalOpen}
+        onOpenChange={setAnalysisModalOpen}
+        data={analysisModalData}
+      />
     </div>
   );
 };

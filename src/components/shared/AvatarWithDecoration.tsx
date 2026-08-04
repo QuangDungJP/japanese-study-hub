@@ -85,9 +85,9 @@ export const AvatarWithDecoration = ({
   const frameScale = avatarPx / FRAME_BASE;
 
   useEffect(() => {
-    if (propFrameCode !== undefined) setFrameCode(propFrameCode);
-    if (propAvatarUrl !== undefined) setAvatarUrl(propAvatarUrl);
-    if (propName !== undefined) setName(propName);
+    if (propFrameCode) setFrameCode(propFrameCode);
+    if (propAvatarUrl) setAvatarUrl(propAvatarUrl);
+    if (propName) setName(propName);
   }, [propFrameCode, propAvatarUrl, propName]);
 
   useEffect(() => {
@@ -102,9 +102,9 @@ export const AvatarWithDecoration = ({
           .maybeSingle();
 
         if (data) {
-          if (propFrameCode === undefined) setFrameCode(data.equipped_frame_code || null);
-          if (propAvatarUrl === undefined && data.avatar_url) setAvatarUrl(data.avatar_url);
-          if (propName === undefined && data.full_name) setName(data.full_name);
+          if (!propFrameCode && data.equipped_frame_code) setFrameCode(data.equipped_frame_code);
+          if (!propAvatarUrl && data.avatar_url) setAvatarUrl(data.avatar_url);
+          if (!propName && data.full_name) setName(data.full_name);
         }
       } catch (err) {
         console.error('Error fetching avatar frame:', err);
