@@ -50,7 +50,7 @@ export const AvatarFrameCustomizer = () => {
     if (!user) return;
     setSaving(true);
     try {
-      let { error } = await (supabase as any)
+      const { error } = await (supabase as any)
         .from('profiles')
         .update({ equipped_frame_code: frameCode, updated_at: new Date().toISOString() })
         .eq('user_id', user.id);

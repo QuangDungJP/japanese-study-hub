@@ -62,9 +62,9 @@ export async function awardUserXpAndStreak(
       .eq('user_id', userId)
       .maybeSingle();
 
-    let currentXp = prog?.total_xp || 0;
-    let currentStreak = prog?.streak || 0;
-    let currentDaily = prog?.daily_progress || 0;
+    const currentXp = prog?.total_xp || 0;
+    const currentStreak = prog?.streak || 0;
+    const currentDaily = prog?.daily_progress || 0;
     const lastDate = prog?.last_activity_date;
 
     const newXp = Math.max(0, currentXp + xpAmount);

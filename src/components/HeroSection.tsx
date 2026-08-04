@@ -66,6 +66,12 @@ const HeroSection = () => {
     url: statsContent?.secondary_btn?.url || "/giao-vien"
   };
 
+  const customButtons = (statsContent?.custom_buttons as any[]) || [
+    { id: '1', text: primaryBtn.text, url: primaryBtn.url, variant: 'primary', enabled: primaryBtn.enabled },
+    { id: '2', text: secondaryBtn.text, url: secondaryBtn.url, variant: 'outline', enabled: secondaryBtn.enabled }
+  ];
+  const activeButtons = customButtons.filter((b: any) => b.enabled !== false);
+
   // Carousel Auto Play
   useEffect(() => {
     if (heroMode === 'carousel' && slides.length > 1) {

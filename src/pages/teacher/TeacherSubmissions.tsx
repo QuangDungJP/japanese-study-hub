@@ -109,7 +109,7 @@ function formatDuration(seconds: number | null, startedAt?: string, submittedAt?
 function getQuestionStats(questions: any[] = [], answers: any[] = []) {
   let correct = 0;
   let incorrect = 0;
-  let total = questions.length;
+  const total = questions.length;
 
   if (Array.isArray(questions) && questions.length > 0) {
     questions.forEach((q: any, i: number) => {
