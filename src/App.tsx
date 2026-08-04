@@ -83,9 +83,11 @@ import Terms from "./pages/Terms";
 import EventsPage from "./pages/EventsPage";
 import EventDetailPage from "./pages/EventDetail";
 import AdminEvents from "./pages/admin/AdminEvents";
+import AdminPopups from "./pages/admin/AdminPopups";
 import ScrollToTop from "./components/ScrollToTop";
 
 import BackgroundMusicPlayer from "./components/shared/BackgroundMusicPlayer";
+import PromotionalPopupModal from "./components/shared/PromotionalPopupModal";
 
 const queryClient = new QueryClient();
 
@@ -144,6 +146,7 @@ const App = () => (
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="website" element={<AdminWebsiteCMS />} />
+                <Route path="popups" element={<AdminPopups />} />
                 <Route path="badges" element={<AdminBadges />} />
                 <Route path="store" element={<AdminStore />} />
                 <Route path="blog" element={<AdminBlog />} />
@@ -180,6 +183,7 @@ const App = () => (
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <PromotionalPopupModal />
             <BackgroundMusicPlayer />
           </BrowserRouter>
         </LearningProvider>

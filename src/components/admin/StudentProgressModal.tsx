@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Flame, 
@@ -20,10 +22,17 @@ import {
   Building,
   GraduationCap,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Plus,
+  Minus,
+  RotateCcw,
+  Sliders,
+  Check
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatWithJST } from '@/lib/dateUtils';
+import { adjustUserXpAndStreak } from '@/lib/xpStreakService';
+import { toast } from 'sonner';
 
 interface StudentProgressModalProps {
   open: boolean;
@@ -80,12 +89,56 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
   const [completedLessons, setCompletedLessons] = useState<CompletedLesson[]>([]);
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
   const [loading, setLoading] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
+
+  // Local interactive stats
+  const [localXp, setLocalXp] = useState(0);
+  const [localStreak, setLocalStreak] = useState(0);
+  const [customXpInput, setCustomXpInput] = useState('');
+  const [customStreakInput, setCustomStreakInput] = useState('');
 
   useEffect(() => {
     if (open && student) {
+      setLocalXp(student.progress?.total_xp || 0);
+      setLocalStreak(student.progress?.streak || 0);
       fetchStudentDetails();
     }
   }, [open, student]);
+
+  const handleAdjustXpStreak = async (xpDelta: number, streakDelta: number = 0, streakSet?: number) => {
+    if (!student) return;
+    setAdjusting(true);
+    try {
+      const res = await adjustUserXpAndStreak({
+        userId: student.user_id,
+        xpDelta,
+        streakDelta,
+        streakSet,
+      });
+
+      setLocalXp(res.totalXp);
+      setLocalStreak(res.streak);
+      toast.success('Đã cập nhật XP / Streak cho học viên thành công!');
+    } catch (e: any) {
+      toast.error('Lỗi khi cập nhật XP/Streak: ' + e.message);
+    } finally {
+      setAdjusting(false);
+    }
+  };
+
+  const handleApplyCustomXp = () => {
+    const val = parseInt(customXpInput, 10);
+    if (isNaN(val)) return toast.error('Vui lòng nhập số hợp lệ');
+    handleAdjustXpStreak(val, 0);
+    setCustomXpInput('');
+  };
+
+  const handleApplyCustomStreak = () => {
+    const val = parseInt(customStreakInput, 10);
+    if (isNaN(val)) return toast.error('Vui lòng nhập số hợp lệ');
+    handleAdjustXpStreak(0, 0, val);
+    setCustomStreakInput('');
+  };
 
   const fetchStudentDetails = async () => {
     if (!student) return;
@@ -133,16 +186,9 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
 
   const progress = student.progress;
   const dailyPercent = progress ? Math.min((progress.daily_progress / (progress.daily_goal || 50)) * 100, 100) : 0;
-  const level = progress ? Math.floor((progress.total_xp || 0) / 500) + 1 : 1;
-  const currentLevelXp = progress ? (progress.total_xp || 0) - ((level - 1) * 500) : 0;
+  const level = Math.floor(localXp / 500) + 1;
+  const currentLevelXp = localXp - ((level - 1) * 500);
   const levelPercent = Math.min((currentLevelXp / 500) * 100, 100);
-
-  const skillLabels: Record<string, string> = {
-    reading: 'Đọc',
-    writing: 'Viết',
-    listening: 'Nghe',
-    speaking: 'Nói',
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -180,7 +226,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
                 <span className="font-bold text-base text-foreground">Cấp độ học tập: Level {level}</span>
               </div>
               <span className="text-xs font-semibold text-primary">
-                {(progress?.total_xp || 0).toLocaleString()} XP tích lũy
+                {localXp.toLocaleString()} XP tích lũy
               </span>
             </div>
             <Progress value={levelPercent} className="h-3 bg-primary/10" />
@@ -208,12 +254,12 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-card rounded-2xl border border-border/80 p-4 text-center shadow-sm hover:shadow-md transition-shadow">
                   <Zap className="w-6 h-6 text-amber-500 mx-auto mb-2" />
-                  <p className="text-2xl font-extrabold text-foreground">{(progress?.total_xp || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-extrabold text-foreground">{localXp.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground font-medium">Tổng XP tích lũy</p>
                 </div>
                 <div className="bg-card rounded-2xl border border-border/80 p-4 text-center shadow-sm hover:shadow-md transition-shadow">
                   <Flame className="w-6 h-6 text-orange-500 mx-auto mb-2 animate-bounce" />
-                  <p className="text-2xl font-extrabold text-foreground">{progress?.streak || 0}</p>
+                  <p className="text-2xl font-extrabold text-foreground">{localStreak}</p>
                   <p className="text-xs text-muted-foreground font-medium">Chuỗi Streak (Ngày)</p>
                 </div>
                 <div className="bg-card rounded-2xl border border-border/80 p-4 text-center shadow-sm hover:shadow-md transition-shadow">
@@ -225,6 +271,71 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
                   <Target className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
                   <p className="text-2xl font-extrabold text-foreground">{progress?.vocabulary_mastered || 0}</p>
                   <p className="text-xs text-muted-foreground font-medium">Từ vựng thành thạo</p>
+                </div>
+              </div>
+
+              {/* ⚡ Dynamic Admin / Teacher Controls: Cộng / Trừ XP & Streak */}
+              <div className="bg-muted/20 border border-border rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sliders className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-sm text-foreground">Quản lý Cộng / Trừ XP & Streak (Admin / Giáo viên)</h3>
+                  </div>
+                  {adjusting && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-5 pt-1">
+                  {/* XP Adjustments */}
+                  <div className="space-y-2 bg-card p-3.5 rounded-xl border">
+                    <label className="text-xs font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                      <Zap className="w-4 h-4" /> Điều chỉnh XP tích lũy
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-emerald-600 hover:bg-emerald-50" onClick={() => handleAdjustXpStreak(10, 0)} disabled={adjusting}>+10 XP</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-emerald-600 hover:bg-emerald-50" onClick={() => handleAdjustXpStreak(50, 0)} disabled={adjusting}>+50 XP</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-emerald-600 hover:bg-emerald-50" onClick={() => handleAdjustXpStreak(100, 0)} disabled={adjusting}>+100 XP</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-emerald-600 hover:bg-emerald-50" onClick={() => handleAdjustXpStreak(500, 0)} disabled={adjusting}>+500 XP</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-rose-600 hover:bg-rose-50" onClick={() => handleAdjustXpStreak(-50, 0)} disabled={adjusting}>-50 XP</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-rose-600 hover:bg-rose-50" onClick={() => handleAdjustXpStreak(-100, 0)} disabled={adjusting}>-100 XP</Button>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Input
+                        type="number"
+                        placeholder="Số XP (+ / -)..."
+                        value={customXpInput}
+                        onChange={e => setCustomXpInput(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <Button size="sm" className="h-8 text-xs font-semibold shrink-0" onClick={handleApplyCustomXp} disabled={adjusting}>
+                        Cập nhật
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Streak Adjustments */}
+                  <div className="space-y-2 bg-card p-3.5 rounded-xl border">
+                    <label className="text-xs font-bold flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
+                      <Flame className="w-4 h-4" /> Điều chỉnh Streak (Ngày)
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-orange-600 hover:bg-orange-50" onClick={() => handleAdjustXpStreak(0, 1)} disabled={adjusting}>+1 ngày</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-orange-600 hover:bg-orange-50" onClick={() => handleAdjustXpStreak(0, 5)} disabled={adjusting}>+5 ngày</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-rose-600 hover:bg-rose-50" onClick={() => handleAdjustXpStreak(0, -1)} disabled={adjusting}>-1 ngày</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs font-bold text-muted-foreground hover:bg-muted" onClick={() => handleAdjustXpStreak(0, 0, 0)} disabled={adjusting}>Reset 0</Button>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Input
+                        type="number"
+                        placeholder="Đặt Streak cụ thể..."
+                        value={customStreakInput}
+                        onChange={e => setCustomStreakInput(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <Button size="sm" className="h-8 text-xs font-semibold shrink-0" onClick={handleApplyCustomStreak} disabled={adjusting}>
+                        Đặt Streak
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
 

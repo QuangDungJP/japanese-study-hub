@@ -3,7 +3,8 @@ import {
   LayoutDashboard, BookOpen, BookText, Users, Settings,
   ChevronRight, LogOut, FileText, Bell, Building,
   Library, ShoppingCart, Globe, Newspaper, MessageSquareText,GraduationCap,
-  HelpCircle, DollarSign, CalendarDays, ChevronDown, Menu, Award, ShoppingBag
+  HelpCircle, DollarSign, CalendarDays, ChevronDown, Menu, Award, ShoppingBag,
+  Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +29,7 @@ const navSections = [
     roles: ['admin', 'moderator'],
     items: [
       { name: 'Website CMS', href: '/admin/website', icon: Globe, roles: ['admin'] },
+      { name: 'Popup Quảng cáo', href: '/admin/popups', icon: Megaphone, roles: ['admin'] },
       { name: 'Hệ thống XP & Danh hiệu', href: '/admin/badges', icon: Award, roles: ['admin'] },
       { name: 'Cửa hàng & Nhạc', href: '/admin/store', icon: ShoppingBag, roles: ['admin'] },
       { name: 'Blog', href: '/admin/blog', icon: Newspaper, roles: ['admin', 'moderator'] },
