@@ -19,6 +19,7 @@ import {
 import { formatWithJST } from '@/lib/dateUtils';
 import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
 import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
+import FormattedText from '@/components/shared/FormattedText';
 
 export interface Submission {
   id: string;
@@ -989,7 +990,7 @@ const TeacherSubmissions = () => {
                         return (
                           <div key={i} className={`p-3 rounded-xl border text-xs space-y-1.5 ${isCorrect ? 'bg-emerald-500/5 border-emerald-300' : 'bg-rose-500/5 border-rose-300'}`}>
                             <div className="flex items-start justify-between gap-2 font-bold">
-                              <span>Câu {i + 1}: {q.text || q.question}</span>
+                              <span>Câu {i + 1}: <FormattedText text={q.text || q.question} /></span>
                               {isCorrect ? (
                                 <Badge className="bg-emerald-500 text-white font-bold text-[10px]">Chính xác (+{q.points || 10}đ)</Badge>
                               ) : (

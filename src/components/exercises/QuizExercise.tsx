@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import FormattedText from '@/components/shared/FormattedText';
 
 interface QuizQuestion {
   question: string;
@@ -111,7 +112,7 @@ const QuizExercise = ({ questions, onComplete }: QuizExerciseProps) => {
       {/* Question Card */}
       <div className="bg-card rounded-3xl border border-border p-8">
         <h3 className="text-xl md:text-2xl font-bold text-foreground mb-8">
-          {currentQuestion.question}
+          <FormattedText text={currentQuestion.question} />
         </h3>
 
         <div className="space-y-3">
@@ -134,7 +135,7 @@ const QuizExercise = ({ questions, onComplete }: QuizExerciseProps) => {
               )}>
                 {String.fromCharCode(65 + index)}
               </span>
-              <span className="flex-1 font-medium">{option}</span>
+              <span className="flex-1 font-medium"><FormattedText text={option} /></span>
               {showResult && index === currentQuestion.correct && (
                 <Check className="w-6 h-6 text-green-500 animate-scale-in" />
               )}

@@ -18,6 +18,7 @@ import {
   Infinity as InfinityIcon, Clock, Mic, MessageSquare, Video, Eye, Camera, ShieldAlert, Laptop,
   Save, AlertTriangle, Maximize2, Minimize2
 } from 'lucide-react';
+import FormattedText from '@/components/shared/FormattedText';
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay' | 'speaking' | 'roleplay';
 export type TimerMode = 'none' | 'stopwatch' | 'countdown';
@@ -1081,7 +1082,49 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                           </div>
                         </div>
 
-                        <Textarea value={q.text} onChange={(e) => patchQ(i, { text: e.target.value })} rows={2} placeholder="Nội dung câu hỏi…" />
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <Label className="text-xs font-semibold text-muted-foreground">Nội dung câu hỏi</Label>
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <button
+                                type="button"
+                                title="Thêm chữ in đậm"
+                                onClick={() => patchQ(i, { text: (q.text || '') + ' **chữ đậm**' })}
+                                className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground font-bold border border-border text-[11px]"
+                              >
+                                B
+                              </button>
+                              <button
+                                type="button"
+                                title="Thêm chữ in nghiêng"
+                                onClick={() => patchQ(i, { text: (q.text || '') + ' *chữ nghiêng*' })}
+                                className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground italic border border-border text-[11px]"
+                              >
+                                I
+                              </button>
+                              <button
+                                type="button"
+                                title="Thêm chữ in đậm nghiêng"
+                                onClick={() => patchQ(i, { text: (q.text || '') + ' ***đậm nghiêng***' })}
+                                className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground font-bold italic border border-border text-[11px]"
+                              >
+                                B I
+                              </button>
+                            </div>
+                          </div>
+                          <Textarea
+                            value={q.text}
+                            onChange={(e) => patchQ(i, { text: e.target.value })}
+                            rows={2}
+                            placeholder="Nội dung câu hỏi… (Hỗ trợ **in đậm**, *in nghiêng*, ***đậm nghiêng***)"
+                          />
+                          {q.text && (q.text.includes('*') || q.text.includes('<')) && (
+                            <div className="text-xs bg-muted/40 p-2 rounded-md border text-muted-foreground">
+                              <span className="font-semibold text-foreground">Xem trước: </span>
+                              <FormattedText text={q.text} />
+                            </div>
+                          )}
+                        </div>
 
                         {/* ── Audio upload ── */}
                         <AudioUpload

@@ -28,6 +28,7 @@ import { InlineLessonExercises } from '@/components/learning/InlineLessonExercis
 import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
+import FormattedText from '@/components/shared/FormattedText';
 
 interface ClassData {
   id: string;
@@ -1083,7 +1084,7 @@ const MyClasses = () => {
                                               {isAutoGraded ? (isCorrect ? '✓' : (notAnswered ? '—' : '✗')) : qi + 1}
                                             </span>
                                             <div className="flex-1 min-w-0">
-                                              <p className="font-medium text-foreground leading-snug">{q.text}</p>
+                                              <p className="font-medium text-foreground leading-snug"><FormattedText text={q.text} /></p>
                                               {q.points && <span className="text-xs text-muted-foreground">{q.points} điểm</span>}
                                             </div>
                                           </div>
@@ -1099,7 +1100,7 @@ const MyClasses = () => {
                                                     <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${isRight ? 'border-green-500 bg-green-500 text-white' : isSelected ? 'border-red-400 bg-red-400 text-white' : 'border-muted-foreground/30'}`}>
                                                       {String.fromCharCode(65 + oi)}
                                                     </span>
-                                                    <span className="flex-1">{opt}</span>
+                                                    <FormattedText className="flex-1" text={opt} />
                                                     {isRight && <span className="shrink-0 text-green-600 font-semibold">✓ Đúng</span>}
                                                     {isSelected && !isRight && <span className="shrink-0 text-red-500">✗ Bạn chọn</span>}
                                                   </div>

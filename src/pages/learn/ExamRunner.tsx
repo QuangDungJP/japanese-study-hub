@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import BackgroundMusicPlayer from "@/components/shared/BackgroundMusicPlayer";
+import FormattedText from "@/components/shared/FormattedText";
 
 type QuestionType = "multiple_choice" | "true_false" | "short_answer" | "essay";
 type TimerMode = "countdown" | "stopwatch" | "none";
@@ -794,7 +795,7 @@ const ExamRunner = () => {
                   <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm shrink-0 font-bold ${isEssay ? "bg-muted text-muted-foreground" : isCorrect ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
                     {isEssay ? i + 1 : isCorrect ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                   </span>
-                  <span className="flex-1">{q.text}</span>
+                  <span className="flex-1"><FormattedText text={q.text} /></span>
                   <Badge variant="outline" className={`shrink-0 text-xs ${isEssay ? "" : isCorrect ? "border-green-500 text-green-600" : "border-red-400 text-red-500"}`}>
                     {isEssay ? "Tự luận" : isCorrect ? `+${q.points || 1} điểm` : "Sai"}
                   </Badge>
@@ -809,7 +810,7 @@ const ExamRunner = () => {
                       <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${isRight ? "border-green-500 bg-green-500 text-white" : isSelected ? "border-red-400 bg-red-400 text-white" : "border-muted-foreground/40"}`}>
                         {isRight ? <CheckCircle2 className="w-4 h-4" /> : isSelected ? <XCircle className="w-4 h-4" /> : String.fromCharCode(65 + oi)}
                       </span>
-                      <span className={isRight ? "font-semibold text-green-700 dark:text-green-400" : isSelected ? "text-red-600 line-through" : ""}>{opt}</span>
+                      <FormattedText className={isRight ? "font-semibold text-green-700 dark:text-green-400" : isSelected ? "text-red-600 line-through" : ""} text={opt} />
                       {isRight && <Badge className="ml-auto bg-green-500 text-white text-xs">Đáp án đúng</Badge>}
                       {isSelected && !isRight && <Badge className="ml-auto bg-red-400 text-white text-xs">Bạn chọn</Badge>}
                     </div>
@@ -1159,7 +1160,7 @@ const ExamRunner = () => {
                   <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm shrink-0 font-semibold ${isAnswered ? "bg-green-500 text-white" : "bg-primary text-primary-foreground"}`}>
                     {isAnswered ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
                   </span>
-                  <span className="flex-1">{q.text}</span>
+                  <span className="flex-1"><FormattedText text={q.text} /></span>
                   <Badge variant="outline" className="shrink-0 font-normal">{pts} điểm</Badge>
                 </CardTitle>
                 {!isAutoGraded(q) && <p className="text-xs text-muted-foreground pl-9">Câu tự luận – giáo viên sẽ chấm tay.</p>}
@@ -1173,7 +1174,7 @@ const ExamRunner = () => {
                       <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-semibold shrink-0 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>
                         {selected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + oi)}
                       </span>
-                      <span>{opt}</span>
+                      <FormattedText text={opt} />
                     </button>
                   );
                 })}

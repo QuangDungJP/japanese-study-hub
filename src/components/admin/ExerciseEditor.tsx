@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import MediaUploader from '@/components/shared/MediaUploader';
+import FormattedText from '@/components/shared/FormattedText';
 import { cn } from '@/lib/utils';
 
 interface Exercise {
