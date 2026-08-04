@@ -204,7 +204,7 @@ const ExamRunner = () => {
 
   // ── Anti-cheat: tab visibility refinement ──────────────────────────────────
   const lastViolationTimeRef = useRef<number>(0);
-  const hiddenTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hiddenTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const proctorFailStreakRef = useRef<number>(0);
 
   useEffect(() => {
