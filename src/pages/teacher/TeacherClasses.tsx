@@ -63,6 +63,7 @@ import AttendanceManager from '@/components/teacher/AttendanceManager';
 import TeacherTimesheet from '@/components/teacher/TeacherTimesheet';
 import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
 import MediaUploader from '@/components/shared/MediaUploader';
+import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
 
 interface ClassData {
   id: string;
@@ -146,21 +147,30 @@ interface Submission {
   id: string;
   user_id: string;
   exercise_id: string;
-  content: string;
+  content?: string | null;
+  file_url?: string | null;
   score: number | null;
+  max_score?: number;
+  passing_score?: number;
+  duration_str?: string;
   feedback: string | null;
   status: string;
   submitted_at: string;
+  is_exam_attempt?: boolean;
+  raw_attempt?: any;
+  answers?: any;
+  questions?: any[];
   exercise?: {
     title_vi: string;
     exercise_type: string;
-    correct_answers: any;
+    correct_answers?: any;
   };
   lesson?: {
     title_vi: string;
   };
   profile?: {
     full_name: string;
+    avatar_url?: string | null;
   };
 }
 
@@ -234,6 +244,98 @@ const TeacherClasses = () => {
   const [gradingScore, setGradingScore] = useState('');
   const [gradingFeedback, setGradingFeedback] = useState('');
   const [isGradingSubmitting, setIsGradingSubmitting] = useState(false);
+
+  // Analysis modal state
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
+  const [analysisModalData, setAnalysisModalData] = useState<StudentSubmissionAnalysisData | null>(null);
+
+  const openSubmissionDetail = (sub: Submission) => {
+    if (sub.is_exam_attempt) {
+      const answersObj = sub.answers || sub.raw_attempt?.answers || {};
+      const questions = sub.questions || sub.raw_attempt?.exam?.questions || [];
+
+      let correct = 0;
+      let incorrect = 0;
+
+      const questionBreakdown = questions.map((q: any, i: number) => {
+        const uAnsRaw = answersObj[i] ?? answersObj[String(i)] ?? answersObj[q.id] ?? answersObj[q.question_text] ?? answersObj[q.question];
+        const type = q.type || 'multiple_choice';
+
+        let user_answer = '(Chưa trả lời)';
+        let correct_answer = 'N/A';
+        let isRight = false;
+
+        if (type === 'multiple_choice' || type === 'true_false') {
+          const options = q.options || [];
+          if (typeof uAnsRaw === 'number' || (typeof uAnsRaw === 'string' && uAnsRaw !== '' && !isNaN(Number(uAnsRaw)))) {
+            const idx = Number(uAnsRaw);
+            user_answer = options[idx] ? `${String.fromCharCode(65 + idx)}. ${options[idx]}` : `Lựa chọn ${String.fromCharCode(65 + idx)}`;
+            isRight = idx === q.correct_index;
+          } else if (typeof uAnsRaw === 'string' && uAnsRaw.trim()) {
+            user_answer = uAnsRaw;
+            const cIdx = typeof q.correct_index === 'number' ? q.correct_index : -1;
+            isRight = cIdx >= 0 ? (String(cIdx) === uAnsRaw || String(options[cIdx]) === uAnsRaw) : false;
+          }
+
+          const cIdx = typeof q.correct_index === 'number' ? q.correct_index : 0;
+          correct_answer = options[cIdx] ? `${String.fromCharCode(65 + cIdx)}. ${options[cIdx]}` : `Đáp án ${String.fromCharCode(65 + cIdx)}`;
+        } else if (type === 'short_answer') {
+          user_answer = uAnsRaw ? String(uAnsRaw) : '(Bỏ trống)';
+          const accepted = (q.accepted_answers || [q.correct_answer || q.answer]).filter(Boolean);
+          correct_answer = accepted.join(' / ');
+          isRight = accepted.some((a: string) => a.trim().toLowerCase() === String(uAnsRaw || '').trim().toLowerCase());
+        } else {
+          user_answer = uAnsRaw ? String(uAnsRaw) : '(Bỏ trống bài làm)';
+          correct_answer = 'Bài viết tự luận (Giáo viên chấm điểm)';
+          isRight = (sub.score || 0) > 0;
+        }
+
+        if (isRight) correct++;
+        else incorrect++;
+
+        return {
+          id: q.id || String(i + 1),
+          question_text: q.text || q.question || q.question_text || `Câu hỏi ${i + 1}`,
+          user_answer,
+          correct_answer,
+          is_correct: isRight,
+          explanation: q.explanation || undefined,
+          skill: q.skill || 'Quiz / Bài thi',
+        };
+      });
+
+      setAnalysisModalData({
+        id: sub.id,
+        is_exam_attempt: true,
+        student_name: sub.profile?.full_name || 'Học viên',
+        avatar_url: sub.profile?.avatar_url || undefined,
+        title: sub.exercise?.title_vi || 'Bài thi trắc nghiệm',
+        submitted_at: sub.submitted_at,
+        duration_str: sub.duration_str,
+        score: sub.score || 0,
+        max_score: sub.max_score || (questions.length > 0 ? questions.length : 100),
+        passing_score: sub.passing_score,
+        correct_count: correct,
+        incorrect_count: incorrect,
+        feedback: sub.feedback || undefined,
+        questions: questionBreakdown,
+        onSaveGrading: async (newScore: number, feedback: string) => {
+          const { error } = await supabase
+            .from('exam_attempts')
+            .update({ score: newScore, feedback: feedback.trim() || null, status: 'graded' })
+            .eq('id', sub.id);
+          if (error) throw error;
+          toast({ title: 'Thành công', description: 'Đã lưu điểm & nhận xét cho học viên' });
+          if (selectedClass) fetchClassSubmissions(selectedClass.id);
+        }
+      });
+      setAnalysisModalOpen(true);
+    } else {
+      setSelectedSubmission(sub);
+      setGradingScore(sub.score?.toString() || '');
+      setGradingFeedback(sub.feedback || '');
+    }
+  };
 
   // Active tab for classroom detail view
   const [activeTab, setActiveTab] = useState('stream');
@@ -480,9 +582,10 @@ const TeacherClasses = () => {
     }
   };
 
-  // Fetch submissions from students in this class for exercises of lessons in this class
+  // Fetch submissions & exam/quiz attempts from students in this class
   const fetchClassSubmissions = async (clsId: string) => {
     try {
+      // 1. Get student IDs in this class
       const { data: classStuds } = await supabase
         .from('class_students')
         .select('student_id')
@@ -494,76 +597,126 @@ const TeacherClasses = () => {
       }
       const studentIds = classStuds.map(s => s.student_id);
 
-      const { data: classLes } = await supabase
-        .from('lessons')
-        .select('id')
-        .eq('class_id', clsId);
-        
-      if (!classLes || classLes.length === 0) {
-        setClassSubmissions([]);
-        return;
-      }
-      const lessonIds = classLes.map(l => l.id);
-
-      let exercises: any[] = [];
-      try {
-        const { data: exData, error: exErr } = await supabase
-          .from('exercises')
-          .select('id, title, title_vi, exercise_type, lesson_id')
-          .in('lesson_id', lessonIds)
-          .eq('requires_grading', true);
-
-        if (exErr) {
-          const { data: fallbackEx } = await supabase
-            .from('exercises')
-            .select('id, title, title_vi, exercise_type, lesson_id')
-            .in('lesson_id', lessonIds);
-          exercises = fallbackEx || [];
-        } else {
-          exercises = exData || [];
-        }
-      } catch (err) {
-        console.warn('Fallback exercises query', err);
+      // 2. Get student profiles
+      let profiles: any[] = [];
+      if (studentIds.length > 0) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('user_id, id, full_name, avatar_url')
+          .or(studentIds.map(id => `user_id.eq.${id},id.eq.${id}`).join(','));
+        profiles = profs || [];
       }
 
-      if (!exercises || exercises.length === 0) {
-        setClassSubmissions([]);
-        return;
-      }
-      const exerciseIds = exercises.map(e => e.id);
-
-      const { data: subsData, error } = await supabase
+      // 3. Get student_submissions for these students (All exercises & quizzes)
+      const { data: subsData } = await supabase
         .from('student_submissions')
         .select('*')
         .in('user_id', studentIds)
-        .in('exercise_id', exerciseIds)
         .order('submitted_at', { ascending: false });
 
-      if (error) throw error;
+      const exerciseIds = [...new Set(subsData?.map(s => s.exercise_id).filter(Boolean) || [])];
+      let exercisesInfo: any[] = [];
+      if (exerciseIds.length > 0) {
+        const { data: exData } = await supabase
+          .from('exercises')
+          .select('id, title, title_vi, exercise_type, lesson_id, instructions_vi, instructions, correct_answers')
+          .in('id', exerciseIds);
+        exercisesInfo = exData || [];
+      }
 
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', studentIds);
+      const lessonIds = [...new Set(exercisesInfo.map(e => e.lesson_id).filter(Boolean))];
+      let lessonsInfo: any[] = [];
+      if (lessonIds.length > 0) {
+        const { data: lesData } = await supabase
+          .from('lessons')
+          .select('id, title_vi')
+          .in('id', lessonIds);
+        lessonsInfo = lesData || [];
+      }
 
-      const { data: lessonsInfo } = await supabase
-        .from('lessons')
-        .select('id, title_vi')
-        .in('id', lessonIds);
-
-      const mapped: Submission[] = (subsData || []).map(sub => {
-        const exercise = exercises.find(e => e.id === sub.exercise_id);
-        const lesson = lessonsInfo?.find(l => l.id === exercise?.lesson_id);
-        const profile = profiles?.find(p => p.user_id === sub.user_id);
+      const exerciseSubmissions: Submission[] = (subsData || []).map(sub => {
+        const exercise = exercisesInfo.find(e => e.id === sub.exercise_id);
+        const lesson = lessonsInfo.find(l => l.id === exercise?.lesson_id);
+        const profile = profiles.find(p => p.user_id === sub.user_id || p.id === sub.user_id);
         return {
           ...sub,
-          exercise: exercise ? { title_vi: exercise.title_vi, exercise_type: exercise.exercise_type, correct_answers: exercise.correct_answers } : undefined,
-          lesson: lesson ? { title_vi: lesson.title_vi } : undefined,
-          profile: profile ? { full_name: profile.full_name || 'Học viên' } : undefined
+          is_exam_attempt: false,
+          exercise: exercise ? { title_vi: exercise.title_vi || exercise.title, exercise_type: exercise.exercise_type, correct_answers: exercise.correct_answers } : undefined,
+          lesson: lesson ? { title_vi: lesson.title_vi } : { title_vi: 'Bài học' },
+          profile: profile ? { full_name: profile.full_name || 'Học viên' } : { full_name: 'Học viên' }
         };
       }) as any;
 
-      setClassSubmissions(mapped);
+      // 4. Get exam_attempts for these students (All exams & quizzes)
+      const { data: attemptsData } = await supabase
+        .from('exam_attempts')
+        .select('*')
+        .in('student_id', studentIds)
+        .neq('status', 'in_progress')
+        .order('submitted_at', { ascending: false });
+
+      const examIds = [...new Set(attemptsData?.map(a => a.exam_id).filter(Boolean) || [])];
+      let examsInfo: any[] = [];
+      if (examIds.length > 0) {
+        const { data: exm } = await supabase
+          .from('exams')
+          .select('id, title, title_vi, max_score, passing_score, questions, exam_type')
+          .in('id', examIds);
+        examsInfo = exm || [];
+      }
+
+      const examSubmissions: Submission[] = (attemptsData || []).map(att => {
+        const exam = examsInfo.find(e => e.id === att.exam_id);
+        const profile = profiles.find(p => p.user_id === att.student_id || p.id === att.student_id);
+
+        let durationStr = '';
+        if (att.duration_seconds) {
+          const m = Math.floor(att.duration_seconds / 60);
+          const s = att.duration_seconds % 60;
+          durationStr = m > 0 ? `${m} phút ${s}s` : `${s}s`;
+        } else if (att.started_at && att.submitted_at) {
+          const diffSec = Math.floor((new Date(att.submitted_at).getTime() - new Date(att.started_at).getTime()) / 1000);
+          if (diffSec > 0) {
+            const m = Math.floor(diffSec / 60);
+            const s = diffSec % 60;
+            durationStr = m > 0 ? `${m} phút ${s}s` : `${s}s`;
+          }
+        }
+
+        const questions = Array.isArray(exam?.questions) ? exam.questions : [];
+        const maxScore = exam?.max_score || (questions.length > 0 ? questions.length : 100);
+        const passingScore = exam?.passing_score || Math.round(maxScore * 0.6);
+
+        return {
+          id: att.id,
+          user_id: att.student_id,
+          exercise_id: att.exam_id,
+          is_exam_attempt: true,
+          raw_attempt: att,
+          score: att.score ?? 0,
+          max_score: maxScore,
+          passing_score: passingScore,
+          duration_str: durationStr,
+          status: att.status === 'graded' ? 'graded' : 'pending',
+          feedback: att.feedback,
+          submitted_at: att.submitted_at,
+          answers: att.answers || {},
+          questions: questions,
+          exercise: {
+            title_vi: exam ? `[Bài thi/Quiz] ${exam.title_vi || exam.title}` : '[Quiz / Bài thi]',
+            exercise_type: 'quiz',
+          },
+          lesson: { title_vi: 'Bài thi / Đánh giá' },
+          profile: profile ? { full_name: profile.full_name || 'Học viên', avatar_url: profile.avatar_url } : { full_name: 'Học viên' }
+        };
+      }) as any;
+
+      // Merge and sort by submitted_at descending
+      const allSubmissions = [...exerciseSubmissions, ...examSubmissions].sort(
+        (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
+      );
+
+      setClassSubmissions(allSubmissions);
     } catch (err) {
       console.error('Error fetching class submissions:', err);
     }
@@ -957,18 +1110,29 @@ const TeacherClasses = () => {
     }
     try {
       setIsGradingSubmitting(true);
-      const { error } = await supabase
-        .from('student_submissions')
-        .update({
-          score: scoreNum,
-          feedback: gradingFeedback.trim() || null,
-          status: 'graded',
-          graded_at: new Date().toISOString(),
-          graded_by: user?.id
-        })
-        .eq('id', selectedSubmission.id);
-
-      if (error) throw error;
+      if ((selectedSubmission as any).is_exam_attempt) {
+        const { error } = await supabase
+          .from('exam_attempts')
+          .update({
+            score: scoreNum,
+            feedback: gradingFeedback.trim() || null,
+            status: 'graded',
+          })
+          .eq('id', selectedSubmission.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('student_submissions')
+          .update({
+            score: scoreNum,
+            feedback: gradingFeedback.trim() || null,
+            status: 'graded',
+            graded_at: new Date().toISOString(),
+            graded_by: user?.id
+          })
+          .eq('id', selectedSubmission.id);
+        if (error) throw error;
+      }
 
       // Send notification
       await supabase.from('notifications').insert({
@@ -1816,37 +1980,40 @@ const TeacherClasses = () => {
                     <TableRow key={sub.id}>
                       <TableCell className="font-semibold text-foreground">{sub.profile?.full_name}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="mr-2">
-                          {sub.exercise?.exercise_type === 'quiz' ? 'Trắc nghiệm' : 'Bài viết'}
+                        <Badge variant="outline" className={`mr-2 ${sub.is_exam_attempt ? 'bg-indigo-500/10 text-indigo-600 border-indigo-300 font-bold' : 'bg-muted'}`}>
+                          {sub.is_exam_attempt ? 'Quiz / Bài thi' : sub.exercise?.exercise_type === 'quiz' ? 'Trắc nghiệm' : 'Bài viết'}
                         </Badge>
                         {sub.exercise?.title_vi}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">{sub.lesson?.title_vi}</TableCell>
                       <TableCell>
                         {sub.score !== null ? (
-                          <Badge className="bg-green-500/10 text-green-600 border-green-200">
-                            {sub.score}/100
+                          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 font-bold text-xs">
+                            {sub.score} / {sub.max_score || 100}
+                            {sub.max_score ? ` (${Math.round((sub.score / sub.max_score) * 100)}%)` : ''}
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200">
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-300 font-bold">
                             Chờ chấm
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {formatWithJST(sub.submitted_at, true)}
+                        <div>{formatWithJST(sub.submitted_at, true)}</div>
+                        {sub.duration_str && (
+                          <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold mt-0.5 flex items-center gap-1">
+                            ⏱️ Lượt làm: {sub.duration_str}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button 
                           size="sm" 
-                          variant={sub.status === 'pending' ? 'default' : 'ghost'}
-                          onClick={() => {
-                            setSelectedSubmission(sub);
-                            setGradingScore(sub.score?.toString() || '');
-                            setGradingFeedback(sub.feedback || '');
-                          }}
+                          variant={sub.status === 'pending' ? 'default' : 'outline'}
+                          className="font-bold gap-1 text-xs"
+                          onClick={() => openSubmissionDetail(sub)}
                         >
-                          {sub.status === 'pending' ? 'Chấm bài' : 'Xem & sửa'}
+                          {sub.is_exam_attempt ? '📋 Chi tiết & Chấm' : sub.status === 'pending' ? 'Chấm bài' : 'Xem & sửa'}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -2437,6 +2604,13 @@ const TeacherClasses = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Student Submission Detailed Analysis Modal */}
+      <StudentSubmissionAnalysisModal
+        open={analysisModalOpen}
+        onOpenChange={setAnalysisModalOpen}
+        data={analysisModalData}
+      />
 
       {classFormDialog}
     </div>

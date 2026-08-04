@@ -1,20 +1,23 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { 
   CheckCircle2, 
   XCircle, 
-  HelpCircle, 
   Award, 
   Clock, 
-  FileText, 
-  User, 
   Sparkles,
   BarChart3,
-  RotateCcw
+  RotateCcw,
+  Save,
+  Loader2
 } from 'lucide-react';
+import FormattedText from '@/components/shared/FormattedText';
 
 export interface QuestionAnalysisItem {
   id?: string;
@@ -29,6 +32,8 @@ export interface QuestionAnalysisItem {
 }
 
 export interface StudentSubmissionAnalysisData {
+  id?: string;
+  is_exam_attempt?: boolean;
   student_name: string;
   avatar_url?: string;
   title: string;
@@ -41,8 +46,10 @@ export interface StudentSubmissionAnalysisData {
   correct_count: number;
   incorrect_count: number;
   unanswered_count?: number;
+  duration_str?: string;
   feedback?: string;
   questions?: QuestionAnalysisItem[];
+  onSaveGrading?: (newScore: number, feedback: string) => Promise<void>;
 }
 
 interface Props {
@@ -52,10 +59,35 @@ interface Props {
 }
 
 const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => {
+  const [editScore, setEditScore] = useState<string>('');
+  const [editFeedback, setEditFeedback] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setEditScore(data.score?.toString() || '0');
+      setEditFeedback(data.feedback || '');
+    }
+  }, [data]);
+
   if (!data) return null;
 
-  const scorePercent = Math.round((data.score / (data.max_score || 100)) * 100);
+  const maxScore = data.max_score || 100;
+  const scorePercent = Math.round((data.score / maxScore) * 100);
   const isPassed = data.passing_score ? data.score >= data.passing_score : scorePercent >= 60;
+
+  const handleSave = async () => {
+    if (!data.onSaveGrading) return;
+    const num = parseInt(editScore);
+    if (isNaN(num)) return;
+    setSaving(true);
+    try {
+      await data.onSaveGrading(num, editFeedback);
+      onOpenChange(false);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,7 +111,8 @@ const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => 
                   </Badge>
                 </div>
                 <p className="text-xs text-white/80">
-                  {data.title} • {new Date(data.submitted_at).toLocaleString('vi-VN')}
+                  {data.title} • Nộp ngày {new Date(data.submitted_at).toLocaleString('vi-VN')}
+                  {data.duration_str && ` • Thời lượng làm: ${data.duration_str}`}
                 </p>
               </div>
             </div>
@@ -99,8 +132,8 @@ const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card className="bg-card border-border/80 text-center p-4">
               <Award className="w-6 h-6 text-amber-500 mx-auto mb-1" />
-              <p className="text-2xl font-extrabold">{data.score} / {data.max_score}</p>
-              <p className="text-xs text-muted-foreground font-medium">Tổng điểm số</p>
+              <p className="text-2xl font-extrabold">{data.score} / {maxScore}</p>
+              <p className="text-xs text-muted-foreground font-medium">Điểm làm bài ({scorePercent}%)</p>
             </Card>
 
             <Card className="bg-emerald-500/10 border-emerald-500/20 text-center p-4">
@@ -116,21 +149,45 @@ const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => 
             </Card>
 
             <Card className="bg-blue-500/10 border-blue-500/20 text-center p-4">
-              <RotateCcw className="w-6 h-6 text-blue-500 mx-auto mb-1" />
-              <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">{data.attempt_number || 1} Lần</p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Lượt làm bài này</p>
+              <Clock className="w-6 h-6 text-blue-500 mx-auto mb-1" />
+              <p className="text-xl font-extrabold text-blue-600 dark:text-blue-400 truncate">{data.duration_str || '—'}</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Thời lượng tổng làm bài</p>
             </Card>
           </div>
 
-          {/* Teacher Feedback Banner if available */}
-          {data.feedback && (
-            <Card className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-transparent border-amber-500/30 p-4">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="font-bold text-sm text-amber-900 dark:text-amber-300">Nhận xét & Nhắc nhở của Giáo viên:</h4>
-                  <p className="text-xs text-foreground/90 whitespace-pre-line">{data.feedback}</p>
+          {/* Teacher Grading & Feedback Form */}
+          {data.onSaveGrading && (
+            <Card className="bg-muted/40 border p-4 space-y-3">
+              <h4 className="font-bold text-sm flex items-center gap-2 text-foreground">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                Chấm điểm & Nhận xét của Giảng viên
+              </h4>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div className="space-y-1 sm:col-span-1">
+                  <Label className="text-xs">Điểm số tổng</Label>
+                  <Input 
+                    type="number" 
+                    value={editScore} 
+                    onChange={e => setEditScore(e.target.value)} 
+                    className="font-bold text-base h-10"
+                    placeholder={`0-${maxScore}`}
+                  />
                 </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Nhận xét cho học viên</Label>
+                  <Textarea 
+                    value={editFeedback} 
+                    onChange={e => setEditFeedback(e.target.value)} 
+                    rows={2} 
+                    placeholder="Viết nhận xét hoặc lời khuyên cho học viên..."
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end pt-1">
+                <Button onClick={handleSave} disabled={saving} size="sm" className="font-bold gap-1.5">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Lưu điểm & Nhận xét
+                </Button>
               </div>
             </Card>
           )}
@@ -140,7 +197,7 @@ const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => 
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-base flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-primary" />
-                Phân tích chi tiết từng câu hỏi ({data.questions?.length || 0} câu)
+                Chi tiết từng câu hỏi ({data.questions?.length || 0} câu)
               </h3>
             </div>
 
@@ -165,7 +222,9 @@ const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => 
                               {idx + 1}
                             </span>
                             <div>
-                              <p className="font-bold text-sm text-foreground">{q.question_text}</p>
+                              <div className="font-bold text-sm text-foreground leading-relaxed">
+                                <FormattedText text={q.question_text} />
+                              </div>
                               {q.skill && (
                                 <Badge variant="outline" className="text-[10px] mt-1">
                                   Kỹ năng: {q.skill}
@@ -185,12 +244,16 @@ const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => 
                             isCorrect ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200' : 'bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-200'
                           }`}>
                             <span className="font-bold block text-[11px] mb-0.5">Đáp án Học viên chọn:</span>
-                            <span className="font-semibold">{q.user_answer || '(Chưa trả lời)'}</span>
+                            <div className="font-semibold">
+                              <FormattedText text={q.user_answer || '(Chưa trả lời)'} />
+                            </div>
                           </div>
 
                           <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-900 dark:text-blue-200">
                             <span className="font-bold block text-[11px] mb-0.5">Đáp án Đúng chuẩn:</span>
-                            <span className="font-semibold">{q.correct_answer || 'N/A'}</span>
+                            <div className="font-semibold">
+                              <FormattedText text={q.correct_answer || 'N/A'} />
+                            </div>
                           </div>
                         </div>
 
@@ -198,7 +261,9 @@ const StudentSubmissionAnalysisModal = ({ open, onOpenChange, data }: Props) => 
                         {q.explanation && (
                           <div className="text-xs bg-muted/40 p-2.5 rounded-xl border text-muted-foreground space-y-1">
                             <span className="font-bold text-foreground block">💡 Phân tích & Giải thích:</span>
-                            <p>{q.explanation}</p>
+                            <div>
+                              <FormattedText text={q.explanation} />
+                            </div>
                           </div>
                         )}
                       </div>
