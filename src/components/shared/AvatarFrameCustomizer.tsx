@@ -65,8 +65,9 @@ export const AvatarFrameCustomizer = () => {
       setEquippedFrame(frameCode);
       setSelectedFrame(frameCode);
 
-      window.dispatchEvent(new Event('frame_updated'));
-      window.dispatchEvent(new Event('avatar_updated'));
+      const detail = { userId: user.id, frameCode };
+      window.dispatchEvent(new CustomEvent('frame_updated', { detail }));
+      window.dispatchEvent(new CustomEvent('avatar_updated', { detail }));
 
       toast({
         title: frameCode ? '✨ Đã kích hoạt khung avatar!' : 'Đã tháo trang bị',
