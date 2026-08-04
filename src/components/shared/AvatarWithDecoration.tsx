@@ -113,8 +113,19 @@ export const AvatarWithDecoration = ({
 
     fetchUserData();
 
-    window.addEventListener('avatar_updated', fetchUserData);
-    window.addEventListener('frame_updated', fetchUserData);
+    // Cập nhật tức thì khi người dùng đổi khung ở trang khác (không cần reload)
+    const onFrameEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { userId?: string; frameCode?: string | null; avatarUrl?: string | null } | undefined;
+      if (detail?.userId && detail.userId === userId) {
+        if (propFrameCode === undefined && 'frameCode' in detail) setFrameCode(detail.frameCode ?? null);
+        if (propAvatarUrl === undefined && detail.avatarUrl) setAvatarUrl(detail.avatarUrl);
+        return;
+      }
+      fetchUserData();
+    };
+
+    window.addEventListener('avatar_updated', onFrameEvent);
+    window.addEventListener('frame_updated', onFrameEvent);
 
     const uniqueChannelId = `avatar-rt-${userId}-${Math.random().toString(36).substring(2, 9)}`;
     const channel = (supabase as any)
@@ -133,8 +144,8 @@ export const AvatarWithDecoration = ({
       .subscribe();
 
     return () => {
-      window.removeEventListener('avatar_updated', fetchUserData);
-      window.removeEventListener('frame_updated', fetchUserData);
+      window.removeEventListener('avatar_updated', onFrameEvent);
+      window.removeEventListener('frame_updated', onFrameEvent);
       (supabase as any).removeChannel(channel);
     };
   }, [userId, propFrameCode, propAvatarUrl, propName]);
