@@ -46,6 +46,7 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
   const [sending, setSending] = useState(false);
 
   // Active Actions State
+  const [nameMap, setNameMap] = useState<Record<string, string>>({});
   const [replyingTo, setReplyingTo] = useState<ClassMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ClassMessage | null>(null);
 
@@ -59,8 +60,11 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
 
       if (error) throw error;
 
-      // Fetch profiles for senders
-      const senderIds = Array.from(new Set((data || []).map(m => m.sender_id)));
+      // Fetch profiles for senders + những người đã thả reaction
+      const reactorIds = ((data || []) as any[]).flatMap((m: any) =>
+        Object.values((m.reactions || {}) as Record<string, string[]>).flat()
+      );
+      const senderIds = Array.from(new Set([...(data || []).map(m => m.sender_id), ...reactorIds])).filter(Boolean);
       const profileMap = new Map<string, any>();
       if (senderIds.length > 0) {
         const { data: profs } = await supabase
@@ -69,7 +73,12 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
           .in('id', senderIds);
 
         if (profs) {
-          profs.forEach(p => profileMap.set(p.id, p));
+          const names: Record<string, string> = {};
+          profs.forEach(p => {
+            profileMap.set(p.id, p);
+            names[p.id] = p.full_name || 'Thành viên';
+          });
+          setNameMap(names);
         }
       }
 
@@ -263,16 +272,23 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
                       {Object.entries(msg.reactions).map(([emoji, userIds]) => {
                         if (!userIds || userIds.length === 0) return null;
                         const hasReacted = userIds.includes(user?.id || '');
+                        const reactorNames = userIds.map(id =>
+                          id === user?.id ? 'Bạn' : (nameMap[id] || 'Thành viên')
+                        );
                         return (
                           <button
                             key={emoji}
+                            title={`${reactorNames.join(', ')} đã thả ${emoji}`}
                             onClick={() => handleToggleReaction(msg, emoji)}
                             className={`text-[10px] px-1.5 py-0.5 rounded-full border flex items-center gap-1 transition-all ${
                               hasReacted ? 'bg-primary/20 border-primary text-primary font-bold' : 'bg-card border-border hover:bg-muted'
                             }`}
                           >
                             <span>{emoji}</span>
-                            <span>{userIds.length}</span>
+                            <span className="max-w-[140px] truncate">
+                              {reactorNames.slice(0, 2).join(', ')}
+                              {reactorNames.length > 2 ? ` +${reactorNames.length - 2}` : ''}
+                            </span>
                           </button>
                         );
                       })}
