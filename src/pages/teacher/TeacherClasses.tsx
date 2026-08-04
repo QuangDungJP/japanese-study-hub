@@ -932,7 +932,8 @@ const TeacherClasses = () => {
       max_students: classItem.max_students || 30,
       total_sessions: classItem.total_sessions || classItem.custom_fields?.total_sessions || 24,
       start_date: classItem.start_date || '',
-      end_date: classItem.end_date || ''
+      end_date: classItem.end_date || '',
+      cover_image_url: (classItem as any).cover_image_url || ''
     });
     setIsDialogOpen(true);
   };
