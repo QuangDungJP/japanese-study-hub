@@ -161,7 +161,7 @@ const TeacherCalendarPage = () => {
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
-          <CalendarView showEventTypes={['booking', 'leave', 'reminder']} />
+          <CalendarView showEventTypes={['booking', 'exam', 'leave', 'reminder']} />
         </TabsContent>
 
         <TabsContent value="leaves" className="space-y-4">

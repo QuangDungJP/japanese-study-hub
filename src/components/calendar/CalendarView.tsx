@@ -63,6 +63,9 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
         .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions' }, fetchEvents)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, fetchEvents)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, fetchEvents)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'exams' }, fetchEvents)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_attempts' }, fetchEvents)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'student_submissions' }, fetchEvents)
         .subscribe();
 
       return () => {
@@ -112,16 +115,29 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
       // Fetch bookings for student or teacher
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('*, meetings(meet_link), profiles:user_id(full_name)')
+        .select('*, meetings(meet_link)')
         .or(`user_id.eq.${user?.id},teacher_id.eq.${user?.id}`)
         .gte('booking_date', startDate)
         .lte('booking_date', endDate);
 
-      // Fetch exams for student
+      // Fetch exams registered or directly scheduled
       const { data: examRegistrations } = await supabase
         .from('exam_registrations')
         .select('*, exams(*)')
         .eq('student_id', user?.id);
+
+      const { data: directExams } = await supabase
+        .from('exams')
+        .select('*')
+        .gte('exam_date', startDate)
+        .lte('exam_date', endDate);
+
+      // Fetch pending exam attempts / submissions for teacher grading reminders
+      const { data: pendingAttempts } = await supabase
+        .from('exam_attempts')
+        .select('id, submitted_at, status, exam:exams(title_vi, title)')
+        .in('status', ['submitted', 'pending'])
+        .limit(20);
 
       // Fetch leave requests
       const { data: leaveRequests } = await supabase
@@ -175,20 +191,60 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
         })));
       }
 
-      // Map exams to events
-      if (examRegistrations && showEventTypes.includes('exam')) {
-        examRegistrations.forEach(reg => {
-          if (reg.exams) {
-            const exam = reg.exams as any;
+      // Map exams to events (registrations + direct)
+      if (showEventTypes.includes('exam')) {
+        const addedExamIds = new Set<string>();
+
+        if (examRegistrations) {
+          examRegistrations.forEach(reg => {
+            if (reg.exams) {
+              const exam = reg.exams as any;
+              addedExamIds.add(exam.id);
+              allEvents.push({
+                id: `exam-${exam.id}`,
+                title: `📝 ${exam.title_vi || exam.title}`,
+                start_time: `${exam.exam_date}T${exam.start_time}`,
+                end_time: `${exam.exam_date}T${exam.start_time}`,
+                event_type: 'exam' as const,
+                description: exam.description_vi || exam.description,
+                meet_link: exam.meet_link,
+                reference_id: exam.id,
+              });
+            }
+          });
+        }
+
+        if (directExams) {
+          directExams.forEach(exam => {
+            if (!addedExamIds.has(exam.id)) {
+              allEvents.push({
+                id: `exam-direct-${exam.id}`,
+                title: `📝 ${exam.title_vi || exam.title}`,
+                start_time: `${exam.exam_date}T${exam.start_time || '08:00'}`,
+                end_time: `${exam.exam_date}T${exam.end_time || '10:00'}`,
+                event_type: 'exam' as const,
+                description: exam.description_vi || exam.description,
+                meet_link: exam.meet_link,
+                reference_id: exam.id,
+              });
+            }
+          });
+        }
+      }
+
+      // Map pending grading tasks (reminders)
+      if (pendingAttempts && showEventTypes.includes('reminder')) {
+        pendingAttempts.forEach(att => {
+          if (att.submitted_at) {
+            const dateStr = att.submitted_at.split('T')[0];
             allEvents.push({
-              id: `exam-${exam.id}`,
-              title: exam.title_vi || exam.title,
-              start_time: `${exam.exam_date}T${exam.start_time}`,
-              end_time: `${exam.exam_date}T${exam.start_time}`,
-              event_type: 'exam' as const,
-              description: exam.description_vi || exam.description,
-              meet_link: exam.meet_link,
-              reference_id: exam.id,
+              id: `grading-${att.id}`,
+              title: `✍️ Cần chấm bài: ${att.exam?.title_vi || att.exam?.title || 'Bài thi'}`,
+              start_time: `${dateStr}T10:00:00`,
+              end_time: `${dateStr}T11:00:00`,
+              event_type: 'reminder' as const,
+              description: 'Bài nộp của học viên chờ giáo viên chấm điểm',
+              reference_id: att.id,
             });
           }
         });

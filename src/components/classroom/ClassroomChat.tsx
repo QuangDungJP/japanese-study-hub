@@ -69,14 +69,15 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
       if (senderIds.length > 0) {
         const { data: profs } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url, equipped_frame_code')
-          .in('id', senderIds);
+          .select('id, user_id, full_name, avatar_url, equipped_frame_code')
+          .or(senderIds.map(id => `user_id.eq.${id},id.eq.${id}`).join(','));
 
         if (profs) {
           const names: Record<string, string> = {};
           profs.forEach(p => {
-            profileMap.set(p.id, p);
-            names[p.id] = p.full_name || 'Thành viên';
+            if (p.user_id) profileMap.set(p.user_id, p);
+            if (p.id) profileMap.set(p.id, p);
+            names[p.user_id || p.id] = p.full_name || 'Thành viên';
           });
           setNameMap(names);
         }

@@ -20,6 +20,7 @@ import { getSavedTheme } from '@/lib/themeUtils';
 
 const allNavigation = [
   { name: 'Bảng điều khiển', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
+  { name: 'Khóa học của tôi', href: '/learn/courses', icon: BookOpen, key: 'courses' },
   { name: 'Lớp học của tôi', href: '/learn/my-classes', icon: Building, key: 'my_classes' },
   { name: 'Thông báo', href: '/learn/notifications', icon: Bell, key: 'notifications' },
   { name: 'Phòng học Meeting', href: '/learn/zoom', icon: Video, key: 'zoom' },

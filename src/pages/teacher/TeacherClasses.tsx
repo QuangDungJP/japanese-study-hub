@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -41,14 +42,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Users, Plus, Edit, Eye, Calendar, UserPlus, Trash2, 
   BookOpen, Star, Trophy, TrendingUp, Search, X,
   GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
   FileText, CheckCircle2, MessageSquare, Play, Upload, Sparkles,
-  Mail, Send, Loader2, Save
+  Mail, Send, Loader2, Save, RotateCcw, CheckSquare, Square, Award
 } from 'lucide-react';
 import ClassroomChat from '@/components/classroom/ClassroomChat';
+import { sendGradingNotification } from '@/lib/emailService';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -249,6 +252,140 @@ const TeacherClasses = () => {
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [analysisModalData, setAnalysisModalData] = useState<StudentSubmissionAnalysisData | null>(null);
 
+  // Submissions Filtering State
+  const [submissionStudentFilter, setSubmissionStudentFilter] = useState<string>('all');
+  const [submissionAccuracyFilter, setSubmissionAccuracyFilter] = useState<string>('all');
+  const [submissionTypeFilter, setSubmissionTypeFilter] = useState<string>('all');
+  const [submissionSearchTerm, setSubmissionSearchTerm] = useState<string>('');
+
+  // Batch selection & Soft delete state (5-minute undo buffer)
+  const [selectedSubIds, setSelectedSubIds] = useState<string[]>([]);
+  const [softDeletedSubs, setSoftDeletedSubs] = useState<Record<string, { sub: Submission; expiresAt: number; timer: any }>>({});
+
+  // Student Evaluation State
+  const [evalDialogOpen, setEvalDialogOpen] = useState(false);
+  const [selectedStudentForEval, setSelectedStudentForEval] = useState<any>(null);
+  const [evalResult, setEvalResult] = useState<'pass' | 'fail'>('pass');
+  const [evalGrade, setEvalGrade] = useState<string>('Giỏi');
+  const [evalComment, setEvalComment] = useState<string>('');
+  const [evalSubmitting, setEvalSubmitting] = useState(false);
+
+  const performSoftDelete = (subsToDelete: Submission[]) => {
+    if (subsToDelete.length === 0) return;
+
+    const idsToDelete = new Set(subsToDelete.map(s => s.id));
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    // 1. Instantly remove from active classSubmissions list
+    setClassSubmissions(prev => prev.filter(s => !idsToDelete.has(s.id)));
+    setSelectedSubIds(prev => prev.filter(id => !idsToDelete.has(id)));
+
+    // 2. Set 5-minute undo timer
+    const newSoftDeleted = { ...softDeletedSubs };
+
+    subsToDelete.forEach(sub => {
+      if (newSoftDeleted[sub.id]?.timer) {
+        clearTimeout(newSoftDeleted[sub.id].timer);
+      }
+
+      const timer = setTimeout(async () => {
+        try {
+          if (sub.is_exam_attempt) {
+            await supabase.from('exam_attempts').delete().eq('id', sub.id);
+          } else {
+            await supabase.from('student_submissions').delete().eq('id', sub.id);
+          }
+        } catch (err) {
+          console.error('Permanent deletion error:', err);
+        }
+        setSoftDeletedSubs(prev => {
+          const next = { ...prev };
+          delete next[sub.id];
+          return next;
+        });
+      }, 5 * 60 * 1000);
+
+      newSoftDeleted[sub.id] = { sub, expiresAt, timer };
+    });
+
+    setSoftDeletedSubs(newSoftDeleted);
+    toast({
+      title: `🗑️ Đã chuyển ${subsToDelete.length} bài nộp vào thùng rác`,
+      description: 'Bài nộp sẽ xóa vĩnh viễn sau 5 phút. Bạn có thể khôi phục bất kỳ lúc nào.',
+    });
+  };
+
+  const handleRestoreSubmission = (subId: string) => {
+    const record = softDeletedSubs[subId];
+    if (!record) return;
+
+    clearTimeout(record.timer);
+    setClassSubmissions(prev => [record.sub, ...prev]);
+
+    setSoftDeletedSubs(prev => {
+      const next = { ...prev };
+      delete next[subId];
+      return next;
+    });
+
+    toast({ title: '🔄 Đã khôi phục bài làm thành công!' });
+  };
+
+  const handleDeleteSubmission = (sub: Submission) => {
+    const sName = sub.profile?.full_name || 'Học viên';
+    const exTitle = sub.exercise?.title_vi || 'Bài làm';
+    const confirmMsg = `Bạn có chắc chắn muốn xóa lượt nộp/lượt thi "${exTitle}" của học viên "${sName}" khỏi hệ thống không?\n\nBài làm sẽ được giữ trong thùng rác 5 phút trước khi xóa vĩnh viễn.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    performSoftDelete([sub]);
+  };
+
+  const openStudentEvalModal = (student: any) => {
+    setSelectedStudentForEval(student);
+    setEvalResult(student.evaluation_result || 'pass');
+    setEvalGrade(student.evaluation_grade || 'Giỏi');
+    setEvalComment(student.evaluation_comment || '');
+    setEvalDialogOpen(true);
+  };
+
+  const handleSaveStudentEvaluation = async () => {
+    if (!selectedStudentForEval || !selectedClass) return;
+    setEvalSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('class_students')
+        .update({
+          status: evalResult === 'pass' ? 'completed' : 'failed',
+          evaluation_result: evalResult,
+          evaluation_grade: evalGrade,
+          evaluation_comment: evalComment.trim() || null,
+          evaluated_at: new Date().toISOString(),
+          evaluated_by: user?.id || null,
+        } as any)
+        .eq('class_id', selectedClass.id)
+        .eq('student_id', selectedStudentForEval.student_id);
+
+      if (error) throw error;
+
+      const resultBadge = evalResult === 'pass' ? '🟢 PASS (Tốt nghiệp)' : '🔴 CHƯA ĐẠT';
+      await supabase.from('notifications').insert({
+        user_id: selectedStudentForEval.student_id,
+        title: `🎓 Đánh giá kết quả khóa học: ${selectedClass.name_vi}`,
+        message: `Kết quả: ${resultBadge} - Xếp loại: ${evalGrade}. Nhận xét từ GV: "${evalComment.trim() || 'Chúc mừng bạn đã hoàn thành khóa học!'}"`,
+        type: evalResult === 'pass' ? 'success' : 'warning',
+        link: '/learn/my-classes'
+      });
+
+      toast({ title: 'Thành công', description: `Đã lưu đánh giá & chứng nhận cho học viên ${selectedStudentForEval.profiles?.full_name}` });
+      setEvalDialogOpen(false);
+      fetchStudents(selectedClass.id);
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setEvalSubmitting(false);
+    }
+  };
+
   const openSubmissionDetail = (sub: Submission) => {
     if (sub.is_exam_attempt) {
       const answersObj = sub.answers || sub.raw_attempt?.answers || {};
@@ -325,7 +462,17 @@ const TeacherClasses = () => {
             .update({ score: newScore, feedback: feedback.trim() || null, status: 'graded' })
             .eq('id', sub.id);
           if (error) throw error;
-          toast({ title: 'Thành công', description: 'Đã lưu điểm & nhận xét cho học viên' });
+
+          await sendGradingNotification({
+            studentId: sub.user_id,
+            studentName: sub.profile?.full_name,
+            examTitle: sub.exercise?.title_vi || 'Bài thi trắc nghiệm',
+            score: newScore,
+            maxScore: sub.max_score || 100,
+            feedback: feedback.trim() || undefined
+          });
+
+          toast({ title: 'Thành công', description: 'Đã lưu điểm & gửi thông báo Realtime cho học viên!' });
           if (selectedClass) fetchClassSubmissions(selectedClass.id);
         }
       });
@@ -1554,8 +1701,8 @@ const TeacherClasses = () => {
       <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
         <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto flex flex-wrap gap-1">
           <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
-          <TabsTrigger value="chat" className="rounded-lg text-xs md:text-sm font-bold text-amber-600 dark:text-amber-400 gap-1.5">
-            💬 Thảo Luận Realtime
+          <TabsTrigger value="chat" className="rounded-lg text-xs md:text-sm font-semibold">
+            Thảo luận
           </TabsTrigger>
           <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học (Buổi/Tuần)</TabsTrigger>
           <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1.5">
@@ -1953,7 +2100,130 @@ const TeacherClasses = () => {
 
         {/* Tab 4: Submissions (Chấm bài) */}
         <TabsContent value="submissions" className="space-y-4">
-          <h2 className="text-lg font-bold text-foreground">Chấm điểm bài làm của học viên thuộc lớp</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-lg font-bold text-foreground">Chấm điểm bài làm của học viên thuộc lớp</h2>
+            <Badge variant="outline" className="font-semibold text-xs self-start sm:self-auto">
+              Tổng số: {classSubmissions.length} bài nộp
+            </Badge>
+          </div>
+
+          {/* Soft-Delete Undo Banner (5-minute window) */}
+          {Object.keys(softDeletedSubs).length > 0 && (
+            <Card className="bg-amber-500/10 border-2 border-amber-500/40 p-3.5 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400">
+                  <Trash2 className="w-4 h-4 text-amber-600 animate-pulse" />
+                  <span>Thùng rác tạm giữ ({Object.keys(softDeletedSubs).length} bài làm — Xóa vĩnh viễn khỏi DB sau 5 phút):</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto py-1">
+                {Object.values(softDeletedSubs).map(({ sub }) => (
+                  <Badge key={sub.id} variant="outline" className="bg-background gap-1.5 py-1 px-2.5 text-xs font-semibold shrink-0">
+                    <span>{sub.profile?.full_name}: {sub.exercise?.title_vi}</span>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-5 px-1.5 text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50"
+                      onClick={() => handleRestoreSubmission(sub.id)}
+                    >
+                      <RotateCcw className="w-3 h-3 mr-1" /> Khôi phục
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Filter & Batch Action Bar */}
+          {classSubmissions.length > 0 && (
+            <Card className="bg-muted/30 p-3.5 border space-y-3">
+              {selectedSubIds.length > 0 && (
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-2.5 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <CheckSquare className="w-4 h-4" /> Đã chọn {selectedSubIds.length} bài nộp
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="font-bold text-xs gap-1.5 h-8"
+                      onClick={() => {
+                        const subsToDelete = classSubmissions.filter(s => selectedSubIds.includes(s.id));
+                        if (window.confirm(`Bạn có chắc chắn muốn xóa ${subsToDelete.length} bài làm đã chọn không?\n\nCó thể khôi phục trong vòng 5 phút.`)) {
+                          performSoftDelete(subsToDelete);
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Xóa hàng loạt ({selectedSubIds.length})
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs h-8"
+                      onClick={() => setSelectedSubIds([])}
+                    >
+                      Bỏ chọn tất cả
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Tìm tên học viên, bài tập..."
+                    value={submissionSearchTerm}
+                    onChange={e => setSubmissionSearchTerm(e.target.value)}
+                    className="pl-9 h-9 text-xs bg-background"
+                  />
+                </div>
+
+                {/* Filter by Student */}
+                <Select value={submissionStudentFilter} onValueChange={setSubmissionStudentFilter}>
+                  <SelectTrigger className="h-9 text-xs bg-background">
+                    <SelectValue placeholder="Lọc theo Học viên" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả học viên ({students.length})</SelectItem>
+                    {students.map(s => (
+                      <SelectItem key={s.student_id} value={s.student_id}>
+                        {s.profiles?.full_name || 'Học viên'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Filter by Accuracy Rate / Score */}
+                <Select value={submissionAccuracyFilter} onValueChange={setSubmissionAccuracyFilter}>
+                  <SelectTrigger className="h-9 text-xs bg-background">
+                    <SelectValue placeholder="Lọc theo Tỉ lệ đúng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả điểm số</SelectItem>
+                    <SelectItem value="high">🎯 Tỉ lệ cao (≥80%)</SelectItem>
+                    <SelectItem value="passed">🟢 Đạt yêu cầu (≥60%)</SelectItem>
+                    <SelectItem value="failed">🔴 Chưa đạt (&lt;60%)</SelectItem>
+                    <SelectItem value="pending">⏳ Chờ chấm điểm</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Filter by Type */}
+                <Select value={submissionTypeFilter} onValueChange={setSubmissionTypeFilter}>
+                  <SelectTrigger className="h-9 text-xs bg-background">
+                    <SelectValue placeholder="Lọc theo Loại bài" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả loại bài</SelectItem>
+                    <SelectItem value="quiz">📋 Quiz / Bài thi trắc nghiệm</SelectItem>
+                    <SelectItem value="essay">✏️ Bài viết / Tự luận</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </Card>
+          )}
           
           {classSubmissions.length === 0 ? (
             <Card>
@@ -1964,62 +2234,147 @@ const TeacherClasses = () => {
             </Card>
           ) : (
             <div className="border rounded-xl overflow-hidden bg-card">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Học viên</TableHead>
-                    <TableHead>Bài tập</TableHead>
-                    <TableHead>Bài học</TableHead>
-                    <TableHead>Điểm số</TableHead>
-                    <TableHead>Thời gian nộp</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {classSubmissions.map((sub) => (
-                    <TableRow key={sub.id}>
-                      <TableCell className="font-semibold text-foreground">{sub.profile?.full_name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`mr-2 ${sub.is_exam_attempt ? 'bg-indigo-500/10 text-indigo-600 border-indigo-300 font-bold' : 'bg-muted'}`}>
-                          {sub.is_exam_attempt ? 'Quiz / Bài thi' : sub.exercise?.exercise_type === 'quiz' ? 'Trắc nghiệm' : 'Bài viết'}
-                        </Badge>
-                        {sub.exercise?.title_vi}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{sub.lesson?.title_vi}</TableCell>
-                      <TableCell>
-                        {sub.score !== null ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 font-bold text-xs">
-                            {sub.score} / {sub.max_score || 100}
-                            {sub.max_score ? ` (${Math.round((sub.score / sub.max_score) * 100)}%)` : ''}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-300 font-bold">
-                            Chờ chấm
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        <div>{formatWithJST(sub.submitted_at, true)}</div>
-                        {sub.duration_str && (
-                          <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold mt-0.5 flex items-center gap-1">
-                            ⏱️ Lượt làm: {sub.duration_str}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          size="sm" 
-                          variant={sub.status === 'pending' ? 'default' : 'outline'}
-                          className="font-bold gap-1 text-xs"
-                          onClick={() => openSubmissionDetail(sub)}
-                        >
-                          {sub.is_exam_attempt ? '📋 Chi tiết & Chấm' : sub.status === 'pending' ? 'Chấm bài' : 'Xem & sửa'}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {(() => {
+                const filtered = classSubmissions.filter((sub) => {
+                  if (submissionStudentFilter !== 'all' && sub.user_id !== submissionStudentFilter) return false;
+                  if (submissionTypeFilter === 'quiz' && !sub.is_exam_attempt && sub.exercise?.exercise_type !== 'quiz') return false;
+                  if (submissionTypeFilter === 'essay' && (sub.is_exam_attempt || sub.exercise?.exercise_type === 'quiz')) return false;
+
+                  if (sub.score === null) {
+                    if (['high', 'passed', 'failed'].includes(submissionAccuracyFilter)) return false;
+                    if (submissionAccuracyFilter === 'pending') return true;
+                  } else {
+                    if (submissionAccuracyFilter === 'pending') return false;
+                    const maxScore = sub.max_score || 100;
+                    const pct = (sub.score / maxScore) * 100;
+                    if (submissionAccuracyFilter === 'high' && pct < 80) return false;
+                    if (submissionAccuracyFilter === 'passed' && pct < 60) return false;
+                    if (submissionAccuracyFilter === 'failed' && pct >= 60) return false;
+                  }
+
+                  if (submissionSearchTerm.trim()) {
+                    const term = submissionSearchTerm.toLowerCase();
+                    const sName = sub.profile?.full_name?.toLowerCase() || '';
+                    const exTitle = sub.exercise?.title_vi?.toLowerCase() || '';
+                    if (!sName.includes(term) && !exTitle.includes(term)) return false;
+                  }
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-12 text-center text-muted-foreground text-sm space-y-2">
+                      <p>Không có bài nộp nào phù hợp với bộ lọc đã chọn.</p>
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        setSubmissionStudentFilter('all');
+                        setSubmissionAccuracyFilter('all');
+                        setSubmissionTypeFilter('all');
+                        setSubmissionSearchTerm('');
+                      }}>
+                        Xóa bộ lọc
+                      </Button>
+                    </div>
+                  );
+                }
+
+                const allFilteredSelected = filtered.every(s => selectedSubIds.includes(s.id));
+
+                return (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox 
+                            checked={filtered.length > 0 && allFilteredSelected}
+                            onCheckedChange={(chk) => {
+                              if (chk) {
+                                setSelectedSubIds(Array.from(new Set([...selectedSubIds, ...filtered.map(s => s.id)])));
+                              } else {
+                                const filteredSet = new Set(filtered.map(s => s.id));
+                                setSelectedSubIds(selectedSubIds.filter(id => !filteredSet.has(id)));
+                              }
+                            }}
+                          />
+                        </TableHead>
+                        <TableHead>Học viên</TableHead>
+                        <TableHead>Bài tập</TableHead>
+                        <TableHead>Bài học</TableHead>
+                        <TableHead>Tỉ lệ đúng / Điểm số</TableHead>
+                        <TableHead>Thời gian nộp</TableHead>
+                        <TableHead className="text-right">Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((sub) => {
+                        const isSelected = selectedSubIds.includes(sub.id);
+                        return (
+                          <TableRow key={sub.id} className={isSelected ? 'bg-primary/5' : ''}>
+                            <TableCell>
+                              <Checkbox 
+                                checked={isSelected}
+                                onCheckedChange={(chk) => {
+                                  if (chk) setSelectedSubIds([...selectedSubIds, sub.id]);
+                                  else setSelectedSubIds(selectedSubIds.filter(id => id !== sub.id));
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="font-semibold text-foreground">{sub.profile?.full_name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={`mr-2 ${sub.is_exam_attempt ? 'bg-indigo-500/10 text-indigo-600 border-indigo-300 font-bold' : 'bg-muted'}`}>
+                                {sub.is_exam_attempt ? 'Quiz / Bài thi' : sub.exercise?.exercise_type === 'quiz' ? 'Trắc nghiệm' : 'Bài viết'}
+                              </Badge>
+                              {sub.exercise?.title_vi}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{sub.lesson?.title_vi}</TableCell>
+                            <TableCell>
+                              {sub.score !== null ? (
+                                <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 font-bold text-xs">
+                                  {sub.score} / {sub.max_score || 100}
+                                  {sub.max_score ? ` (${Math.round((sub.score / sub.max_score) * 100)}%)` : ''}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-300 font-bold">
+                                  Chờ chấm
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              <div>{formatWithJST(sub.submitted_at, true)}</div>
+                              {sub.duration_str && (
+                                <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold mt-0.5 flex items-center gap-1">
+                                  ⏱️ Lượt làm: {sub.duration_str}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button 
+                                  size="sm" 
+                                  variant={sub.status === 'pending' ? 'default' : 'outline'}
+                                  className="font-bold gap-1 text-xs"
+                                  onClick={() => openSubmissionDetail(sub)}
+                                >
+                                  {sub.is_exam_attempt ? '📋 Chi tiết & Chấm' : sub.status === 'pending' ? 'Chấm bài' : 'Xem & sửa'}
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  title="Xóa lượt làm bài này"
+                                  onClick={() => handleDeleteSubmission(sub)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                );
+              })()}
             </div>
           )}
         </TabsContent>
@@ -2106,14 +2461,36 @@ const TeacherClasses = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-green-500/10 text-green-600">Đang học</Badge>
+                        {student.evaluation_result === 'pass' ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 font-bold">
+                            🟢 PASS ({student.evaluation_grade || 'Đạt'})
+                          </Badge>
+                        ) : student.evaluation_result === 'fail' ? (
+                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-300 font-bold">
+                            🔴 FAIL (Chưa đạt)
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-green-500/10 text-green-600">Đang học</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openProgressDialog(student)}>
+                        <div className="flex justify-end items-center gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs font-bold gap-1 text-indigo-600 hover:bg-indigo-50 border-indigo-200"
+                            onClick={() => openStudentEvalModal(student)}
+                            title="Đánh giá kết quả tốt nghiệp & Nhận xét"
+                          >
+                            <GraduationCap className="w-3.5 h-3.5" />
+                            Đánh giá tốt nghiệp
+                          </Button>
+
+                          <Button variant="ghost" size="icon" onClick={() => openProgressDialog(student)} title="Xem tiến độ">
                             <TrendingUp className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleRemoveStudent(student.student_id)}>
+                          
+                          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleRemoveStudent(student.student_id)} title="Xóa khỏi lớp">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -2126,6 +2503,82 @@ const TeacherClasses = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Student Course Evaluation & Graduation Dialog */}
+      <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+              <GraduationCap className="w-5 h-5" />
+              Đánh Giá Tốt Nghiệp &amp; Kết Thúc Khóa Học
+            </DialogTitle>
+            <DialogDescription>
+              Đánh giá kết quả hoàn thành khóa học cho học viên <span className="font-bold text-foreground">{selectedStudentForEval?.profiles?.full_name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">Kết quả tổng kết khóa học</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEvalResult('pass')}
+                  className={`p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                    evalResult === 'pass' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' : 'border-border opacity-70'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 🟢 PASS (Tốt nghiệp / Đạt)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEvalResult('fail')}
+                  className={`p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                    evalResult === 'fail' ? 'border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300' : 'border-border opacity-70'
+                  }`}
+                >
+                  <XCircle className="w-4 h-4 text-rose-500" /> 🔴 FAIL (Chưa đạt / Học lại)
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">Xếp loại học tập</Label>
+              <Select value={evalGrade} onValueChange={setEvalGrade}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Chọn xếp loại" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Xuất sắc">⭐ Xuất sắc (9.0 - 10)</SelectItem>
+                  <SelectItem value="Giỏi">🌟 Giỏi (8.0 - 8.9)</SelectItem>
+                  <SelectItem value="Khá">👍 Khá (6.5 - 7.9)</SelectItem>
+                  <SelectItem value="Đạt">👌 Đạt (5.0 - 6.4)</SelectItem>
+                  <SelectItem value="Chưa đạt">⚠️ Chưa đạt (&lt;5.0)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">Nhận xét &amp; Lời khuyên định hướng của giáo viên</Label>
+              <Textarea
+                rows={4}
+                value={evalComment}
+                onChange={e => setEvalComment(e.target.value)}
+                placeholder="Nhập nhận xét về thái độ học tập, ưu/nhược điểm và định hướng ôn tập JLPT tiếp theo cho học viên..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEvalDialogOpen(false)}>Hủy</Button>
+            <Button onClick={handleSaveStudentEvaluation} disabled={evalSubmitting} className="font-bold gap-2">
+              {evalSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
+              Lưu Đánh Giá &amp; Cấp Chứng Nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
 

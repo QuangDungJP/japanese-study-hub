@@ -20,6 +20,7 @@ import { formatWithJST } from '@/lib/dateUtils';
 import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
 import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
 import FormattedText from '@/components/shared/FormattedText';
+import { sendGradingNotification } from '@/lib/emailService';
 
 export interface Submission {
   id: string;
@@ -457,7 +458,17 @@ const TeacherSubmissions = () => {
         .eq('id', selectedSubmission.id);
 
       if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã lưu kết quả chấm bài tập!' });
+
+      await sendGradingNotification({
+        studentId: selectedSubmission.user_id,
+        studentName: selectedSubmission.profile?.full_name,
+        examTitle: selectedSubmission.exercise?.title_vi || selectedSubmission.exercise?.title || 'Bài tập',
+        score: numScore,
+        maxScore: selectedSubmission.max_score || 100,
+        feedback: feedback.trim() || undefined
+      });
+
+      toast({ title: 'Thành công', description: 'Đã lưu kết quả & gửi thông báo Realtime cho học viên!' });
       setGradingDialogOpen(false);
       fetchSubmissions();
     } catch (err: any) {
@@ -485,7 +496,17 @@ const TeacherSubmissions = () => {
         .eq('id', selectedExamAttempt.id);
 
       if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã cập nhật điểm số & nhận xét cho học viên!' });
+
+      await sendGradingNotification({
+        studentId: selectedExamAttempt.student_id,
+        studentName: selectedExamAttempt.profile?.full_name,
+        examTitle: selectedExamAttempt.exam?.title_vi || selectedExamAttempt.exam?.title || 'Bài thi trắc nghiệm',
+        score: numScore,
+        maxScore: selectedExamAttempt.total || 100,
+        feedback: examFeedback.trim() || undefined
+      });
+
+      toast({ title: 'Thành công', description: 'Đã cập nhật điểm số & gửi thông báo Realtime cho học viên!' });
       setExamGradingDialogOpen(false);
       fetchExamAttempts();
     } catch (err: any) {
