@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { awardUserXpAndStreak } from '@/lib/xpStreakService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -208,8 +209,15 @@ const AttendanceManager = () => {
                 : null
             });
         }
+
+        // Auto-award XP & update streak for attending students
+        if (record.status === 'present') {
+          await awardUserXpAndStreak(record.student_id, 20, 'attendance_present');
+        } else if (record.status === 'late') {
+          await awardUserXpAndStreak(record.student_id, 10, 'attendance_late');
+        }
       }
-      toast.success('Đã lưu điểm danh thành công!');
+      toast.success('Đã lưu điểm danh & tự động cộng XP, Streak cho học viên!');
       fetchStudentsAndAttendance();
     } catch (error) {
       console.error('Error saving attendance:', error);

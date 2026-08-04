@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Language, UserProgress } from '@/types/learning';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { awardUserXpAndStreak, getYesterdayDateString } from '@/lib/xpStreakService';
 
 interface LearningContextType {
   currentLanguage: Language;
@@ -43,6 +44,7 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         const todayStr = new Date().toISOString().slice(0, 10);
+        const yesterdayStr = getYesterdayDateString();
 
         // ── Chạy song song tất cả queries ban đầu ──────────────────────────────────
         const [
@@ -84,9 +86,18 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
         // ── Daily Check-in (+10 XP) ────────────────────────────────────────────────
         let updatedXp = progressData?.total_xp || 0;
         let updatedStreak = progressData?.streak || 0;
+        const lastDate = progressData?.last_activity_date;
 
         if (!existingCheckin) {
-          const newStreak = updatedStreak + 1;
+          let newStreak = updatedStreak;
+          if (lastDate === todayStr) {
+            newStreak = Math.max(1, updatedStreak);
+          } else if (lastDate === yesterdayStr) {
+            newStreak = updatedStreak + 1;
+          } else {
+            newStreak = 1; // Resets to 1 if missed days
+          }
+
           const checkinXp = 10;
           updatedXp += checkinXp;
           updatedStreak = newStreak;
@@ -107,6 +118,12 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
               updated_at: new Date().toISOString(),
             }),
           ]);
+
+          setUserProgress(prev => ({
+            ...prev,
+            totalXp: updatedXp,
+            streak: updatedStreak,
+          }));
         }
 
         // ── Auto Badge Unlocker (chạy song song tất cả badge inserts) ─────────────
@@ -151,22 +168,25 @@ export const LearningProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const addXp = async (amount: number) => {
-    const newProgress = {
-      ...userProgress,
-      totalXp: userProgress.totalXp + amount,
-      dailyProgress: Math.min(userProgress.dailyProgress + amount, userProgress.dailyGoal),
-    };
-    setUserProgress(newProgress);
+    if (!user) {
+      setUserProgress(prev => ({
+        ...prev,
+        totalXp: prev.totalXp + amount,
+        dailyProgress: Math.min(prev.dailyProgress + amount, prev.dailyGoal),
+      }));
+      return;
+    }
 
-    if (user) {
-      await supabase
-        .from('user_progress')
-        .update({
-          total_xp: newProgress.totalXp,
-          daily_progress: newProgress.dailyProgress,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
+    try {
+      const res = await awardUserXpAndStreak(user.id, amount, 'learning_activity');
+      setUserProgress(prev => ({
+        ...prev,
+        totalXp: res.totalXp,
+        streak: res.streak,
+        dailyProgress: res.dailyProgress !== undefined ? res.dailyProgress : prev.dailyProgress + amount,
+      }));
+    } catch (e) {
+      console.error('Error adding XP:', e);
     }
   };
 

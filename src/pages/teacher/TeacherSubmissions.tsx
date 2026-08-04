@@ -13,10 +13,12 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   CheckCircle, Clock, FileText, Filter, Search, Loader2, Sparkles, 
   BookOpen, GraduationCap, RefreshCw, Paperclip, Video, MessageSquare, ExternalLink,
-  CheckCircle2, XCircle, HelpCircle, Flame, Calendar, Award, Check, AlertCircle, ArrowUpRight
+  CheckCircle2, XCircle, HelpCircle, Flame, Calendar, Award, Check, AlertCircle, ArrowUpRight,
+  BarChart3
 } from 'lucide-react';
 import { formatWithJST } from '@/lib/dateUtils';
 import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
+import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
 
 export interface Submission {
   id: string;
@@ -149,9 +151,87 @@ const TeacherSubmissions = () => {
   const [examFeedback, setExamFeedback] = useState('');
   const [examGrading, setExamGrading] = useState(false);
 
+  // Analysis Modal State
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
+  const [analysisModalData, setAnalysisModalData] = useState<StudentSubmissionAnalysisData | null>(null);
+
   // Filter & Search
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  const openSubmissionAnalysis = (sub: Submission) => {
+    const isGraded = sub.status === 'graded';
+    const scoreVal = sub.score || 0;
+    
+    setAnalysisModalData({
+      student_name: sub.profile?.full_name || 'Học viên',
+      avatar_url: sub.profile?.avatar_url || undefined,
+      title: sub.exercise?.title_vi || sub.exercise?.title || 'Bài tập bài học',
+      submitted_at: sub.submitted_at,
+      attempt_number: sub.attempt_number || 1,
+      total_attempts: sub.total_attempts_count || 1,
+      score: scoreVal,
+      max_score: 100,
+      passing_score: 60,
+      correct_count: isGraded ? (scoreVal >= 60 ? 1 : 0) : 0,
+      incorrect_count: isGraded ? (scoreVal < 60 ? 1 : 0) : 0,
+      feedback: sub.feedback || undefined,
+      questions: [
+        {
+          question_text: sub.exercise?.instructions_vi || sub.exercise?.instructions || 'Nội dung trả lời bài tập',
+          user_answer: sub.content || sub.file_url || 'Không có nội dung',
+          correct_answer: sub.exercise?.correct_answers ? JSON.stringify(sub.exercise.correct_answers) : 'Đã nộp bài tự luận/bài viết',
+          is_correct: scoreVal >= 60,
+          explanation: sub.feedback || 'Bài làm đã được giáo viên duyệt và đánh giá.',
+        }
+      ]
+    });
+    setAnalysisModalOpen(true);
+  };
+
+  const openExamAttemptAnalysis = (att: ExamAttemptItem) => {
+    const answersObj = att.answers || {};
+    const questions = att.exam?.questions || [];
+    
+    let correct = 0;
+    let incorrect = 0;
+
+    const questionBreakdown = questions.map((q: any) => {
+      const uAns = answersObj[q.id] || answersObj[q.question_text] || 'Chưa làm';
+      const cAns = q.correct_answer || q.answer || 'N/A';
+      const isRight = uAns.toString().trim().toLowerCase() === cAns.toString().trim().toLowerCase();
+
+      if (isRight) correct++;
+      else incorrect++;
+
+      return {
+        id: q.id,
+        question_text: q.question_text || q.title || 'Câu hỏi kiểm tra',
+        user_answer: uAns.toString(),
+        correct_answer: cAns.toString(),
+        is_correct: isRight,
+        explanation: q.explanation || 'Phân tích đáp án kiểm tra',
+        skill: q.skill || att.exam?.exam_type || 'JLPT Test',
+      };
+    });
+
+    setAnalysisModalData({
+      student_name: att.profile?.full_name || 'Học viên',
+      avatar_url: att.profile?.avatar_url || undefined,
+      title: att.exam?.title_vi || att.exam?.title || 'Bài kiểm tra',
+      submitted_at: att.submitted_at,
+      attempt_number: att.attempt_number || 1,
+      total_attempts: att.total_attempts_count || 1,
+      score: att.score || 0,
+      max_score: att.exam?.max_score || 100,
+      passing_score: att.exam?.passing_score || 60,
+      correct_count: correct,
+      incorrect_count: incorrect,
+      feedback: att.feedback || undefined,
+      questions: questionBreakdown,
+    });
+    setAnalysisModalOpen(true);
+  };
 
   useEffect(() => {
     fetchAllData();
@@ -632,7 +712,16 @@ const TeacherSubmissions = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(sub.status)}</TableCell>
                     <TableCell>{getScoreBadge(sub.score)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openSubmissionAnalysis(sub)}
+                        className="rounded-xl font-bold text-xs gap-1 text-primary hover:bg-primary/10"
+                        title="Xem phân tích số câu đúng/sai & lần làm bài"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5" /> Phân tích
+                      </Button>
                       <Button
                         size="sm"
                         variant={sub.status === 'graded' ? 'outline' : 'default'}
@@ -725,7 +814,16 @@ const TeacherSubmissions = () => {
                         </div>
                       </TableCell>
                       <TableCell>{getScoreBadge(att.score, att.total || 100)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openExamAttemptAnalysis(att)}
+                          className="rounded-xl font-bold text-xs gap-1 text-purple-600 border-purple-300 hover:bg-purple-50"
+                          title="Xem chi tiết từng câu hỏi đúng/sai và lời giải"
+                        >
+                          <BarChart3 className="w-3.5 h-3.5" /> Phân tích
+                        </Button>
                         <Button
                           size="sm"
                           variant={att.status === 'graded' ? 'outline' : 'default'}
@@ -934,6 +1032,13 @@ const TeacherSubmissions = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Student Submission & Exam Analysis Breakdown Modal */}
+      <StudentSubmissionAnalysisModal
+        open={analysisModalOpen}
+        onOpenChange={setAnalysisModalOpen}
+        data={analysisModalData}
+      />
     </div>
   );
 };

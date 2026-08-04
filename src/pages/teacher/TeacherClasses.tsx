@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { adjustUserXpAndStreak } from '@/lib/xpStreakService';
+import { 
+  getClassEmailSettings, 
+  saveClassEmailSettings, 
+  sendClassScheduleEmails, 
+  generateClassScheduleHtmlEmail,
+  ClassEmailSettings 
+} from '@/lib/classEmailService';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -407,8 +416,66 @@ const TeacherClasses = () => {
 
       // 5. Fetch submissions
       fetchClassSubmissions(clsId);
+
+      // 6. Fetch email settings
+      fetchEmailSettings(clsId);
     } catch (err) {
       console.error('Error fetching classroom details:', err);
+    }
+  };
+
+  // Class Email Notification Handlers
+  const [emailSettings, setEmailSettings] = useState<ClassEmailSettings | null>(null);
+  const [savingEmailSettings, setSavingEmailSettings] = useState(false);
+  const [sendingScheduleEmail, setSendingScheduleEmail] = useState(false);
+  const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
+
+  const fetchEmailSettings = async (clsId: string) => {
+    const settings = await getClassEmailSettings(clsId);
+    setEmailSettings(settings);
+  };
+
+  const handleSaveEmailSettings = async () => {
+    if (!emailSettings || !selectedClass) return;
+    setSavingEmailSettings(true);
+    const success = await saveClassEmailSettings(emailSettings);
+    setSavingEmailSettings(false);
+    if (success) {
+      toast({ title: 'Đã lưu cấu hình Email thông báo!' });
+    } else {
+      toast({ title: 'Lỗi', description: 'Không thể lưu cấu hình email', variant: 'destructive' });
+    }
+  };
+
+  const handleSendScheduleEmail = async () => {
+    if (!selectedClass || !emailSettings) return;
+    const latestSession = classSessions[0] || {
+      session_date: new Date().toISOString().slice(0, 10),
+      start_time: '18:00',
+      meet_link: selectedClass.google_meet_url || 'https://meet.google.com'
+    };
+
+    setSendingScheduleEmail(true);
+    try {
+      const res = await sendClassScheduleEmails({
+        classId: selectedClass.id,
+        className: selectedClass.name_vi,
+        sessionDate: latestSession.session_date,
+        startTime: latestSession.start_time,
+        meetLink: latestSession.meet_link || selectedClass.google_meet_url,
+        teacherName: user?.user_metadata?.full_name || 'Giáo viên',
+        customSubject: emailSettings.email_subject_template,
+        customBody: emailSettings.email_body_template,
+      });
+
+      toast({
+        title: '✅ Đã gửi thông báo lịch học',
+        description: `Thành công gửi cho ${res.successCount} thành viên trong lớp.`,
+      });
+    } catch (e: any) {
+      toast({ title: 'Lỗi gửi mail', description: e.message, variant: 'destructive' });
+    } finally {
+      setSendingScheduleEmail(false);
     }
   };
 
@@ -1286,9 +1353,6 @@ const TeacherClasses = () => {
           <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedClass)}>
             <Edit className="w-4 h-4 mr-1.5" /> Sửa lớp này
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1.5" /> Tạo lớp mới
-          </Button>
         </div>
       </div>
 
@@ -1334,6 +1398,9 @@ const TeacherClasses = () => {
           </TabsTrigger>
           <TabsTrigger value="attendance" className="rounded-lg text-xs md:text-sm font-semibold">Điểm danh học viên</TabsTrigger>
           <TabsTrigger value="timesheet" className="rounded-lg text-xs md:text-sm font-semibold">Chấm công & Thù lao</TabsTrigger>
+          <TabsTrigger value="email-notifications" className="rounded-lg text-xs md:text-sm font-bold text-emerald-600 dark:text-emerald-400 gap-1.5">
+            ✉️ Gửi Mail Lịch Học
+          </TabsTrigger>
           <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Bài kiểm tra</TabsTrigger>
           <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Chấm bài</TabsTrigger>
           <TabsTrigger value="students" className="rounded-lg text-xs md:text-sm font-semibold">Học viên</TabsTrigger>
@@ -1597,6 +1664,116 @@ const TeacherClasses = () => {
         {/* Tab 3: Attendance (Điểm danh học viên) */}
         <TabsContent value="attendance" className="space-y-4">
           <AttendanceManager />
+        </TabsContent>
+
+        {/* Tab: Email Notifications (Gửi Mail Lịch Học) */}
+        <TabsContent value="email-notifications" className="space-y-6">
+          <Card className="rounded-2xl border shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent border-b">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg font-extrabold flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-emerald-600" />
+                    Cấu hình & Gửi Email Thông Báo Lịch Học Định Kỳ
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Gửi email nhắc lịch học siêu đẹp về hộp thư cho giáo viên và toàn bộ {classStudents.length} học viên trong lớp {selectedClass.name_vi}.
+                  </CardDescription>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setEmailPreviewOpen(true)}
+                    className="gap-1.5 font-bold"
+                  >
+                    <Eye className="w-4 h-4 text-blue-500" /> Xem Trước Mail Live
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={handleSendScheduleEmail}
+                    disabled={sendingScheduleEmail}
+                    className="gap-1.5 font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
+                  >
+                    {sendingScheduleEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    Gửi Mail Thông Báo Ngay
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {emailSettings && (
+                <div className="space-y-6">
+                  {/* Toggles */}
+                  <div className="grid md:grid-cols-2 gap-4 p-4 rounded-2xl bg-muted/30 border">
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-card border">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-bold flex items-center gap-2">
+                          <Users className="w-4 h-4 text-emerald-600" /> Gửi email về cho Học viên
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Tự động gửi thông báo lịch học tới tất cả học viên trong lớp</p>
+                      </div>
+                      <Switch 
+                        checked={emailSettings.enable_student_emails}
+                        onCheckedChange={val => setEmailSettings({ ...emailSettings, enable_student_emails: val })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-card border">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-bold flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4 text-purple-600" /> Gửi email về cho Giáo viên
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Tự động gửi bản sao thông báo tới email giáo viên phụ trách</p>
+                      </div>
+                      <Switch 
+                        checked={emailSettings.enable_teacher_emails}
+                        onCheckedChange={val => setEmailSettings({ ...emailSettings, enable_teacher_emails: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Template Subject & Body */}
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tiêu đề Mail (*)</Label>
+                      <Input
+                        value={emailSettings.email_subject_template}
+                        onChange={e => setEmailSettings({ ...emailSettings, email_subject_template: e.target.value })}
+                        className="font-bold text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Mẫu Nội dung Mail (*)</Label>
+                        <span className="text-[11px] text-muted-foreground font-mono">Các biến: {"{student_name}"}, {"{class_name}"}, {"{session_date}"}, {"{start_time}"}, {"{meet_link}"}, {"{teacher_name}"}</span>
+                      </div>
+                      <Textarea
+                        rows={7}
+                        value={emailSettings.email_body_template}
+                        onChange={e => setEmailSettings({ ...emailSettings, email_body_template: e.target.value })}
+                        className="font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button 
+                      onClick={handleSaveEmailSettings}
+                      disabled={savingEmailSettings}
+                      className="font-bold gap-1.5"
+                    >
+                      {savingEmailSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      Lưu Cấu Hình Mẫu Mail
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Tab 4: Timesheet (Chấm công & Thù lao) */}
@@ -2066,22 +2243,62 @@ const TeacherClasses = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Star className="w-5 h-5 text-yellow-500" />
-                      <span className="text-sm text-muted-foreground">Tổng XP</span>
+                  <CardContent className="pt-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-5 h-5 text-yellow-500" />
+                        <span className="text-sm text-muted-foreground">Tổng XP</span>
+                      </div>
                     </div>
                     <p className="text-2xl font-bold">{selectedStudent.progress?.total_xp || 0}</p>
+                    <div className="flex items-center gap-1 pt-1">
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-emerald-600 font-bold" onClick={async () => {
+                        const res = await adjustUserXpAndStreak({ userId: selectedStudent.student_id, xpDelta: 50 });
+                        setSelectedStudent(prev => prev ? {
+                          ...prev,
+                          progress: prev.progress ? { ...prev.progress, total_xp: res.totalXp, streak: res.streak } : null
+                        } : null);
+                        toast({ title: 'Đã cộng +50 XP' });
+                      }}>+50 XP</Button>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-rose-600 font-bold" onClick={async () => {
+                        const res = await adjustUserXpAndStreak({ userId: selectedStudent.student_id, xpDelta: -50 });
+                        setSelectedStudent(prev => prev ? {
+                          ...prev,
+                          progress: prev.progress ? { ...prev.progress, total_xp: res.totalXp, streak: res.streak } : null
+                        } : null);
+                        toast({ title: 'Đã trừ -50 XP' });
+                      }}>-50 XP</Button>
+                    </div>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Flame className="w-5 h-5 text-orange-500" />
-                      <span className="text-sm text-muted-foreground">Streak</span>
+                  <CardContent className="pt-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-orange-500" />
+                        <span className="text-sm text-muted-foreground">Streak</span>
+                      </div>
                     </div>
                     <p className="text-2xl font-bold">{selectedStudent.progress?.streak || 0} ngày</p>
+                    <div className="flex items-center gap-1 pt-1">
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-orange-600 font-bold" onClick={async () => {
+                        const res = await adjustUserXpAndStreak({ userId: selectedStudent.student_id, streakDelta: 1 });
+                        setSelectedStudent(prev => prev ? {
+                          ...prev,
+                          progress: prev.progress ? { ...prev.progress, total_xp: res.totalXp, streak: res.streak } : null
+                        } : null);
+                        toast({ title: 'Đã cộng +1 ngày Streak' });
+                      }}>+1 Streak</Button>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-rose-600 font-bold" onClick={async () => {
+                        const res = await adjustUserXpAndStreak({ userId: selectedStudent.student_id, streakDelta: -1 });
+                        setSelectedStudent(prev => prev ? {
+                          ...prev,
+                          progress: prev.progress ? { ...prev.progress, total_xp: res.totalXp, streak: res.streak } : null
+                        } : null);
+                        toast({ title: 'Đã trừ -1 ngày Streak' });
+                      }}>-1 Streak</Button>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -2182,6 +2399,42 @@ const TeacherClasses = () => {
           isOpen={!!playingVideoRecord}
           onClose={() => setPlayingVideoRecord(null)}
         />
+      )}
+
+      {/* Live Email Schedule Preview Dialog */}
+      {selectedClass && emailSettings && (
+        <Dialog open={emailPreviewOpen} onOpenChange={setEmailPreviewOpen}>
+          <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto p-6 bg-slate-950 text-white border-slate-800">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-emerald-400">
+                <Eye className="w-5 h-5" /> Live Preview Email Thông Báo Lịch Học
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="py-4 space-y-4">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono">
+                <span className="text-emerald-400 font-bold">Tiêu đề email:</span> {emailSettings.email_subject_template.replace('{class_name}', selectedClass.name_vi)}
+              </div>
+
+              {/* Render HTML preview */}
+              <div className="border rounded-2xl overflow-hidden bg-white text-black p-2 max-h-[500px] overflow-y-auto">
+                <div 
+                  dangerouslySetInnerHTML={{
+                    __html: generateClassScheduleHtmlEmail({
+                      recipientName: 'Nguyễn Văn A (Học viên)',
+                      className: selectedClass.name_vi,
+                      sessionDate: classSessions[0]?.session_date || new Date().toISOString().slice(0, 10),
+                      startTime: classSessions[0]?.start_time || '18:00',
+                      meetLink: selectedClass.google_meet_url || 'https://meet.google.com',
+                      teacherName: user?.user_metadata?.full_name || 'Giáo viên phụ trách',
+                      customBody: emailSettings.email_body_template,
+                    })
+                  }}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {classFormDialog}

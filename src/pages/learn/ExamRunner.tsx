@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { awardUserXpAndStreak } from "@/lib/xpStreakService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -565,16 +566,7 @@ const ExamRunner = () => {
     if (user) {
       const xpBonus = (exam as any).xp_reward || 50;
       try {
-        const { data: prog } = await supabase
-          .from("user_progress")
-          .select("total_xp")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        const currentXp = prog?.total_xp || 0;
-        await supabase
-          .from("user_progress")
-          .upsert({ user_id: user.id, total_xp: currentXp + xpBonus, updated_at: new Date().toISOString() });
+        await awardUserXpAndStreak(user.id, xpBonus, 'exam_completed');
       } catch (err) {
         console.warn("Failed to award exam XP:", err);
       }

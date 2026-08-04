@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { awardUserXpAndStreak } from '@/lib/xpStreakService';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Link2, Trash2, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -77,7 +78,15 @@ const SubmitDialog = ({ open, onOpenChange, assignment, existing, onSaved }: Pro
       : await sb.from('class_assignment_submissions').insert(payload);
     setSaving(false);
     if (error) return toast({ title: 'Lỗi nộp bài', description: error.message, variant: 'destructive' });
-    toast({ title: '✅ Đã nộp bài' });
+    
+    // Auto-award +30 XP & streak update for homework submission
+    try {
+      await awardUserXpAndStreak(user.id, 30, 'assignment_submission');
+    } catch (e) {
+      console.error('Failed to award homework XP:', e);
+    }
+
+    toast({ title: '✅ Đã nộp bài (+30 XP 🔥)' });
     onSaved();
     onOpenChange(false);
   };

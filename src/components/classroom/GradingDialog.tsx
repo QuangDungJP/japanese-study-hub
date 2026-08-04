@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, Send, FileText, Link2 } from 'lucide-react';
+import { awardUserXpAndStreak } from '@/lib/xpStreakService';
 import InlineViewer from './InlineViewer';
 
 interface Props {
@@ -78,7 +79,17 @@ const GradingDialog = ({ open, onOpenChange, assignment, submission, studentName
     const { error } = await (supabase as any).from('class_assignment_submissions').update(payload).eq('id', submission.id);
     setSaving(false);
     if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
-    toast({ title: returnToStudent ? '✅ Đã trả bài cho học viên' : 'Đã lưu điểm' });
+
+    if (returnToStudent && submission?.student_id) {
+      try {
+        const bonusXp = Math.max(10, Math.round(total * 5));
+        await awardUserXpAndStreak(submission.student_id, bonusXp, 'assignment_graded');
+      } catch (e) {
+        console.error('Failed to award graded XP:', e);
+      }
+    }
+
+    toast({ title: returnToStudent ? '✅ Đã trả bài & cộng XP thưởng cho học viên' : 'Đã lưu điểm' });
     onSaved();
     if (returnToStudent) onOpenChange(false);
   };
