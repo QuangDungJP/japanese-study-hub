@@ -78,6 +78,11 @@ export const AvatarWithDecoration = ({
   }, [frameCode]);
 
   const sizeCfg = sizeClasses[size] || sizeClasses.md;
+  // Kích thước avatar thực tế (px) để scale khung theo tỉ lệ, tránh khung tràn ra ngoài
+  const pxMap: Record<string, number> = { sm: 32, md: 40, lg: 64, xl: 96, '2xl': 112, '3xl': 128 };
+  const avatarPx = pxMap[size] ?? 40;
+  const FRAME_BASE = 96; // khung được thiết kế cho avatar 96px
+  const frameScale = avatarPx / FRAME_BASE;
 
   useEffect(() => {
     if (propFrameCode !== undefined) setFrameCode(propFrameCode);
@@ -142,8 +147,7 @@ export const AvatarWithDecoration = ({
 
     // Admin-designed custom frame (from store_items)
     if (customFrame) {
-      const scaleMap: Record<string, number> = { sm: 0.5, md: 0.62, lg: 0.85, xl: 1, '2xl': 1.1, '3xl': 1.2 };
-      return <CustomAvatarFrame config={customFrame.config} scale={scaleMap[size] ?? 1} />;
+      return <CustomAvatarFrame config={customFrame.config} scale={1} />;
     }
 
     // Direct Image URL Frame
@@ -303,7 +307,19 @@ export const AvatarWithDecoration = ({
       onClick={onClick}
       className={`relative inline-flex items-center justify-center shrink-0 ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''} ${className}`}
     >
-      {renderFrameEffect()}
+      {frameCode && (
+        <div
+          className="absolute left-1/2 top-1/2 z-10 pointer-events-none"
+          style={{
+            width: FRAME_BASE,
+            height: FRAME_BASE,
+            transform: `translate(-50%, -50%) scale(${frameScale})`,
+            transformOrigin: 'center',
+          }}
+        >
+          {renderFrameEffect()}
+        </div>
+      )}
 
       <div className={`relative rounded-full overflow-hidden bg-muted border-2 border-background shadow-md flex items-center justify-center ${sizeCfg.container}`}>
         {avatarUrl ? (
