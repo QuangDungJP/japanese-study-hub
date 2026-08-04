@@ -735,9 +735,13 @@ const TeacherClasses = () => {
 
         const newClass = createdClasses?.[0];
         if (newClass) {
-          const fullNewClass = { ...newClass, student_count: 0 };
-          setSelectedClass(fullNewClass as any);
-          fetchClassroomDetails(newClass.id);
+          const fullNewClass = { ...newClass, student_count: 0 } as any;
+          // Show it instantly in the list without waiting for the refetch
+          setClasses(prev => [fullNewClass, ...prev]);
+          if (selectedClass) {
+            setSelectedClass(fullNewClass);
+            fetchClassroomDetails(newClass.id);
+          }
         }
       }
 
