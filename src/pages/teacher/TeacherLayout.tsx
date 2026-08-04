@@ -32,7 +32,7 @@ const navSections = [
   {
     label: 'Lịch trình & Giảng dạy',
     items: [
-      { name: 'Phòng học Meeting', href: '/teacher/zoom', icon: Video },
+      { name: 'Phòng học Meeting', href: '/teacher/meeting', icon: Video },
       { name: 'Lịch giảng dạy & Thi', href: '/teacher/calendar', icon: Calendar },
       { name: 'Điểm danh học viên', href: '/teacher/attendance', icon: ClipboardCheck },
     ],

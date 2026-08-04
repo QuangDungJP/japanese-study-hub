@@ -14,6 +14,7 @@ import { useTeacherProfiles } from "@/hooks/useTeachers";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useHomepageSections } from "@/hooks/useHomepageSections";
 import { useBlogHomeSettings } from "@/hooks/useBlogHomeSettings";
+import HeroSection from "@/components/HeroSection";
 import TestimonialsSection from "@/components/about/TestimonialsSection";
 
 const Index = () => {
@@ -31,11 +32,15 @@ const Index = () => {
   const featuredTeachers = (teachers || []).filter((t) => t.is_featured).slice(0, 4);
   const teacherList = (featuredTeachers.length ? featuredTeachers : teachers || []).map((t) => ({
     id: t.id,
-    name: t.display_name || t.profile?.full_name || "Giảng viên",
+    name: t.display_name || tProfileName(t),
     headline: t.headline || "Giảng viên",
     avatar_url: t.image_url || t.profile?.avatar_url || "",
     rating: t.rating || 0,
   }));
+
+  function tProfileName(t: any) {
+    return t.profile?.full_name || "Giảng viên";
+  }
 
   const [scrollY, setScrollY] = useState(0);
 
@@ -49,126 +54,7 @@ const Index = () => {
     if (!sectionOrder) return ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
     return sectionOrder.filter(s => s.visible).map(s => s.id);
   }, [sectionOrder]);
-
-  const heroSection = (
-      <section key="hero" className="relative min-h-[90vh] pt-20 overflow-hidden">
-        {/* Parallax animated background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5">
-          <div
-            className="absolute top-20 left-10 w-72 h-72 bg-japanese/8 rounded-full blur-3xl animate-float"
-            style={{ transform: `translateY(${scrollY * 0.15}px)` }}
-          />
-          <div
-            className="absolute bottom-20 right-10 w-96 h-96 bg-primary/8 rounded-full blur-3xl animate-float animation-delay-200"
-            style={{ transform: `translateY(${scrollY * -0.1}px)` }}
-          />
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent/3 rounded-full blur-3xl"
-            style={{ transform: `translate(-50%, -50%) scale(${1 + scrollY * 0.0003})` }}
-          />
-          <div className="absolute inset-0 opacity-[0.015]" style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
-            backgroundSize: '40px 40px',
-            transform: `translateY(${scrollY * 0.05}px)`,
-          }} />
-        </div>
-
-        <div
-          className="container mx-auto px-4 relative z-10"
-          style={{ transform: `translateY(${scrollY * 0.08}px)`, opacity: Math.max(0, 1 - scrollY * 0.0015) }}
-        >
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-16 py-20">
-            <div className="flex-1 text-center lg:text-left max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-japanese/10 text-japanese mb-8 animate-slide-up border border-japanese/20">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-semibold">Nền tảng học Tiếng Nhật #1 cho người Việt</span>
-              </div>
-              
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-foreground leading-[1.1] mb-8 animate-slide-up animation-delay-100">
-                Chinh phục{" "}
-                <span className="relative">
-                  <span className="text-japanese">Tiếng Nhật</span>
-                  <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
-                    <path d="M2 10C50 4 100 2 150 6C200 10 250 4 298 8" stroke="hsl(0, 76%, 50%)" strokeWidth="3" strokeLinecap="round" />
-                  </svg>
-                </span>
-                {" "}cùng TNQDO
-              </h1>
-              
-              <p className="text-xl text-muted-foreground mb-10 animate-slide-up animation-delay-200 leading-relaxed">
-                Phương pháp học toàn diện 4 kỹ năng: Đọc - Nói - Viết - Nghe.
-                <br className="hidden md:block" />
-                Từ N5 đến N1, luyện thi JLPT với giáo viên bản ngữ qua Meeting.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up animation-delay-300">
-                <Button size="lg" className="h-14 px-8 text-base rounded-2xl shadow-lg hover:shadow-xl transition-all" asChild>
-                  <Link to="/auth">
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Học miễn phí ngay
-                  </Link>
-                </Button>
-                <Button variant="outline" size="lg" className="h-14 px-8 text-base rounded-2xl" asChild>
-                  <Link to="/gioi-thieu">
-                    <Play className="w-5 h-5 mr-2" />
-                    Tìm hiểu thêm
-                  </Link>
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap justify-center lg:justify-start gap-10 mt-14 animate-slide-up animation-delay-400">
-                {[
-                  { value: statsContent?.students || "50K+", label: "Học viên" },
-                  { value: statsContent?.teachers || "200+", label: "Giáo viên" },
-                  { value: statsContent?.lessons || "1000+", label: "Bài học" },
-                ].map(stat => (
-                  <div key={stat.label} className="text-center">
-                    <div className="text-4xl font-extrabold text-foreground">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex-1 relative animate-scale-in animation-delay-200" style={{ transform: `translateY(${scrollY * -0.05}px)` }}>
-              <div className="relative w-full max-w-lg mx-auto">
-                <div className="bg-card rounded-3xl p-10 shadow-2xl border border-border/50 backdrop-blur-sm">
-                  <div className="w-20 h-20 rounded-2xl bg-japanese/10 flex items-center justify-center mb-8">
-                    <span className="text-5xl">🇯🇵</span>
-                  </div>
-                  <h3 className="text-3xl font-bold text-foreground mb-3">Tiếng Nhật</h3>
-                  <p className="text-muted-foreground mb-6 text-lg">JLPT N5 - N1 • Giao tiếp • Thương mại</p>
-                  
-                  <div className="space-y-4 mb-8">
-                    {["Lộ trình JLPT chuẩn", "Kanji & Hiragana từ cơ bản", "Giáo viên bản ngữ Nhật"].map(f => (
-                      <div key={f} className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-japanese/10 flex items-center justify-center">
-                          <Star className="w-3.5 h-3.5 text-japanese" />
-                        </div>
-                        <span className="text-foreground">{f}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2 mb-8">
-                    <div className="flex">{[1,2,3,4,5].map(s => <Star key={s} className="w-5 h-5 text-accent fill-accent" />)}</div>
-                    <span className="font-bold text-foreground">{statsContent?.rating || "4.9"}</span>
-                    <span className="text-muted-foreground">({statsContent?.reviews || "2.5k đánh giá"})</span>
-                  </div>
-
-                  <Button className="w-full h-12 rounded-xl text-base" asChild>
-                    <Link to="/khoa-hoc">Xem khóa học <ArrowRight className="w-4 h-4 ml-2" /></Link>
-                  </Button>
-                </div>
-
-                <div className="absolute -top-6 -right-6 w-28 h-28 bg-japanese/10 rounded-3xl rotate-12 animate-float animation-delay-200" style={{ transform: `rotate(12deg) translateY(${scrollY * -0.12}px)` }} />
-                <div className="absolute -bottom-6 -left-6 w-20 h-20 bg-accent/10 rounded-2xl -rotate-12 animate-float animation-delay-400" style={{ transform: `rotate(-12deg) translateY(${scrollY * 0.1}px)` }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-  );
+  const heroSection = <HeroSection key="hero" />;
 
   const skillsSection = (
       <section key="skills" className="py-24 bg-background relative">

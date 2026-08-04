@@ -45,7 +45,8 @@ import {
   Users, Plus, Edit, Eye, Calendar, UserPlus, Trash2, 
   BookOpen, Star, Trophy, TrendingUp, Search, X,
   GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
-  FileText, CheckCircle2, MessageSquare, Play, Upload, Sparkles
+  FileText, CheckCircle2, MessageSquare, Play, Upload, Sparkles,
+  Mail, Send, Loader2, Save
 } from 'lucide-react';
 import ClassroomChat from '@/components/classroom/ClassroomChat';
 import { format } from 'date-fns';
@@ -1677,7 +1678,7 @@ const TeacherClasses = () => {
                     Cấu hình & Gửi Email Thông Báo Lịch Học Định Kỳ
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    Gửi email nhắc lịch học siêu đẹp về hộp thư cho giáo viên và toàn bộ {classStudents.length} học viên trong lớp {selectedClass.name_vi}.
+                    Gửi email nhắc lịch học siêu đẹp về hộp thư cho giáo viên và toàn bộ {students.length} học viên trong lớp {selectedClass.name_vi}.
                   </CardDescription>
                 </div>
 

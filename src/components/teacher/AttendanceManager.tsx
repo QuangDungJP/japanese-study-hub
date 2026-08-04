@@ -24,32 +24,19 @@ import { exportToCSV } from '@/lib/exportUtils';
 interface ClassInfo {
   id: string;
   name_vi: string;
+  is_active: boolean | null;
+  start_date: string | null;
+  end_date: string | null;
 }
 
-interface SessionInfo {
-  id: string;
-  session_date: string;
-  start_time: string;
-  topic: string | null;
+interface AttendanceManagerProps {
+  initialStatusFilter?: 'all' | 'active' | 'upcoming' | 'completed';
 }
 
-interface StudentInfo {
-  id: string;
-  student_id: string;
-  profiles?: { full_name: string };
-}
-
-interface AttendanceRecord {
-  student_id: string;
-  student_name: string;
-  status: 'present' | 'absent' | 'late' | 'excused';
-  notes: string;
-  existing_id?: string;
-}
-
-const AttendanceManager = () => {
-  const { user } = useAuth();
+const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerProps) => {
+  const { user, isAdmin } = useAuth();
   const [classes, setClasses] = useState<ClassInfo[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'upcoming' | 'completed'>(initialStatusFilter);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
@@ -58,6 +45,11 @@ const AttendanceManager = () => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [creatingSession, setCreatingSession] = useState(false);
+
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
 
   useEffect(() => {
     if (user) {
@@ -65,9 +57,36 @@ const AttendanceManager = () => {
     }
   }, [user]);
 
+  const fetchClasses = async () => {
+    let query = supabase
+      .from('classes')
+      .select('id, name_vi, is_active, start_date, end_date')
+      .order('created_at', { ascending: false });
+
+    if (!isAdmin && user?.id) {
+      query = query.eq('teacher_id', user.id);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching classes:', error);
+      return;
+    }
+
+    const fetchedClasses = data || [];
+    setClasses(fetchedClasses);
+    if (fetchedClasses.length > 0 && !selectedClass) {
+      setSelectedClass(fetchedClasses[0].id);
+    }
+  };
+
   useEffect(() => {
     if (selectedClass) {
       fetchSessions(selectedClass);
+    } else {
+      setSessions([]);
+      setSelectedSessionId('');
     }
   }, [selectedClass]);
 
@@ -77,32 +96,56 @@ const AttendanceManager = () => {
     }
   }, [selectedClass, selectedDate, selectedSessionId]);
 
-  const fetchClasses = async () => {
-    const { data, error } = await supabase
-      .from('classes')
-      .select('id, name_vi')
-      .eq('teacher_id', user?.id)
-      .eq('is_active', true);
-
-    if (error) {
-      console.error('Error fetching classes:', error);
-      return;
-    }
-
-    setClasses(data || []);
-  };
-
   const fetchSessions = async (classId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('class_sessions')
       .select('id, session_date, start_time, topic')
       .eq('class_id', classId)
       .order('session_date', { ascending: false });
 
-    setSessions(data || []);
-    if (data && data.length > 0) {
-      setSelectedSessionId(data[0].id);
-      setSelectedDate(data[0].session_date);
+    if (error) {
+      console.error('Error fetching sessions:', error);
+      setSessions([]);
+      setSelectedSessionId('');
+      return;
+    }
+
+    const sessionList = data || [];
+    setSessions(sessionList);
+    if (sessionList.length > 0) {
+      setSelectedSessionId(sessionList[0].id);
+      setSelectedDate(sessionList[0].session_date);
+    } else {
+      setSelectedSessionId('');
+    }
+  };
+
+  const createNewSessionForToday = async () => {
+    if (!selectedClass) return;
+    try {
+      setCreatingSession(true);
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('class_sessions')
+        .insert({
+          class_id: selectedClass,
+          session_date: today,
+          start_time: '08:00',
+          end_time: '10:00',
+          topic: `Buổi học ngày ${today}`
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Đã tạo buổi học mới thành công!');
+      await fetchSessions(selectedClass);
+    } catch (err: any) {
+      console.error('Error creating session:', err);
+      toast.error('Không thể tạo buổi học: ' + (err.message || 'Lỗi hệ thống'));
+    } finally {
+      setCreatingSession(false);
     }
   };
 
@@ -278,45 +321,133 @@ const AttendanceManager = () => {
     toast.success('Đã xuất file điểm danh Excel / Google Sheet thành công!');
   };
 
+  const getClassStatus = (cls: ClassInfo): 'active' | 'upcoming' | 'completed' => {
+    const today = new Date().toISOString().split('T')[0];
+    if (cls.start_date && cls.start_date > today) return 'upcoming';
+    if (cls.is_active === false || (cls.end_date && cls.end_date < today)) return 'completed';
+    return 'active';
+  };
+
+  const renderClassStatusBadge = (cls: ClassInfo) => {
+    const st = getClassStatus(cls);
+    if (st === 'upcoming') {
+      return <Badge variant="outline" className="ml-2 bg-indigo-500/10 text-indigo-600 border-indigo-500/30 text-[10px]">Sắp tới</Badge>;
+    }
+    if (st === 'completed') {
+      return <Badge variant="outline" className="ml-2 bg-slate-500/10 text-slate-600 border-slate-500/30 text-[10px]">Đã xong</Badge>;
+    }
+    return <Badge variant="outline" className="ml-2 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]">Đang dạy</Badge>;
+  };
+
+  const filteredClasses = classes.filter(cls => {
+    if (statusFilter === 'all') return true;
+    return getClassStatus(cls) === statusFilter;
+  });
+
   return (
     <div className="space-y-6">
-      {/* Filters */}
+      {/* Status Filter Tabs & Class Selectors */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-2">Lọc trạng thái:</span>
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all')}
+                className="h-8 text-xs font-bold rounded-full"
+              >
+                Tất cả ({classes.length})
+              </Button>
+              <Button
+                variant={statusFilter === 'active' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('active')}
+                className={`h-8 text-xs font-bold rounded-full ${statusFilter === 'active' ? 'bg-emerald-600 hover:bg-emerald-700' : 'text-emerald-600'}`}
+              >
+                🟢 Đang giảng dạy ({classes.filter(c => getClassStatus(c) === 'active').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'upcoming' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('upcoming')}
+                className={`h-8 text-xs font-bold rounded-full ${statusFilter === 'upcoming' ? 'bg-indigo-600 hover:bg-indigo-700' : 'text-indigo-600'}`}
+              >
+                🔵 Sắp tới ({classes.filter(c => getClassStatus(c) === 'upcoming').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'completed' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('completed')}
+                className={`h-8 text-xs font-bold rounded-full ${statusFilter === 'completed' ? 'bg-slate-600 hover:bg-slate-700' : 'text-slate-600'}`}
+              >
+                ⚪ Đã hoàn thành ({classes.filter(c => getClassStatus(c) === 'completed').length})
+              </Button>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-[220px]">
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
                 Chọn lớp học
               </label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn lớp học" />
+                <SelectTrigger className="font-semibold">
+                  <SelectValue placeholder="-- Chọn lớp học --" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name_vi}
-                    </SelectItem>
-                  ))}
+                  {filteredClasses.length === 0 ? (
+                    <SelectItem value="none" disabled>Không tìm thấy lớp học phù hợp</SelectItem>
+                  ) : (
+                    filteredClasses.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id} className="font-medium">
+                        <div className="flex items-center justify-between w-full">
+                          <span>{cls.name_vi}</span>
+                          {renderClassStatusBadge(cls)}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             {selectedClass && (
               <div className="flex-1 min-w-[220px]">
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Chọn Buổi học (Lịch học)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-muted-foreground block">
+                    Chọn Buổi học (Lịch học)
+                  </label>
+                  {sessions.length === 0 && (
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={createNewSessionForToday} 
+                      disabled={creatingSession}
+                      className="h-6 text-xs text-primary font-bold hover:bg-primary/10 px-2"
+                    >
+                      {creatingSession ? 'Đang tạo...' : '+ Tạo buổi học hôm nay'}
+                    </Button>
+                  )}
+                </div>
                 <Select value={selectedSessionId} onValueChange={handleSelectSession}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="-- Chọn buổi học --" />
+                  <SelectTrigger className="font-semibold">
+                    <SelectValue placeholder={sessions.length === 0 ? "Chưa có buổi học nào" : "-- Chọn buổi học --"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {sessions.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.session_date} ({s.start_time}) - {s.topic || 'Buổi học'}
+                    {sessions.length === 0 ? (
+                      <SelectItem value="none_session" disabled>
+                        Chưa có danh sách buổi học (Chọn ngày bên cạnh)
                       </SelectItem>
-                    ))}
+                    ) : (
+                      sessions.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.session_date} ({s.start_time}) - {s.topic || 'Buổi học'}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -341,40 +472,40 @@ const AttendanceManager = () => {
         <>
           {/* Stats & Progress Chart Bar */}
           <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-4 text-center">
-                  <Users className="w-6 h-6 mx-auto text-primary mb-1" />
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground font-medium">Sĩ số lớp</p>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 mx-auto text-primary mb-1" />
+                  <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium">Sĩ số lớp</p>
                 </CardContent>
               </Card>
               <Card className="bg-green-500/10 border-green-500/20">
-                <CardContent className="p-4 text-center">
-                  <UserCheck className="w-6 h-6 mx-auto text-green-600 mb-1" />
-                  <p className="text-2xl font-bold text-green-600">{stats.present}</p>
-                  <p className="text-xs text-muted-foreground font-medium">Có mặt ({stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0}%)</p>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 mx-auto text-green-600 mb-1" />
+                  <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.present}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium">Có mặt ({stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0}%)</p>
                 </CardContent>
               </Card>
               <Card className="bg-red-500/10 border-red-500/20">
-                <CardContent className="p-4 text-center">
-                  <UserX className="w-6 h-6 mx-auto text-red-600 mb-1" />
-                  <p className="text-2xl font-bold text-red-600">{stats.absent}</p>
-                  <p className="text-xs text-muted-foreground font-medium">Vắng mặt</p>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <UserX className="w-5 h-5 sm:w-6 sm:h-6 mx-auto text-red-600 mb-1" />
+                  <p className="text-xl sm:text-2xl font-bold text-red-600">{stats.absent}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium">Vắng mặt</p>
                 </CardContent>
               </Card>
               <Card className="bg-yellow-500/10 border-yellow-500/20">
-                <CardContent className="p-4 text-center">
-                  <Clock className="w-6 h-6 mx-auto text-yellow-600 mb-1" />
-                  <p className="text-2xl font-bold text-yellow-600">{stats.late}</p>
-                  <p className="text-xs text-muted-foreground font-medium">Đi muộn</p>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 mx-auto text-yellow-600 mb-1" />
+                  <p className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.late}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium">Đi muộn</p>
                 </CardContent>
               </Card>
-              <Card className="bg-blue-500/10 border-blue-500/20">
-                <CardContent className="p-4 text-center">
-                  <CalendarCheck className="w-6 h-6 mx-auto text-blue-600 mb-1" />
-                  <p className="text-2xl font-bold text-blue-600">{stats.excused}</p>
-                  <p className="text-xs text-muted-foreground font-medium">Có phép</p>
+              <Card className="bg-blue-500/10 border-blue-500/20 col-span-2 md:col-span-1">
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <CalendarCheck className="w-5 h-5 sm:w-6 sm:h-6 mx-auto text-blue-600 mb-1" />
+                  <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.excused}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium">Có phép</p>
                 </CardContent>
               </Card>
             </div>
@@ -393,7 +524,7 @@ const AttendanceManager = () => {
                     <div style={{ width: `${(stats.excused / stats.total) * 100}%` }} className="bg-blue-500 transition-all" title="Có phép" />
                     <div style={{ width: `${(stats.absent / stats.total) * 100}%` }} className="bg-red-500 transition-all" title="Vắng mặt" />
                   </div>
-                  <div className="flex justify-around text-[11px] text-muted-foreground pt-1">
+                  <div className="flex flex-wrap justify-around gap-2 text-[11px] text-muted-foreground pt-1">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Có mặt ({stats.present})</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Đi muộn ({stats.late})</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> Có phép ({stats.excused})</span>
@@ -406,21 +537,21 @@ const AttendanceManager = () => {
 
           {/* Attendance List */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarCheck className="w-5 h-5 text-primary" />
-                Điểm danh - {format(new Date(selectedDate), 'EEEE, dd/MM/yyyy', { locale: vi })}
+                <CalendarCheck className="w-5 h-5 text-primary shrink-0" />
+                <span>Điểm danh - {format(new Date(selectedDate), 'EEEE, dd/MM/yyyy', { locale: vi })}</span>
               </CardTitle>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950 font-bold" onClick={exportAttendanceToExcel}>
+              <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="w-full sm:w-auto border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950 font-bold" onClick={exportAttendanceToExcel}>
                   <FileSpreadsheet className="w-4 h-4 mr-1 text-emerald-600" />
-                  Xuất Google Sheet / Excel
+                  Xuất Excel / Sheet
                 </Button>
-                <Button variant="outline" size="sm" onClick={markAllPresent}>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={markAllPresent}>
                   <UserCheck className="w-4 h-4 mr-1" />
                   Tất cả có mặt
                 </Button>
-                <Button size="sm" onClick={saveAttendance} disabled={saving}>
+                <Button size="sm" className="w-full sm:w-auto font-bold bg-primary text-white" onClick={saveAttendance} disabled={saving}>
                   <Save className="w-4 h-4 mr-1" />
                   {saving ? 'Đang lưu...' : 'Lưu điểm danh'}
                 </Button>

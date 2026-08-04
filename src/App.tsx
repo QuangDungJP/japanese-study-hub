@@ -133,6 +133,7 @@ const App = () => (
                 <Route path="listening" element={<Listening />} />
                 <Route path="vocabulary" element={<Vocabulary />} />
                 <Route path="exercises" element={<Exercises />} />
+                <Route path="meeting" element={<Zoom />} />
                 <Route path="zoom" element={<Zoom />} />
                 <Route path="calendar" element={<StudentCalendar />} />
                 <Route path="achievements" element={<Achievements />} />
@@ -172,6 +173,7 @@ const App = () => (
                 <Route path="lessons" element={<TeacherLessons />} />
                 <Route path="classes" element={<TeacherClasses />} />
                 <Route path="submissions" element={<TeacherSubmissions />} />
+                <Route path="meeting" element={<TeacherZoom />} />
                 <Route path="zoom" element={<TeacherZoom />} />
                 <Route path="calendar" element={<TeacherCalendar />} />
                 <Route path="attendance" element={<TeacherAttendance />} />

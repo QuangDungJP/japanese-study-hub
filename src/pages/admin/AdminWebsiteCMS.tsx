@@ -17,7 +17,7 @@ import SectionEditorFields from '@/components/admin/SectionEditorFields';
 import { 
   Layout, Image, Video, Eye, EyeOff, Save, Upload, Trash2, 
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
-  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, MessageSquare, Bell
+  ImageIcon, Film, Link2, Monitor, SplitSquareHorizontal, MessageSquare, Bell, Smartphone
 } from 'lucide-react';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import TestimonialsManager from '@/components/admin/TestimonialsManager';
@@ -55,24 +55,87 @@ interface Course {
   is_published: boolean;
 }
 
-const sectionLabels: Record<string, string> = {
-  'hero': 'Trang chủ (Hero)',
-  'skills': 'Kỹ năng',
-  'languages': 'Ngôn ngữ',
-  'teachers': 'Giảng viên',
-  'zoom': 'Lớp học Meeting',
-  'features': 'Tính năng',
-  'blog': 'Tin tức & Bài viết (Blog)',
-  'events': 'Sự kiện & Workshop',
-  'testimonials': 'Đánh giá & Testimonials',
-  'cta': 'Kêu gọi hành động',
-  'pricing': 'Bảng giá',
-  'about_hero': 'Giới thiệu - Hero',
-  'about_story': 'Giới thiệu - Câu chuyện',
-  'about_values': 'Giới thiệu - Giá trị',
-  'about_3c_values': 'Giới thiệu - 3C Cốt lõi',
-  'about_cta': 'Giới thiệu - CTA',
-  'footer': 'Chân trang (Footer)',
+export const PAGE_CATEGORIES = [
+  { id: 'all', name: '📍 Tất cả các Trang', icon: 'Globe' },
+  { id: 'home', name: '🏠 Trang Chủ', icon: 'Layout' },
+  { id: 'about', name: '📖 Trang Giới Thiệu', icon: 'FileText' },
+  { id: 'courses', name: '📚 Trang Khóa Học', icon: 'BookOpen' },
+  { id: 'teachers', name: '👨‍🏫 Trang Giáo Viên', icon: 'Users' },
+  { id: 'meeting', name: '💻 Trang Meeting Live', icon: 'Video' },
+  { id: 'blog', name: '📰 Trang Blog & Bài Viết', icon: 'FileText' },
+  { id: 'events', name: '🎉 Trang Sự Kiện', icon: 'Calendar' },
+  { id: 'contact', name: '📞 Trang Liên Hệ', icon: 'Phone' },
+  { id: 'seasonal', name: '🌸 Banner Theo Mùa / Lễ Tết', icon: 'Sparkles' },
+];
+
+const sectionLabels: Record<string, { label: string; page: string }> = {
+  // Trang chủ
+  'hero': { label: 'Trang chủ - Hero Banner Banner', page: 'home' },
+  'skills': { label: 'Trang chủ - 4 Kỹ năng Cốt lõi', page: 'home' },
+  'languages': { label: 'Trang chủ - Lộ trình JLPT', page: 'home' },
+  'teachers': { label: 'Trang chủ - Đội ngũ Giảng viên', page: 'home' },
+  'zoom': { label: 'Trang chủ - Lớp Meeting Online', page: 'home' },
+  'features': { label: 'Trang chủ - Công nghệ & Tính năng', page: 'home' },
+  'blog': { label: 'Trang chủ - Tin tức Blog', page: 'home' },
+  'events': { label: 'Trang chủ - Sự kiện Workshop', page: 'home' },
+  'testimonials': { label: 'Trang chủ - Đánh giá Học viên', page: 'home' },
+  'cta': { label: 'Trang chủ - Banner Đăng ký CTA', page: 'home' },
+  'pricing': { label: 'Trang chủ - Niêm yết Bảng giá', page: 'home' },
+  'footer': { label: 'Chân trang (Footer)', page: 'home' },
+
+  // Trang Giới Thiệu
+  'about_hero': { label: 'Giới thiệu - Hero Header', page: 'about' },
+  'about_story': { label: 'Giới thiệu - Câu chuyện Trung tâm', page: 'about' },
+  'about_values': { label: 'Giới thiệu - Triết lý & Giá trị', page: 'about' },
+  'about_3c_values': { label: 'Giới thiệu - Mô hình 3C Cốt lõi', page: 'about' },
+  'about_cta': { label: 'Giới thiệu - Banner Đăng ký', page: 'about' },
+
+  // Trang Khóa Học
+  'courses_hero': { label: 'Khóa học - Hero Banner Header', page: 'courses' },
+  'courses_banner': { label: 'Khóa học - Banner Lộ trình Chi tiết', page: 'courses' },
+  'courses_discount': { label: 'Khóa học - Banner Ưu đãi Học phí', page: 'courses' },
+
+  // Trang Giáo Viên
+  'teachers_page_hero': { label: 'Giáo viên - Hero Header', page: 'teachers' },
+  'teachers_recruitment': { label: 'Giáo viên - Banner Tuyển dụng', page: 'teachers' },
+
+  // Trang Meeting Live
+  'meeting_hero': { label: 'Meeting - Hero Banner Lớp Trực tuyến', page: 'meeting' },
+  'meeting_guide': { label: 'Meeting - Hướng dẫn Tham gia Meet/Zoom', page: 'meeting' },
+
+  // Trang Blog & Sự kiện
+  'blog_hero': { label: 'Blog - Banner Header Tin tức', page: 'blog' },
+  'events_hero': { label: 'Sự kiện - Banner Workshop', page: 'events' },
+
+  // Trang Liên Hệ
+  'contact_hero': { label: 'Liên hệ - Hero Header Banner', page: 'contact' },
+  'contact_info': { label: 'Liên hệ - Địa chỉ & Văn phòng', page: 'contact' },
+
+  // Banners Theo Mùa / Lễ Tết
+  'seasonal_tet': { label: 'Lễ Tết - Banner Chúc Mừng Năm Mới', page: 'seasonal' },
+  'seasonal_summer': { label: 'Lễ Tết - Banner Khuyến Mãi Mùa Hè', page: 'seasonal' },
+  'seasonal_back_to_school': { label: 'Lễ Tết - Banner Mùa Tựu Trường', page: 'seasonal' },
+  'seasonal_discount_2011': { label: 'Lễ Tết - Banner Tri Ân 20/11', page: 'seasonal' },
+  'seasonal_christmas': { label: 'Lễ Tết - Banner Giáng Sinh & Năm Mới', page: 'seasonal' },
+};
+
+const getSectionInfo = (key: string) => {
+  if (sectionLabels[key]) return sectionLabels[key];
+  
+  let page = 'home';
+  if (key.startsWith('about_')) page = 'about';
+  else if (key.startsWith('course') || key.startsWith('courses')) page = 'courses';
+  else if (key.startsWith('teacher')) page = 'teachers';
+  else if (key.startsWith('meeting')) page = 'meeting';
+  else if (key.startsWith('blog')) page = 'blog';
+  else if (key.startsWith('event')) page = 'events';
+  else if (key.startsWith('contact')) page = 'contact';
+  else if (key.startsWith('seasonal') || key.startsWith('tet') || key.startsWith('sale') || key.startsWith('promo')) page = 'seasonal';
+
+  return {
+    label: key.replace(/_/g, ' ').toUpperCase(),
+    page
+  };
 };
 
 const AdminWebsiteCMS = () => {
@@ -84,6 +147,20 @@ const AdminWebsiteCMS = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  
+  // Custom section creation modal
+  const [isCreateSectionOpen, setIsCreateSectionOpen] = useState(false);
+  const [newSectionData, setNewSectionData] = useState({
+    section_key: '',
+    title_vi: '',
+    subtitle_vi: '',
+    description_vi: '',
+    image_url: '',
+    page_category: 'home'
+  });
+
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [creatingTeachersSection, setCreatingTeachersSection] = useState(false);
@@ -285,34 +362,57 @@ const AdminWebsiteCMS = () => {
     setFooterData(prev => ({ ...prev, [key]: value }));
   };
 
-  const createTeachersSection = async () => {
-    setCreatingTeachersSection(true);
+  const handleCreateCustomSection = async () => {
+    if (!newSectionData.section_key || !newSectionData.title_vi) {
+      toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập Mã Section và Tiêu đề', variant: 'destructive' });
+      return;
+    }
+
+    const cleanKey = newSectionData.section_key.trim().toLowerCase().replace(/\s+/g, '_');
+
     try {
-      const orderIndex = sections.length;
       const { error } = await supabase
         .from('website_content')
         .insert({
-          section_key: 'teachers',
-          title_vi: 'Đội ngũ giảng viên xuất sắc',
-          subtitle_vi: 'Giảng viên',
-          description_vi: 'Danh sách giáo viên được tuyển chọn để đồng hành cùng bạn',
+          section_key: cleanKey,
+          title_vi: newSectionData.title_vi,
+          subtitle_vi: newSectionData.subtitle_vi || null,
+          description_vi: newSectionData.description_vi || null,
+          image_url: newSectionData.image_url || null,
           is_active: true,
-          order_index: orderIndex,
-          content: { teachers: [] },
+          order_index: sections.length,
+          content: {},
         });
 
       if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã tạo mục Giảng viên' });
+
+      toast({ title: '✅ Tạo Section thành công', description: `Đã thêm section mới "${cleanKey}"` });
+      setIsCreateSectionOpen(false);
+      setNewSectionData({ section_key: '', title_vi: '', subtitle_vi: '', description_vi: '', image_url: '', page_category: 'home' });
       await fetchSections();
-    } catch (error) {
-      console.error('Error creating teachers section:', error);
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể tạo mục Giảng viên',
-        variant: 'destructive'
-      });
-    } finally {
-      setCreatingTeachersSection(false);
+    } catch (error: any) {
+      console.error('Error creating section:', error);
+      toast({ title: 'Lỗi', description: error.message || 'Không thể tạo section', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteSection = async (section: WebsiteContent) => {
+    const info = getSectionInfo(section.section_key);
+    if (!confirm(`Bạn có chắc chắn muốn xóa section "${info.label || section.section_key}"?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('website_content')
+        .delete()
+        .eq('id', section.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Đã xóa', description: `Đã xóa section ${section.section_key}` });
+      await fetchSections();
+    } catch (error: any) {
+      console.error('Error deleting section:', error);
+      toast({ title: 'Lỗi', description: 'Không thể xóa section', variant: 'destructive' });
     }
   };
 
@@ -455,11 +555,56 @@ const AdminWebsiteCMS = () => {
         title: 'Thành công',
         description: 'Đã upload video thành công'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading video:', error);
       toast({
         title: 'Lỗi',
         description: 'Không thể upload video',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleQuickSectionImageUpload = async (section: WebsiteContent, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${section.section_key}_${Date.now()}.${fileExt}`;
+      const filePath = `images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('website-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('website-assets')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('website_content')
+        .update({ image_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', section.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: '✅ Cập nhật ảnh thành công',
+        description: `Đã cập nhật ảnh bìa mới cho mục ${section.section_key}`
+      });
+
+      fetchSections();
+    } catch (error: any) {
+      console.error('Error uploading section cover:', error);
+      toast({
+        title: 'Lỗi upload ảnh',
+        description: error.message || 'Không thể upload ảnh bìa',
         variant: 'destructive'
       });
     } finally {
@@ -478,7 +623,7 @@ const AdminWebsiteCMS = () => {
 
       toast({
         title: 'Thành công',
-        description: section.is_active ? 'Đã ẩn section' : 'Đã hiển thị section'
+        description: `Đã ${!section.is_active ? 'bật' : 'tắt'} hiển thị section`
       });
 
       fetchSections();
@@ -610,160 +755,195 @@ const AdminWebsiteCMS = () => {
         </TabsContent>
 
         {/* Sections Tab */}
-        <TabsContent value="sections" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Các section trên trang chủ
-              </CardTitle>
-              <CardDescription>
-                Kéo thả để sắp xếp thứ tự, chỉnh sửa nội dung cho từng phần
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {!sections.some((s) => s.section_key === 'teachers') && (
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-xl border border-border bg-muted/40">
-                    <div>
-                      <p className="text-sm font-medium">Mục "Giảng viên" chưa tồn tại.</p>
-                      <p className="text-xs text-muted-foreground">Tạo mục này để quản lý danh sách giảng viên hiển thị trên trang chủ.</p>
-                    </div>
-                    <Button
-                      onClick={createTeachersSection}
-                      disabled={creatingTeachersSection}
-                    >
-                      {creatingTeachersSection ? 'Đang tạo...' : 'Tạo mục Giảng viên'}
-                    </Button>
-                  </div>
-                )}
+        <TabsContent value="sections" className="space-y-6">
+          {/* Header Action Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-muted/30 border shadow-xs">
+            <div>
+              <h2 className="text-lg font-extrabold flex items-center gap-2">
+                <Globe className="w-5 h-5 text-primary" />
+                Quản lý Section Từng Trang & Banner Theo Mùa
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Chỉnh sửa toàn bộ nội dung, ảnh bìa của từng trang (Trang chủ, Giới thiệu, Khóa học, Meeting, Blog, Lễ Tết) tránh hardcode.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                onClick={() => setIsCreateSectionOpen(true)}
+                size="sm"
+                className="font-bold gap-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+              >
+                <Plus className="w-4 h-4" /> Tạo Section Mới
+              </Button>
+            </div>
+          </div>
 
-                <div className="space-y-1">
-                  {sections.map((section, index) => {
-                  const isDragging = draggedIndex === index;
-                  const isOver = dragOverIndex === index;
-                  const isAbove = draggedIndex !== null && dragOverIndex !== null && draggedIndex > index && isOver;
-                  const isBelow = draggedIndex !== null && dragOverIndex !== null && draggedIndex < index && isOver;
+          {/* Page Category Filter Bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b scrollbar-none">
+            {PAGE_CATEGORIES.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              const count = cat.id === 'all' 
+                ? sections.length 
+                : sections.filter(s => getSectionInfo(s.section_key).page === cat.id).length;
 
-                  return (
-                    <div key={section.id} className="relative">
-                      {/* Drop indicator line - top */}
-                      {isAbove && (
-                        <div className="absolute -top-1 left-4 right-4 h-0.5 bg-primary rounded-full z-10 shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
-                      )}
-                      <div
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = 'move';
-                          e.dataTransfer.setData('text/plain', index.toString());
-                          setDraggedIndex(index);
-                        }}
-                        onDragEnd={() => {
-                          setDraggedIndex(null);
-                          setDragOverIndex(null);
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = 'move';
-                          setDragOverIndex(index);
-                        }}
-                        onDragLeave={() => {
-                          if (dragOverIndex === index) setDragOverIndex(null);
-                        }}
-                        onDrop={async (e) => {
-                          e.preventDefault();
-                          const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                          const toIndex = index;
-                          setDraggedIndex(null);
-                          setDragOverIndex(null);
-                          if (fromIndex === toIndex) return;
-                          
-                          const newSections = [...sections];
-                          const [moved] = newSections.splice(fromIndex, 1);
-                          newSections.splice(toIndex, 0, moved);
-                          setSections(newSections);
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <span>{cat.name}</span>
+                  <Badge 
+                    variant={isSelected ? 'secondary' : 'outline'} 
+                    className="text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center font-bold"
+                  >
+                    {count}
+                  </Badge>
+                </button>
+              );
+            })}
+          </div>
 
-                          try {
-                            await Promise.all(
-                              newSections.map((s, i) =>
-                                supabase.from('website_content').update({ order_index: i }).eq('id', s.id)
-                              )
-                            );
-                            toast({ title: 'Thành công', description: 'Đã cập nhật thứ tự sections' });
-                          } catch {
-                            toast({ title: 'Lỗi', description: 'Không thể lưu thứ tự', variant: 'destructive' });
-                            fetchSections();
-                          }
-                        }}
-                        className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ease-out cursor-grab active:cursor-grabbing border-2 group
-                          ${isDragging 
-                            ? 'opacity-40 scale-[0.97] rotate-[0.5deg] border-primary/30 bg-primary/5 shadow-lg' 
-                            : 'bg-card border-border hover:border-primary/20 hover:bg-muted/30 hover:shadow-md'
-                          }
-                          ${isOver && !isDragging ? 'border-primary/50 bg-primary/5 scale-[1.01]' : ''}
-                        `}
-                        style={{
-                          transition: isDragging ? 'all 0.15s ease-out' : 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        }}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1 rounded-md hover:bg-primary/10 transition-colors group-hover:text-primary text-muted-foreground">
-                              <GripVertical className="w-5 h-5" />
-                            </div>
-                            <span className="text-xs font-bold w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center transition-colors">
-                              {index + 1}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-sm">{sectionLabels[section.section_key] || section.section_key}</h3>
-                              <Badge variant={section.is_active ? 'default' : 'secondary'} className="text-[10px]">
-                                {section.is_active ? 'Hiển thị' : 'Ẩn'}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                              {section.title_vi || section.title || 'Chưa có tiêu đề'}
-                            </p>
+          {/* Section Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {sections
+              .filter((section) => {
+                if (selectedCategory === 'all') return true;
+                const info = getSectionInfo(section.section_key);
+                return info.page === selectedCategory;
+              })
+              .map((section) => {
+                const info = getSectionInfo(section.section_key);
+                const isCustom = !['hero', 'skills', 'languages', 'teachers', 'zoom', 'features', 'blog', 'events', 'testimonials', 'cta', 'pricing', 'footer', 'about_hero', 'about_story', 'about_values'].includes(section.section_key);
+
+                return (
+                  <Card key={section.id} className="overflow-hidden border-2 hover:border-primary/40 transition-all flex flex-col justify-between shadow-sm hover:shadow-md">
+                    <CardHeader className="p-4 bg-muted/20 border-b flex flex-row items-center justify-between space-y-0">
+                      <div className="flex items-center gap-2">
+                        <Layout className="w-4 h-4 text-primary shrink-0" />
+                        <div>
+                          <CardTitle className="text-sm font-bold truncate">
+                            {info.label}
+                          </CardTitle>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+                              {section.section_key}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px] font-semibold">
+                              {PAGE_CATEGORIES.find(c => c.id === info.page)?.name.split(' ')[1] || info.page}
+                            </Badge>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          {section.image_url && <ImageIcon className="w-4 h-4 text-green-500" />}
-                          {section.video_url && <Film className="w-4 h-4 text-blue-500" />}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={section.is_active}
+                          onCheckedChange={() => toggleSectionActive(section)}
+                          title={section.is_active ? "Đang hiển thị" : "Đang ẩn"}
+                        />
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                      {/* Media Banner Thumbnail Preview */}
+                      <div className="relative h-36 sm:h-44 w-full rounded-xl bg-muted overflow-hidden border group shrink-0">
+                        {section.image_url ? (
+                          <img 
+                            src={section.image_url} 
+                            alt={section.title_vi || section.section_key}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/40 p-4 text-center">
+                            <ImageIcon className="w-8 h-8 opacity-40 mb-1" />
+                            <span className="text-xs font-medium">Chưa có ảnh bìa / banner</span>
+                          </div>
+                        )}
+
+                        {/* Quick Image Upload Overlay Button */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 backdrop-blur-xs">
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => toggleSectionActive(section)}
-                          >
-                            {section.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                          </Button>
-                          <Button
-                            variant="outline"
                             size="sm"
-                            className="h-8"
-                            onClick={() => openEditDialog(section)}
+                            variant="secondary"
+                            onClick={() => {
+                              const input = document.getElementById(`quick-upload-${section.id}`) as HTMLInputElement;
+                              input?.click();
+                            }}
+                            disabled={uploading}
+                            className="font-bold text-xs gap-1.5 shadow-lg"
                           >
-                            <Edit className="w-3.5 h-3.5 mr-1" />
-                            Sửa
+                            <Upload className="w-3.5 h-3.5" />
+                            {uploading ? 'Đang upload...' : '📷 Đổi Ảnh Bìa'}
+                          </Button>
+                        </div>
+                        <input
+                          id={`quick-upload-${section.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleQuickSectionImageUpload(section, e)}
+                        />
+                      </div>
+
+                      {/* Text Details Snippet */}
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-foreground line-clamp-1">
+                          {section.title_vi || section.title || '(Chưa cài đặt tiêu đề)'}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2">
+                          {section.description_vi || section.description || 'Chưa có mô tả nội dung...'}
+                        </p>
+                      </div>
+
+                      {/* Footer Card Action Buttons */}
+                      <div className="pt-2 flex items-center justify-between gap-2 border-t mt-auto">
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          {section.image_url && <span className="flex items-center text-emerald-600 font-semibold gap-1"><ImageIcon className="w-3 h-3" /> Có Banner</span>}
+                          {section.video_url && <span className="flex items-center text-blue-600 font-semibold gap-1"><Film className="w-3 h-3" /> Có Video</span>}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          {isCustom && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteSection(section)}
+                              title="Xóa Section"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => openEditDialog(section)}
+                            className="gap-1 font-bold text-xs h-8"
+                          >
+                            <Edit className="w-3.5 h-3.5" /> Chỉnh sửa
                           </Button>
                         </div>
                       </div>
-                      {/* Drop indicator line - bottom */}
-                      {isBelow && (
-                        <div className="absolute -bottom-1 left-4 right-4 h-0.5 bg-primary rounded-full z-10 shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">
-                <GripVertical className="w-3.5 h-3.5" />
-                Kéo thả để thay đổi thứ tự hiển thị các section trên trang chủ
-              </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+
+          {sections.filter(s => selectedCategory === 'all' || getSectionInfo(s.section_key).page === selectedCategory).length === 0 && (
+            <div className="text-center py-12 border rounded-2xl bg-muted/20 text-muted-foreground">
+              <Globe className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              <p className="font-bold text-sm">Chưa có Section nào trong mục này</p>
+              <p className="text-xs mt-1">Bấm nút "Tạo Section Mới" phía trên để thêm banner / nội dung cho trang này</p>
+              <Button onClick={() => setIsCreateSectionOpen(true)} className="mt-4 font-bold text-xs gap-1.5">
+                <Plus className="w-4 h-4" /> Tạo Section Mới Ngay
+              </Button>
             </div>
-            </CardContent>
-          </Card>
+          )}
         </TabsContent>
 
         {/* Pricing Tab */}
@@ -836,7 +1016,7 @@ const AdminWebsiteCMS = () => {
                       </div>
                     )}
                     <CardContent className="p-3">
-                      <p className="font-medium text-sm">{sectionLabels[section.section_key]}</p>
+                      <p className="font-medium text-sm">{getSectionInfo(section.section_key).label}</p>
                       <div className="flex gap-2 mt-2">
                         {section.image_url && (
                           <Badge variant="outline" className="text-xs">
@@ -1259,7 +1439,7 @@ const AdminWebsiteCMS = () => {
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Chỉnh sửa: {editingSection && sectionLabels[editingSection.section_key]}
+                Chỉnh sửa: {editingSection && getSectionInfo(editingSection.section_key).label}
               </DialogTitle>
               <Button
                 variant="outline"
@@ -1484,22 +1664,75 @@ const AdminWebsiteCMS = () => {
               </div>
             </ScrollArea>
 
-            {/* Preview Section */}
+            {/* Preview Section with Live Device Switcher */}
             {showPreview && (
-              <div className="border-l pl-6">
-                <div className="mb-4">
-                  <Label className="flex items-center gap-2 text-muted-foreground">
-                    <Eye className="w-4 h-4" />
-                    Preview trực tiếp
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Xem trước nội dung trước khi lưu
-                  </p>
-                </div>
-                <ScrollArea className="h-[55vh]">
-                  <div className="scale-90 origin-top-left">
-                    <SectionPreview data={getPreviewData()} />
+              <div className="border-l pl-6 flex flex-col h-[65vh]">
+                <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <Label className="flex items-center gap-2 font-bold text-foreground">
+                      <Eye className="w-4 h-4 text-primary" />
+                      Preview Trực Tiếp
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Tự động cập nhật theo nội dung đang nhập
+                    </p>
                   </div>
+
+                  {/* Device Switcher Controls */}
+                  <div className="flex items-center gap-1 bg-muted p-1 rounded-xl">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={previewDevice === 'desktop' ? 'default' : 'ghost'}
+                      onClick={() => setPreviewDevice('desktop')}
+                      className="h-7 px-2 text-xs font-bold gap-1"
+                      title="Desktop Mode"
+                    >
+                      <Monitor className="w-3.5 h-3.5" /> Desktop
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={previewDevice === 'tablet' ? 'default' : 'ghost'}
+                      onClick={() => setPreviewDevice('tablet')}
+                      className="h-7 px-2 text-xs font-bold gap-1"
+                      title="Tablet (768px)"
+                    >
+                      <SplitSquareHorizontal className="w-3.5 h-3.5" /> Tablet
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={previewDevice === 'mobile' ? 'default' : 'ghost'}
+                      onClick={() => setPreviewDevice('mobile')}
+                      className="h-7 px-2 text-xs font-bold gap-1"
+                      title="Mobile (375px)"
+                    >
+                      <Smartphone className="w-3.5 h-3.5" /> Mobile
+                    </Button>
+                  </div>
+                </div>
+
+                <ScrollArea className="flex-1 rounded-xl border bg-muted/20 p-2">
+                  {previewDevice === 'mobile' ? (
+                    <div className="w-[350px] mx-auto my-3 border-[8px] border-gray-900 rounded-[36px] shadow-2xl bg-background overflow-hidden relative transition-all">
+                      {/* Mobile Notch */}
+                      <div className="w-24 h-4 bg-gray-900 mx-auto rounded-b-xl flex items-center justify-center mb-1">
+                        <div className="w-8 h-1 bg-gray-700 rounded-full" />
+                      </div>
+                      <div className="p-2 overflow-x-hidden">
+                        <SectionPreview data={getPreviewData()} />
+                      </div>
+                    </div>
+                  ) : previewDevice === 'tablet' ? (
+                    <div className="w-[580px] mx-auto my-3 border-6 border-gray-800 rounded-[24px] shadow-xl bg-background overflow-hidden p-2 transition-all">
+                      <SectionPreview data={getPreviewData()} />
+                    </div>
+                  ) : (
+                    <div className="w-full transition-all">
+                      <SectionPreview data={getPreviewData()} />
+                    </div>
+                  )}
                 </ScrollArea>
               </div>
             )}
@@ -1512,6 +1745,90 @@ const AdminWebsiteCMS = () => {
             <Button onClick={handleSaveSection} disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Custom Section Dialog */}
+      <Dialog open={isCreateSectionOpen} onOpenChange={setIsCreateSectionOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary" />
+              Tạo Section / Banner Mới
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="font-bold text-xs">Mã Định Danh (Section Key - không dấu, gạch dưới)</Label>
+              <Input
+                placeholder="VD: seasonal_tet_2026 hoặc courses_summer_sale"
+                value={newSectionData.section_key}
+                onChange={(e) => setNewSectionData(prev => ({ ...prev, section_key: e.target.value }))}
+                className="font-mono text-sm"
+              />
+              <p className="text-[11px] text-muted-foreground">Mã unique dùng để lập trình hoặc truy xuất trên giao diện website</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold text-xs">Tiêu đề (Tiếng Việt)</Label>
+              <Input
+                placeholder="VD: Chương trình Ưu đãi Tết 2026"
+                value={newSectionData.title_vi}
+                onChange={(e) => setNewSectionData(prev => ({ ...prev, title_vi: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs">Phụ đề (Tagline)</Label>
+                <Input
+                  placeholder="VD: Giảm ngay 30% học phí"
+                  value={newSectionData.subtitle_vi}
+                  onChange={(e) => setNewSectionData(prev => ({ ...prev, subtitle_vi: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-bold text-xs">Trang Áp Dụng (Phân loại)</Label>
+                <select
+                  value={newSectionData.page_category}
+                  onChange={(e) => setNewSectionData(prev => ({ ...prev, page_category: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-bold"
+                >
+                  {PAGE_CATEGORIES.filter(c => c.id !== 'all').map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold text-xs">Mô tả nội dung</Label>
+              <Textarea
+                placeholder="Mô tả chi tiết chương trình khuyến mãi hoặc section..."
+                value={newSectionData.description_vi}
+                onChange={(e) => setNewSectionData(prev => ({ ...prev, description_vi: e.target.value }))}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold text-xs">URL Ảnh bìa / Banner</Label>
+              <Input
+                placeholder="https://... hoặc paste đường dẫn ảnh"
+                value={newSectionData.image_url}
+                onChange={(e) => setNewSectionData(prev => ({ ...prev, image_url: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateSectionOpen(false)}>Hủy</Button>
+            <Button onClick={handleCreateCustomSection} className="font-bold gap-1 bg-primary">
+              <Save className="w-4 h-4" /> Tạo Section
             </Button>
           </DialogFooter>
         </DialogContent>

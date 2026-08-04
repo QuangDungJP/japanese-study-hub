@@ -2,7 +2,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Image, Film, Link, FolderOpen, X, Check, ChevronDown, ChevronUp, GripVertical, Star, Globe } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, Image, Film, Link, FolderOpen, X, Check, ChevronDown, ChevronUp, GripVertical, Star, Globe, Layout, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +12,21 @@ import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+const DIMENSION_HINT_MAP: Record<string, string> = {
+  hero: "💡 Kích thước khuyến nghị: 1920 × 800 px (Banner Slide / Cover) hoặc 800 × 600 px (Card)",
+  teachers: "💡 Kích thước khuyến nghị: 400 × 400 px (Ảnh đại diện 1:1 Vuông), Tối đa 2MB",
+  zoom: "💡 Kích thước khuyến nghị: 1200 × 675 px (Tỷ lệ chuẩn 16:9), Tối đa 3MB",
+  skills: "💡 Kích thước khuyến nghị: 1200 × 675 px (Tỷ lệ 16:9)",
+  languages: "💡 Kích thước khuyến nghị: 1200 × 675 px (Tỷ lệ 16:9)",
+  features: "💡 Kích thước khuyến nghị: 1200 × 675 px (Tỷ lệ 16:9)",
+  blog: "💡 Kích thước khuyến nghị: 800 × 500 px (Tỷ lệ 16:10)",
+  events: "💡 Kích thước khuyến nghị: 1200 × 630 px (Banner sự kiện 1.91:1)",
+  cta: "💡 Kích thước khuyến nghị: 1920 × 600 px (Full Width Banner)",
+  about_hero: "💡 Kích thước khuyến nghị: 1920 × 800 px",
+  about_story: "💡 Kích thước khuyến nghị: 1200 × 675 px",
+  default: "💡 Kích thước khuyến nghị: 1200 × 675 px (Tỷ lệ 16:9)"
+};
 
 interface SectionEditorFieldsProps {
   sectionKey: string;
@@ -97,26 +113,18 @@ const MediaLibraryPicker = ({
                     onClick={() => setSelectedUrl(file.url)}
                     className={cn(
                       "relative group rounded-xl overflow-hidden border-2 transition-all aspect-square bg-muted/50",
-                      selectedUrl === file.url
-                        ? "border-primary ring-2 ring-primary/20 shadow-lg"
-                        : "border-border hover:border-primary/40"
+                      selectedUrl === file.url ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"
                     )}
                   >
                     {isVideo ? (
-                      <div className="w-full h-full flex items-center justify-center bg-muted">
-                        <Film className="w-8 h-8 text-muted-foreground" />
-                      </div>
+                      <video src={file.url} className="w-full h-full object-cover" />
                     ) : (
-                      <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                      <img src={file.url} alt="" className="w-full h-full object-cover" />
                     )}
-                    {selectedUrl === file.url && (
-                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                          <Check className="w-4 h-4 text-primary-foreground" />
-                        </div>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between">
+                      <div className="flex justify-end">
+                        {isVideo ? <Film className="w-4 h-4 text-white" /> : <Image className="w-4 h-4 text-white" />}
                       </div>
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
                       <p className="text-[10px] text-white truncate">{file.name}</p>
                     </div>
                   </button>
@@ -138,19 +146,21 @@ const MediaLibraryPicker = ({
   );
 };
 
-// Media field: upload + library + URL input
+// Media field: upload + library + URL input + Dimension hint
 const MediaField = ({
   label,
   value,
   onChange,
   accept = "image",
   bucket = "website-assets",
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (url: string) => void;
   accept?: "image" | "video" | "both";
   bucket?: string;
+  hint?: string;
 }) => {
   const [mode, setMode] = useState<"upload" | "library" | "url">("upload");
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -159,7 +169,14 @@ const MediaField = ({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium">{label}</Label>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+        <Label className="text-xs font-bold text-foreground">{label}</Label>
+        {hint && (
+          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full w-fit">
+            {hint}
+          </span>
+        )}
+      </div>
 
       {/* Current preview */}
       {value && (
@@ -191,6 +208,7 @@ const MediaField = ({
           {/* Mode tabs */}
           <div className="flex gap-1 bg-muted/50 rounded-lg p-1">
             <button
+              type="button"
               onClick={() => setMode("upload")}
               className={cn("flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-md transition-all",
                 mode === "upload" ? "bg-background text-foreground shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
@@ -199,6 +217,7 @@ const MediaField = ({
               <Image className="w-3.5 h-3.5" /> Upload
             </button>
             <button
+              type="button"
               onClick={() => { setMode("library"); setLibraryOpen(true); }}
               className={cn("flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-md transition-all",
                 mode === "library" ? "bg-background text-foreground shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
@@ -207,6 +226,7 @@ const MediaField = ({
               <FolderOpen className="w-3.5 h-3.5" /> Thư viện
             </button>
             <button
+              type="button"
               onClick={() => setMode("url")}
               className={cn("flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-md transition-all",
                 mode === "url" ? "bg-background text-foreground shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
@@ -222,7 +242,7 @@ const MediaField = ({
               onChange={onChange}
               accept={accept}
               bucket={bucket}
-              folder="teachers"
+              folder="website"
               maxSizeMB={20}
               aspectRatio="video"
               placeholder="Kéo thả hoặc click để upload"
@@ -249,54 +269,430 @@ const MediaField = ({
 };
 
 const HeroEditor = ({ content, onChange }: { content: Record<string, any>; onChange: (c: Record<string, any>) => void }) => {
-  const update = (key: string, value: string) => onChange({ ...content, [key]: value });
+  const update = (key: string, value: any) => onChange({ ...content, [key]: value });
+  const heroMode = content.hero_mode || 'standard';
+  const carouselSlides = (content.carousel_slides as any[]) || [];
+  const primaryBtn = content.primary_btn || { enabled: true, text: 'Học miễn phí ngay', url: '/auth' };
+  const secondaryBtn = content.secondary_btn || { enabled: true, text: 'Xem demo', url: '/giao-vien' };
   const features = (content.features as string[]) || [];
 
   return (
-    <div className="space-y-4">
-      <h3 className="font-semibold text-foreground">Thống kê Hero</h3>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">Số học viên</Label>
-          <Input value={content.students || ""} onChange={(e) => update("students", e.target.value)} placeholder="50K+" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Số giáo viên</Label>
-          <Input value={content.teachers || ""} onChange={(e) => update("teachers", e.target.value)} placeholder="200+" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Số bài học</Label>
-          <Input value={content.lessons || ""} onChange={(e) => update("lessons", e.target.value)} placeholder="1000+" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">Rating</Label>
-          <Input value={content.rating || ""} onChange={(e) => update("rating", e.target.value)} placeholder="4.9" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Số đánh giá</Label>
-          <Input value={content.reviews || ""} onChange={(e) => update("reviews", e.target.value)} placeholder="2.5k đánh giá" />
-        </div>
-      </div>
+    <div className="space-y-6 border p-4 rounded-xl bg-muted/20">
+      {/* Mode Selector */}
       <div className="space-y-2">
-        <Label className="text-xs">Tính năng nổi bật</Label>
-        {features.map((f, i) => (
-          <div key={i} className="flex gap-2">
-            <Input value={f} onChange={(e) => {
-              const newF = [...features];
-              newF[i] = e.target.value;
-              onChange({ ...content, features: newF });
-            }} />
-            <Button variant="ghost" size="icon" onClick={() => {
-              onChange({ ...content, features: features.filter((_, j) => j !== i) });
-            }}><Trash2 className="w-4 h-4" /></Button>
+        <Label className="text-sm font-bold flex items-center gap-2">
+          <Layout className="w-4 h-4 text-primary" /> Chế độ hiển thị Hero
+        </Label>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <button
+            type="button"
+            onClick={() => update("hero_mode", "center_full")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              heroMode === "center_full" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">🌄 Tràn Full Screen</p>
+            <p className="text-[10px] text-muted-foreground">Ảnh tràn 100% chiều rộng</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => update("hero_mode", "center_poster")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              (heroMode === "center_poster" || !heroMode) ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">🖼️ Center Poster</p>
+            <p className="text-[10px] text-muted-foreground">Ảnh ở giữa + Nút bấm ở dưới</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => update("hero_mode", "standard")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              heroMode === "standard" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">Standard Split</p>
+            <p className="text-[10px] text-muted-foreground">Chữ bên trái + Card bên phải</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => update("hero_mode", "single_cover")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              heroMode === "single_cover" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">Single Cover</p>
+            <p className="text-[10px] text-muted-foreground">1 Ảnh bìa ngang toàn bộ</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => update("hero_mode", "carousel")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              heroMode === "carousel" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">Carousel Slide</p>
+            <p className="text-[10px] text-muted-foreground">Slide trượt nhiều banner</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Mode Carousel Editor */}
+      {heroMode === "carousel" && (
+        <div className="space-y-4 p-4 rounded-xl bg-background border">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Danh sách Slides Banner (Carousel)
+            </h4>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const newSlides = [...carouselSlides, {
+                  image_url: "",
+                  title_vi: "Tiêu đề Slide mới",
+                  subtitle_vi: "Khuyến mãi hot",
+                  description_vi: "Mô tả cho slide mới...",
+                  button_text_vi: "Xem ngay",
+                  button_url: "/auth"
+                }];
+                update("carousel_slides", newSlides);
+              }}
+              className="h-7 text-xs font-bold gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" /> Thêm Slide
+            </Button>
+          </div>
+
+          {carouselSlides.map((slide, idx) => (
+            <div key={idx} className="p-3 rounded-xl border bg-muted/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold">Slide #{idx + 1}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  onClick={() => {
+                    update("carousel_slides", carouselSlides.filter((_, i) => i !== idx));
+                  }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+
+              <MediaField
+                label={`Ảnh Banner Slide #${idx + 1}`}
+                value={slide.image_url || ""}
+                onChange={(url) => {
+                  const updated = [...carouselSlides];
+                  updated[idx] = { ...updated[idx], image_url: url };
+                  update("carousel_slides", updated);
+                }}
+                hint="💡 1920 × 800 px (tỷ lệ 21:9)"
+              />
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[11px]">Tiêu đề Slide</Label>
+                  <Input
+                    value={slide.title_vi || ""}
+                    onChange={(e) => {
+                      const updated = [...carouselSlides];
+                      updated[idx] = { ...updated[idx], title_vi: e.target.value };
+                      update("carousel_slides", updated);
+                    }}
+                    placeholder="Tiêu đề banner"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Phụ đề (Tagline)</Label>
+                  <Input
+                    value={slide.subtitle_vi || ""}
+                    onChange={(e) => {
+                      const updated = [...carouselSlides];
+                      updated[idx] = { ...updated[idx], subtitle_vi: e.target.value };
+                      update("carousel_slides", updated);
+                    }}
+                    placeholder="Phụ đề banner"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-[11px]">Mô tả Slide</Label>
+                <Textarea
+                  value={slide.description_vi || ""}
+                  onChange={(e) => {
+                    const updated = [...carouselSlides];
+                    updated[idx] = { ...updated[idx], description_vi: e.target.value };
+                    update("carousel_slides", updated);
+                  }}
+                  placeholder="Mô tả cho slide banner này"
+                  rows={2}
+                  className="text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[11px]">Tên nút bấm CTA</Label>
+                  <Input
+                    value={slide.button_text_vi || ""}
+                    onChange={(e) => {
+                      const updated = [...carouselSlides];
+                      updated[idx] = { ...updated[idx], button_text_vi: e.target.value };
+                      update("carousel_slides", updated);
+                    }}
+                    placeholder="Xem ngay"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Link nút bấm</Label>
+                  <Input
+                    value={slide.button_url || ""}
+                    onChange={(e) => {
+                      const updated = [...carouselSlides];
+                      updated[idx] = { ...updated[idx], button_url: e.target.value };
+                      update("carousel_slides", updated);
+                    }}
+                    placeholder="/auth hoặc https://..."
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Dynamic CTA Buttons Manager with Add/Delete/Reorder */}
+      <div className="space-y-3 p-4 rounded-xl bg-background border">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Link className="w-3.5 h-3.5 text-primary" /> Quản Lý Danh Sách Nút Bấm Call-To-Action (CTA)
+          </h4>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const currentBtns = content.custom_buttons || [
+                primaryBtn,
+                secondaryBtn
+              ];
+              const newBtn = {
+                id: `btn_${Date.now()}`,
+                text: "Nút bấm mới",
+                url: "/khoa-hoc",
+                variant: "primary",
+                enabled: true
+              };
+              update("custom_buttons", [...currentBtns, newBtn]);
+            }}
+            className="h-7 text-xs font-bold gap-1 text-primary border-primary/40 hover:bg-primary/10"
+          >
+            <Plus className="w-3.5 h-3.5" /> Thêm Nút Bấm Mới
+          </Button>
+        </div>
+
+        {/* Buttons Placement Selector */}
+        <div className="p-3 rounded-lg bg-muted/30 border space-y-2">
+          <Label className="text-xs font-bold">Vị Trí & Phong Cách Nút Bấm</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => update("buttons_placement", "overlay")}
+              className={cn("p-2 text-left rounded-lg border text-xs transition-all",
+                content.buttons_placement === "overlay" ? "border-primary bg-primary/10 font-bold" : "bg-card hover:bg-muted"
+              )}
+            >
+              <p className="font-bold">🌄 Đè Lên Ảnh (Background Overlay)</p>
+              <p className="text-[10px] text-muted-foreground">Nút bấm hiển thị trực tiếp trên tấm ảnh bìa</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => update("buttons_placement", "below")}
+              className={cn("p-2 text-left rounded-lg border text-xs transition-all",
+                (!content.buttons_placement || content.buttons_placement === "below") ? "border-primary bg-primary/10 font-bold" : "bg-card hover:bg-muted"
+              )}
+            >
+              <p className="font-bold">🖼️ Bên Dưới Banner</p>
+              <p className="text-[10px] text-muted-foreground">Nút bấm đặt ở phần chi tiết bên dưới ảnh</p>
+            </button>
+          </div>
+        </div>
+
+        {/* Buttons List */}
+        {((content.custom_buttons as any[]) || [primaryBtn, secondaryBtn]).map((btn: any, idx: number, arr: any[]) => (
+          <div key={btn.id || idx} className="p-3 rounded-lg border bg-muted/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-md">Nút #{idx + 1}</span>
+                <span className="text-xs font-bold truncate max-w-[140px]">{btn.text || "Nút bấm"}</span>
+              </div>
+              
+              <div className="flex items-center gap-1.5">
+                {/* Reorder Buttons */}
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  disabled={idx === 0}
+                  onClick={() => {
+                    const list = [...arr];
+                    const temp = list[idx - 1];
+                    list[idx - 1] = list[idx];
+                    list[idx] = temp;
+                    update("custom_buttons", list);
+                  }}
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                >
+                  ↑
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  disabled={idx === arr.length - 1}
+                  onClick={() => {
+                    const list = [...arr];
+                    const temp = list[idx + 1];
+                    list[idx + 1] = list[idx];
+                    list[idx] = temp;
+                    update("custom_buttons", list);
+                  }}
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                >
+                  ↓
+                </Button>
+                <span className="text-[11px] text-muted-foreground ml-1">Bật:</span>
+                <Switch
+                  checked={btn.enabled !== false}
+                  onCheckedChange={(val) => {
+                    const list = [...arr];
+                    list[idx] = { ...list[idx], enabled: val };
+                    update("custom_buttons", list);
+                  }}
+                />
+                {arr.length > 1 && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      const list = arr.filter((_, i) => i !== idx);
+                      update("custom_buttons", list);
+                    }}
+                    className="h-7 w-7 text-rose-500 hover:text-rose-700 hover:bg-rose-50 ml-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {btn.enabled !== false && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                <div>
+                  <Label className="text-[11px]">Nội dung chữ</Label>
+                  <Input
+                    value={btn.text || ""}
+                    onChange={(e) => {
+                      const list = [...arr];
+                      list[idx] = { ...list[idx], text: e.target.value };
+                      update("custom_buttons", list);
+                    }}
+                    placeholder="Tên nút bấm"
+                    className="h-8 text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Đường dẫn (Link)</Label>
+                  <Input
+                    value={btn.url || ""}
+                    onChange={(e) => {
+                      const list = [...arr];
+                      list[idx] = { ...list[idx], url: e.target.value };
+                      update("custom_buttons", list);
+                    }}
+                    placeholder="/auth hoặc https://..."
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Kiểu thiết kế (Variant)</Label>
+                  <select
+                    value={btn.variant || "primary"}
+                    onChange={(e) => {
+                      const list = [...arr];
+                      list[idx] = { ...list[idx], variant: e.target.value };
+                      update("custom_buttons", list);
+                    }}
+                    className="w-full h-8 px-2 text-xs rounded-md border border-input bg-background"
+                  >
+                    <option value="primary">Dark Navy Solid (Nút chính)</option>
+                    <option value="outline">White Border (Viền)</option>
+                    <option value="rose">Rose Red (Màu đỏ)</option>
+                    <option value="gold">Gold (Màu vàng)</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         ))}
-        <Button variant="outline" size="sm" onClick={() => onChange({ ...content, features: [...features, ""] })}>
-          <Plus className="w-3 h-3 mr-1" /> Thêm
-        </Button>
       </div>
+        {/* Hero Stats Customizer */}
+        <div className="p-3 rounded-xl border bg-background space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <Star className="w-3.5 h-3.5" /> Thống kê Khối Hero (KPI Stats)
+            </h4>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground">Bật/Tắt Thống kê:</span>
+              <Switch
+                checked={content.show_stats !== false}
+                onCheckedChange={(val) => update("show_stats", val)}
+              />
+            </div>
+          </div>
+
+          {content.show_stats !== false && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                <Label className="text-[11px] font-bold">Chỉ số #1 (Học viên)</Label>
+                <Input
+                  value={content.students || "50K+"}
+                  onChange={(e) => update("students", e.target.value)}
+                  placeholder="50K+"
+                  className="h-8 text-xs font-bold"
+                />
+              </div>
+              <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                <Label className="text-[11px] font-bold">Chỉ số #2 (Giáo viên)</Label>
+                <Input
+                  value={content.teachers || "200+"}
+                  onChange={(e) => update("teachers", e.target.value)}
+                  placeholder="200+"
+                  className="h-8 text-xs font-bold"
+                />
+              </div>
+              <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                <Label className="text-[11px] font-bold">Chỉ số #3 (Bài học)</Label>
+                <Input
+                  value={content.lessons || "1000+"}
+                  onChange={(e) => update("lessons", e.target.value)}
+                  placeholder="1000+"
+                  className="h-8 text-xs font-bold"
+                />
+              </div>
+            </div>
+          )}
+        </div>
     </div>
   );
 };
@@ -603,6 +999,120 @@ const FooterEditor = ({ content, onChange }: { content: Record<string, any>; onC
   );
 };
 
+const GenericSectionEditor = ({ sectionKey, content, onChange }: { sectionKey: string; content: Record<string, any>; onChange: (c: Record<string, any>) => void }) => {
+  const update = (key: string, value: any) => onChange({ ...content, [key]: value });
+  const layoutMode = content.layout_mode || 'standard_split';
+  const primaryBtn = content.primary_btn || { enabled: true, text: 'Xem chi tiết', url: '/auth' };
+  const secondaryBtn = content.secondary_btn || { enabled: false, text: 'Liên hệ tư vấn', url: '/lien-he' };
+  const features = (content.features as string[]) || [];
+
+  return (
+    <div className="space-y-5 border p-4 rounded-2xl bg-muted/20">
+      {/* Layout Mode Selector */}
+      <div className="space-y-2">
+        <Label className="text-xs font-bold flex items-center gap-2">
+          <Layout className="w-4 h-4 text-primary" /> Chọn Kiểu Layout Hiển Thị Section
+        </Label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button
+            type="button"
+            onClick={() => update("layout_mode", "standard_split")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              layoutMode === "standard_split" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">Text + Ảnh (Split)</p>
+            <p className="text-[10px] text-muted-foreground">Chữ bên trái + Ảnh bên phải</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => update("layout_mode", "full_banner")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              layoutMode === "full_banner" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">1 Ảnh Full Banner</p>
+            <p className="text-[10px] text-muted-foreground">Banner 100% chiều ngang</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => update("layout_mode", "carousel")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              layoutMode === "carousel" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">Carousel Slide</p>
+            <p className="text-[10px] text-muted-foreground">Trượt nhiều banner</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => update("layout_mode", "text_only")}
+            className={cn("p-2.5 text-left rounded-xl border-2 transition-all",
+              layoutMode === "text_only" ? "border-primary bg-primary/10 font-bold" : "border-border hover:bg-muted"
+            )}
+          >
+            <p className="text-xs font-bold">Chỉ Chữ (Text Only)</p>
+            <p className="text-[10px] text-muted-foreground">Khối văn bản trung tâm</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Button Customizers */}
+      <div className="space-y-3 p-3 rounded-xl bg-background border">
+        <Label className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+          <Sparkles className="w-3.5 h-3.5" /> Tùy chỉnh Nút bấm Hành động (CTA Buttons)
+        </Label>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-2 p-2.5 rounded-lg border bg-muted/20">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold">Nút Chính (Primary)</Label>
+              <Switch
+                checked={primaryBtn.enabled !== false}
+                onCheckedChange={(checked) => update("primary_btn", { ...primaryBtn, enabled: checked })}
+              />
+            </div>
+            <Input
+              placeholder="VD: Học miễn phí ngay"
+              value={primaryBtn.text || ""}
+              onChange={(e) => update("primary_btn", { ...primaryBtn, text: e.target.value })}
+              className="h-8 text-xs font-bold"
+            />
+            <Input
+              placeholder="VD: /auth"
+              value={primaryBtn.url || ""}
+              onChange={(e) => update("primary_btn", { ...primaryBtn, url: e.target.value })}
+              className="h-8 text-xs font-mono"
+            />
+          </div>
+
+          <div className="space-y-2 p-2.5 rounded-lg border bg-muted/20">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold">Nút Phụ (Secondary)</Label>
+              <Switch
+                checked={secondaryBtn.enabled === true}
+                onCheckedChange={(checked) => update("secondary_btn", { ...secondaryBtn, enabled: checked })}
+              />
+            </div>
+            <Input
+              placeholder="VD: Tìm hiểu thêm"
+              value={secondaryBtn.text || ""}
+              onChange={(e) => update("secondary_btn", { ...secondaryBtn, text: e.target.value })}
+              className="h-8 text-xs font-bold"
+            />
+            <Input
+              placeholder="VD: /lien-he"
+              value={secondaryBtn.url || ""}
+              onChange={(e) => update("secondary_btn", { ...secondaryBtn, url: e.target.value })}
+              className="h-8 text-xs font-mono"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFieldsProps) => {
   switch (sectionKey) {
     case "hero":
@@ -614,7 +1124,7 @@ const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFie
     case "footer":
       return <FooterEditor content={content} onChange={onChange} />;
     default:
-      return null;
+      return <GenericSectionEditor sectionKey={sectionKey} content={content} onChange={onChange} />;
   }
 };
 
