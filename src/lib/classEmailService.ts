@@ -208,10 +208,11 @@ export async function sendClassScheduleEmails(params: SendClassScheduleEmailPara
     const studentIds = (classStudents || []).map(s => s.student_id);
 
     // 3. Fetch profiles with emails
-    const { data: profiles } = await supabase
+    const { data: profilesData } = await supabase
       .from('profiles')
-      .select('user_id, full_name, email')
+      .select('user_id, full_name')
       .in('user_id', studentIds);
+    const profiles = (profilesData || []) as any[];
 
     const recipients: { email: string; name: string; type: 'student' | 'teacher' }[] = [];
 
