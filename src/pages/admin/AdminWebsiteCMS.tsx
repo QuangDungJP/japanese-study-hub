@@ -149,6 +149,7 @@ const AdminWebsiteCMS = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sectionSearch, setSectionSearch] = useState('');
   
   // Custom section creation modal
   const [isCreateSectionOpen, setIsCreateSectionOpen] = useState(false);
@@ -755,132 +756,94 @@ const AdminWebsiteCMS = () => {
         </TabsContent>
 
         {/* Sections Tab */}
-        <TabsContent value="sections" className="space-y-6">
+        <TabsContent value="sections" className="space-y-4">
           {/* Header Action Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-muted/30 border shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-muted/30 border">
             <div>
               <h2 className="text-lg font-extrabold flex items-center gap-2">
                 <Globe className="w-5 h-5 text-primary" />
-                Quản lý Section Từng Trang & Banner Theo Mùa
+                Nội dung &amp; Trang bìa từng trang
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Chỉnh sửa toàn bộ nội dung, ảnh bìa của từng trang (Trang chủ, Giới thiệu, Khóa học, Meeting, Blog, Lễ Tết) tránh hardcode.
+                Chọn trang ở cột trái → chỉnh nội dung, ảnh bìa và layout banner của từng khối.
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                onClick={() => setIsCreateSectionOpen(true)}
-                size="sm"
-                className="font-bold gap-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
-              >
-                <Plus className="w-4 h-4" /> Tạo Section Mới
-              </Button>
+            <Button onClick={() => setIsCreateSectionOpen(true)} size="sm" className="font-bold gap-1 shrink-0">
+              <Plus className="w-4 h-4" /> Tạo Section Mới
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-4 items-start">
+            {/* Page sidebar */}
+            <div className="rounded-2xl border bg-card overflow-hidden lg:sticky lg:top-4">
+              <p className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b bg-muted/30">
+                Trang trên website
+              </p>
+              <div className="p-1.5 space-y-0.5 max-h-[60vh] overflow-y-auto">
+                {PAGE_CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategory === cat.id;
+                  const count = cat.id === 'all'
+                    ? sections.length
+                    : sections.filter(s => getSectionInfo(s.section_key).page === cat.id).length;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-left text-xs font-semibold transition-all ${
+                        isSelected ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted text-foreground/80'
+                      }`}
+                    >
+                      <span className="truncate">{cat.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isSelected ? 'bg-primary-foreground/20' : 'bg-muted-foreground/10 text-muted-foreground'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Page Category Filter Bar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b scrollbar-none">
-            {PAGE_CATEGORIES.map((cat) => {
-              const isSelected = selectedCategory === cat.id;
-              const count = cat.id === 'all' 
-                ? sections.length 
-                : sections.filter(s => getSectionInfo(s.section_key).page === cat.id).length;
+            {/* Section list */}
+            <div className="space-y-3">
+              <div className="relative">
+                <Input
+                  value={sectionSearch}
+                  onChange={(e) => setSectionSearch(e.target.value)}
+                  placeholder="Tìm section theo tên hoặc key (vd: hero, banner, cta)..."
+                  className="pl-9 h-10 rounded-xl"
+                />
+                <Globe className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              </div>
 
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
-                    isSelected
-                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                      : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  <span>{cat.name}</span>
-                  <Badge 
-                    variant={isSelected ? 'secondary' : 'outline'} 
-                    className="text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center font-bold"
-                  >
-                    {count}
-                  </Badge>
-                </button>
-              );
-            })}
-          </div>
+              <div className="space-y-2.5">
+                {visibleSections.map((section) => {
+                  const info = getSectionInfo(section.section_key);
+                  const isCustom = !['hero', 'skills', 'languages', 'teachers', 'zoom', 'features', 'blog', 'events', 'testimonials', 'cta', 'pricing', 'footer', 'about_hero', 'about_story', 'about_values'].includes(section.section_key);
 
-          {/* Section Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {sections
-              .filter((section) => {
-                if (selectedCategory === 'all') return true;
-                const info = getSectionInfo(section.section_key);
-                return info.page === selectedCategory;
-              })
-              .map((section) => {
-                const info = getSectionInfo(section.section_key);
-                const isCustom = !['hero', 'skills', 'languages', 'teachers', 'zoom', 'features', 'blog', 'events', 'testimonials', 'cta', 'pricing', 'footer', 'about_hero', 'about_story', 'about_values'].includes(section.section_key);
-
-                return (
-                  <Card key={section.id} className="overflow-hidden border-2 hover:border-primary/40 transition-all flex flex-col justify-between shadow-sm hover:shadow-md">
-                    <CardHeader className="p-4 bg-muted/20 border-b flex flex-row items-center justify-between space-y-0">
-                      <div className="flex items-center gap-2">
-                        <Layout className="w-4 h-4 text-primary shrink-0" />
-                        <div>
-                          <CardTitle className="text-sm font-bold truncate">
-                            {info.label}
-                          </CardTitle>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
-                              {section.section_key}
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px] font-semibold">
-                              {PAGE_CATEGORIES.find(c => c.id === info.page)?.name.split(' ')[1] || info.page}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={section.is_active}
-                          onCheckedChange={() => toggleSectionActive(section)}
-                          title={section.is_active ? "Đang hiển thị" : "Đang ẩn"}
-                        />
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                      {/* Media Banner Thumbnail Preview */}
-                      <div className="relative h-36 sm:h-44 w-full rounded-xl bg-muted overflow-hidden border group shrink-0">
+                  return (
+                    <div
+                      key={section.id}
+                      className={`group flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-2xl border bg-card transition-all hover:border-primary/50 hover:shadow-sm ${!section.is_active ? 'opacity-60' : ''}`}
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative w-full sm:w-40 h-24 rounded-xl overflow-hidden bg-muted shrink-0 border">
                         {section.image_url ? (
-                          <img 
-                            src={section.image_url} 
-                            alt={section.title_vi || section.section_key}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
+                          <img src={section.image_url} alt={section.title_vi || section.section_key} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/40 p-4 text-center">
-                            <ImageIcon className="w-8 h-8 opacity-40 mb-1" />
-                            <span className="text-xs font-medium">Chưa có ảnh bìa / banner</span>
+                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                            <ImageIcon className="w-5 h-5 opacity-40" />
+                            <span className="text-[10px] mt-1">Chưa có ảnh</span>
                           </div>
                         )}
-
-                        {/* Quick Image Upload Overlay Button */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 backdrop-blur-xs">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              const input = document.getElementById(`quick-upload-${section.id}`) as HTMLInputElement;
-                              input?.click();
-                            }}
-                            disabled={uploading}
-                            className="font-bold text-xs gap-1.5 shadow-lg"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                            {uploading ? 'Đang upload...' : '📷 Đổi Ảnh Bìa'}
-                          </Button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => (document.getElementById(`quick-upload-${section.id}`) as HTMLInputElement)?.click()}
+                          disabled={uploading}
+                          className="absolute inset-0 bg-black/55 text-white text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1"
+                        >
+                          <Upload className="w-3.5 h-3.5" /> {uploading ? 'Đang tải...' : 'Đổi ảnh bìa'}
+                        </button>
                         <input
                           id={`quick-upload-${section.id}`}
                           type="file"
@@ -890,60 +853,54 @@ const AdminWebsiteCMS = () => {
                         />
                       </div>
 
-                      {/* Text Details Snippet */}
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-foreground line-clamp-1">
-                          {section.title_vi || section.title || '(Chưa cài đặt tiêu đề)'}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <h3 className="text-sm font-bold truncate">{info.label}</h3>
+                          <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">{section.section_key}</Badge>
+                          {section.video_url && <Badge variant="secondary" className="text-[10px] gap-1"><Film className="w-3 h-3" /> Video</Badge>}
+                        </div>
+                        <p className="text-xs font-semibold text-foreground/80 line-clamp-1">
+                          {section.title_vi || section.title || '(Chưa đặt tiêu đề)'}
                         </p>
-                        <p className="text-[11px] text-muted-foreground line-clamp-2">
-                          {section.description_vi || section.description || 'Chưa có mô tả nội dung...'}
+                        <p className="text-[11px] text-muted-foreground line-clamp-1">
+                          {section.description_vi || section.subtitle_vi || 'Chưa có mô tả'}
                         </p>
                       </div>
 
-                      {/* Footer Card Action Buttons */}
-                      <div className="pt-2 flex items-center justify-between gap-2 border-t mt-auto">
-                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          {section.image_url && <span className="flex items-center text-emerald-600 font-semibold gap-1"><ImageIcon className="w-3 h-3" /> Có Banner</span>}
-                          {section.video_url && <span className="flex items-center text-blue-600 font-semibold gap-1"><Film className="w-3 h-3" /> Có Video</span>}
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          {isCustom && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleDeleteSection(section)}
-                              title="Xóa Section"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            onClick={() => openEditDialog(section)}
-                            className="gap-1 font-bold text-xs h-8"
-                          >
-                            <Edit className="w-3.5 h-3.5" /> Chỉnh sửa
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                        <Switch
+                          checked={section.is_active}
+                          onCheckedChange={() => toggleSectionActive(section)}
+                          title={section.is_active ? 'Đang hiển thị' : 'Đang ẩn'}
+                        />
+                        {isCustom && (
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSection(section)} title="Xóa Section">
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
-                        </div>
+                        )}
+                        <Button size="sm" onClick={() => openEditDialog(section)} className="gap-1 font-bold text-xs h-8">
+                          <Edit className="w-3.5 h-3.5" /> Chỉnh sửa
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
 
-          {sections.filter(s => selectedCategory === 'all' || getSectionInfo(s.section_key).page === selectedCategory).length === 0 && (
-            <div className="text-center py-12 border rounded-2xl bg-muted/20 text-muted-foreground">
-              <Globe className="w-12 h-12 mx-auto mb-3 opacity-40" />
-              <p className="font-bold text-sm">Chưa có Section nào trong mục này</p>
-              <p className="text-xs mt-1">Bấm nút "Tạo Section Mới" phía trên để thêm banner / nội dung cho trang này</p>
-              <Button onClick={() => setIsCreateSectionOpen(true)} className="mt-4 font-bold text-xs gap-1.5">
-                <Plus className="w-4 h-4" /> Tạo Section Mới Ngay
-              </Button>
+              {visibleSections.length === 0 && (
+                <div className="text-center py-12 border rounded-2xl bg-muted/20 text-muted-foreground">
+                  <Globe className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="font-bold text-sm">Không tìm thấy section nào</p>
+                  <p className="text-xs mt-1">Đổi trang ở cột trái, xóa từ khóa tìm kiếm, hoặc tạo section mới.</p>
+                  <Button onClick={() => setIsCreateSectionOpen(true)} className="mt-4 font-bold text-xs gap-1.5">
+                    <Plus className="w-4 h-4" /> Tạo Section Mới
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </TabsContent>
 
         {/* Pricing Tab */}
