@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { GripVertical, Save, Loader2, Home, Eye, EyeOff } from 'lucide-react';
+import { GripVertical, Save, Loader2, Home, Eye, EyeOff, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -77,6 +77,20 @@ export default function HomepageSectionOrder() {
     setChanged(true);
   };
 
+  const move = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= sections.length) return;
+    const updated = [...sections];
+    [updated[index], updated[target]] = [updated[target], updated[index]];
+    setSections(updated);
+    setChanged(true);
+  };
+
+  const resetOrder = () => {
+    setSections(defaultSections);
+    setChanged(true);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -113,10 +127,15 @@ export default function HomepageSectionOrder() {
             </div>
           </div>
           {changed && (
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-              Lưu
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="ghost" onClick={resetOrder} className="gap-1 text-xs">
+                <RotateCcw className="w-3.5 h-3.5" /> Mặc định
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                Lưu thứ tự
+              </Button>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -134,9 +153,11 @@ export default function HomepageSectionOrder() {
               !section.visible ? 'opacity-50 bg-muted/30' : ''
             }`}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}</span>
+              <span className="w-6 h-6 shrink-0 rounded-md bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">
+                {index + 1}
+              </span>
               <div>
                 <h4 className="font-medium text-sm">{section.label}</h4>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -145,11 +166,33 @@ export default function HomepageSectionOrder() {
                 </p>
               </div>
             </div>
-            <Switch
-              checked={section.visible}
-              onCheckedChange={() => toggleVisibility(index)}
-              disabled={section.id === 'hero'}
-            />
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                disabled={index === 0}
+                onClick={() => move(index, -1)}
+                title="Di chuyển lên"
+              >
+                <ArrowUp className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                disabled={index === sections.length - 1}
+                onClick={() => move(index, 1)}
+                title="Di chuyển xuống"
+              >
+                <ArrowDown className="w-3.5 h-3.5" />
+              </Button>
+              <Switch
+                checked={section.visible}
+                onCheckedChange={() => toggleVisibility(index)}
+                disabled={section.id === 'hero'}
+              />
+            </div>
           </div>
         ))}
       </CardContent>
