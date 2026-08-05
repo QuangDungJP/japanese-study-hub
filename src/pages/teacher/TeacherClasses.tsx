@@ -87,6 +87,7 @@ interface ClassData {
   courses?: { title_vi: string };
   total_sessions?: number | null;
   custom_fields?: { total_sessions?: number } | null;
+  google_meet_url?: string | null;
 }
 
 interface Student {
@@ -95,6 +96,8 @@ interface Student {
   enrolled_at: string;
   status: string;
   profiles?: { full_name: string; avatar_url: string | null };
+  evaluation_result?: string | null;
+  evaluation_grade?: string | null;
   progress?: {
     total_xp: number;
     streak: number;
@@ -459,7 +462,7 @@ const TeacherClasses = () => {
         onSaveGrading: async (newScore: number, feedback: string) => {
           const { error } = await supabase
             .from('exam_attempts')
-            .update({ score: newScore, feedback: feedback.trim() || null, status: 'graded' })
+            .update({ score: newScore, feedback: feedback.trim() || null, status: 'graded' } as any)
             .eq('id', sub.id);
           if (error) throw error;
 
@@ -812,7 +815,7 @@ const TeacherClasses = () => {
         examsInfo = exm || [];
       }
 
-      const examSubmissions: Submission[] = (attemptsData || []).map(att => {
+      const examSubmissions: Submission[] = (attemptsData || []).map((att: any) => {
         const exam = examsInfo.find(e => e.id === att.exam_id);
         const profile = profiles.find(p => p.user_id === att.student_id || p.id === att.student_id);
 
@@ -1264,7 +1267,7 @@ const TeacherClasses = () => {
             score: scoreNum,
             feedback: gradingFeedback.trim() || null,
             status: 'graded',
-          })
+          } as any)
           .eq('id', selectedSubmission.id);
         if (error) throw error;
       } else {

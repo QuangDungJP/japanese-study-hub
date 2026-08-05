@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Sparkles, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { resolveBannerStyle, bannerOverlayStyle, BANNER_HEIGHT_CLASS, BANNER_WIDTH_CLASS } from "@/components/admin/BannerStyleEditor";
 import { Link } from "react-router-dom";
 import { useAllWebsiteContent } from "@/hooks/useWebsiteContent";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,10 +21,13 @@ const HeroSection = () => {
   const { data: content, isLoading } = useAllWebsiteContent();
   const heroContent = content?.hero;
   const statsContent = heroContent?.content as {
-    hero_mode?: 'standard' | 'single_cover' | 'carousel';
+    hero_mode?: 'standard' | 'single_cover' | 'carousel' | 'center_full' | 'center_poster' | 'full_screen';
     carousel_slides?: HeroSlide[];
     primary_btn?: { text?: string; url?: string; enabled?: boolean };
     secondary_btn?: { text?: string; url?: string; enabled?: boolean };
+    custom_buttons?: any[];
+    show_stats?: boolean;
+    banner_style?: Record<string, any>;
     students?: string;
     teachers?: string;
     lessons?: string;
@@ -207,33 +212,60 @@ const HeroSection = () => {
   // MODE 2: SINGLE FULL-WIDTH COVER BANNER MODE (Background Image Overlay)
   if (heroMode === 'single_cover') {
     const bgUrl = heroContent?.image_url || "/img/qd-team-hero.png";
+    const bs = resolveBannerStyle(statsContent?.banner_style);
     return (
-      <section className="relative min-h-[500px] md:min-h-[620px] pt-20 overflow-hidden bg-slate-950 text-white">
-        <div className="absolute inset-0">
+      <section
+        className={cn(
+          "relative pt-20 overflow-hidden bg-slate-950",
+          BANNER_HEIGHT_CLASS[bs.height],
+          bs.rounded && "rounded-3xl mx-2 md:mx-4",
+          bs.text_tone === 'light' ? "text-white" : "text-slate-900"
+        )}
+      >
+        <div className="absolute inset-0 overflow-hidden">
           <img
             src={bgUrl}
             alt={title}
-            className="w-full h-full object-cover opacity-80"
+            className={cn("w-full h-full object-cover", bs.kenburns && "animate-[kenburns_20s_ease-in-out_infinite_alternate]")}
+            style={{
+              objectPosition: bs.focus,
+              filter: bs.blur ? `blur(${bs.blur}px)` : undefined,
+              transform: `scale(${bs.zoom / 100})`,
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30" />
+          <div className="absolute inset-0" style={bannerOverlayStyle(bs)} />
         </div>
 
-        <div className="container mx-auto px-4 relative z-10 min-h-[460px] md:min-h-[540px] flex items-center">
-          <div className="max-w-3xl space-y-6 text-white py-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/30 text-rose-200 border border-rose-400/40 backdrop-blur-md text-sm font-bold">
-              <Sparkles className="w-4 h-4 text-rose-300 animate-pulse" />
-              <span>{subtitle}</span>
-            </div>
+        <div
+          className={cn(
+            "container mx-auto px-4 relative z-10 flex",
+            BANNER_HEIGHT_CLASS[bs.height],
+            bs.vertical === 'top' ? 'items-start pt-8' : bs.vertical === 'bottom' ? 'items-end pb-12' : 'items-center'
+          )}
+        >
+          <div
+            className={cn(
+              "space-y-6 py-16 w-full",
+              BANNER_WIDTH_CLASS[bs.content_width],
+              bs.align === 'center' ? 'mx-auto text-center' : bs.align === 'right' ? 'ml-auto text-right' : 'text-left'
+            )}
+          >
+            {bs.show_badge && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/30 text-rose-200 border border-rose-400/40 backdrop-blur-md text-sm font-bold">
+                <Sparkles className="w-4 h-4 text-rose-300 animate-pulse" />
+                <span>{subtitle}</span>
+              </div>
+            )}
 
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black leading-tight text-white drop-shadow-lg">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black leading-tight drop-shadow-lg">
               {title}
             </h1>
 
-            <p className="text-base md:text-xl text-gray-200 leading-relaxed max-w-2xl">
+            <p className={cn("text-base md:text-xl leading-relaxed", bs.text_tone === 'light' ? 'text-gray-200' : 'text-slate-700', bs.align === 'center' && 'mx-auto', bs.content_width !== 'full' && 'max-w-2xl')}>
               {description}
             </p>
 
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className={cn("flex flex-wrap gap-3 pt-2", bs.align === 'center' && 'justify-center', bs.align === 'right' && 'justify-end')}>
               {activeButtons.map((btn: any, idx: number) => (
                 <Button
                   key={btn.id || idx}
@@ -258,18 +290,18 @@ const HeroSection = () => {
             </div>
 
             {statsContent?.show_stats !== false && (
-              <div className="pt-8 border-t border-white/20 flex items-center justify-start gap-8 sm:gap-12">
+              <div className={cn("pt-8 border-t flex items-center gap-8 sm:gap-12", bs.text_tone === 'light' ? 'border-white/20' : 'border-slate-900/20', bs.align === 'center' ? 'justify-center' : bs.align === 'right' ? 'justify-end' : 'justify-start')}>
                 <div className="flex items-center gap-3">
-                  <div className="text-2xl sm:text-3xl font-black text-white">{students}</div>
-                  <div className="text-xs font-bold text-gray-300">👥 Học viên</div>
+                  <div className="text-2xl sm:text-3xl font-black">{students}</div>
+                  <div className="text-xs font-bold opacity-80">👥 Học viên</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="text-2xl sm:text-3xl font-black text-white">{teachers}</div>
-                  <div className="text-xs font-bold text-gray-300">👨‍🏫 Giáo viên</div>
+                  <div className="text-2xl sm:text-3xl font-black">{teachers}</div>
+                  <div className="text-xs font-bold opacity-80">👨‍🏫 Giáo viên</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="text-2xl sm:text-3xl font-black text-white">{lessons}</div>
-                  <div className="text-xs font-bold text-gray-300">📚 Bài học</div>
+                  <div className="text-2xl sm:text-3xl font-black">{lessons}</div>
+                  <div className="text-xs font-bold opacity-80">📚 Bài học</div>
                 </div>
               </div>
             )}

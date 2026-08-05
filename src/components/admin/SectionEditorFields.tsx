@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import MediaUploader from "@/components/shared/MediaUploader";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import BannerStyleEditor from "@/components/admin/BannerStyleEditor";
 
 const DIMENSION_HINT_MAP: Record<string, string> = {
   hero: "💡 Kích thước khuyến nghị: 1920 × 800 px (Banner Slide / Cover) hoặc 800 × 600 px (Card)",
@@ -336,6 +337,13 @@ const HeroEditor = ({ content, onChange }: { content: Record<string, any>; onCha
           </button>
         </div>
       </div>
+
+      <BannerStyleEditor
+        value={content.banner_style}
+        onChange={(style) => update("banner_style", style)}
+        imageUrl={content.cover_image_url || content.background_image || carouselSlides?.[0]?.image_url}
+        title={content.title_vi || content.title}
+      />
 
       {/* Mode Carousel Editor */}
       {heroMode === "carousel" && (
@@ -1056,6 +1064,13 @@ const GenericSectionEditor = ({ sectionKey, content, onChange }: { sectionKey: s
           </button>
         </div>
       </div>
+
+      <BannerStyleEditor
+        value={content.banner_style}
+        onChange={(style) => update("banner_style", style)}
+        imageUrl={content.cover_image_url || content.background_image}
+        title={content.title_vi || content.title}
+      />
 
       {/* Button Customizers */}
       <div className="space-y-3 p-3 rounded-xl bg-background border">
