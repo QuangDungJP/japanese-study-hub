@@ -33,6 +33,26 @@ interface AttendanceManagerProps {
   initialStatusFilter?: 'all' | 'active' | 'upcoming' | 'completed';
 }
 
+interface SessionInfo {
+  id: string;
+  session_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  topic?: string | null;
+}
+
+interface StudentInfo {
+  student_id: string;
+  student_name: string;
+}
+
+interface AttendanceRecord {
+  student_id: string;
+  student_name: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
+  notes: string;
+}
+
 const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerProps) => {
   const { user, isAdmin } = useAuth();
   const [classes, setClasses] = useState<ClassInfo[]>([]);
