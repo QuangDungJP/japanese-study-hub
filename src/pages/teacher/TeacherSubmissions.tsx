@@ -34,6 +34,7 @@ export interface Submission {
   submitted_at: string;
   graded_at: string | null;
   graded_by: string | null;
+  max_score?: number | null;
   attempt_number?: number;
   total_attempts_count?: number;
   exercise?: {
@@ -74,6 +75,7 @@ export interface ExamAttemptItem {
   attachment_url: string | null;
   attachment_name: string | null;
   teacher_feedback?: string | null;
+  feedback?: string | null;
   proctoring_logs?: any[];
   violations?: number;
   attempt_number?: number;

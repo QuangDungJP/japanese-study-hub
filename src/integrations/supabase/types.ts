@@ -536,6 +536,50 @@ export type Database = {
           },
         ]
       }
+      class_email_settings: {
+        Row: {
+          class_id: string
+          created_at: string | null
+          email_body_template: string | null
+          email_subject_template: string | null
+          enable_student_emails: boolean | null
+          enable_teacher_emails: boolean | null
+          id: string
+          lead_time_hours: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          class_id: string
+          created_at?: string | null
+          email_body_template?: string | null
+          email_subject_template?: string | null
+          enable_student_emails?: boolean | null
+          enable_teacher_emails?: boolean | null
+          id?: string
+          lead_time_hours?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          class_id?: string
+          created_at?: string | null
+          email_body_template?: string | null
+          email_subject_template?: string | null
+          enable_student_emails?: boolean | null
+          enable_teacher_emails?: boolean | null
+          id?: string
+          lead_time_hours?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_email_settings_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: true
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_materials: {
         Row: {
           attachments: Json
@@ -2178,6 +2222,63 @@ export type Database = {
           },
         ]
       }
+      marketing_popups: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_frequency: string | null
+          end_at: string | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          mobile_height_px: number | null
+          mobile_width_px: number | null
+          order_index: number | null
+          pc_height_px: number | null
+          pc_width_px: number | null
+          start_at: string | null
+          target_link: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_frequency?: string | null
+          end_at?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          mobile_height_px?: number | null
+          mobile_width_px?: number | null
+          order_index?: number | null
+          pc_height_px?: number | null
+          pc_width_px?: number | null
+          start_at?: string | null
+          target_link?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_frequency?: string | null
+          end_at?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          mobile_height_px?: number | null
+          mobile_width_px?: number | null
+          order_index?: number | null
+          pc_height_px?: number | null
+          pc_width_px?: number | null
+          start_at?: string | null
+          target_link?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       meetings: {
         Row: {
           booking_id: string | null
@@ -3206,6 +3307,19 @@ export type Database = {
       }
     }
     Functions: {
+      adjust_user_xp_and_streak: {
+        Args: {
+          p_streak_delta?: number
+          p_streak_set?: number
+          p_user_id: string
+          p_xp_delta?: number
+        }
+        Returns: Json
+      }
+      award_user_xp_and_streak: {
+        Args: { p_user_id: string; p_xp_amount?: number }
+        Returns: Json
+      }
       generate_slug: { Args: { input_text: string }; Returns: string }
       get_exercise_answers: {
         Args: { _exercise_id: string }
@@ -3270,7 +3384,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user" | "teacher" | "senior_teacher"
+      app_role:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "teacher"
+        | "senior_teacher"
+        | "super_admin"
       exam_type: "quiz" | "midterm" | "final" | "placement"
       leave_status: "pending" | "approved" | "rejected"
     }
@@ -3400,7 +3520,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user", "teacher", "senior_teacher"],
+      app_role: [
+        "admin",
+        "moderator",
+        "user",
+        "teacher",
+        "senior_teacher",
+        "super_admin",
+      ],
       exam_type: ["quiz", "midterm", "final", "placement"],
       leave_status: ["pending", "approved", "rejected"],
     },

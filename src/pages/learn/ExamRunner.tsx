@@ -30,6 +30,8 @@ interface Question {
   options: string[];
   correct_index: number;
   accepted_answers?: string[];
+  correct_answer?: any;
+  answer?: any;
   explanation?: string;
   points?: number;
 }

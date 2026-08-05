@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BarChart3, 
@@ -25,6 +26,32 @@ interface ClassInfo {
   is_active?: boolean | null;
   start_date?: string | null;
   end_date?: string | null;
+}
+
+interface StudentAttendanceStats {
+  student_id: string;
+  student_name: string;
+  present_count: number;
+  absent_count: number;
+  late_count: number;
+  excused_count: number;
+  total_sessions: number;
+  attendance_rate: number;
+}
+
+interface ClassStats {
+  total_sessions: number;
+  total_students: number;
+  avg_attendance_rate: number;
+  present_total: number;
+  absent_total: number;
+  late_total: number;
+  excused_total: number;
+}
+
+interface AttendanceRecord {
+  session_date: string;
+  status: string;
 }
 
 interface AttendanceStatsProps {

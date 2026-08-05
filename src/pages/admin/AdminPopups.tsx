@@ -524,7 +524,7 @@ const AdminPopups = () => {
       <MediaLibraryDialog
         open={mediaLibraryOpen}
         onOpenChange={setMediaLibraryOpen}
-        onSelectMedia={(url) => {
+        onSelectUrl={(url) => {
           setForm({ ...form, image_url: url });
           setMediaLibraryOpen(false);
         }}
