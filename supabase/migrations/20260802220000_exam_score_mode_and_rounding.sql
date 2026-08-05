@@ -22,3 +22,5 @@ COMMENT ON COLUMN public.exams.score_mode IS 'How to compute student final score
 COMMENT ON COLUMN public.exams.score_rounding IS 'Rounding method when score_mode=scaled: round, floor, ceil, or none (keep decimal)';
 COMMENT ON COLUMN public.exam_attempts.raw_score IS 'Original score before scaling/rounding';
 COMMENT ON COLUMN public.exam_attempts.raw_total IS 'Original total points before scaling';
+
+
