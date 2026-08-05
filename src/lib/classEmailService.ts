@@ -55,7 +55,7 @@ Trân trọng,
       .maybeSingle();
 
     if (error || !data) return defaultSettings;
-    return data as ClassEmailSettings;
+    return data as unknown as ClassEmailSettings;
   } catch (e) {
     console.error('Error fetching class email settings:', e);
     return defaultSettings;
