@@ -45,7 +45,7 @@ const PromotionalPopupModal = () => {
       const todayStr = new Date().toISOString().slice(0, 10);
 
       // Filter eligible popups by schedule & frequency rules
-      const eligible = (data as MarketingPopup[]).filter(popup => {
+      const eligible = (data as unknown as MarketingPopup[]).filter(popup => {
         // Date range check
         if (popup.start_at && new Date(popup.start_at).getTime() > now) return false;
         if (popup.end_at && new Date(popup.end_at).getTime() < now) return false;
