@@ -85,6 +85,16 @@ interface EnrolledClass {
   };
 }
 
+const skillLabels: Record<string, string> = {
+  reading: 'Đọc',
+  speaking: 'Nói',
+  writing: 'Viết',
+  listening: 'Nghe',
+  vocabulary: 'Từ vựng',
+  grammar: 'Ngữ pháp',
+  kanji: 'Kanji',
+};
+
 const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressModalProps) => {
   const [completedLessons, setCompletedLessons] = useState<CompletedLesson[]>([]);
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
