@@ -245,7 +245,7 @@ const MyClasses = () => {
       const { error } = await supabase.from('exam_attempts').delete().eq('id', attemptId);
       if (error) throw error;
       toast({ title: 'Đã xóa lượt làm bài' });
-      if (selectedClass) fetchClassroomDetails(selectedClass.id);
+      fetchMyClasses();
     } catch (err: any) {
       toast({ title: 'Lỗi', description: err.message || 'Không thể xóa lượt thi', variant: 'destructive' });
     }
