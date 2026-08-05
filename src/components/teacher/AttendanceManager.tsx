@@ -43,7 +43,8 @@ interface SessionInfo {
 
 interface StudentInfo {
   student_id: string;
-  student_name: string;
+  id?: string;
+  student_name?: string;
 }
 
 interface AttendanceRecord {
@@ -51,6 +52,7 @@ interface AttendanceRecord {
   student_name: string;
   status: 'present' | 'absent' | 'late' | 'excused';
   notes: string;
+  existing_id?: string | null;
 }
 
 const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerProps) => {
