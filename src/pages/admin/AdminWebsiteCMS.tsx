@@ -695,6 +695,18 @@ const AdminWebsiteCMS = () => {
     };
   };
 
+  const visibleSections = sections.filter((section) => {
+    const info = getSectionInfo(section.section_key);
+    if (selectedCategory !== 'all' && info.page !== selectedCategory) return false;
+    const q = sectionSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      section.section_key.toLowerCase().includes(q) ||
+      info.label.toLowerCase().includes(q) ||
+      (section.title_vi || '').toLowerCase().includes(q)
+    );
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
