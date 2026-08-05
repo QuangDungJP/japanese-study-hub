@@ -74,6 +74,7 @@ export interface ExamAttemptItem {
   attachment_url: string | null;
   attachment_name: string | null;
   teacher_feedback?: string | null;
+  feedback?: string | null;
   proctoring_logs?: any[];
   violations?: number;
   attempt_number?: number;
