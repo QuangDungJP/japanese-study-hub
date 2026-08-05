@@ -19,10 +19,13 @@ const HeroSection = () => {
   const { data: content, isLoading } = useAllWebsiteContent();
   const heroContent = content?.hero;
   const statsContent = heroContent?.content as {
-    hero_mode?: 'standard' | 'single_cover' | 'carousel';
+    hero_mode?: 'standard' | 'single_cover' | 'carousel' | 'center_full' | 'center_poster' | 'full_screen';
     carousel_slides?: HeroSlide[];
     primary_btn?: { text?: string; url?: string; enabled?: boolean };
     secondary_btn?: { text?: string; url?: string; enabled?: boolean };
+    custom_buttons?: any[];
+    show_stats?: boolean;
+    banner_style?: Record<string, any>;
     students?: string;
     teachers?: string;
     lessons?: string;
