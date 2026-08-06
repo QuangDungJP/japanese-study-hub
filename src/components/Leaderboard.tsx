@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Trophy, Zap, Flame, Award } from 'lucide-react';
 import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
+import { buildXpSnapshot } from '@/lib/xpRanks';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -149,11 +150,24 @@ export const Leaderboard = () => {
                 <p className="font-bold text-foreground text-sm truncate leading-tight">
                   {entry.profile?.full_name || 'Học viên'}
                 </p>
-                {entry.streak > 0 && (
-                  <p className="text-[10px] text-orange-500 font-semibold flex items-center gap-0.5">
-                    <Flame className="w-3 h-3 fill-current" /> {entry.streak} ngày streak
-                  </p>
-                )}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {(() => {
+                    const s = buildXpSnapshot(entry.total_xp);
+                    return (
+                      <span
+                        className={`text-[9px] font-black px-1.5 py-0.5 rounded-md bg-gradient-to-r ${s.rank.gradient} text-white shadow-sm`}
+                        title={`${s.rank.name} · Đặc quyền: ${s.rank.perk}`}
+                      >
+                        {s.rank.emoji} Lv.{s.level} {s.rank.name}
+                      </span>
+                    );
+                  })()}
+                  {entry.streak > 0 && (
+                    <span className="text-[10px] text-orange-500 font-semibold flex items-center gap-0.5">
+                      <Flame className="w-3 h-3 fill-current" /> {entry.streak}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

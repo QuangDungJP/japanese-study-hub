@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Calendar, Clock, MapPin, Video, CalendarPlus, CheckSquare, Square, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import JoinMeetingButton from '@/components/shared/JoinMeetingButton';
 
 interface Session {
   id: string;
@@ -468,9 +469,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
                       </span>
                     )}
                     {s.meet_link && (
-                      <a href={s.meet_link} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-primary font-medium hover:underline">
-                        <Video className="w-3.5 h-3.5" /> Vào lớp Zoom/Meet
-                      </a>
+                      <JoinMeetingButton url={s.meet_link} title={s.topic || 'Buổi học'} label="Vào lớp" variant="outline" />
                     )}
                   </div>
                   {s.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2 italic">{s.notes}</p>}
