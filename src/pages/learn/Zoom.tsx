@@ -39,6 +39,7 @@ import {
 import { BookingForm } from "@/components/booking/BookingForm";
 import { MyBookings } from "@/components/booking/MyBookings";
 import { Link } from "react-router-dom";
+import JoinMeetingButton from "@/components/shared/JoinMeetingButton";
 
 interface Teacher {
   id: string;
@@ -389,11 +390,13 @@ const Zoom = () => {
                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {activeNextSession.time}</span>
                   </div>
                 </div>
-                <Button size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold gap-2 shadow-md" asChild>
-                  <a href={activeNextSession.meet_link} target="_blank" rel="noopener noreferrer">
-                    <Video className="w-5 h-5" /> Vào phòng Meeting ngay
-                  </a>
-                </Button>
+                <JoinMeetingButton
+                  url={activeNextSession.meet_link}
+                  title={activeNextSession.title}
+                  label="Vào phòng Meeting ngay"
+                  size="lg"
+                  className="w-full [&>a]:w-full"
+                />
               </div>
             ) : (
               <div className="bg-card rounded-2xl p-6 border border-border shadow-md space-y-4 text-center">
