@@ -234,7 +234,16 @@ export const AvatarFrameCustomizer = () => {
           </div>
 
           <div className="flex flex-col gap-2 shrink-0 z-10 w-full sm:w-auto">
-            {selectedFrame !== equippedFrame ? (
+            {selectedFrame && !frames.find(f => f.code === selectedFrame)?.owned ? (
+              <Button
+                onClick={() => handleBuy(frames.find(f => f.code === selectedFrame)!)}
+                disabled={buying === selectedFrame}
+                className="w-full font-extrabold gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700 text-white shadow-lg"
+              >
+                <Lock className="w-4 h-4" />
+                {buying === selectedFrame ? 'Đang xử lý...' : `Mua ${((frames.find(f => f.code === selectedFrame)?.priceXp) || 0).toLocaleString()} XP`}
+              </Button>
+            ) : selectedFrame !== equippedFrame ? (
               <Button
                 onClick={() => handleEquip(selectedFrame)}
                 disabled={saving}
@@ -257,6 +266,10 @@ export const AvatarFrameCustomizer = () => {
                 ✓ Đang dùng Avatar nguyên bản
               </Badge>
             )}
+            <div className="flex items-center justify-center gap-3 text-[11px] font-bold text-white/80">
+              <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 text-amber-300 fill-amber-300" /> {userXp.toLocaleString()} XP</span>
+              <span className="flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-orange-300 fill-orange-300" /> {userStreak} ngày</span>
+            </div>
           </div>
         </div>
 
@@ -265,9 +278,12 @@ export const AvatarFrameCustomizer = () => {
           <div className="flex items-center justify-between">
             <h4 className="font-extrabold text-base flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              Bộ Sưu Tập Khung Avatar Độc Quyền ({AVATAR_FRAMES_CATALOG.length})
+              Bộ Sưu Tập Khung Avatar Độc Quyền ({frames.filter(f => f.owned).length}/{frames.length} đã sở hữu)
             </h4>
           </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Tất cả khung avatar đều là vật phẩm trả phí — mua bằng XP tích lũy hoặc tại Cửa hàng. Không có khung miễn phí.
+          </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {/* Default Option (No Frame) */}
@@ -294,7 +310,7 @@ export const AvatarFrameCustomizer = () => {
             </div>
 
             {/* Catalog Items */}
-            {AVATAR_FRAMES_CATALOG.map((f) => {
+            {frames.map((f) => {
               const isSelected = selectedFrame === f.code;
               const isEquipped = equippedFrame === f.code;
 
@@ -302,28 +318,48 @@ export const AvatarFrameCustomizer = () => {
                 <div
                   key={f.code}
                   onClick={() => setSelectedFrame(f.code)}
-                  className={`rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all relative group ${
+                  className={`rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2.5 cursor-pointer transition-all relative group ${
                     isSelected
                       ? 'border-amber-400 bg-amber-500/10 shadow-lg scale-105 ring-2 ring-amber-400/30'
                       : 'border-border hover:border-amber-400/50 hover:bg-muted/50'
                   }`}
                 >
-                  <AvatarWithDecoration
-                    avatarUrl={userProfile?.avatar_url}
-                    name={userProfile?.full_name}
-                    frameCode={f.code}
-                    size="lg"
-                  />
+                  <div className={f.owned ? '' : 'opacity-60 grayscale'}>
+                    <AvatarWithDecoration
+                      avatarUrl={userProfile?.avatar_url}
+                      name={userProfile?.full_name}
+                      frameCode={f.code}
+                      size="lg"
+                    />
+                  </div>
                   <span className="text-xs font-bold text-center line-clamp-1">{f.name}</span>
-                  {isEquipped ? (
-                    <Badge variant="default" className="text-[9px] bg-amber-500 text-white font-bold">
-                      Đang dùng
-                    </Badge>
-                  ) : isSelected ? (
-                    <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-400 font-bold">
-                      Đang xem
-                    </Badge>
-                  ) : null}
+
+                  {f.owned ? (
+                    isEquipped ? (
+                      <Badge className="text-[9px] bg-amber-500 text-white font-bold">Đang dùng</Badge>
+                    ) : isSelected ? (
+                      <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-400 font-bold">Đang xem</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-400 font-bold">Đã sở hữu</Badge>
+                    )
+                  ) : (
+                    <>
+                      <span className="text-[10px] font-mono font-black text-amber-500 flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        {f.onSale && f.priceXp > 0 ? `${f.priceXp.toLocaleString()} XP` : 'Sắp mở bán'}
+                      </span>
+                      {f.onSale && f.priceXp > 0 && (
+                        <Button
+                          size="sm"
+                          className="h-7 text-[10px] font-bold rounded-lg w-full bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white"
+                          disabled={buying === f.code}
+                          onClick={(e) => { e.stopPropagation(); handleBuy(f); }}
+                        >
+                          {buying === f.code ? '...' : 'Mua ngay'}
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
               );
             })}
