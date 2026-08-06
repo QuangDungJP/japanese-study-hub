@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import JoinMeetingButton from '@/components/shared/JoinMeetingButton';
 
 interface CalendarEvent {
   id: string;
@@ -429,18 +430,9 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
                           </p>
                         )}
                         {event.meet_link && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="mt-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(event.meet_link, '_blank');
-                            }}
-                          >
-                            <Video className="w-3 h-3 mr-1" />
-                            Vào phòng
-                          </Button>
+                          <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                            <JoinMeetingButton url={event.meet_link} title={event.title} label="Vào phòng" variant="outline" />
+                          </div>
                         )}
                       </div>
                     </div>

@@ -9,6 +9,7 @@ import {
   generateClassScheduleHtmlEmail,
   ClassEmailSettings 
 } from '@/lib/classEmailService';
+import JoinMeetingButton from '@/components/shared/JoinMeetingButton';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -1790,11 +1791,12 @@ const TeacherClasses = () => {
                               </Button>
                             )}
                             {session.meet_link ? (
-                              <Button size="sm" variant="outline" className="gap-1.5 border-primary/30 text-primary" asChild>
-                                <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
-                                  <Video className="w-4 h-4 text-primary" /> Vào phòng Meeting
-                                </a>
-                              </Button>
+                              <JoinMeetingButton
+                                url={session.meet_link}
+                                title={session.topic || 'Buổi học trực tuyến'}
+                                label="Vào phòng Meeting"
+                                variant="outline"
+                              />
                             ) : (
                               <Badge variant="outline">Chưa gắn link</Badge>
                             )}
