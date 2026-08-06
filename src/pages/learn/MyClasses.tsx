@@ -744,11 +744,12 @@ const MyClasses = () => {
                             })()}
 
                             {session.meet_link ? (
-                              <Button size="sm" variant="hero" className="gap-2 shrink-0" asChild>
-                                <a href={session.meet_link} target="_blank" rel="noopener noreferrer">
-                                  <Video className="w-4 h-4" /> Vào học Meeting
-                                </a>
-                              </Button>
+                              <JoinMeetingButton
+                                url={session.meet_link}
+                                title={session.topic || 'Buổi học trực tuyến'}
+                                label="Vào học Meeting"
+                                className="shrink-0"
+                              />
                             ) : (
                               <Badge variant="outline" className="text-xs">Chưa có link</Badge>
                             )}
@@ -1134,11 +1135,12 @@ const MyClasses = () => {
                             </Button>
                           )}
                           {exam.meet_link && !isLocked && (
-                            <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto" asChild>
-                              <a href={exam.meet_link} target="_blank" rel="noopener noreferrer">
-                                <Video className="w-4 h-4" /> Zoom
-                              </a>
-                            </Button>
+                            <JoinMeetingButton
+                              url={exam.meet_link}
+                              title={exam.title || 'Phòng thi trực tuyến'}
+                              label="Phòng thi"
+                              variant="outline"
+                            />
                           )}
                         </div>
                       </div>
