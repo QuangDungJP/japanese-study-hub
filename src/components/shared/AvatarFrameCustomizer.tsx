@@ -5,9 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, CheckCircle2, ShoppingBag, ShieldCheck, Crown } from 'lucide-react';
+import { Sparkles, CheckCircle2, ShoppingBag, ShieldCheck, Crown, Lock, Star, Flame } from 'lucide-react';
 import AvatarWithDecoration, { AVATAR_FRAMES_CATALOG, AvatarFrameInfo } from './AvatarWithDecoration';
 import { Link } from 'react-router-dom';
+
+interface FrameListing extends AvatarFrameInfo {
+  priceXp: number;
+  priceVnd: number;
+  reqStreak: number;
+  owned: boolean;
+  onSale: boolean; // đã được niêm yết ở cửa hàng
+  itemId?: string;
+}
 
 export const AvatarFrameCustomizer = () => {
   const { user } = useAuth();
@@ -18,6 +27,10 @@ export const AvatarFrameCustomizer = () => {
   const [userProfile, setUserProfile] = useState<{ full_name?: string; avatar_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [frames, setFrames] = useState<FrameListing[]>([]);
+  const [userXp, setUserXp] = useState(0);
+  const [userStreak, setUserStreak] = useState(0);
+  const [buying, setBuying] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -36,6 +49,42 @@ export const AvatarFrameCustomizer = () => {
           setSelectedFrame(data.equipped_frame_code || null);
           setUserProfile({ full_name: data.full_name, avatar_url: data.avatar_url });
         }
+
+        const [{ data: storeData }, { data: invData }, { data: prog }] = await Promise.all([
+          (supabase as any).from('store_items').select('*').in('category', ['avatar_frame', 'Khung Avatar']).eq('is_active', true),
+          (supabase as any).from('user_inventory').select('item_code').eq('user_id', user.id),
+          (supabase as any).from('user_progress').select('total_xp, streak').eq('user_id', user.id).maybeSingle(),
+        ]);
+
+        const owned = new Set<string>(((invData || []) as any[]).map(i => i.item_code));
+        setUserXp(prog?.total_xp || 0);
+        setUserStreak(prog?.streak || 0);
+
+        const listingByCode = new Map<string, any>();
+        ((storeData || []) as any[]).forEach(row => listingByCode.set(row.code, row));
+
+        const codes = new Set<string>([
+          ...AVATAR_FRAMES_CATALOG.map(f => f.code),
+          ...Array.from(listingByCode.keys()),
+        ]);
+
+        const list: FrameListing[] = Array.from(codes).map(code => {
+          const base = AVATAR_FRAMES_CATALOG.find(f => f.code === code);
+          const row = listingByCode.get(code);
+          return {
+            code,
+            name: row?.title_vi || base?.name || code,
+            description: row?.description_vi || base?.description || 'Khung avatar độc quyền',
+            priceXp: row?.price_xp ?? 0,
+            priceVnd: row?.price_vnd ?? 0,
+            reqStreak: row?.req_streak ?? 0,
+            owned: owned.has(code),
+            onSale: !!row,
+            itemId: row?.id,
+          };
+        }).sort((a, b) => Number(b.owned) - Number(a.owned) || a.priceXp - b.priceXp);
+
+        setFrames(list);
       } catch (err) {
         console.error('Error fetching equipped frame:', err);
       } finally {
@@ -48,6 +97,14 @@ export const AvatarFrameCustomizer = () => {
 
   const handleEquip = async (frameCode: string | null) => {
     if (!user) return;
+    if (frameCode && !frames.find(f => f.code === frameCode)?.owned) {
+      toast({
+        title: '🔒 Khung chưa sở hữu',
+        description: 'Hãy mua khung này trước khi trang bị.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await (supabase as any)
