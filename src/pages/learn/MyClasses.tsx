@@ -28,6 +28,7 @@ import { InlineLessonExercises } from '@/components/learning/InlineLessonExercis
 import { InlineLessonPresentation } from '@/components/teacher/InlineLessonPresentation';
 import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
+import JoinMeetingButton from '@/components/shared/JoinMeetingButton';
 import FormattedText from '@/components/shared/FormattedText';
 import ClassroomChat from '@/components/classroom/ClassroomChat';
 import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
@@ -1137,7 +1138,7 @@ const MyClasses = () => {
                           {exam.meet_link && !isLocked && (
                             <JoinMeetingButton
                               url={exam.meet_link}
-                              title={exam.title || 'Phòng thi trực tuyến'}
+                              title={exam.title_vi || 'Phòng thi trực tuyến'}
                               label="Phòng thi"
                               variant="outline"
                             />
