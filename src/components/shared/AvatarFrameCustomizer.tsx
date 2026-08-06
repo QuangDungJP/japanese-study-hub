@@ -137,11 +137,52 @@ export const AvatarFrameCustomizer = () => {
     }
   };
 
+  const handleBuy = async (frame: FrameListing) => {
+    if (!user) return;
+    if (!frame.onSale || frame.priceXp <= 0) {
+      toast({ title: 'Chưa mở bán', description: 'Khung này sẽ sớm được lên kệ tại Cửa hàng.', variant: 'destructive' });
+      return;
+    }
+    if (userStreak < frame.reqStreak) {
+      toast({ title: 'Chưa đủ Streak', description: `Yêu cầu ${frame.reqStreak} ngày streak`, variant: 'destructive' });
+      return;
+    }
+    if (userXp < frame.priceXp) {
+      toast({ title: 'Không đủ XP', description: `Cần thêm ${(frame.priceXp - userXp).toLocaleString()} XP`, variant: 'destructive' });
+      return;
+    }
+
+    setBuying(frame.code);
+    try {
+      const newXp = userXp - frame.priceXp;
+      await (supabase as any).from('user_progress')
+        .update({ total_xp: newXp, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+
+      const { error } = await (supabase as any).from('user_inventory').insert({
+        user_id: user.id,
+        item_id: frame.itemId,
+        item_code: frame.code,
+        purchased_with: 'xp',
+        amount_paid: frame.priceXp,
+      });
+      if (error) throw error;
+
+      setUserXp(newXp);
+      setFrames(prev => prev.map(f => (f.code === frame.code ? { ...f, owned: true } : f)));
+      toast({ title: '🎉 Mua thành công!', description: `Đã mở khóa ${frame.name}. Bấm "Kích hoạt" để trang bị.` });
+    } catch (err: any) {
+      toast({ title: 'Lỗi mua khung', description: err.message, variant: 'destructive' });
+    } finally {
+      setBuying(null);
+    }
+  };
+
   if (loading) {
     return <div className="py-12 text-center text-sm text-muted-foreground">Đang tải bộ trang trí avatar...</div>;
   }
 
-  const activeFrameInfo = AVATAR_FRAMES_CATALOG.find(f => f.code === (selectedFrame || equippedFrame));
+  const activeFrameInfo = frames.find(f => f.code === (selectedFrame || equippedFrame));
 
   return (
     <Card className="border-2 border-primary/20 shadow-soft overflow-hidden">
