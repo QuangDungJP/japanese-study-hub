@@ -93,25 +93,27 @@ const BadgeShowcase = ({ userId, role = 'student', compact = false }: BadgeShowc
     fetchData();
   }, [userId, role]);
 
-  const level = calcLevel(totalXp);
-  const currentLevelMinXp = calcXpForLevel(level);
-  const nextLevelMinXp = calcXpForLevel(level + 1);
-  const levelProgressXp = Math.max(0, totalXp - currentLevelMinXp);
-  const xpNeededForNext = Math.max(1, nextLevelMinXp - currentLevelMinXp);
-  const progressPercent = Math.min(100, Math.floor((levelProgressXp / xpNeededForNext) * 100));
+  const snap = buildXpSnapshot(totalXp);
+  const { level, rank, nextRank } = snap;
+  const nextLevelMinXp = snap.nextLevelMinXp;
+  const levelProgressXp = snap.xpIntoLevel;
+  const xpNeededForNext = snap.xpForNextLevel;
+  const progressPercent = snap.levelPercent;
 
   const unlockedCount = badges.filter(b => b.unlocked).length;
+  const visibleBadges = badges.filter(b =>
+    rarityFilter === 'all' || getBadgeRarity(b.req_type, b.req_value) === rarityFilter);
 
   if (compact) {
     return (
       <div className="flex items-center gap-3 p-3 rounded-xl border bg-card/60 backdrop-blur">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+        <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${rank.gradient} text-white font-extrabold flex items-center justify-center text-sm shadow-md`}>
           {level}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center text-xs mb-1">
             <span className="font-bold flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Level {level}
+              <span>{rank.emoji}</span> Lv.{level} · <span className={rank.text}>{rank.name}</span>
             </span>
             <span className="text-muted-foreground font-mono">{totalXp} XP</span>
           </div>
