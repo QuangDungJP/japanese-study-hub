@@ -85,6 +85,7 @@ import EventDetailPage from "./pages/EventDetail";
 import AdminEvents from "./pages/admin/AdminEvents";
 import AdminPopups from "./pages/admin/AdminPopups";
 import ScrollToTop from "./components/ScrollToTop";
+import MeetingRoom from "./pages/meeting/MeetingRoom";
 
 import BackgroundMusicPlayer from "./components/shared/BackgroundMusicPlayer";
 import PromotionalPopupModal from "./components/shared/PromotionalPopupModal";
@@ -119,6 +120,7 @@ const App = () => (
               <Route path="/blog/:slug" element={<BlogDetail />} />
               <Route path="/su-kien" element={<EventsPage />} />
               <Route path="/su-kien/:slug" element={<EventDetailPage />} />
+              <Route path="/phong-hoc" element={<MeetingRoom />} />
               <Route path="/learn" element={<LearningLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="my-classes" element={<MyClasses />} />
