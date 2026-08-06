@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Trophy, Star, Flame, Award, Zap, CheckCircle2, Lock, Sparkles } from 'lucide-react';
+import { Trophy, Star, Flame, Award, Zap, CheckCircle2, Lock, Sparkles, Crown, TrendingUp } from 'lucide-react';
+import {
+  buildXpSnapshot, RANK_TIERS, RARITY_META, getBadgeRarity, XP_SOURCES, calcLevel, calcXpForLevel,
+} from '@/lib/xpRanks';
 
 export interface BadgeShowcaseProps {
   userId: string;
@@ -26,19 +29,14 @@ interface BadgeItem {
   unlocked_at?: string;
 }
 
-export const calcLevel = (totalXp: number) => {
-  return Math.floor(Math.sqrt(Math.max(0, totalXp) / 20)) + 1;
-};
-
-export const calcXpForLevel = (level: number) => {
-  return Math.pow(level - 1, 2) * 20;
-};
+export { calcLevel, calcXpForLevel };
 
 const BadgeShowcase = ({ userId, role = 'student', compact = false }: BadgeShowcaseProps) => {
   const [totalXp, setTotalXp] = useState(0);
   const [streak, setStreak] = useState(0);
   const [badges, setBadges] = useState<BadgeItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rarityFilter, setRarityFilter] = useState<string>('all');
 
   useEffect(() => {
     if (!userId) return;
