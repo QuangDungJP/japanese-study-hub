@@ -194,11 +194,27 @@ const ExamRunner = () => {
         qKey: q.id || `q_${(q as any).origIdx ?? idx}`
       }));
     }
-    const list = exam.questions.map((q, origIdx) => ({
-      ...q,
-      origIdx,
-      qKey: q.id || `q_${origIdx}`
-    }));
+    let list = exam.questions.map((q, origIdx) => {
+      let optionsList = Array.isArray(q.options) ? [...q.options] : [];
+      let correctIdx = q.correct_index;
+
+      // Đảo vị trí đáp án ngẫu nhiên trong từng câu nếu bật shuffle_options hoặc shuffle_questions
+      if ((exam as any).shuffle_options || exam.shuffle_questions) {
+        const indexedOptions = optionsList.map((opt, i) => ({ opt, isCorrect: i === correctIdx }));
+        indexedOptions.sort(() => Math.random() - 0.5);
+        optionsList = indexedOptions.map(item => item.opt);
+        correctIdx = Math.max(0, indexedOptions.findIndex(item => item.isCorrect));
+      }
+
+      return {
+        ...q,
+        options: optionsList,
+        correct_index: correctIdx,
+        origIdx,
+        qKey: q.id || `q_${origIdx}`
+      };
+    });
+
     if (exam.shuffle_questions) {
       list.sort(() => Math.random() - 0.5);
     }

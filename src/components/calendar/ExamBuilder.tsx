@@ -379,6 +379,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [endsAt, setEndsAt] = useState('');
   const [lockAfterEnd, setLockAfterEnd] = useState(true);
   const [shuffle, setShuffle] = useState(false);
+  const [shuffleOptions, setShuffleOptions] = useState(false);
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [isPublished, setIsPublished] = useState(false);
   const [antiCheat, setAntiCheat] = useState(false);
@@ -1449,8 +1450,18 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                   <Switch checked={lockAfterEnd} onCheckedChange={setLockAfterEnd} />
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
-                  <div><p className="font-medium text-sm">Xáo trộn câu hỏi</p><p className="text-xs text-muted-foreground">Mỗi học viên thấy thứ tự khác nhau.</p></div>
+                  <div>
+                    <p className="font-medium text-sm">🎲 Xáo trộn thứ tự câu hỏi (Đảo câu)</p>
+                    <p className="text-xs text-muted-foreground">Mỗi học viên khi mở đề thi sẽ thấy thứ tự câu hỏi hoàn toàn ngẫu nhiên không lần nào giống lần nào.</p>
+                  </div>
                   <Switch checked={shuffle} onCheckedChange={setShuffle} />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="font-medium text-sm">🔀 Xáo trộn thứ tự đáp án trong từng câu (Đảo đáp án)</p>
+                    <p className="text-xs text-muted-foreground">Tự động xáo trộn ngẫu nhiên vị trí các lựa chọn A, B, C, D của từng câu trắc nghiệm.</p>
+                  </div>
+                  <Switch checked={shuffleOptions} onCheckedChange={setShuffleOptions} />
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div>
