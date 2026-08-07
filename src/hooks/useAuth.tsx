@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => { fetchRoles(session.user.id); }, 0);
+          setTimeout(() => { fetchRoles(session.user.id, session.user.email); }, 0);
         } else {
           setRoles([]);
         }
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchRoles(session.user.id);
+        await fetchRoles(session.user.id, session.user.email);
       }
       setLoading(false);
     });
@@ -60,17 +60,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchRoles = async (userId: string) => {
+  const fetchRoles = async (userId: string, email?: string) => {
     try {
+      const userEmail = email || user?.email;
+      const SUPER_ADMINS = ['quangdungonline.education@gmail.com', 'thanhhungtran2003@gmail.com'];
+      
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId);
-      if (!error && data) {
-        setRoles(data.map(r => r.role as AppRole));
-      } else {
-        setRoles([]);
+      
+      let userRoles = (!error && data) ? data.map(r => r.role as AppRole) : [];
+
+      // Cấp quyền Super Admin toàn quyền nếu là email quản trị hệ thống
+      if (userEmail && SUPER_ADMINS.includes(userEmail.toLowerCase())) {
+        if (!userRoles.includes('admin')) userRoles.push('admin');
+        if (!userRoles.includes('teacher')) userRoles.push('teacher');
       }
+
+      setRoles(userRoles);
     } catch {
       setRoles([]);
     }

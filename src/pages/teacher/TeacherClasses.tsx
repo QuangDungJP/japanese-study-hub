@@ -1142,6 +1142,174 @@ const TeacherClasses = () => {
     }
   };
 
+  /**
+   * Tính năng Sao Chép Lớp Học Cực Nhanh (Cloning Class)
+   * Tự động sao chép toàn bộ Bài học, Lịch học mẫu và Tài liệu sang lớp mới
+   */
+  const handleCopyClass = async (sourceClass: ClassData) => {
+    const newClassName = window.prompt(`Sao chép toàn bộ tài liệu & bài giảng từ lớp:\n"${sourceClass.name_vi}"\n\nNhập tên lớp mới:`, `${sourceClass.name_vi} (Bản sao)`);
+    if (!newClassName || !newClassName.trim()) return;
+
+    try {
+      toast({ title: '⏳ Đang sao chép lớp học...', description: 'Đang sao chép toàn bộ bài học và lịch trình...' });
+
+      // 1. Insert new class
+      const newClassPayload = {
+        name: newClassName.trim(),
+        name_vi: newClassName.trim(),
+        description: sourceClass.description,
+        description_vi: sourceClass.description_vi,
+        teacher_id: user?.id || sourceClass.teacher_id,
+        course_id: sourceClass.course_id,
+        max_students: sourceClass.max_students || 30,
+        start_date: new Date().toISOString().slice(0, 10),
+        end_date: sourceClass.end_date,
+        cover_image_url: sourceClass.cover_image_url,
+        thumbnail_url: sourceClass.thumbnail_url,
+        google_meet_url: sourceClass.google_meet_url,
+        is_active: true,
+      };
+
+      const { data: createdClasses, error: createError } = await supabase
+        .from('classes')
+        .insert(newClassPayload as any)
+        .select('*');
+
+      if (createError || !createdClasses?.[0]) throw createError;
+      const targetClassId = createdClasses[0].id;
+
+      // 2. Copy lessons from source class
+      const { data: sourceLessons } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('class_id', sourceClass.id);
+
+      if (sourceLessons && sourceLessons.length > 0) {
+        const copiedLessons = sourceLessons.map(l => ({
+          title: l.title,
+          title_vi: `${l.title_vi}`,
+          description_vi: l.description_vi,
+          skill: l.skill,
+          level: l.level,
+          duration_minutes: l.duration_minutes,
+          xp_reward: l.xp_reward,
+          is_published: l.is_published,
+          class_id: targetClassId,
+          course_id: l.course_id,
+          content_html: l.content_html,
+          video_url: l.video_url,
+          audio_url: l.audio_url,
+          slide_url: l.slide_url,
+          document_url: l.document_url,
+          thumbnail_url: l.thumbnail_url,
+        }));
+        await supabase.from('lessons').insert(copiedLessons as any);
+      }
+
+      // 3. Copy sessions structure
+      const { data: sourceSessions } = await supabase
+        .from('class_sessions')
+        .select('*')
+        .eq('class_id', sourceClass.id);
+
+      if (sourceSessions && sourceSessions.length > 0) {
+        const copiedSessions = sourceSessions.map(s => ({
+          class_id: targetClassId,
+          session_date: new Date().toISOString().slice(0, 10),
+          start_time: s.start_time || '18:00',
+          end_time: s.end_time,
+          topic: s.topic,
+          meet_link: s.meet_link || sourceClass.google_meet_url,
+          status: 'upcoming',
+          notes: s.notes,
+        }));
+        await supabase.from('class_sessions').insert(copiedSessions as any);
+      }
+
+      toast({
+        title: '🎉 Sao chép lớp học thành công!',
+        description: `Đã nhân bản "${sourceClass.name_vi}" thành "${newClassName}" kèm đầy đủ bài học & tài liệu!`,
+      });
+
+      fetchClasses();
+    } catch (err: any) {
+      console.error('Error copying class:', err);
+      toast({ title: 'Lỗi sao chép lớp', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  /**
+   * Tính năng Ẩn / Hiện Lớp Học (Active Status Toggle)
+   */
+  const handleToggleHideClass = async (classItem: ClassData) => {
+    const newStatus = !classItem.is_active;
+    const statusText = newStatus ? 'Đang hoạt động (Mở lớp)' : 'Tạm ẩn / Đã đóng lớp';
+
+    try {
+      const { error } = await supabase
+        .from('classes')
+        .update({ is_active: newStatus } as any)
+        .eq('id', classItem.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Thành công',
+        description: `Đã chuyển lớp "${classItem.name_vi}" sang trạng thái: ${statusText}`,
+      });
+      fetchClasses();
+    } catch (err: any) {
+      toast({ title: 'Lỗi cập nhật trạng thái', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  /**
+   * Tính năng Xóa Vĩnh Viễn Lớp Học (Permanent Deletion)
+   * Yêu cầu người dùng xác nhận lại trước khi xóa hoàn toàn khỏi cơ sở dữ liệu
+   */
+  const handleDeletePermanentClass = async (classItem: ClassData) => {
+    const confirmInput = window.prompt(
+      `⚠️ CẢNH BÁO XÓA VĨNH VIỄN LỚP HỌC!\n\nLớp: "${classItem.name_vi}"\n\nHành động này sẽ xóa vĩnh viễn lớp học, dữ liệu bài nộp, chứng nhận và học viên khỏi lớp này.\n\nNhập "DELETE" hoặc chữ "XÓA" bên dưới để xác nhận xóa vĩnh viễn:`,
+      ''
+    );
+
+    if (!confirmInput || (confirmInput.trim().toUpperCase() !== 'DELETE' && confirmInput.trim().toUpperCase() !== 'XÓA')) {
+      if (confirmInput !== null) {
+        toast({ title: 'Đã hủy xóa', description: 'Mã xác nhận không chính xác.' });
+      }
+      return;
+    }
+
+    try {
+      toast({ title: '⏳ Đang xóa lớp học...', description: 'Đang làm sạch dữ liệu lớp học...' });
+
+      // 1. Unlink or delete class_students
+      await supabase.from('class_students').delete().eq('class_id', classItem.id);
+      // 2. Unlink or delete class_sessions
+      await supabase.from('class_sessions').delete().eq('class_id', classItem.id);
+      // 3. Unlink lessons from this class
+      await supabase.from('lessons').update({ class_id: null } as any).eq('class_id', classItem.id);
+      // 4. Delete the class permanently
+      const { error } = await supabase.from('classes').delete().eq('id', classItem.id);
+
+      if (error) throw error;
+
+      toast({
+        title: '🗑️ Đã xóa vĩnh viễn lớp học!',
+        description: `Lớp "${classItem.name_vi}" đã được loại bỏ hoàn toàn khỏi hệ thống.`,
+      });
+
+      if (selectedClass?.id === classItem.id) {
+        setSelectedClass(null);
+      }
+
+      fetchClasses();
+    } catch (err: any) {
+      console.error('Error deleting class:', err);
+      toast({ title: 'Lỗi khi xóa lớp', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const openCreateSessionDialog = () => {
     setEditingSession(null);
     setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '', record_url: '' });
@@ -1587,9 +1755,36 @@ const TeacherClasses = () => {
                   )}
                 </CardContent>
                 <div className="p-4 bg-muted/30 border-t flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex gap-1.5">
-                    <Button variant="outline" size="sm" onClick={() => openEditDialog(classItem)}>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <Button variant="outline" size="sm" onClick={() => openEditDialog(classItem)} title="Sửa thông tin lớp">
                       <Edit className="w-3.5 h-3.5 mr-1" /> Sửa
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      onClick={() => handleCopyClass(classItem)}
+                      title="Sao chép toàn bộ bài học & tài liệu từ lớp này sang lớp mới"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 mr-1" /> Sao chép
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={classItem.is_active ? 'border-amber-500/30 text-amber-600 hover:bg-amber-50' : 'border-emerald-500/30 text-emerald-600 hover:bg-emerald-50'}
+                      onClick={() => handleToggleHideClass(classItem)}
+                      title={classItem.is_active ? 'Tạm ẩn / Đóng lớp học' : 'Mở lại lớp học'}
+                    >
+                      {classItem.is_active ? '🙈 Ẩn lớp' : '👁️ Hiện lớp'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-rose-500/30 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                      onClick={() => handleDeletePermanentClass(classItem)}
+                      title="Xóa vĩnh viễn lớp học khỏi hệ thống"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa
                     </Button>
                     <Button 
                       variant="outline" 

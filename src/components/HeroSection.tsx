@@ -43,8 +43,8 @@ const HeroSection = () => {
   const heroMode = statsContent?.hero_mode || 'standard';
   const slides = statsContent?.carousel_slides || [];
 
-  const title = heroContent?.title_vi || "Chinh phục Tiếng Nhật cùng chúng tôi";
-  const subtitle = heroContent?.subtitle_vi || "Nền tảng học Tiếng Nhật #1 cho người Việt";
+  const title = heroContent?.title_vi || "";
+  const subtitle = heroContent?.subtitle_vi || "";
   const description = heroContent?.description_vi || 
     "Phương pháp học toàn diện 4 kỹ năng: Đọc - Nói - Viết - Nghe. Từ N5 đến N1, luyện thi JLPT với giáo viên bản ngữ qua Meeting.";
   
@@ -314,42 +314,23 @@ const HeroSection = () => {
   // MODE: CENTER POSTER FULL SCREEN 100% EDGE-TO-EDGE
   if (heroMode === 'center_full' || heroMode === 'full_screen') {
     return (
-      <section className="relative min-h-[90vh] bg-gradient-to-b from-background via-background to-primary/5 pt-24 pb-16 overflow-hidden w-full">
-        {/* Top Centered Pill Badge */}
-        <div className="text-center mb-6 px-4">
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-rose-50 text-rose-600 border border-rose-200 shadow-xs">
-            <Sparkles className="w-4 h-4 text-rose-500 animate-pulse" />
-            <span className="text-xs sm:text-sm font-bold">{subtitle}</span>
+      <section className="relative min-h-[85vh] bg-gradient-to-b from-background via-background to-primary/5 pt-20 pb-16 overflow-hidden w-full">
+        {/* Top Centered Main Headline (nếu có title) */}
+        {title && (
+          <div className="text-center mb-8 px-4">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.12] tracking-tight">
+              {title}
+            </h1>
           </div>
-        </div>
+        )}
 
-        {/* Top Centered Main Headline */}
-        <div className="text-center mb-8 px-4">
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.12] tracking-tight">
-            {title.includes("Tiếng Nhật") ? (
-              <>
-                {title.split("Tiếng Nhật")[0]}
-                <span className="relative inline-block text-rose-600 px-2">
-                  Tiếng Nhật
-                  <svg className="absolute -bottom-2 left-0 w-full h-3 text-rose-600" viewBox="0 0 300 12" fill="none">
-                    <path d="M2 10C50 4 100 2 150 6C200 10 250 4 298 8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                  </svg>
-                </span>
-                {title.split("Tiếng Nhật")[1]}
-              </>
-            ) : (
-              title
-            )}
-          </h1>
-        </div>
-
-        {/* Center Team Image Poster - 100% Full Screen Width */}
+        {/* Center Team Image Poster - 100% Full Display không bị cắt */}
         <div className="w-full px-2 sm:px-6 lg:px-12 mb-10">
           <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl border-2 sm:border-4 border-background bg-card">
             <img
               src={heroContent?.image_url || "/img/qd-team-hero.png"}
               alt="TNQDO Teachers Team Full"
-              className="w-full h-auto max-h-[720px] object-cover bg-muted/20"
+              className="w-full h-auto max-h-[720px] object-contain bg-muted/20"
             />
           </div>
         </div>
@@ -619,7 +600,7 @@ const HeroSection = () => {
                 <img 
                   src={heroContent?.image_url || "/img/qd-team-hero.png"} 
                   alt="Đội ngũ Giảng viên TNQDO" 
-                  className="w-full h-[320px] sm:h-[400px] lg:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-auto max-h-[500px] object-contain transition-transform duration-700 group-hover:scale-[1.01]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
                 <div className="absolute bottom-4 left-4 right-4 text-white">
