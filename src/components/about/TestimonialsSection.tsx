@@ -71,7 +71,20 @@ const MasonryGrid = ({ items }: { items: Testimonial[] }) => (
                   {t.role && <p className="text-xs text-muted-foreground">{t.role}</p>}
                 </div>
               </div>
-              <Stars rating={t.rating} />
+              <div className="flex items-center gap-2">
+                {t.drive_url && (
+                  <a
+                    href={t.drive_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-2 py-0.5 rounded-full transition-colors"
+                    title="Xem thư mục Google Drive chứa ảnh chứng thực"
+                  >
+                    📂 Link Drive ↗
+                  </a>
+                )}
+                <Stars rating={t.rating} />
+              </div>
             </div>
           </div>
         </div>

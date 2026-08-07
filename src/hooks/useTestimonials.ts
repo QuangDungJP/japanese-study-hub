@@ -14,6 +14,7 @@ export interface Testimonial {
   course?: string;
   image_url?: string;
   images?: string[];
+  drive_url?: string;
   video_url?: string;
   layout: TestimonialLayout;
   is_featured?: boolean;

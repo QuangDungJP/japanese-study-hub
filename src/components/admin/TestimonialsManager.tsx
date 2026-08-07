@@ -13,6 +13,7 @@ import { MessageSquare, Plus, Edit, Trash2, Star, Save, Loader2, GripVertical, E
 import { DEFAULT_TESTIMONIALS_SETTINGS, type Testimonial, type TestimonialLayout, type TestimonialsSettings } from '@/hooks/useTestimonials';
 import { useQueryClient } from '@tanstack/react-query';
 import MediaUploader from '@/components/shared/MediaUploader';
+import { ExternalLink, Link2 } from 'lucide-react';
 
 const emptyT = (): Testimonial => ({
   id: crypto.randomUUID(),
@@ -23,6 +24,7 @@ const emptyT = (): Testimonial => ({
   rating: 5,
   course: '',
   image_url: '',
+  drive_url: '',
   video_url: '',
   layout: 'masonry',
   is_active: true,
@@ -355,6 +357,13 @@ export default function TestimonialsManager() {
                     <Home className="w-2.5 h-2.5 mr-1" /> Trang chủ
                   </Badge>
                 )}
+                {t.drive_url && (
+                  <a href={t.drive_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                    <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30 text-[10px] cursor-pointer">
+                      <ExternalLink className="w-2.5 h-2.5 mr-1" /> Link Drive
+                    </Badge>
+                  </a>
+                )}
                 {t.is_featured && (
                   <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30 text-[10px]">
                     <Sparkles className="w-2.5 h-2.5 mr-1" /> Nổi bật
@@ -470,7 +479,7 @@ export default function TestimonialsManager() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1">Ảnh chính (hiển thị trong card)</label>
+                  <label className="text-xs font-medium block mb-1">Ảnh chính / Nguồn ảnh (hiển thị trong card)</label>
                   <MediaUploader
                     value={editing.image_url || ''}
                     onChange={(url) => setEditing({ ...editing, image_url: url })}
@@ -478,9 +487,23 @@ export default function TestimonialsManager() {
                     bucket="website-assets"
                     folder="testimonials/images"
                     aspectRatio="video"
-                    placeholder="Upload ảnh"
+                    placeholder="Upload ảnh hoặc dán link Drive"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium flex items-center gap-1.5 mb-1">
+                  <Link2 className="w-3.5 h-3.5 text-blue-500" /> Link Google Drive / Thư mục ảnh chứng thực (Để học viên nhấp vào xem trực tiếp)
+                </label>
+                <Input
+                  placeholder="https://drive.google.com/drive/folders/1pgCZbEXwYxQcsm32HJJWYEmV2-gxqEoH..."
+                  value={editing.drive_url || ''}
+                  onChange={(e) => setEditing({ ...editing, drive_url: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Dán link thư mục Google Drive chứa ảnh chụp gốc, học viên ngoài trang chủ có thể click xem nguyên album chứng thực!
+                </p>
               </div>
 
               <div>
