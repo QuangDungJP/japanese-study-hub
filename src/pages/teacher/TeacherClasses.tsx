@@ -256,6 +256,11 @@ const TeacherClasses = () => {
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [analysisModalData, setAnalysisModalData] = useState<StudentSubmissionAnalysisData | null>(null);
 
+  // Class Search, Filter & Order state
+  const [classSearchTerm, setClassSearchTerm] = useState<string>('');
+  const [classStatusFilter, setClassStatusFilter] = useState<string>('all');
+  const [classCourseFilter, setClassCourseFilter] = useState<string>('all');
+
   // Submissions Filtering State
   const [submissionStudentFilter, setSubmissionStudentFilter] = useState<string>('all');
   const [submissionAccuracyFilter, setSubmissionAccuracyFilter] = useState<string>('all');
@@ -1672,39 +1677,95 @@ const TeacherClasses = () => {
 
   // --- 1. CLASS LIST DASHBOARD ---
   if (!selectedClass) {
+    const filteredClasses = classes.filter((c) => {
+      const matchSearch = !classSearchTerm || c.name_vi.toLowerCase().includes(classSearchTerm.toLowerCase()) || (c.name && c.name.toLowerCase().includes(classSearchTerm.toLowerCase()));
+      const matchStatus = classStatusFilter === 'all' ? true : classStatusFilter === 'active' ? c.is_active : !c.is_active;
+      const matchCourse = classCourseFilter === 'all' ? true : c.course_id === classCourseFilter;
+      return matchSearch && matchStatus && matchCourse;
+    });
+
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Quản lý lớp học</h1>
-            <p className="text-muted-foreground mt-1">Tạo và quản lý các lớp học giảng dạy của bạn</p>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              Quản lý lớp học
+              <Badge variant="outline" className="text-xs font-mono font-bold bg-primary/10 text-primary border-primary/20">
+                {filteredClasses.length} / {classes.length} Lớp
+              </Badge>
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">Tạo, phân loại và quản lý các lớp học giảng dạy của bạn</p>
           </div>
-          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="font-bold shadow-md">
             <Plus className="w-4 h-4 mr-2" />
             Tạo lớp mới
           </Button>
+        </div>
+
+        {/* --- SMART CLASS SEARCH & FILTER TOOLBAR --- */}
+        <div className="flex flex-col md:flex-row gap-3 bg-card p-3 rounded-2xl border shadow-2xs">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={classSearchTerm}
+              onChange={(e) => setClassSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm theo tên lớp học..."
+              className="pl-9 h-10 bg-background text-sm"
+            />
+            {classSearchTerm && (
+              <button onClick={() => setClassSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={classStatusFilter} onValueChange={setClassStatusFilter}>
+              <SelectTrigger className="h-10 w-44 bg-background text-xs font-semibold">
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">🌐 Tất cả trạng thái</SelectItem>
+                <SelectItem value="active">🟢 Đang hoạt động</SelectItem>
+                <SelectItem value="hidden">⚪ Đã đóng / Tạm ẩn</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={classCourseFilter} onValueChange={setClassCourseFilter}>
+              <SelectTrigger className="h-10 w-48 bg-background text-xs font-semibold">
+                <SelectValue placeholder="Theo khóa học" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">📚 Tất cả khóa học</SelectItem>
+                {courses.map((crs) => (
+                  <SelectItem key={crs.id} value={crs.id}>
+                    {crs.title_vi}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
-        ) : classes.length === 0 ? (
+        ) : filteredClasses.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">Chưa có lớp học nào</h3>
-              <p className="text-muted-foreground mb-4">Tạo lớp học đầu tiên để bắt đầu quản lý học viên</p>
+              <h3 className="text-lg font-semibold mb-2">Không tìm thấy lớp học phù hợp</h3>
+              <p className="text-muted-foreground mb-4">Thử thay đổi từ khóa hoặc bộ lọc lớp học</p>
               <Button onClick={() => setIsDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Tạo lớp học
+                Tạo lớp mới
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {classes.map((classItem) => (
-              <Card key={classItem.id} className="hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden border border-border group">
+            {filteredClasses.map((classItem, index) => (
+              <Card key={classItem.id} className="hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden border border-border group relative">
                 {classItem.cover_image_url || classItem.thumbnail_url ? (
                   <div className="h-36 w-full overflow-hidden bg-muted relative shrink-0">
                     <img
@@ -1713,12 +1774,19 @@ const TeacherClasses = () => {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                    <span className="absolute top-3 left-3 bg-black/60 text-white backdrop-blur-md px-2.5 py-0.5 rounded-full text-xs font-extrabold font-mono border border-white/20">
+                      #{index + 1}
+                    </span>
                     <Badge className={`absolute top-3 right-3 ${classItem.is_active ? 'bg-emerald-600 text-white font-bold' : 'bg-muted text-muted-foreground'}`}>
                       {classItem.is_active ? '🟢 Đang hoạt động' : '⚪ Đã kết thúc'}
                     </Badge>
                   </div>
                 ) : (
-                  <div className="h-2 bg-gradient-to-r from-primary via-indigo-500 to-purple-500 w-full" />
+                  <div className="h-2 bg-gradient-to-r from-primary via-indigo-500 to-purple-500 w-full relative">
+                    <span className="absolute top-2 left-3 bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border border-primary/30">
+                      #{index + 1}
+                    </span>
+                  </div>
                 )}
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-2">
