@@ -224,8 +224,8 @@ const MediaUploader = ({
                   {' • '}Tối đa {maxSizeMB}MB
                 </p>
               </div>
-              <div className="flex items-center gap-2 mt-1 flex-wrap justify-center">
-                <Button type="button" variant="outline" size="sm" className="h-7 text-xs px-3">
+              <div className="flex items-center gap-2 mt-1 flex-wrap justify-center" onClick={(e) => e.stopPropagation()}>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs px-3 rounded-lg" onClick={() => inputRef.current?.click()}>
                   <Upload className="w-3.5 h-3.5 mr-1" />
                   Upload file mới
                 </Button>
@@ -234,14 +234,14 @@ const MediaUploader = ({
                     type="button"
                     variant="secondary"
                     size="sm"
-                    className="h-7 text-xs px-3 bg-primary/10 text-primary hover:bg-primary/20 font-bold border border-primary/20"
+                    className="h-7 text-xs px-3 bg-primary/10 text-primary hover:bg-primary/20 font-bold border border-primary/20 rounded-lg"
                     onClick={(e) => {
                       e.stopPropagation();
                       setLibraryOpen(true);
                     }}
                   >
                     <FolderOpen className="w-3.5 h-3.5 mr-1 text-primary" />
-                    Thư viện ảnh đã có
+                    Khu Media / Gán Link Drive
                   </Button>
                 )}
               </div>
