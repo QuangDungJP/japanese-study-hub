@@ -84,25 +84,39 @@ const Navbar = () => {
     navigate('/');
   };
 
-  const isAnnouncementActive = announcementBar?.enabled !== false && Boolean(announcementBar?.text_vi);
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  const isAnnouncementActive = announcementBar?.enabled !== false && Boolean(announcementBar?.text_vi) && !isDismissed;
 
   return (
     <>
       {/* Live Announcement Bar Banner */}
       {isAnnouncementActive && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-white text-xs font-bold py-1.5 px-4 text-center flex items-center justify-center gap-2 shadow-md">
-          <span className="bg-white/25 text-white px-2 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-wider">🔥 Khuyến Mãi</span>
-          <span className="truncate max-w-2xl">{announcementBar?.text_vi}</span>
-          {announcementBar?.button_text_vi && (
-            <Link to={announcementBar.button_url || "/auth"} className="ml-1 underline hover:text-amber-100 shrink-0 font-extrabold flex items-center bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded-md transition-all">
-              {announcementBar.button_text_vi} →
-            </Link>
-          )}
+        <div className="fixed top-0 left-0 right-0 z-50 h-9 bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-white text-[11px] sm:text-xs font-bold px-3 flex items-center justify-between gap-2 shadow-md">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-center sm:justify-start">
+            <span className="hidden sm:inline-block bg-white/25 text-white px-2 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-wider shrink-0">🔥 Khuyến Mãi</span>
+            <span className="truncate">{announcementBar?.text_vi}</span>
+            {announcementBar?.button_text_vi && (
+              <Link to={announcementBar.button_url || "/auth"} className="ml-1 underline hover:text-amber-100 shrink-0 font-extrabold flex items-center bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded-md transition-all text-[10px] sm:text-xs">
+                {announcementBar.button_text_vi} →
+              </Link>
+            )}
+          </div>
+          
+          {/* Nút Đóng [X] */}
+          <button
+            type="button"
+            onClick={() => setIsDismissed(true)}
+            className="p-1 rounded-full hover:bg-white/20 text-white/90 hover:text-white transition-colors shrink-0"
+            title="Đóng thông báo"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      <nav className={cn("fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b shadow-xs transition-all",
-        isAnnouncementActive ? "top-8" : "top-0"
+      <nav className={cn("fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b shadow-xs transition-all duration-300",
+        isAnnouncementActive ? "top-9" : "top-0"
       )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
