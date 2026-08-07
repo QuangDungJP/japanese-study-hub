@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import SectionPreview from '@/components/admin/SectionPreview';
 import SectionEditorFields from '@/components/admin/SectionEditorFields';
+import MediaUploader from '@/components/shared/MediaUploader';
 import { 
   Layout, Image, Video, Eye, EyeOff, Save, Upload, Trash2, 
   Edit, Globe, FileText, DollarSign, RefreshCw, GripVertical,
@@ -828,7 +829,7 @@ const AdminWebsiteCMS = () => {
                 <Globe className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {visibleSections.map((section) => {
                   const info = getSectionInfo(section.section_key);
                   const isCustom = !['hero', 'skills', 'languages', 'teachers', 'zoom', 'features', 'blog', 'events', 'testimonials', 'cta', 'pricing', 'footer', 'about_hero', 'about_story', 'about_values'].includes(section.section_key);
@@ -836,25 +837,25 @@ const AdminWebsiteCMS = () => {
                   return (
                     <div
                       key={section.id}
-                      className={`group flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-2xl border bg-card transition-all hover:border-primary/50 hover:shadow-sm ${!section.is_active ? 'opacity-60' : ''}`}
+                      className={`group flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border bg-card shadow-sm transition-all hover:border-primary/50 hover:shadow-md ${!section.is_active ? 'bg-muted/40 opacity-75' : ''}`}
                     >
-                      {/* Thumbnail */}
-                      <div className="relative w-full sm:w-40 h-24 rounded-xl overflow-hidden bg-muted shrink-0 border">
+                      {/* Thumbnail Cover */}
+                      <div className="relative w-full sm:w-44 h-28 rounded-xl overflow-hidden bg-muted shrink-0 border shadow-inner">
                         {section.image_url ? (
-                          <img src={section.image_url} alt={section.title_vi || section.section_key} className="w-full h-full object-cover" />
+                          <img src={section.image_url} alt={section.title_vi || section.section_key} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                            <ImageIcon className="w-5 h-5 opacity-40" />
-                            <span className="text-[10px] mt-1">Chưa có ảnh</span>
+                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60 bg-muted/60">
+                            <ImageIcon className="w-6 h-6 opacity-40 mb-1" />
+                            <span className="text-[10px] font-medium">Chưa có ảnh bìa</span>
                           </div>
                         )}
                         <button
                           type="button"
                           onClick={() => (document.getElementById(`quick-upload-${section.id}`) as HTMLInputElement)?.click()}
                           disabled={uploading}
-                          className="absolute inset-0 bg-black/55 text-white text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1"
+                          className="absolute inset-0 bg-black/60 backdrop-blur-[1px] text-white text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-1.5"
                         >
-                          <Upload className="w-3.5 h-3.5" /> {uploading ? 'Đang tải...' : 'Đổi ảnh bìa'}
+                          <Upload className="w-4 h-4" /> {uploading ? 'Đang tải...' : 'Đổi ảnh bìa'}
                         </button>
                         <input
                           id={`quick-upload-${section.id}`}
@@ -865,36 +866,57 @@ const AdminWebsiteCMS = () => {
                         />
                       </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <h3 className="text-sm font-bold truncate">{info.label}</h3>
-                          <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">{section.section_key}</Badge>
-                          {section.video_url && <Badge variant="secondary" className="text-[10px] gap-1"><Film className="w-3 h-3" /> Video</Badge>}
+                      {/* Info Details */}
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-extrabold text-foreground px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                            {info.label}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground bg-background">
+                            key: {section.section_key}
+                          </Badge>
+                          {section.video_url && (
+                            <Badge variant="secondary" className="text-[10px] gap-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
+                              <Film className="w-3 h-3" /> Video
+                            </Badge>
+                          )}
+                          {!section.is_active && (
+                            <Badge variant="destructive" className="text-[10px] font-bold">
+                              Đang Ẩn
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-xs font-semibold text-foreground/80 line-clamp-1">
+                        <h4 className="text-sm font-bold text-foreground line-clamp-1">
                           {section.title_vi || section.title || '(Chưa đặt tiêu đề)'}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground line-clamp-1">
-                          {section.description_vi || section.subtitle_vi || 'Chưa có mô tả'}
+                        </h4>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {section.description_vi || section.subtitle_vi || 'Chưa có mô tả chi tiết'}
                         </p>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                        <Switch
-                          checked={section.is_active}
-                          onCheckedChange={() => toggleSectionActive(section)}
-                          title={section.is_active ? 'Đang hiển thị' : 'Đang ẩn'}
-                        />
-                        {isCustom && (
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSection(section)} title="Xóa Section">
-                            <Trash2 className="w-3.5 h-3.5" />
+                      {/* Actions Buttons Area */}
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 w-full sm:w-auto justify-between sm:justify-start">
+                        <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-xl border">
+                          <span className="text-[11px] font-bold text-muted-foreground px-1">
+                            {section.is_active ? 'Hiển thị' : 'Ẩn'}
+                          </span>
+                          <Switch
+                            checked={section.is_active}
+                            onCheckedChange={() => toggleSectionActive(section)}
+                            title={section.is_active ? 'Đang hiển thị trên trang chủ' : 'Đang ẩn khỏi trang chủ'}
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {isCustom && (
+                            <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-xl" onClick={() => handleDeleteSection(section)} title="Xóa Section">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" onClick={() => openEditDialog(section)} className="gap-1.5 font-bold text-xs h-9 px-4 rounded-xl shadow-sm">
+                            <Edit className="w-3.5 h-3.5" /> Chỉnh sửa &amp; Preview
                           </Button>
-                        )}
-                        <Button size="sm" onClick={() => openEditDialog(section)} className="gap-1 font-bold text-xs h-8">
-                          <Edit className="w-3.5 h-3.5" /> Chỉnh sửa
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1501,48 +1523,17 @@ const AdminWebsiteCMS = () => {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <ImageIcon className="w-4 h-4" />
-                    Ảnh banner
+                    Ảnh banner / Ảnh bìa Section
                   </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.image_url}
-                      onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                      placeholder="URL ảnh hoặc upload"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Đang upload...' : 'Upload'}
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleUploadImage}
-                    />
-                  </div>
-                  {formData.image_url && (
-                    <div className="mt-2 relative w-48 h-28 rounded-lg overflow-hidden border">
-                      <img 
-                        src={formData.image_url} 
-                        alt="Preview" 
-                        className="w-full h-full object-cover"
-                      />
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        className="absolute top-1 right-1 w-6 h-6"
-                        onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
+                  <MediaUploader
+                    value={formData.image_url}
+                    onChange={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+                    accept="image"
+                    bucket="website-assets"
+                    folder="sections"
+                    placeholder="Kéo thả ảnh, upload tệp hoặc dán link Google Drive"
+                    showLibraryBtn={true}
+                  />
                 </div>
 
                 {/* Video Upload */}
