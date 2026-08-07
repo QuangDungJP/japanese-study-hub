@@ -17,7 +17,8 @@ function normalizeFormatting(input: string): string {
     .replace(/<b\b[^>]*>(.*?)<\/b>/gi, '**$1**')
     .replace(/<strong\b[^>]*>(.*?)<\/strong>/gi, '**$1**')
     .replace(/<i\b[^>]*>(.*?)<\/i>/gi, '*$1*')
-    .replace(/<em\b[^>]*>(.*?)<\/em>/gi, '*$1*');
+    .replace(/<em\b[^>]*>(.*?)<\/em>/gi, '*$1*')
+    .replace(/<u\b[^>]*>(.*?)<\/u>/gi, '<u>$1</u>');
 }
 
 export const FormattedText: React.FC<FormattedTextProps> = ({ text, className = '', asInline = true }) => {
@@ -25,7 +26,7 @@ export const FormattedText: React.FC<FormattedTextProps> = ({ text, className = 
 
   const normalized = normalizeFormatting(text);
 
-  // Fast path: If string has no markdown or formatting symbols, render plain text
+  // Fast path: Check for formatting characters
   if (!normalized.includes('*') && !normalized.includes('_') && !normalized.includes('`') && !normalized.includes('<')) {
     return <span className={className}>{text}</span>;
   }

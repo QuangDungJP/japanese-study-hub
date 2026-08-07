@@ -1088,24 +1088,60 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                             <div className="flex items-center gap-1.5 text-xs">
                               <button
                                 type="button"
-                                title="Thêm chữ in đậm"
-                                onClick={() => patchQ(i, { text: (q.text || '') + ' **chữ đậm**' })}
+                                title="Bôi đậm phần văn bản đang chọn hoặc thêm mẫu"
+                                onClick={(e) => {
+                                  const target = e.currentTarget.closest('.space-y-1')?.querySelector('textarea') as HTMLTextAreaElement;
+                                  if (target) {
+                                    const start = target.selectionStart;
+                                    const end = target.selectionEnd;
+                                    const val = target.value;
+                                    const sel = val.substring(start, end);
+                                    const newText = sel ? val.substring(0, start) + `**${sel}**` + val.substring(end) : val + ' **chữ đậm**';
+                                    patchQ(i, { text: newText });
+                                  } else {
+                                    patchQ(i, { text: (q.text || '') + ' **chữ đậm**' });
+                                  }
+                                }}
                                 className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground font-bold border border-border text-[11px]"
                               >
                                 B
                               </button>
                               <button
                                 type="button"
-                                title="Thêm chữ in nghiêng"
-                                onClick={() => patchQ(i, { text: (q.text || '') + ' *chữ nghiêng*' })}
+                                title="In nghiêng phần văn bản đang chọn hoặc thêm mẫu"
+                                onClick={(e) => {
+                                  const target = e.currentTarget.closest('.space-y-1')?.querySelector('textarea') as HTMLTextAreaElement;
+                                  if (target) {
+                                    const start = target.selectionStart;
+                                    const end = target.selectionEnd;
+                                    const val = target.value;
+                                    const sel = val.substring(start, end);
+                                    const newText = sel ? val.substring(0, start) + `*${sel}*` + val.substring(end) : val + ' *chữ nghiêng*';
+                                    patchQ(i, { text: newText });
+                                  } else {
+                                    patchQ(i, { text: (q.text || '') + ' *chữ nghiêng*' });
+                                  }
+                                }}
                                 className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground italic border border-border text-[11px]"
                               >
                                 I
                               </button>
                               <button
                                 type="button"
-                                title="Thêm chữ in đậm nghiêng"
-                                onClick={() => patchQ(i, { text: (q.text || '') + ' ***đậm nghiêng***' })}
+                                title="Đậm & Nghiêng phần văn bản đang chọn hoặc thêm mẫu"
+                                onClick={(e) => {
+                                  const target = e.currentTarget.closest('.space-y-1')?.querySelector('textarea') as HTMLTextAreaElement;
+                                  if (target) {
+                                    const start = target.selectionStart;
+                                    const end = target.selectionEnd;
+                                    const val = target.value;
+                                    const sel = val.substring(start, end);
+                                    const newText = sel ? val.substring(0, start) + `***${sel}***` + val.substring(end) : val + ' ***đậm nghiêng***';
+                                    patchQ(i, { text: newText });
+                                  } else {
+                                    patchQ(i, { text: (q.text || '') + ' ***đậm nghiêng***' });
+                                  }
+                                }}
                                 className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground font-bold italic border border-border text-[11px]"
                               >
                                 B I
