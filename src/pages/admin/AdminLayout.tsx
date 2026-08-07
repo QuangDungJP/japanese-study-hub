@@ -220,7 +220,7 @@ const AdminLayout = () => {
         </div>
       </header>
 
-      <main className="flex-1 lg:ml-60 p-4 pt-18 lg:pt-6 lg:p-6 xl:p-8"><Outlet /></main>
+      <main className="flex-1 lg:ml-60 p-4 pt-20 lg:pt-6 lg:p-6 xl:p-8"><Outlet /></main>
     </div>
   );
 };

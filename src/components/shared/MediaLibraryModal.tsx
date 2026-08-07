@@ -235,13 +235,13 @@ export const MediaLibraryModal = ({
               <DialogTitle className="text-base font-bold flex items-center gap-2">
                 {title}
               </DialogTitle>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
                   <HardDrive className="w-3.5 h-3.5" /> Dung lượng đã dùng: {formatFileSize(totalStorageBytes) || 'Đang tính...'}
                 </span>
-                <span>•</span>
+                <span className="mx-1">•</span>
                 <span>{assets.length} tệp đã lưu</span>
-              </div>
+              </p>
             </div>
           </div>
 

@@ -44,7 +44,7 @@ const LearningLayout = () => {
         <div className="hidden lg:block">
           <TopBar />
         </div>
-        <main className="p-4 pt-18 lg:pt-0 lg:p-6">
+        <main className="p-4 pt-20 lg:pt-0 lg:p-6">
           <div className="lg:hidden mb-0" />
           <Outlet />
         </main>

@@ -596,11 +596,11 @@ const AdminPopups = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Media Library */}
-      <MediaLibraryDialog
+      {/* Media Library Modal */}
+      <SharedMediaLibraryModal
         open={mediaLibraryOpen}
         onOpenChange={setMediaLibraryOpen}
-        onSelectUrl={(url) => {
+        onSelect={(url) => {
           setForm({ ...form, image_url: url });
           setMediaLibraryOpen(false);
         }}
@@ -611,9 +611,12 @@ const AdminPopups = () => {
         <DialogContent className="max-w-4xl p-6 bg-black/90 text-white border-white/20">
           <DialogHeader>
             <div className="flex items-center justify-between pr-6">
-              <DialogTitle className="flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" /> Preview Popup Live - {form.title}
-              </DialogTitle>
+              <div>
+                <DialogTitle className="flex items-center gap-2 text-base font-bold text-white">
+                  <Eye className="w-5 h-5 text-primary" /> Preview Popup Live - {form.title || 'Mẫu Popup'}
+                </DialogTitle>
+                <p className="text-xs text-white/70 mt-1">Xem trước diện mạo Popup quảng cáo trên các thiết bị trước khi xuất bản.</p>
+              </div>
 
               <div className="flex items-center gap-2 bg-white/10 p-1 rounded-xl">
                 <Button 

@@ -212,7 +212,7 @@ const TeacherLayout = () => {
         </div>
       </header>
 
-      <main className="flex-1 lg:ml-60 p-4 pt-18 lg:pt-6 lg:p-6 xl:p-8 relative z-10">
+      <main className="flex-1 lg:ml-60 p-4 pt-20 lg:pt-6 lg:p-6 xl:p-8 relative z-10">
         <Outlet context={{ teacherRole }} />
       </main>
     </div>
