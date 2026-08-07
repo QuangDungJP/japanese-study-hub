@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Image, Film, FileText, Music, Check, Upload, FolderOpen, RefreshCw, ExternalLink } from 'lucide-react';
+import { Search, Image, Film, FileText, Music, Check, Upload, FolderOpen, RefreshCw, ExternalLink, Link2, HardDrive, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface MediaAsset {
   id: string;
@@ -15,6 +16,7 @@ export interface MediaAsset {
   bucket?: string;
   size?: number;
   created_at?: string;
+  isExternal?: boolean;
 }
 
 interface MediaLibraryModalProps {
@@ -30,7 +32,7 @@ export const MediaLibraryModal = ({
   onOpenChange,
   onSelect,
   filterType = 'all',
-  title = 'Thư viện Media & Ảnh đã tải lên',
+  title = 'Khu Vực Quản Lý Media & Thư Viện Tệp',
 }: MediaLibraryModalProps) => {
   const { toast } = useToast();
   const [assets, setAssets] = useState<MediaAsset[]>([]);
@@ -39,6 +41,8 @@ export const MediaLibraryModal = ({
   const [selectedType, setSelectedType] = useState<string>(filterType);
   const [selectedUrl, setSelectedUrl] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [customLinkInput, setCustomLinkInput] = useState('');
+  const [totalStorageBytes, setTotalStorageBytes] = useState(0);
 
   useEffect(() => {
     if (open) {
@@ -46,8 +50,17 @@ export const MediaLibraryModal = ({
     }
   }, [open]);
 
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes || bytes === 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
   const fetchMediaAssets = async () => {
     setLoading(true);
+    let calculatedBytes = 0;
     try {
       const assetMap = new Map<string, MediaAsset>();
       const buckets = ['lesson-assets', 'course-media', 'lesson-audio', 'avatars', 'event-media'];
@@ -55,7 +68,7 @@ export const MediaLibraryModal = ({
       // 1. Fetch from Supabase Storage buckets
       for (const bucket of buckets) {
         try {
-          const { data: files } = await supabase.storage.from(bucket).list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+          const { data: files } = await supabase.storage.from(bucket).list('', { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
           if (files) {
             files.forEach((f) => {
               if (!f.name || f.name.startsWith('.')) return;
@@ -67,14 +80,18 @@ export const MediaLibraryModal = ({
               else if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) type = 'video';
               else if (['mp3', 'wav', 'aac', 'flac'].includes(ext)) type = 'audio';
 
+              const fileSize = f.metadata?.size || 0;
+              calculatedBytes += fileSize;
+
               assetMap.set(publicUrl, {
                 id: `${bucket}-${f.id || f.name}`,
                 name: f.name,
                 url: publicUrl,
                 type,
                 bucket,
-                size: f.metadata?.size,
+                size: fileSize,
                 created_at: f.created_at,
+                isExternal: false,
               });
             });
           }
@@ -83,7 +100,7 @@ export const MediaLibraryModal = ({
         }
       }
 
-      // 2. Fetch URLs from lessons, lesson_materials, courses, events
+      // 2. Fetch URLs from lessons, lesson_materials, courses, events, popups
       const sb: any = supabase;
       const [{ data: lessons }, { data: materials }, { data: courses }, { data: events }] = await Promise.all([
         sb.from('lessons').select('thumbnail_url, video_url, slide_url, document_url, title_vi').order('created_at', { ascending: false }).limit(50),
@@ -95,13 +112,15 @@ export const MediaLibraryModal = ({
       (lessons || []).forEach((l: any) => {
         [l.thumbnail_url, l.video_url, l.slide_url, l.document_url].forEach((url) => {
           if (url && typeof url === 'string' && url.startsWith('http') && !assetMap.has(url)) {
+            const isDrive = url.includes('drive.google.com') || url.includes('docs.google.com');
             const isImg = url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i) || url.includes('unsplash.com');
             const isVid = url.match(/\.(mp4|webm|mov)/i) || url.includes('youtube.com');
             assetMap.set(url, {
               id: `lesson-${url}`,
-              name: l.title_vi || 'Tài liệu bài học',
+              name: l.title_vi ? `${l.title_vi} (${isDrive ? 'Google Drive' : 'Link'})` : 'Tài liệu bài học',
               url,
               type: isImg ? 'image' : isVid ? 'video' : 'document',
+              isExternal: true,
             });
           }
         });
@@ -115,6 +134,7 @@ export const MediaLibraryModal = ({
             name: m.title || 'Tệp đính kèm',
             url: m.file_url,
             type: isImg ? 'image' : 'document',
+            isExternal: true,
           });
         }
       });
@@ -126,6 +146,7 @@ export const MediaLibraryModal = ({
             name: c.title_vi || 'Ảnh khóa học',
             url: c.thumbnail_url,
             type: 'image',
+            isExternal: true,
           });
         }
       });
@@ -137,10 +158,12 @@ export const MediaLibraryModal = ({
             name: e.title_vi || 'Ảnh sự kiện',
             url: e.thumbnail_url,
             type: 'image',
+            isExternal: true,
           });
         }
       });
 
+      setTotalStorageBytes(calculatedBytes);
       setAssets(Array.from(assetMap.values()));
     } catch (err: any) {
       console.error('Error fetching media library:', err);
@@ -161,7 +184,7 @@ export const MediaLibraryModal = ({
 
       const { data: { publicUrl } } = supabase.storage.from('lesson-assets').getPublicUrl(fileName);
 
-      toast({ title: '✅ Upload ảnh thành công', description: `Đã lưu ${file.name} vào thư viện` });
+      toast({ title: '✅ Upload thành công', description: `Đã lưu ${file.name} (${formatFileSize(file.size)}) vào khu media` });
       setSelectedUrl(publicUrl);
       fetchMediaAssets();
     } catch (err: any) {
@@ -169,6 +192,17 @@ export const MediaLibraryModal = ({
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleAddCustomLink = () => {
+    if (!customLinkInput.trim()) {
+      toast({ title: '⚠️ Chưa nhập đường dẫn', description: 'Vui lòng dán liên kết Drive/URL ảnh!', variant: 'destructive' });
+      return;
+    }
+    const cleanUrl = customLinkInput.trim();
+    onSelect(cleanUrl);
+    toast({ title: '✅ Đã áp dụng liên kết', description: 'Đã gán link thành công!' });
+    onOpenChange(false);
   };
 
   const filteredAssets = assets.filter((asset) => {
@@ -181,7 +215,7 @@ export const MediaLibraryModal = ({
   const handleConfirmSelect = (targetUrl?: string) => {
     const finalUrl = targetUrl || selectedUrl;
     if (!finalUrl) {
-      toast({ title: 'Chưa chọn file', description: 'Vui lòng nhấp chọn 1 hình ảnh / tệp trong danh sách' });
+      toast({ title: 'Chưa chọn tệp', description: 'Vui lòng chọn 1 tệp trong danh sách hoặc dán link ở trên!' });
       return;
     }
     onSelect(finalUrl);
@@ -190,36 +224,68 @@ export const MediaLibraryModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[85vh] p-0 flex flex-col overflow-hidden rounded-2xl">
-        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between shrink-0 bg-card">
-          <DialogTitle className="flex items-center gap-2 text-base font-bold">
-            <FolderOpen className="w-5 h-5 text-primary" />
-            {title}
-          </DialogTitle>
+      <DialogContent className="max-w-4xl h-[88vh] p-0 flex flex-col overflow-hidden rounded-2xl shadow-2xl border border-border">
+        {/* Modal Header */}
+        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between shrink-0 bg-gradient-to-r from-card to-muted/40">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+              <FolderOpen className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-bold flex items-center gap-2">
+                {title}
+              </DialogTitle>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                  <HardDrive className="w-3.5 h-3.5" /> Dung lượng đã dùng: {formatFileSize(totalStorageBytes) || 'Đang tính...'}
+                </span>
+                <span>•</span>
+                <span>{assets.length} tệp đã lưu</span>
+              </div>
+            </div>
+          </div>
 
           <div className="flex items-center gap-2">
             <label className="cursor-pointer">
-              <input type="file" onChange={handleQuickUpload} disabled={uploading} className="hidden" accept="image/*,video/*,.pdf" />
-              <Button size="sm" variant="default" className="h-8 text-xs font-semibold rounded-lg" disabled={uploading}>
+              <input type="file" onChange={handleQuickUpload} disabled={uploading} className="hidden" accept="image/*,video/*,.pdf,.doc,.docx" />
+              <Button size="sm" variant="default" className="h-9 text-xs font-bold rounded-xl shadow-sm" disabled={uploading}>
                 <Upload className="w-3.5 h-3.5 mr-1.5" />
-                {uploading ? 'Đang upload...' : 'Upload ảnh mới'}
+                {uploading ? 'Đang upload...' : 'Upload tệp mới'}
               </Button>
             </label>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={fetchMediaAssets} title="Làm mới thư viện">
+            <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl" onClick={fetchMediaAssets} title="Làm mới thư viện">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </DialogHeader>
 
+        {/* Tab & Link Input Area */}
+        <div className="px-4 py-2.5 bg-card border-b flex flex-col gap-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Link2 className="w-4 h-4 absolute left-3 top-2.5 text-primary" />
+              <Input
+                value={customLinkInput}
+                onChange={(e) => setCustomLinkInput(e.target.value)}
+                placeholder="Dán đường dẫn Google Drive / Link Ảnh / Nguồn bên ngoài (Vd: https://drive.google.com/...)..."
+                className="pl-9 h-9 text-xs font-medium rounded-xl border-primary/30 focus-visible:ring-primary"
+              />
+            </div>
+            <Button size="sm" onClick={handleAddCustomLink} className="h-9 text-xs font-bold rounded-xl px-4 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
+              Gán Link
+            </Button>
+          </div>
+        </div>
+
         {/* Toolbar Filter & Search */}
-        <div className="p-3 border-b bg-muted/30 flex items-center justify-between gap-3 flex-wrap shrink-0">
+        <div className="p-3 border-b bg-muted/20 flex items-center justify-between gap-3 flex-wrap shrink-0">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm hình ảnh / file theo tên hoặc đường dẫn..."
-              className="pl-9 h-9 text-xs font-medium"
+              placeholder="Tìm kiếm tệp theo tên hoặc đường dẫn..."
+              className="pl-9 h-9 text-xs font-medium rounded-lg"
             />
           </div>
 
@@ -250,14 +316,14 @@ export const MediaLibraryModal = ({
           {loading ? (
             <div className="h-full flex items-center justify-center text-center text-muted-foreground space-y-2">
               <RefreshCw className="w-8 h-8 animate-spin text-primary mx-auto" />
-              <p className="text-xs">Đang tải danh sách thư viện media...</p>
+              <p className="text-xs">Đang đồng bộ và tính toán bộ nhớ khu media...</p>
             </div>
           ) : filteredAssets.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
               <FolderOpen className="w-12 h-12 mb-2 text-muted-foreground/50" />
-              <p className="font-bold text-sm">Chưa tìm thấy tệp / hình ảnh nào</p>
+              <p className="font-bold text-sm">Chưa tìm thấy tệp nào</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                Thử thay đổi từ khóa tìm kiếm hoặc bấm "Upload ảnh mới" ở trên để đưa ảnh vào thư viện.
+                Thử chọn loại khác hoặc dùng ô dán link Google Drive / Upload tệp ở trên.
               </p>
             </div>
           ) : (
@@ -311,9 +377,9 @@ export const MediaLibraryModal = ({
                       <p className="text-[11px] font-bold text-foreground line-clamp-1 tracking-tight" title={asset.name}>
                         {asset.name}
                       </p>
-                      <div className="flex items-center justify-between gap-1 mt-0.5">
+                      <div className="flex items-center justify-between gap-1 mt-1">
                         <Badge variant="outline" className="text-[9px] uppercase px-1 py-0 font-bold">
-                          {asset.type}
+                          {asset.size ? formatFileSize(asset.size) : asset.isExternal ? 'Nguồn Ngoài' : asset.type}
                         </Badge>
                         <a
                           href={asset.url}
@@ -321,7 +387,7 @@ export const MediaLibraryModal = ({
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="text-muted-foreground hover:text-primary p-0.5"
-                          title="Xem link gốc"
+                          title="Mở đường dẫn gốc"
                         >
                           <ExternalLink className="w-3 h-3" />
                         </a>
@@ -342,15 +408,15 @@ export const MediaLibraryModal = ({
                 Đã chọn: <span className="font-bold text-foreground truncate">{selectedUrl}</span>
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground">Nhấp vào một tệp/ảnh để chọn tái sử dụng</p>
+              <p className="text-xs text-muted-foreground">Nhấp vào một tệp/ảnh để chọn tái sử dụng (tránh upload trùng lặp)</p>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">
               Hủy
             </Button>
-            <Button onClick={() => handleConfirmSelect()} disabled={!selectedUrl} className="font-bold px-5">
+            <Button onClick={() => handleConfirmSelect()} disabled={!selectedUrl} className="font-bold px-5 rounded-xl">
               <Check className="w-4 h-4 mr-1.5" />
               Sử dụng tệp này
             </Button>
