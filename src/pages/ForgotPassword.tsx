@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, Loader2, CheckCircle, MailOpen } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, CheckCircle, MailOpen, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { sendEmailViaResend, buildHTMLNotificationEmail } from '@/lib/resendEmailService';
 
 const emailSchema = z.string().email('Email không hợp lệ');
 
@@ -41,17 +42,39 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const resetLink = `${window.location.origin}/reset-password?email=${encodeURIComponent(email)}`;
+      
+      // 1. Trigger Supabase Auth Reset
+      const { error: sbError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
-      if (error) {
-        toast.error(error.message);
-      } else {
-        setSent(true);
-        toast.success('Email đã được gửi! Kiểm tra hộp thư của bạn.');
-      }
-    } catch {
-      toast.error('Lỗi kết nối mạng. Vui lòng thử lại.');
+
+      // 2. Send Custom Beautiful HTML Email via Resend API
+      const htmlEmail = buildHTMLNotificationEmail({
+        title: 'Yêu Cầu Đặt Lại Mật Khẩu - Quang Dũng Nihongo',
+        badgeText: 'BẢO MẬT TÀI KHOẢN',
+        recipientName: 'Học Viên',
+        mainContentHtml: `Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản liên kết với email <b>${email}</b> tại hệ thống <b>Quang Dũng Nihongo</b>. Vui lòng bấm vào nút bên dưới để tiến hành thiết lập mật khẩu mới.`,
+        infoItems: [
+          { label: 'Email tài khoản', value: email, icon: '📧' },
+          { label: 'Thời gian yêu cầu', value: new Date().toLocaleString('vi-VN'), icon: '⏰' },
+          { label: 'Trạng thái', value: 'Chờ xác nhận mật khẩu mới', icon: '🔒' },
+        ],
+        actionBtnText: '🔑 ĐẶT LẠI MẬT KHẨU NGAY',
+        actionBtnUrl: resetLink,
+        footerNote: 'Nếu bạn không gửi yêu cầu này, xin vui lòng bỏ qua email hoặc liên hệ ban quản trị để bảo vệ tài khoản.',
+      });
+
+      await sendEmailViaResend({
+        to: email,
+        subject: '🔒 [Bảo Mật] Hướng dẫn Đặt lại Mật khẩu - Quang Dũng Nihongo',
+        html: htmlEmail,
+      });
+
+      setSent(true);
+      toast.success('Email đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư.');
+    } catch (err: any) {
+      toast.error('Lỗi khi gửi email: ' + (err.message || 'Vui lòng thử lại sau.'));
     } finally {
       setLoading(false);
     }

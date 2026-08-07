@@ -26,7 +26,8 @@ import {
   Image as ImageIcon,
   CheckCircle2
 } from 'lucide-react';
-import MediaLibraryDialog from '@/components/admin/MediaLibraryDialog';
+import MediaLibraryModal from '@/components/shared/MediaUploader';
+import { MediaLibraryModal as SharedMediaLibraryModal } from '@/components/shared/MediaLibraryModal';
 
 export interface MarketingPopup {
   id: string;
@@ -338,183 +339,258 @@ const AdminPopups = () => {
         </div>
       )}
 
-      {/* Edit / Create Dialog */}
+      {/* Edit / Create Dialog with Dual Live Preview (PC & Mobile) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-6xl max-h-[92vh] overflow-hidden p-0 flex flex-col rounded-2xl shadow-2xl">
+          <DialogHeader className="p-4 border-b bg-muted/30 flex flex-row items-center justify-between shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
               <Megaphone className="w-5 h-5 text-primary" />
               {editingPopup ? 'Chỉnh sửa Popup Quảng cáo' : 'Tạo Popup Quảng cáo Mới'}
             </DialogTitle>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant={previewDevice === 'pc' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPreviewDevice('pc')}
+                className="h-8 text-xs font-bold gap-1 rounded-xl"
+              >
+                <Monitor className="w-3.5 h-3.5" /> Xem Preview PC
+              </Button>
+              <Button
+                variant={previewDevice === 'mobile' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPreviewDevice('mobile')}
+                className="h-8 text-xs font-bold gap-1 rounded-xl"
+              >
+                <Smartphone className="w-3.5 h-3.5" /> Xem Preview Mobile
+              </Button>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold">Tiêu đề Popup (*)</Label>
-              <Input
-                placeholder="VD: Siêu Sale Khóa học N3 JLPT - Giảm tới 65%"
-                value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold">Mô tả phụ (Tùy chọn)</Label>
-              <Textarea
-                rows={2}
-                placeholder="Mô tả ngắn gọn thu hút học viên click..."
-                value={form.description || ''}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
-
-            {/* Image URL & Picker */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold">Ảnh Banner Popup (*)</Label>
-              <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden">
+            {/* Form Column */}
+            <div className="p-5 space-y-4 overflow-y-auto max-h-[75vh] border-r">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Tiêu đề Popup (*)</Label>
                 <Input
-                  placeholder="https://..."
-                  value={form.image_url}
-                  onChange={e => setForm({ ...form, image_url: e.target.value })}
+                  placeholder="VD: Siêu Sale Khóa học N3 JLPT - Giảm tới 65%"
+                  value={form.title}
+                  onChange={e => setForm({ ...form, title: e.target.value })}
                 />
-                <Button variant="outline" onClick={() => setMediaLibraryOpen(true)} className="shrink-0 gap-1.5">
-                  <ImageIcon className="w-4 h-4" /> Thư viện ảnh
-                </Button>
               </div>
 
-              {form.image_url && (
-                <div className="mt-2 relative h-32 w-full max-w-sm rounded-xl overflow-hidden border bg-muted">
-                  <img src={form.image_url} alt="Preview" className="w-full h-full object-cover" />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Mô tả phụ (Tùy chọn)</Label>
+                <Textarea
+                  rows={2}
+                  placeholder="Mô tả ngắn gọn thu hút học viên click..."
+                  value={form.description || ''}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+
+              {/* Image Media Uploader (Supabase Storage + Drive + Library) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Ảnh Banner Popup (*)</Label>
+                <MediaLibraryModal
+                  value={form.image_url}
+                  onChange={(url) => setForm({ ...form, image_url: url })}
+                  accept="image"
+                  bucket="website-assets"
+                  folder="popups"
+                  placeholder="Kéo thả ảnh, upload tệp hoặc dán link Google Drive"
+                  showLibraryBtn={true}
+                />
+              </div>
+
+              {/* Target Link */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Link Trỏ Tới khi Click Banner</Label>
+                <Input
+                  placeholder="VD: /store hoặc https://quangdungnihongo.com/khoa-hoc"
+                  value={form.target_link || ''}
+                  onChange={e => setForm({ ...form, target_link: e.target.value })}
+                />
+              </div>
+
+              {/* Dimensions PC & Mobile */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-muted/30 border">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold flex items-center gap-1.5 text-blue-600">
+                    <Monitor className="w-4 h-4" /> Kích thước trên PC (Desktop)
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">Rộng (px):</span>
+                      <Input
+                        type="number"
+                        value={form.pc_width_px}
+                        onChange={e => setForm({ ...form, pc_width_px: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">Cao (px):</span>
+                      <Input
+                        type="number"
+                        value={form.pc_height_px}
+                        onChange={e => setForm({ ...form, pc_height_px: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold flex items-center gap-1.5 text-purple-600">
+                    <Smartphone className="w-4 h-4" /> Kích thước trên Mobile
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">Rộng (px):</span>
+                      <Input
+                        type="number"
+                        value={form.mobile_width_px}
+                        onChange={e => setForm({ ...form, mobile_width_px: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">Cao (px):</span>
+                      <Input
+                        type="number"
+                        value={form.mobile_height_px}
+                        onChange={e => setForm({ ...form, mobile_height_px: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Frequency & Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold">Tần suất xuất hiện</Label>
+                  <Select
+                    value={form.display_frequency}
+                    onValueChange={(val: any) => setForm({ ...form, display_frequency: val })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="first_visit">🔥 Chỉ lần đầu vào Website (Session)</SelectItem>
+                      <SelectItem value="session">🌐 Mỗi phiên trình duyệt</SelectItem>
+                      <SelectItem value="once_a_day">📅 1 lần / Ngày</SelectItem>
+                      <SelectItem value="always">⚡ Mỗi lần load trang (Luôn luôn)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold">Thứ tự ưu tiên</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={form.order_index}
+                    onChange={e => setForm({ ...form, order_index: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold">Bắt đầu từ</Label>
+                  <Input
+                    type="datetime-local"
+                    value={form.start_at || ''}
+                    onChange={e => setForm({ ...form, start_at: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold">Kết thúc lúc</Label>
+                  <Input
+                    type="datetime-local"
+                    value={form.end_at || ''}
+                    onChange={e => setForm({ ...form, end_at: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Switch
+                  checked={form.is_active}
+                  onCheckedChange={val => setForm({ ...form, is_active: val })}
+                />
+                <Label className="font-bold cursor-pointer text-xs">Bật trạng thái hoạt động cho Popup này</Label>
+              </div>
+            </div>
+
+            {/* Live Preview Column */}
+            <div className="p-6 bg-slate-950 text-white flex flex-col items-center justify-center relative overflow-y-auto max-h-[75vh]">
+              <div className="mb-3 text-center">
+                <Badge variant="outline" className="text-[10px] text-white/80 border-white/20">
+                  {previewDevice === 'pc' ? '🖥️ Desktop Preview' : '📱 Mobile Preview'}
+                </Badge>
+              </div>
+
+              {previewDevice === 'mobile' ? (
+                /* Mobile Mockup Frame */
+                <div className="w-[320px] h-[520px] bg-black border-[10px] border-slate-800 rounded-[38px] shadow-2xl p-2 relative flex flex-col justify-center items-center">
+                  <div className="w-20 h-4 bg-slate-800 rounded-b-xl absolute top-0 z-30" />
+                  <div 
+                    style={{
+                      width: `${form.mobile_width_px || 280}px`,
+                      maxHeight: `${form.mobile_height_px || 400}px`,
+                    }}
+                    className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-muted flex flex-col justify-end p-4 text-white"
+                  >
+                    {form.image_url ? (
+                      <img src={form.image_url} alt="Popup" className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-800 flex items-center justify-center text-xs text-white/60">Chưa có ảnh</div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+
+                    <div className="relative z-10 space-y-1.5">
+                      <h4 className="font-extrabold text-sm line-clamp-2">{form.title || 'Tiêu đề Popup Quảng cáo'}</h4>
+                      {form.description && <p className="text-[11px] text-white/80 line-clamp-2">{form.description}</p>}
+                      <Button size="sm" className="w-full h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-black rounded-xl mt-1">
+                        Xem Ngay →
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* PC Mockup Frame */
+                <div 
+                  style={{
+                    width: `${Math.min(form.pc_width_px || 480, 480)}px`,
+                    height: `${Math.min(form.pc_height_px || 540, 540)}px`,
+                  }}
+                  className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 bg-muted flex flex-col justify-end p-6 text-white transition-all"
+                >
+                  {form.image_url ? (
+                    <img src={form.image_url} alt="Popup" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-900 flex items-center justify-center text-xs text-white/60">Chưa có ảnh</div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+                  <div className="relative z-10 space-y-2">
+                    <Badge className="bg-amber-500 text-black font-extrabold text-[10px]">KHUYẾN MÃI</Badge>
+                    <h3 className="font-black text-lg line-clamp-2">{form.title || 'Tiêu đề Popup Quảng cáo PC'}</h3>
+                    {form.description && <p className="text-xs text-white/80 line-clamp-2">{form.description}</p>}
+                    <Button size="sm" className="h-9 text-xs font-bold px-6 bg-amber-500 hover:bg-amber-600 text-black rounded-xl mt-2">
+                      Đăng Ký Ngay 👉
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Target Link */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold">Link Trỏ Tới khi Click Banner</Label>
-              <Input
-                placeholder="VD: /store hoặc https://riki.edu.vn/khoa-hoc-n5"
-                value={form.target_link || ''}
-                onChange={e => setForm({ ...form, target_link: e.target.value })}
-              />
-            </div>
-
-            {/* Dimensions PC & Mobile */}
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-muted/30 border">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold flex items-center gap-1.5 text-blue-600">
-                  <Monitor className="w-4 h-4" /> Kích thước trên PC (Desktop)
-                </Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-[10px] text-muted-foreground">Rộng (px):</span>
-                    <Input
-                      type="number"
-                      value={form.pc_width_px}
-                      onChange={e => setForm({ ...form, pc_width_px: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted-foreground">Cao (px):</span>
-                    <Input
-                      type="number"
-                      value={form.pc_height_px}
-                      onChange={e => setForm({ ...form, pc_height_px: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-bold flex items-center gap-1.5 text-purple-600">
-                  <Smartphone className="w-4 h-4" /> Kích thước trên Mobile
-                </Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-[10px] text-muted-foreground">Rộng (px):</span>
-                    <Input
-                      type="number"
-                      value={form.mobile_width_px}
-                      onChange={e => setForm({ ...form, mobile_width_px: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted-foreground">Cao (px):</span>
-                    <Input
-                      type="number"
-                      value={form.mobile_height_px}
-                      onChange={e => setForm({ ...form, mobile_height_px: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Frequency & Dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Tần suất xuất hiện</Label>
-                <Select
-                  value={form.display_frequency}
-                  onValueChange={(val: any) => setForm({ ...form, display_frequency: val })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="first_visit">🔥 Chỉ lần đầu vào Website (Session)</SelectItem>
-                    <SelectItem value="session">🌐 Mỗi phiên trình duyệt</SelectItem>
-                    <SelectItem value="once_a_day">📅 1 lần / Ngày</SelectItem>
-                    <SelectItem value="always">⚡ Mỗi lần load trang (Luôn luôn)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Thứ tự ưu tiên Carousel</Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={form.order_index}
-                  onChange={e => setForm({ ...form, order_index: Number(e.target.value) })}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Thời gian bắt đầu hiển thị</Label>
-                <Input
-                  type="datetime-local"
-                  value={form.start_at || ''}
-                  onChange={e => setForm({ ...form, start_at: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Thời gian kết thúc (Tùy chọn)</Label>
-                <Input
-                  type="datetime-local"
-                  value={form.end_at || ''}
-                  onChange={e => setForm({ ...form, end_at: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <Switch
-                checked={form.is_active}
-                onCheckedChange={val => setForm({ ...form, is_active: val })}
-              />
-              <Label className="font-bold cursor-pointer">Bật trạng thái hoạt động của Popup này</Label>
-            </div>
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Hủy</Button>
-            <Button variant="secondary" onClick={() => { setPreviewDevice('pc'); setPreviewOpen(true); }} className="gap-1.5">
-              <Eye className="w-4 h-4" /> Xem trước Live
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className="gap-1.5 font-bold">
-              <CheckCircle2 className="w-4 h-4" /> {saving ? 'Đang lưu...' : 'Lưu Popup'}
+          <DialogFooter className="p-4 border-t bg-muted/20 shrink-0">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">Hủy</Button>
+            <Button onClick={handleSave} disabled={saving} className="gap-1.5 font-bold rounded-xl px-6">
+              <CheckCircle2 className="w-4 h-4" /> {saving ? 'Đang lưu...' : 'Lưu Popup Quảng cáo'}
             </Button>
           </DialogFooter>
         </DialogContent>

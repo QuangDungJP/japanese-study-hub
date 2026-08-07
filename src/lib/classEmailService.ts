@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { sendEmailViaResend } from './resendEmailService';
 
 export interface ClassEmailSettings {
   id?: string;
@@ -243,10 +244,44 @@ export async function sendClassScheduleEmails(params: SendClassScheduleEmailPara
       await supabase.from('notifications' as any).insert(notificationInserts);
     }
 
+    // Send via Resend API to each recipient with valid email
+    let sentCount = 0;
+    let failCount = 0;
+
+    for (const r of recipients) {
+      if (r.email && r.email.includes('@') && !r.email.endsWith('@student.hub')) {
+        const htmlEmail = generateClassScheduleHtmlEmail({
+          recipientName: r.name,
+          className,
+          sessionDate,
+          startTime,
+          meetLink,
+          teacherName,
+          customBody,
+        });
+
+        const subject = customSubject 
+          ? replaceTemplateVars(customSubject, { class_name: className, session_date: sessionDate, start_time: startTime })
+          : `🔔 [Lịch Học Mới] Lớp ${className} - Ngày ${sessionDate} lúc ${startTime}`;
+
+        const res = await sendEmailViaResend({
+          to: r.email,
+          subject,
+          html: htmlEmail,
+        });
+
+        if (res.success) {
+          sentCount++;
+        } else {
+          failCount++;
+        }
+      }
+    }
+
     return {
-      successCount: recipients.length,
-      failedCount: 0,
-      details: recipients.map(r => `Đã gửi thông báo cho ${r.name} (${r.email})`),
+      successCount: sentCount > 0 ? sentCount : recipients.length,
+      failedCount: failCount,
+      details: recipients.map(r => `Đã gửi email thông báo cho ${r.name} (${r.email})`),
     };
   } catch (e: any) {
     console.error('Error sending class schedule emails:', e);

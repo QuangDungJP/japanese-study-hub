@@ -95,7 +95,36 @@ export function useAuthLogic() {
         toast.error(msg);
         return false;
       }
-      toast.success('Đăng ký thành công! Kiểm tra email để xác nhận.');
+
+      // Send Welcome Email via Resend API
+      try {
+        const { sendEmailViaResend, buildHTMLNotificationEmail } = await import('@/lib/resendEmailService');
+        const htmlWelcome = buildHTMLNotificationEmail({
+          title: 'Chào Mừng Bạn Đến Với Quang Dũng Nihongo',
+          badgeText: 'CHÀO MỪNG THÀNH VIÊN MỚI',
+          recipientName: fullName,
+          mainContentHtml: `Chúc mừng bạn đã tạo thành công tài khoản học viên tại <b>Quang Dũng Nihongo</b>! Bạn có thể bắt đầu khám phá các khóa học tiếng Nhật JLPT N5 - N1, tài liệu ôn thi và phòng học meeting trực tuyến ngay hôm nay.`,
+          infoItems: [
+            { label: 'Họ tên', value: fullName, icon: '👤' },
+            { label: 'Email tài khoản', value: email, icon: '📧' },
+            { label: 'Số điện thoại', value: phone || 'Chưa cập nhật', icon: '📞' },
+            { label: 'Quyền hạn', value: 'Học viên chính thức', icon: '🎓' },
+          ],
+          actionBtnText: '🚀 VÀO TRANG HỌC NGAY',
+          actionBtnUrl: 'https://quangdungnihongo.com/auth',
+          footerNote: 'Chúc bạn có một hành trình chinh phục tiếng Nhật hiệu quả và thành công rực rỡ!',
+        });
+
+        await sendEmailViaResend({
+          to: email,
+          subject: `🌸 [Chào Mừng] Tài khoản Quang Dũng Nihongo của bạn đã sẵn sàng!`,
+          html: htmlWelcome,
+        });
+      } catch (emailErr) {
+        console.warn('Welcome email error:', emailErr);
+      }
+
+      toast.success('Đăng ký thành công! Vui lòng kiểm tra email chào mừng.');
       return true;
     } catch {
       toast.error('Lỗi kết nối mạng. Vui lòng thử lại.');
