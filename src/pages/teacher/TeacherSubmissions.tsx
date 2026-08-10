@@ -252,10 +252,15 @@ const TeacherSubmissions = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: lessons } = await supabase
-        .from('lessons')
-        .select('id, title, title_vi')
-        .eq('teacher_id', user.id);
+      // Lấy danh sách vai trò để kiểm tra Admin
+      const { data: userRoles } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
+      const isAdmin = userRoles?.some(r => r.role === 'admin') || ['quangdungonline.education@gmail.com', 'thanhhungtran2003@gmail.com'].includes(user.email?.toLowerCase() || '');
+
+      let lessonQuery = supabase.from('lessons').select('id, title, title_vi');
+      if (!isAdmin) {
+        lessonQuery = lessonQuery.eq('teacher_id', user.id);
+      }
+      const { data: lessons } = await lessonQuery;
 
       if (!lessons || lessons.length === 0) {
         setSubmissions([]);
@@ -351,10 +356,15 @@ const TeacherSubmissions = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: examsData } = await supabase
-        .from('exams')
-        .select('*')
-        .eq('teacher_id', user.id);
+      // Lấy danh sách vai trò để kiểm tra Admin
+      const { data: userRoles } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
+      const isAdmin = userRoles?.some(r => r.role === 'admin') || ['quangdungonline.education@gmail.com', 'thanhhungtran2003@gmail.com'].includes(user.email?.toLowerCase() || '');
+
+      let examQuery = supabase.from('exams').select('*');
+      if (!isAdmin) {
+        examQuery = examQuery.eq('teacher_id', user.id);
+      }
+      const { data: examsData } = await examQuery;
 
       if (!examsData || examsData.length === 0) {
         setExamAttempts([]);

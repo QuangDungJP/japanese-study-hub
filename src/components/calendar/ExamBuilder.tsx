@@ -16,9 +16,10 @@ import {
   Wand2, Sparkles, Plus, Trash2, Copy, Loader2, Users, CircleDot, ToggleRight,
   Type, AlignLeft, GripVertical, Clipboard, Music, Upload, Volume2, Timer,
   Infinity as InfinityIcon, Clock, Mic, MessageSquare, Video, Eye, Camera, ShieldAlert, Laptop,
-  Save, AlertTriangle, Maximize2, Minimize2
+  Save, AlertTriangle, Maximize2, Minimize2, Image
 } from 'lucide-react';
 import FormattedText from '@/components/shared/FormattedText';
+import MediaUploader from '@/components/shared/MediaUploader';
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay' | 'speaking' | 'roleplay';
 export type TimerMode = 'none' | 'stopwatch' | 'countdown';
@@ -34,6 +35,7 @@ export interface ExamQuestion {
   explanation?: string;
   points?: number;
   audio_url?: string;
+  image_url?: string;
 }
 
 interface ClassOption { id: string; name: string }
@@ -114,6 +116,7 @@ const normalizeQuestion = (q: any): ExamQuestion => {
     explanation: q?.explanation || '',
     points: typeof q?.points === 'number' ? q.points : 1,
     audio_url: q?.audio_url || undefined,
+    image_url: q?.image_url || undefined,
   };
 };
 
@@ -359,6 +362,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
   const [descriptionVi, setDescriptionVi] = useState('');
   const [meetLink, setMeetLink] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
 
   // Step 2
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
@@ -737,14 +741,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       title_vi: (titleVi || title).trim(),
       description_vi: descriptionVi || null,
       instructions: instructions || null,
-      video_url: videoUrl || null,
+      video_url: videoUrl || thumbnailUrl || null,
       exam_type: examType,
-      exam_category: examCategory,
-      exam_date: examDate,
-      start_time: startTime,
-      duration_minutes: timerMode === 'countdown' ? duration : null,
-      timer_mode: timerMode,
-      meet_link: meetLink || null,
       max_score: maxScore,
       passing_score: passingScore,
       score_mode: scoreMode,
@@ -1019,6 +1017,21 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">Mô tả (tùy chọn)</Label>
                 <Textarea value={descriptionVi} onChange={(e) => setDescriptionVi(e.target.value)} rows={2} className="mt-1" />
               </div>
+              {/* Ảnh bìa bài kiểm tra (Thumbnail) */}
+              <div className="space-y-1.5 bg-muted/20 p-3 rounded-xl border">
+                <Label className="text-xs uppercase tracking-wider text-foreground font-bold flex items-center gap-1.5">
+                  <Image className="w-4 h-4 text-purple-600" /> Ảnh bìa Bài kiểm tra (Thumbnail Đề thi)
+                </Label>
+                <MediaUploader
+                  value={thumbnailUrl}
+                  onChange={(url) => setThumbnailUrl(url)}
+                  accept="image"
+                  folder="exam-thumbnails"
+                  placeholder="Tải ảnh đại diện bài kiểm tra hoặc chọn từ thư viện"
+                  aspectRatio="video"
+                />
+              </div>
+
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Link Google Meet</Label>
@@ -1168,6 +1181,21 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                           audioUrl={q.audio_url}
                           onChange={(url) => patchQ(i, { audio_url: url || undefined })}
                         />
+
+                        {/* ── Question Image Upload / URL Library ── */}
+                        <div className="space-y-1 bg-muted/20 p-2.5 rounded-xl border border-border/80">
+                          <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                            <Image className="w-3.5 h-3.5 text-blue-500" /> Ảnh minh họa câu hỏi (Tải lên / Chọn từ thư viện media / Dán URL)
+                          </Label>
+                          <MediaUploader
+                            value={q.image_url || ''}
+                            onChange={(url) => patchQ(i, { image_url: url || undefined })}
+                            accept="image"
+                            folder="exam-question-images"
+                            placeholder="Tải ảnh minh họa hoặc chọn từ thư viện"
+                            aspectRatio="auto"
+                          />
+                        </div>
 
                         {(q.type === 'multiple_choice' || q.type === 'true_false') && (
                           <div className="space-y-2">

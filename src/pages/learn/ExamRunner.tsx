@@ -1211,7 +1211,14 @@ const ExamRunner = () => {
                   <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-sm shrink-0 font-semibold ${isAnswered ? "bg-green-500 text-white" : "bg-primary text-primary-foreground"}`}>
                     {isAnswered ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
                   </span>
-                  <span className="flex-1"><FormattedText text={q.text} /></span>
+                  <span className="flex-1 space-y-2">
+                    <FormattedText text={q.text} />
+                    {q.image_url && (
+                      <div className="mt-2 max-w-lg rounded-xl overflow-hidden border shadow-xs bg-black/5">
+                        <img src={q.image_url} alt="Ảnh minh họa câu hỏi" className="w-full h-auto max-h-80 object-contain mx-auto" />
+                      </div>
+                    )}
+                  </span>
                   <Badge variant="outline" className="shrink-0 font-normal">{pts} điểm</Badge>
                 </CardTitle>
                 {!isAutoGraded(q) && <p className="text-xs text-muted-foreground pl-9">Câu tự luận – giáo viên sẽ chấm tay.</p>}

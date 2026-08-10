@@ -29,9 +29,16 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
+      const redirectUrl = window.location.origin || 'https://quangdungnihongo.com';
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/` },
+        options: { 
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        },
       });
       if (error) toast.error(error.message);
     } catch {

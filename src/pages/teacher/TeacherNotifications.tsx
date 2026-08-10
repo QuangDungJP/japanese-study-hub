@@ -241,9 +241,38 @@ const TeacherNotifications = () => {
 
       if (error) throw error;
 
+      // Đồng thời gửi thông báo qua Email Resend tới các học viên nhận tin
+      (async () => {
+        try {
+          const { data: userEmails } = await (supabase as any)
+            .from('profiles')
+            .select('user_id, full_name, email')
+            .in('user_id', targetStudentIds);
+
+          if (userEmails && userEmails.length > 0) {
+            const { sendEmailNotification } = await import('@/lib/resendEmailService');
+            for (const stud of userEmails) {
+              if (stud.email) {
+                await sendEmailNotification({
+                  to: stud.email,
+                  subject: `🔔 [TNQDO Japanese] ${formData.title}`,
+                  title: formData.title,
+                  message: formData.message,
+                  recipientName: stud.full_name || 'Học viên',
+                  actionUrl: 'https://quangdungnihongo.com/learn',
+                  actionText: 'Vào trang học tập ngay'
+                });
+              }
+            }
+          }
+        } catch (mailErr) {
+          console.warn('Email notification error:', mailErr);
+        }
+      })();
+
       toast({
-        title: 'Thành công',
-        description: `Đã gửi thông báo đến ${targetStudentIds.length} học viên`
+        title: '🎉 Thành công',
+        description: `Đã gửi thông báo Realtime & Email đến ${targetStudentIds.length} học viên`
       });
 
       // Reset form
