@@ -1080,32 +1080,46 @@ const TeacherClasses = () => {
 
   const handleSubmit = async () => {
     try {
-      const classData = {
-        ...formData,
+      const classData: any = {
         name: formData.name || formData.name_vi || 'Class',
         name_vi: formData.name_vi,
+        description: formData.description || null,
+        description_vi: formData.description_vi || null,
         teacher_id: editingClass?.teacher_id || user?.id,
         course_id: formData.course_id === 'none' || !formData.course_id ? null : formData.course_id,
+        max_students: formData.max_students || 30,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        cover_image_url: formData.cover_image_url || null,
         thumbnail_url: formData.cover_image_url || null,
         is_active: true
       };
 
       if (editingClass) {
-        const { error } = await supabase
+        let { error } = await supabase
           .from('classes')
-          .update(classData as any)
+          .update(classData)
           .eq('id', editingClass.id);
+
+        if (error && error.message?.includes('cover_image_url')) {
+          delete classData.cover_image_url;
+          const retry = await supabase.from('classes').update(classData).eq('id', editingClass.id);
+          error = retry.error;
+        }
 
         if (error) throw error;
         toast({ title: 'Thành công', description: 'Đã cập nhật lớp học' });
       } else {
-        const { data: createdClasses, error } = await supabase
+        let { data: createdClasses, error } = await supabase
           .from('classes')
-          .insert(classData as any)
+          .insert(classData)
           .select('*');
+
+        if (error && error.message?.includes('cover_image_url')) {
+          delete classData.cover_image_url;
+          const retry = await supabase.from('classes').insert(classData).select('*');
+          createdClasses = retry.data;
+          error = retry.error;
+        }
 
         if (error) throw error;
         toast({ title: '🎉 Thành công', description: 'Đã tạo lớp học mới!' });
@@ -2187,6 +2201,38 @@ const TeacherClasses = () => {
                           <h3 className="font-extrabold text-base text-foreground group-hover:text-purple-600 transition-colors line-clamp-2">
                             {session.topic || 'Video ghi hình buổi học trực tuyến'}
                           </h3>
+                        </div>
+
+                        {/* Video Thumbnail Preview */}
+                        <div 
+                          className="relative h-44 w-full bg-slate-900 overflow-hidden cursor-pointer group/thumb border-b"
+                          onClick={() => setPlayingVideoRecord({ url: recUrl, title: session.topic || 'Record Buổi Học' })}
+                        >
+                          {(() => {
+                            const ytMatch = recUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+                            const thumbUrl = ytMatch 
+                              ? `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`
+                              : selectedClass?.cover_image_url || selectedClass?.thumbnail_url || '/img/qd-team-hero.png';
+                            
+                            return (
+                              <>
+                                <img
+                                  src={thumbUrl}
+                                  alt="Record Thumbnail"
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover/thumb:scale-105 opacity-80"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="w-12 h-12 rounded-full bg-purple-600/90 text-white flex items-center justify-center shadow-lg group-hover/thumb:scale-110 group-hover/thumb:bg-purple-600 transition-all">
+                                    <Play className="w-6 h-6 fill-current ml-0.5" />
+                                  </div>
+                                </div>
+                                <span className="absolute bottom-2 right-2 bg-black/70 text-white backdrop-blur-md px-2 py-0.5 rounded text-[11px] font-mono flex items-center gap-1 font-bold">
+                                  <Video className="w-3 h-3 text-purple-400" /> Bấm để phát xem lại
+                                </span>
+                              </>
+                            );
+                          })()}
                         </div>
 
                         {/* Body content & notes */}
