@@ -102,19 +102,14 @@ export function StoreContent() {
 
   const handleBuyXp = async (item: StoreItem) => {
     if (!user) { toast({ title: 'Vui lòng đăng nhập', variant: 'destructive' }); return; }
-    if (ownedItemCodes.has(item.code)) { toast({ title: 'Đã sở hữu' }); return; }
     if (userXp < item.price_xp) {
-      toast({ title: 'Không đủ XP', description: `Cần thêm ${item.price_xp - userXp} XP`, variant: 'destructive' });
-      return;
-    }
-    if (userStreak < item.req_streak) {
-      toast({ title: 'Chưa đủ Streak', description: `Yêu cầu ${item.req_streak} ngày Streak`, variant: 'destructive' });
+      toast({ title: 'Không đủ XP', description: 'Bạn cần tích lũy thêm XP để mua vật phẩm này', variant: 'destructive' });
       return;
     }
 
     setPurchasing(true);
     try {
-      const newXp = userXp - item.price_xp;
+      const newXp = Math.max(0, userXp - item.price_xp);
       await (supabase as any).from('user_progress')
         .update({ total_xp: newXp, updated_at: new Date().toISOString() })
         .eq('user_id', user.id);
@@ -139,10 +134,17 @@ export function StoreContent() {
         });
       }
 
+      if (item.code.includes('double_xp') || item.code.includes('boost_xp') || item.category === 'study_boost') {
+        const expireTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        localStorage.setItem(`active_xp_boost_${user.id}`, JSON.stringify({ multiplier: 2, expiresAt: expireTime }));
+        toast({ title: '⚡ Đã kích hoạt Thẻ Nhân Đôi XP (24 Giờ)!', description: 'Tất cả XP nhận được khi học bài & làm bài thi sẽ được x2 trong 24h.' });
+      } else {
+        toast({ title: '🎉 Mua thành công!', description: `Đã mở khóa ${item.title_vi}` });
+      }
+
       setUserXp(newXp);
       setOwnedItemCodes(prev => new Set(prev).add(item.code));
       setPurchasingItem(null);
-      toast({ title: '🎉 Mua thành công!', description: `Đã mở khóa ${item.title_vi}` });
     } catch (err: any) {
       toast({ title: 'Lỗi mua hàng', description: err.message, variant: 'destructive' });
     } finally {

@@ -371,8 +371,11 @@ const AdminBadges = () => {
           <TabsTrigger value="badges" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
             <Award className="w-3.5 h-3.5" /> Huy hiệu ({badges.length})
           </TabsTrigger>
+          <TabsTrigger value="level_titles" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
+            <GraduationCap className="w-3.5 h-3.5" /> Cấp độ & Biệt hiệu
+          </TabsTrigger>
           <TabsTrigger value="xp_rules" className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none">
-            <Zap className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Cấu hình</span> Quy tắc XP
+            <Zap className="w-3.5 h-3.5" /> Cấu hình Quy tắc XP
           </TabsTrigger>
         </TabsList>
 
@@ -478,7 +481,53 @@ const AdminBadges = () => {
           )}
         </TabsContent>
 
-        {/* Tab 2: XP Rules */}
+        {/* Tab 2: Level Titles & Milestone Rank */}
+        <TabsContent value="level_titles" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-indigo-500" /> Bảng Cấp Độ & Biệt Hiệu Học Viên
+              </CardTitle>
+              <CardDescription>Danh sách danh xưng tự động mở khóa theo từng mốc Level và tổng XP tích lũy</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">Cấp độ</TableHead>
+                    <TableHead>Mốc XP Tích Lũy</TableHead>
+                    <TableHead>Biệt Hiệu / Danh Xưng</TableHead>
+                    <TableHead>Huy Hiệu Mặc Định</TableHead>
+                    <TableHead className="text-right">Quyền Lợi & Khung Nổi Bật</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    { level: 'Level 1 - 4', xp: '0 - 320 XP', title: '🌱 Tân Thủ Học Tiếng Nhật', icon: '🌱', perk: 'Khung Hướng Dương (Free 100%)' },
+                    { level: 'Level 5 - 9', xp: '321 - 1,280 XP', title: '📖 Học Viên Tập Sự', icon: '📖', perk: 'Mở khóa Thảo luận Lớp học' },
+                    { level: 'Level 10 - 14', xp: '1,281 - 2,880 XP', title: '⚡ Chinh Phục JLPT N5', icon: '⚡', perk: 'Thưởng +500 XP & Khung Trăng Khuyết' },
+                    { level: 'Level 15 - 19', xp: '2,881 - 5,120 XP', title: '🔥 Thách Thức JLPT N4', icon: '🔥', perk: 'Mở khóa Khung Áo Choàng Đỏ' },
+                    { level: 'Level 20 - 29', xp: '5,121 - 12,000 XP', title: '🎓 Cao Thủ Tiếng Nhật N3', icon: '🎓', perk: 'Khung Hào Quang & Thẻ Nhận Đôi XP' },
+                    { level: 'Level 30 - 39', xp: '12,001 - 22,000 XP', title: '👑 Bậc Thầy JLPT N2', icon: '👑', perk: 'Thưởng 2,000 XP & Khung Tinh Tú Vàng' },
+                    { level: 'Level 40 - 50+', xp: '22,001+ XP', title: '💎 Huyền Thoại JLPT N1 Super', icon: '💎', perk: 'Aura Rồng Thần 3D Gold & Độc Nhất' },
+                  ].map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-extrabold text-indigo-600 dark:text-indigo-400">{row.level}</TableCell>
+                      <TableCell className="font-mono font-bold text-amber-600">{row.xp}</TableCell>
+                      <TableCell className="font-bold flex items-center gap-2">
+                        <span>{row.icon}</span> {row.title}
+                      </TableCell>
+                      <TableCell><Badge variant="outline" className="font-bold">{row.icon} Huy hiệu {row.level.split(' ')[0]}</Badge></TableCell>
+                      <TableCell className="text-right text-xs font-semibold text-emerald-600">{row.perk}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 3: XP Rules */}
         <TabsContent value="xp_rules" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
