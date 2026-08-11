@@ -86,6 +86,7 @@ const sectionLabels: Record<string, { label: string; page: string }> = {
   'testimonials': { label: 'Trang chủ - Đánh giá Học viên', page: 'home' },
   'cta': { label: 'Trang chủ - Banner Đăng ký CTA', page: 'home' },
   'pricing': { label: 'Trang chủ - Niêm yết Bảng giá', page: 'home' },
+  'partners': { label: 'Trang chủ - Đơn vị Kết nối & Hợp tác', page: 'home' },
   'footer': { label: 'Chân trang (Footer)', page: 'home' },
 
   // Trang Giới Thiệu
