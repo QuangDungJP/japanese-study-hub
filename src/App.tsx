@@ -107,7 +107,8 @@ const App = () => (
                 <Route path="/khoa-hoc" element={<CoursesPage />} />
                 <Route path="/giao-vien" element={<TeachersPage />} />
 
-              <Route path="/zoom" element={<ZoomPage />} />
+                <Route path="/meeting" element={<ZoomPage />} />
+                <Route path="/zoom" element={<ZoomPage />} />
                 <Route path="/lien-he" element={<Contact />} />
                 <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
               <Route path="/giao-vien/:slug" element={<TeacherDetail />} />

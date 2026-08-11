@@ -87,7 +87,7 @@ const Footer = () => {
               <li><Link to="/gioi-thieu" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Giới thiệu</Link></li>
               <li><Link to="/khoa-hoc" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Khóa học</Link></li>
               <li><Link to="/giao-vien" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Giáo viên</Link></li>
-              <li><Link to="/zoom" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Học qua Meeting</Link></li>
+              <li><Link to="/meeting" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Học qua Meeting</Link></li>
               <li><Link to="/blog" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Blog</Link></li>
               {customPagesLinks.filter(l => l.label && l.url).map((l, i) => renderLink(l.url, l.label, `cp-${i}`))}
             </ul>

@@ -97,55 +97,54 @@ const ZoomSection = () => {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <Button variant="hero" size="lg">
-                <Video className="w-5 h-5" />
-                Đăng ký học thử miễn phí
+              <Button variant="hero" size="lg" asChild className="rounded-2xl h-12 px-8 font-bold">
+                <a href="/phong-hoc">
+                  <Video className="w-5 h-5 mr-2" />
+                  Đăng ký học thử miễn phí
+                </a>
               </Button>
-              <Button variant="outline" size="lg">
-                Xem lịch học
+              <Button variant="outline" size="lg" asChild className="rounded-2xl h-12 px-8 font-bold">
+                <a href="/khoa-hoc">
+                  Xem lịch học & Khóa học
+                </a>
               </Button>
             </div>
           </div>
 
-          {/* Right Content - Zoom Interface Mock */}
+          {/* Right Content - Real Slide Lecture Stream */}
           <div className="relative">
-            <div className="bg-card rounded-3xl shadow-card-hover border border-border overflow-hidden">
-              {/* Zoom Header */}
+            <div className="bg-card rounded-3xl shadow-2xl border border-border overflow-hidden group">
+              {/* Meeting Header */}
               <div className="bg-foreground/5 px-6 py-4 flex items-center justify-between border-b border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">TNQDO - Class</span>
+                <span className="text-sm font-bold text-foreground">Google Meet - TNQDO Online Education</span>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span>45:23</span>
+                  <Clock className="w-4 h-4 text-emerald-500 animate-pulse" />
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">45:23</span>
                 </div>
               </div>
 
-              {/* Main Video Area */}
-              <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                {zoomContent?.image_url ? (
-                  <img 
-                    src={zoomContent.image_url} 
-                    alt="Teacher" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-card mx-auto mb-4 flex items-center justify-center shadow-lg">
-                      <span className="text-4xl">👩‍🏫</span>
-                    </div>
-                    <p className="font-semibold text-foreground">{teacherName}</p>
-                    <p className="text-sm text-muted-foreground">{teacherRole}</p>
-                  </div>
-                )}
+              {/* Main Real Slide Video Stream */}
+              <div className="relative aspect-video bg-black overflow-hidden">
+                <img 
+                  src="/img/zoom-meeting.png" 
+                  alt="Lớp học Google Meet thực tế" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  onError={(e) => {
+                    (e.target as HTMLElement).src = 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1000&auto=format&fit=crop&q=80';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-                {/* Self Video */}
-                <div className="absolute bottom-4 right-4 w-32 h-24 bg-card rounded-xl shadow-lg overflow-hidden border-2 border-card">
-                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                    <span className="text-2xl">🧑‍🎓</span>
+                {/* Live Teacher Camera PiP Overlay */}
+                <div className="absolute bottom-4 right-4 w-36 sm:w-44 rounded-2xl overflow-hidden border-2 border-white/40 shadow-2xl bg-black/80 backdrop-blur-md">
+                  <div className="p-2 space-y-1 text-center bg-black/60">
+                    <p className="text-[11px] text-amber-300 font-bold">👨‍🏫 Dung Sensei Live</p>
+                    <p className="text-[9px] text-white/70">Quang Dũng Online Education</p>
                   </div>
                 </div>
               </div>
