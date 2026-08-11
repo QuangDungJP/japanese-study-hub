@@ -617,7 +617,34 @@ const TeacherSubmissions = () => {
               Theo dõi chính xác thời gian làm bài, mốc bắt đầu/kết thúc, số câu đúng/sai và lịch sử số lần nộp bài của học viên.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Button
+              onClick={() => {
+                const csvData = (activeCategory === 'exercises' ? filteredSubmissions : filteredExamAttempts).map((item: any, idx) => ({
+                  STT: idx + 1,
+                  HocVien: item.profile?.full_name || 'Học viên',
+                  TenBai: activeCategory === 'exercises' ? (item.exercise?.title_vi || 'Bài tập') : (item.exam?.title_vi || 'Bài thi'),
+                  TrangThai: item.status === 'graded' ? 'Đã chấm' : 'Chờ chấm',
+                  DiemSo: item.score ?? 0,
+                  DiemToiDa: activeCategory === 'exercises' ? 100 : (item.exam?.max_score || 100),
+                  NgayNop: item.submitted_at ? new Date(item.submitted_at).toLocaleString('vi-VN') : '',
+                  NhanXet: item.feedback || item.teacher_feedback || '',
+                }));
+                const headers = ['STT', 'HocVien', 'TenBai', 'TrangThai', 'DiemSo', 'DiemToiDa', 'NgayNop', 'NhanXet'];
+                const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...csvData.map(r => Object.values(r).map(v => `"${v}"`).join(','))].join('\n');
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                link.setAttribute('download', `Bang_Diem_Cham_Bai_${activeCategory}_${new Date().toISOString().slice(0, 10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              variant="outline"
+              className="font-bold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-md"
+            >
+              📊 Xuất Bảng Điểm Excel / Google Sheets
+            </Button>
             <Button onClick={fetchAllData} disabled={loading} variant="secondary" className="font-bold gap-2 rounded-xl">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Làm mới dữ liệu

@@ -1195,8 +1195,8 @@ const PartnersEditor = ({ content, onChange }: { content: Record<string, any>; o
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-xl border bg-muted/20">
-        <div className="space-y-1">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3.5 rounded-xl border bg-muted/20">
+        <div className="space-y-1 md:col-span-2">
           <Label className="text-xs font-bold">Tiêu đề Section</Label>
           <Input
             value={content.section_title || 'Đơn vị kết nối'}
@@ -1205,13 +1205,47 @@ const PartnersEditor = ({ content, onChange }: { content: Record<string, any>; o
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs font-bold">Tốc độ trượt Carousel (Giây)</Label>
+          <Label className="text-xs font-bold">Cỡ chữ Tiêu đề (px)</Label>
+          <Input
+            type="number"
+            min={14}
+            max={48}
+            value={content.title_font_size_px || 28}
+            onChange={(e) => update('title_font_size_px', parseInt(e.target.value) || 28)}
+            className="h-8 text-xs font-mono"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-bold">Tốc độ trượt (Giây)</Label>
           <Input
             type="number"
             min={1}
             max={20}
             value={content.slide_speed_seconds || 3.5}
             onChange={(e) => update('slide_speed_seconds', parseFloat(e.target.value) || 3.5)}
+            className="h-8 text-xs font-mono"
+          />
+        </div>
+
+        <div className="space-y-1 md:col-span-2">
+          <Label className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Chiều cao Logo (px)</Label>
+          <Input
+            type="number"
+            min={40}
+            max={160}
+            value={content.logo_height_px || 96}
+            onChange={(e) => update('logo_height_px', parseInt(e.target.value) || 96)}
+            className="h-8 text-xs font-mono"
+          />
+        </div>
+        <div className="space-y-1 md:col-span-2">
+          <Label className="text-xs font-bold text-purple-600 dark:text-purple-400">Chiều rộng khung Logo (px)</Label>
+          <Input
+            type="number"
+            min={100}
+            max={350}
+            value={content.logo_width_px || 220}
+            onChange={(e) => update('logo_width_px', parseInt(e.target.value) || 220)}
             className="h-8 text-xs font-mono"
           />
         </div>
