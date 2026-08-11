@@ -131,7 +131,7 @@ const ZoomSection = () => {
               {/* Main Real Slide Video Stream */}
               <div className="relative aspect-video bg-black overflow-hidden">
                 <img 
-                  src="/img/zoom-meeting.png" 
+                  src={zoomData?.imageUrl || zoomContent?.image_url || "/img/zoom-meeting.png"} 
                   alt="Lớp học Google Meet thực tế" 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
@@ -143,8 +143,8 @@ const ZoomSection = () => {
                 {/* Live Teacher Camera PiP Overlay */}
                 <div className="absolute bottom-4 right-4 w-36 sm:w-44 rounded-2xl overflow-hidden border-2 border-white/40 shadow-2xl bg-black/80 backdrop-blur-md">
                   <div className="p-2 space-y-1 text-center bg-black/60">
-                    <p className="text-[11px] text-amber-300 font-bold">👨‍🏫 Dung Sensei Live</p>
-                    <p className="text-[9px] text-white/70">Quang Dũng Online Education</p>
+                    <p className="text-[11px] text-amber-300 font-bold">👨‍🏫 {teacherName}</p>
+                    <p className="text-[9px] text-white/70">{teacherRole}</p>
                   </div>
                 </div>
               </div>
