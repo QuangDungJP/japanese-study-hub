@@ -70,23 +70,38 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
         const { data: profs } = await supabase
           .from('profiles')
           .select('id, user_id, full_name, avatar_url, equipped_frame_code')
-          .or(senderIds.map(id => `user_id.eq.${id},id.eq.${id}`).join(','));
+          .in('user_id', senderIds);
 
-        if (profs) {
-          const names: Record<string, string> = {};
-          profs.forEach(p => {
-            if (p.user_id) profileMap.set(p.user_id, p);
-            if (p.id) profileMap.set(p.id, p);
-            names[p.user_id || p.id] = p.full_name || 'Thành viên';
-          });
-          setNameMap(names);
+        let finalProfs = profs || [];
+        if (finalProfs.length === 0) {
+          const { data: profsById } = await supabase
+            .from('profiles')
+            .select('id, user_id, full_name, avatar_url, equipped_frame_code')
+            .in('id', senderIds);
+          finalProfs = profsById || [];
         }
+
+        const names: Record<string, string> = {};
+        finalProfs.forEach(p => {
+          if (p.user_id) profileMap.set(p.user_id, p);
+          if (p.id) profileMap.set(p.id, p);
+          const nameVal = p.full_name || 'Học viên Quang Dũng';
+          if (p.user_id) names[p.user_id] = nameVal;
+          if (p.id) names[p.id] = nameVal;
+        });
+        setNameMap(names);
       }
 
-      const formatted: ClassMessage[] = ((data || []) as any[]).map((m: any) => ({
-        ...m,
-        sender_profile: profileMap.get(m.sender_id) || { full_name: 'Thành viên' },
-      }));
+      const formatted: ClassMessage[] = ((data || []) as any[]).map((m: any) => {
+        const prof = profileMap.get(m.sender_id);
+        return {
+          ...m,
+          sender_profile: prof || {
+            full_name: m.sender_id === user?.id ? (user?.user_metadata?.full_name || 'Bạn') : 'Học viên Quang Dũng',
+            avatar_url: m.sender_id === user?.id ? user?.user_metadata?.avatar_url : null,
+          },
+        };
+      });
 
       setMessages(formatted);
     } catch (err) {

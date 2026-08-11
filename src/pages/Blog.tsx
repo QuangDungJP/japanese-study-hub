@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +28,21 @@ const Blog = () => {
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(1);
   const { data: categories = [] } = useBlogCategories();
+
+  // Scroll position restoration when navigating back
+  useEffect(() => {
+    const savedScrollPos = sessionStorage.getItem('blog_scroll_pos');
+    if (savedScrollPos) {
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScrollPos, 10));
+        sessionStorage.removeItem('blog_scroll_pos');
+      }, 100);
+    }
+  }, []);
+
+  const saveScrollPos = () => {
+    sessionStorage.setItem('blog_scroll_pos', window.scrollY.toString());
+  };
 
   // Featured post: only fetch on first page with no filters
   const showFeatured = page === 1 && !search && category === 'all';
@@ -323,7 +338,7 @@ const Blog = () => {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {posts.map((post, i) => (
                   <ScrollReveal key={post.id} delay={i * 80} direction="up">
-                    <Link to={`/blog/${post.slug}`} className="block h-full">
+                    <Link to={`/blog/${post.slug}`} onClick={saveScrollPos} className="block h-full">
                       <Card className="h-full overflow-hidden group border-border hover:border-primary/20 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 rounded-2xl bg-card">
                         <div className="relative aspect-video overflow-hidden bg-muted">
                           {post.thumbnail_url ? (

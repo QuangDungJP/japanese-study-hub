@@ -86,8 +86,8 @@ const FAQPage = () => {
                       value={faq.id}
                       className="border-0"
                     >
-                      <AccordionTrigger className="hover:no-underline px-6 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base md:text-lg data-[state=open]:rounded-b-none [&>svg]:text-primary-foreground">
-                        {faq.question}
+                      <AccordionTrigger className="hover:no-underline px-6 py-4 rounded-xl bg-card border border-border text-slate-900 dark:text-white font-extrabold text-base md:text-lg data-[state=open]:rounded-b-none [&>svg]:text-slate-900 dark:[&>svg]:text-white">
+                        <span className="text-slate-900 dark:text-white font-extrabold text-left">{faq.question}</span>
                       </AccordionTrigger>
                       <AccordionContent className="bg-card border border-t-0 border-border/50 rounded-b-xl px-6 py-5 text-foreground leading-relaxed whitespace-pre-wrap">
                         {faq.answer}

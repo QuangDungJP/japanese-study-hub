@@ -243,10 +243,10 @@ const About = () => {
                 {filteredFaqs.map((faq, i) => (
                   <ScrollReveal key={faq.id} delay={i * 60} direction="up">
                     <AccordionItem value={faq.id} className="border-0">
-                      <AccordionTrigger className="hover:no-underline px-6 py-4 rounded-2xl bg-gradient-to-r from-sakura/90 to-pink-500/90 text-white font-bold text-base md:text-lg data-[state=open]:rounded-b-none [&>svg]:text-white shadow-md shadow-sakura/20">
+                      <AccordionTrigger className="hover:no-underline px-6 py-4 rounded-2xl bg-card border border-border text-slate-900 dark:text-white font-extrabold text-base md:text-lg data-[state=open]:rounded-b-none [&>svg]:text-slate-900 dark:[&>svg]:text-white shadow-xs">
                         <span className="flex items-center gap-3 text-left">
                           <span className="text-lg">🌸</span>
-                          {faq.question}
+                          <span className="text-slate-900 dark:text-white font-extrabold">{faq.question}</span>
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="bg-background border border-t-0 border-border rounded-b-2xl px-6 py-5 text-foreground leading-relaxed whitespace-pre-wrap shadow-sm">
