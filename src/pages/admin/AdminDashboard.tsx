@@ -15,7 +15,8 @@ import {
   Calendar,
   Sparkles,
   MessageSquare,
-  Award
+  Award,
+  Flame
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +35,8 @@ interface Stats {
   activeUsers: number;
   totalOrders: number;
   pendingFeedback: number;
+  totalXpSum: number;
+  activeStreakCount: number;
 }
 
 const AdminDashboard = () => {
@@ -45,6 +48,8 @@ const AdminDashboard = () => {
     activeUsers: 0,
     totalOrders: 0,
     pendingFeedback: 0,
+    totalXpSum: 0,
+    activeStreakCount: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +74,7 @@ const AdminDashboard = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      const [usersResult, classesResult, lessonsResult, vocabResult, activeResult, ordersResult, feedbackResult] = await Promise.all([
+      const [usersResult, classesResult, lessonsResult, vocabResult, activeResult, ordersResult, feedbackResult, progressResult] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('classes').select('*', { count: 'exact', head: true }),
         supabase.from('lessons').select('*', { count: 'exact', head: true }),
@@ -77,11 +82,20 @@ const AdminDashboard = () => {
         supabase.from('user_progress').select('*', { count: 'exact', head: true }).eq('last_activity_date', today),
         supabase.from('orders').select('*', { count: 'exact', head: true }),
         supabase.from('contact_submissions').select('id, data').eq('status', 'new'),
+        supabase.from('user_progress').select('total_xp, streak'),
       ]);
 
       const pendingFeedbackCount = ((feedbackResult.data || []) as any[]).filter(
         (r) => r.data?.form_type === 'feedback'
       ).length;
+
+      let totalXpSum = 0;
+      let activeStreakCount = 0;
+
+      (progressResult.data || []).forEach(p => {
+        totalXpSum += p.total_xp || 0;
+        if ((p.streak || 0) > 0) activeStreakCount++;
+      });
 
       setStats({
         totalUsers: usersResult.count || 0,
@@ -91,6 +105,8 @@ const AdminDashboard = () => {
         activeUsers: activeResult.count || 0,
         totalOrders: ordersResult.count || 0,
         pendingFeedback: pendingFeedbackCount,
+        totalXpSum,
+        activeStreakCount,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -102,10 +118,10 @@ const AdminDashboard = () => {
   const statCards = [
     { name: 'Tổng học viên', value: stats.totalUsers, icon: Users, color: 'text-blue-600 bg-blue-500/10 border-blue-200', href: '/admin/users' },
     { name: 'Lớp học Classroom', value: stats.totalClasses, icon: Building, color: 'text-emerald-600 bg-emerald-500/10 border-emerald-200', href: '/admin/classes' },
+    { name: 'Tổng XP Tích Lũy', value: `${stats.totalXpSum.toLocaleString()} XP`, icon: Sparkles, color: 'text-amber-600 bg-amber-500/10 border-amber-200', href: '/admin/users' },
+    { name: 'Chuỗi Streak Đang Chạy', value: `${stats.activeStreakCount} HV`, icon: Flame, color: 'text-orange-600 bg-orange-500/10 border-orange-200', href: '/admin/users' },
     { name: 'Bài học & Bài tập', value: stats.totalLessons, icon: BookOpen, color: 'text-purple-600 bg-purple-500/10 border-purple-200', href: '/admin/lessons' },
-    { name: 'Feedback chờ duyệt', value: stats.pendingFeedback, icon: MessageSquare, color: 'text-amber-600 bg-amber-500/10 border-amber-200', href: '/admin/website' },
-    { name: 'Hoạt động hôm nay', value: stats.activeUsers, icon: TrendingUp, color: 'text-rose-600 bg-rose-500/10 border-rose-200', href: '/admin/users' },
-    { name: 'Đơn hàng mua khóa học', value: stats.totalOrders, icon: DollarSign, color: 'text-indigo-600 bg-indigo-500/10 border-indigo-200', href: '/admin/orders' },
+    { name: 'Feedback chờ duyệt', value: stats.pendingFeedback, icon: MessageSquare, color: 'text-rose-600 bg-rose-500/10 border-rose-200', href: '/admin/website' },
   ];
 
   return (

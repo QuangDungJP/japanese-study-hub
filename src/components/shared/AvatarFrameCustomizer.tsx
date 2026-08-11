@@ -71,15 +71,18 @@ export const AvatarFrameCustomizer = () => {
         const list: FrameListing[] = Array.from(codes).map(code => {
           const base = AVATAR_FRAMES_CATALOG.find(f => f.code === code);
           const row = listingByCode.get(code);
+          const isSunflowerFree = code === 'frame_sunflower';
+          const isOwned = isSunflowerFree || owned.has(code);
+
           return {
             code,
             name: row?.title_vi || base?.name || code,
             description: row?.description_vi || base?.description || 'Khung avatar độc quyền',
-            priceXp: row?.price_xp ?? 0,
+            priceXp: isSunflowerFree ? 0 : (row?.price_xp ?? 150),
             priceVnd: row?.price_vnd ?? 0,
             reqStreak: row?.req_streak ?? 0,
-            owned: owned.has(code),
-            onSale: !!row,
+            owned: isOwned,
+            onSale: true,
             itemId: row?.id,
           };
         }).sort((a, b) => Number(b.owned) - Number(a.owned) || a.priceXp - b.priceXp);

@@ -2,8 +2,22 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Shield, Lock, Eye, Database, Bell, Users, Globe, Mail } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import FormattedText from '@/components/shared/FormattedText';
 
 const PrivacyPolicy = () => {
+  const { data: cmsContent } = useQuery({
+    queryKey: ['legal-privacy-policy'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('website_content')
+        .select('*')
+        .eq('section_key', 'legal_privacy')
+        .maybeSingle();
+      return data;
+    },
+  });
   const sections = [
     {
       icon: Database,
@@ -103,13 +117,13 @@ Bạn có thể quản lý cookie thông qua cài đặt trình duyệt. Lưu ý
               <span className="text-sm font-medium text-green-500">Bảo mật & Quyền riêng tư</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Chính sách <span className="text-gradient">Bảo mật</span>
+              {cmsContent?.title_vi || cmsContent?.title || <>Chính sách <span className="text-gradient">Bảo mật</span></>}
             </h1>
             <p className="text-xl text-muted-foreground mb-4">
-              Cam kết bảo vệ thông tin và quyền riêng tư của bạn
+              {cmsContent?.description_vi || cmsContent?.description || 'Cam kết bảo vệ thông tin và quyền riêng tư của bạn'}
             </p>
             <p className="text-sm text-muted-foreground">
-              Cập nhật lần cuối: 14/12/2024
+              Cập nhật lần cuối: {cmsContent?.updated_at ? new Date(cmsContent.updated_at).toLocaleDateString('vi-VN') : '14/12/2024'}
             </p>
           </div>
         </div>

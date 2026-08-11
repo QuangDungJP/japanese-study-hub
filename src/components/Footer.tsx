@@ -22,7 +22,7 @@ const Footer = () => {
   const address = footerContent?.address || "123 Nguyễn Huệ, Q.1, TP.HCM";
   const phone = footerContent?.phone || "1900 1234";
   const email = footerContent?.email || "hello@tnqdo.com";
-  const websiteDomain = footerContent?.website_domain || "https://quangdungjp.quachthanhlong.com/";
+  const websiteDomain = footerContent?.website_domain || "https://www.quangdungnihongo.com/";
   const facebookUrl = footerContent?.facebook_url || "#";
   const youtubeUrl = footerContent?.youtube_url || "#";
   const instagramUrl = footerContent?.instagram_url || "#";

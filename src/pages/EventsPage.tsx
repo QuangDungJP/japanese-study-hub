@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,21 @@ const EventsPage = () => {
   const [filter, setFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+
+  // Scroll position restoration when navigating back
+  useEffect(() => {
+    const savedScrollPos = sessionStorage.getItem('events_scroll_pos');
+    if (savedScrollPos) {
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScrollPos, 10));
+        sessionStorage.removeItem('events_scroll_pos');
+      }, 100);
+    }
+  }, []);
+
+  const saveScrollPos = () => {
+    sessionStorage.setItem('events_scroll_pos', window.scrollY.toString());
+  };
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events-public'],
@@ -234,9 +249,10 @@ const EventsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedEvents.map((event, i) => {
                   const eventPast = isPast(new Date(event.event_date));
+                  const eventSlug = event.slug || event.id;
                   return (
                     <ScrollReveal key={event.id} delay={i * 80} direction="up">
-                      <Link to={`/su-kien/${event.slug || event.id}`} className="block h-full">
+                      <Link to={`/su-kien/${eventSlug}`} onClick={saveScrollPos} className="block h-full">
                         <Card className="group overflow-hidden hover:shadow-xl transition-all duration-500 border-border hover:border-primary/20 h-full rounded-2xl hover:-translate-y-1">
                           <div className="relative aspect-video overflow-hidden bg-muted">
                             {event.thumbnail_url ? (

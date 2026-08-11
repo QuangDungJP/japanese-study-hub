@@ -66,10 +66,14 @@ export const PAGE_CATEGORIES = [
   { id: 'blog', name: '📰 Trang Blog & Bài Viết', icon: 'FileText' },
   { id: 'events', name: '🎉 Trang Sự Kiện', icon: 'Calendar' },
   { id: 'contact', name: '📞 Trang Liên Hệ', icon: 'Phone' },
+  { id: 'legal', name: '⚖️ Trang Bảo Mật & Điều Khoản', icon: 'Scale' },
   { id: 'seasonal', name: '🌸 Banner Theo Mùa / Lễ Tết', icon: 'Sparkles' },
 ];
 
 const sectionLabels: Record<string, { label: string; page: string }> = {
+  // Trang Pháp Lý
+  'legal_privacy': { label: 'Trang Pháp lý - Chính sách Bảo mật', page: 'legal' },
+  'legal_terms': { label: 'Trang Pháp lý - Điều khoản Sử dụng', page: 'legal' },
   // Trang chủ
   'hero': { label: 'Trang chủ - Hero Banner Banner', page: 'home' },
   'skills': { label: 'Trang chủ - 4 Kỹ năng Cốt lõi', page: 'home' },

@@ -16,6 +16,7 @@ import { useHomepageSections } from "@/hooks/useHomepageSections";
 import { useBlogHomeSettings } from "@/hooks/useBlogHomeSettings";
 import HeroSection from "@/components/HeroSection";
 import TestimonialsSection from "@/components/about/TestimonialsSection";
+import PartnersSection from "@/components/PartnersSection";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
@@ -61,14 +62,11 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <span className="inline-block px-5 py-2.5 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-4 border border-accent/20">
-                4 Kỹ năng cốt lõi
-              </span>
-              <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-5">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
                 Phát triển toàn diện ngôn ngữ
               </h2>
-              <p className="text-lg text-muted-foreground">
-                Hệ thống bài học khoa học, giúp bạn tiến bộ nhanh chóng
+              <p className="text-base text-muted-foreground">
+                Hệ thống bài học khoa học giúp bạn tiến bộ nhanh chóng và tự tin sử dụng Tiếng Nhật
               </p>
             </div>
           </ScrollReveal>
@@ -116,13 +114,10 @@ const Index = () => {
         <div className="container mx-auto px-4 relative z-10">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-japanese/10 text-japanese text-sm font-semibold mb-4 border border-japanese/20">
-                <span className="text-xl">🇯🇵</span> Khóa học JLPT
-              </span>
-              <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-5">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
                 Lộ trình học Tiếng Nhật toàn diện
               </h2>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Từ N5 đến N1, phương pháp chuẩn JLPT thiết kế riêng cho người Việt
               </p>
             </div>
@@ -166,14 +161,11 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <ScrollReveal direction="left">
               <div>
-                <span className="inline-block px-5 py-2.5 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-6 border border-accent/20">
-                  Tại sao chọn TNQDO?
-                </span>
-                <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4 leading-tight">
                   Công nghệ học tập{" "}
                   <span className="text-primary">tiên tiến</span>
                 </h2>
-                <p className="text-lg text-muted-foreground mb-10">
+                <p className="text-base text-muted-foreground mb-8">
                   Kết hợp AI và phương pháp giảng dạy hiện đại để mang đến trải nghiệm học tập tốt nhất
                 </p>
                 <Button size="lg" className="rounded-2xl h-12 px-8" asChild>
@@ -213,25 +205,21 @@ const Index = () => {
               <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
               <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl" />
             </div>
-            <div className="relative z-10 max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 text-white mb-8 border border-white/20">
-                <Video className="w-4 h-4" />
-                <span className="text-sm font-semibold">Học Online qua Meeting</span>
-              </div>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            <div className="relative z-10 max-w-3xl mx-auto space-y-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-white">
                 Kết nối trực tiếp với giáo viên bản ngữ
               </h2>
-              <p className="text-lg text-white/80 mb-10">
+              <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto">
                 Lớp học trực tuyến chất lượng cao, tương tác 1-1 hoặc nhóm nhỏ tối đa 6 học viên
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="h-14 px-8 bg-white text-primary hover:bg-white/90 rounded-2xl text-base" asChild>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Button size="lg" className="h-12 px-8 bg-white text-primary hover:bg-white/90 rounded-2xl text-base font-bold" asChild>
                   <Link to="/zoom">
                     <Video className="w-5 h-5 mr-2" />
                     Đăng ký học thử
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" className="h-14 px-8 rounded-2xl text-base border-white/30 text-white hover:bg-white/10" asChild>
+                <Button variant="outline" size="lg" className="h-12 px-8 rounded-2xl text-base border-white/30 text-white hover:bg-white/10 font-bold" asChild>
                   <Link to="/giao-vien">
                     Xem giáo viên <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
@@ -249,14 +237,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-japanese/10 text-japanese text-sm font-semibold mb-4 border border-japanese/20">
-                <Award className="w-4 h-4" />
-                Đội ngũ giảng viên
-              </span>
-              <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-5">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
                 Giảng viên xuất sắc, tận tâm
               </h2>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Giáo viên bản ngữ và giáo viên Việt Nam giàu kinh nghiệm
               </p>
             </div>
@@ -315,25 +299,21 @@ const Index = () => {
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
         </div>
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white mb-8 border border-white/20">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-semibold">Ưu đãi đặc biệt - Giảm 50% khoá học đầu tiên</span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+          <div className="max-w-3xl mx-auto text-center space-y-4">
+            <h2 className="text-3xl md:text-5xl font-bold text-white">
               Bắt đầu hành trình chinh phục Tiếng Nhật ngay hôm nay
             </h2>
-            <p className="text-lg text-white/80 mb-10">
+            <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto">
               Tham gia cùng hơn 50,000 học viên đã thành công. Đăng ký miễn phí và nhận 7 ngày Premium!
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="h-14 px-10 bg-white text-primary hover:bg-white/90 rounded-2xl text-base shadow-lg" asChild>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <Button size="lg" className="h-12 px-10 bg-white text-primary hover:bg-white/90 rounded-2xl text-base font-bold shadow-lg" asChild>
                 <Link to="/auth">
-                  <Sparkles className="w-5 h-5 mr-2" />
+                  <Sparkles className="w-5 h-5 mr-2 text-amber-500" />
                   Đăng ký miễn phí ngay
                 </Link>
               </Button>
-              <Button variant="outline" size="lg" className="h-14 px-10 rounded-2xl text-base border-white/30 text-white hover:bg-white/10" asChild>
+              <Button variant="outline" size="lg" className="h-12 px-10 rounded-2xl text-base border-white/30 text-white hover:bg-white/10 font-bold" asChild>
                 <Link to="/lien-he">
                   Liên hệ tư vấn <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
@@ -513,6 +493,7 @@ const Index = () => {
     <main className="min-h-screen">
       <Navbar />
       {visibleSections.map(id => sectionMap[id] || null)}
+      <PartnersSection />
       <Footer />
     </main>
   );

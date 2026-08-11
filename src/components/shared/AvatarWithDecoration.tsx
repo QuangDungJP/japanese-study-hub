@@ -95,14 +95,23 @@ export const AvatarWithDecoration = ({
 
     const fetchUserData = async () => {
       try {
-        const { data } = await (supabase as any)
+        let { data } = await (supabase as any)
           .from('profiles')
           .select('equipped_frame_code, avatar_url, full_name')
-          .or(`user_id.eq.${userId},id.eq.${userId}`)
+          .eq('user_id', userId)
           .maybeSingle();
 
+        if (!data) {
+          const { data: fallbackData } = await (supabase as any)
+            .from('profiles')
+            .select('equipped_frame_code, avatar_url, full_name')
+            .eq('id', userId)
+            .maybeSingle();
+          data = fallbackData;
+        }
+
         if (data) {
-          if (!propFrameCode && data.equipped_frame_code) setFrameCode(data.equipped_frame_code);
+          if (data.equipped_frame_code) setFrameCode(data.equipped_frame_code);
           if (!propAvatarUrl && data.avatar_url) setAvatarUrl(data.avatar_url);
           if (!propName && data.full_name) setName(data.full_name);
         }

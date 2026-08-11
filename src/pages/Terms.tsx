@@ -3,8 +3,21 @@ import Footer from '@/components/Footer';
 import { FileText, CheckCircle2, AlertTriangle, Scale, CreditCard, XCircle, RefreshCw, MessageSquare } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const Terms = () => {
+  const { data: cmsContent } = useQuery({
+    queryKey: ['legal-terms-of-service'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('website_content')
+        .select('*')
+        .eq('section_key', 'legal_terms')
+        .maybeSingle();
+      return data;
+    },
+  });
   const sections = [
     {
       icon: CheckCircle2,
@@ -127,13 +140,13 @@ Tổng trách nhiệm tối đa của chúng tôi không vượt quá số tiề
               <span className="text-sm font-medium text-orange-500">Pháp lý</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Điều khoản <span className="text-gradient">Sử dụng</span>
+              {cmsContent?.title_vi || cmsContent?.title || <>Điều khoản <span className="text-gradient">Sử dụng</span></>}
             </h1>
             <p className="text-xl text-muted-foreground mb-4">
-              Các điều khoản và điều kiện sử dụng dịch vụ LinguaViet
+              {cmsContent?.description_vi || cmsContent?.description || 'Các điều khoản và điều kiện sử dụng dịch vụ TNQDO Japanese'}
             </p>
             <p className="text-sm text-muted-foreground">
-              Có hiệu lực từ: 14/12/2024
+              Có hiệu lực từ: {cmsContent?.updated_at ? new Date(cmsContent.updated_at).toLocaleDateString('vi-VN') : '14/12/2024'}
             </p>
           </div>
         </div>

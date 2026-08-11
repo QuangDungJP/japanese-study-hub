@@ -1128,6 +1128,46 @@ const GenericSectionEditor = ({ sectionKey, content, onChange }: { sectionKey: s
   );
 };
 
+const ContactEditor = ({ content, onChange }: { content: Record<string, any>; onChange: (data: Record<string, any>) => void }) => {
+  const update = (key: string, val: any) => onChange({ ...content, [key]: val });
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label className="text-xs font-extrabold">Mã nhúng / Link Google Maps (Iframe Embed URL)</Label>
+        <Textarea
+          rows={3}
+          placeholder="Dán mã Google Maps Embed hoặc URL map (VD: https://www.google.com/maps/embed?pb=...)"
+          value={content.google_maps_url || ''}
+          onChange={(e) => update('google_maps_url', e.target.value)}
+          className="text-xs font-mono"
+        />
+        <p className="text-[11px] text-muted-foreground">
+          Vào Google Maps ➔ Chia sẻ ➔ Nhúng bản đồ ➔ Copy link trong src="..." dán vào đây.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs font-bold">Hotline 1</Label>
+          <Input value={content.phone_1 || ''} onChange={(e) => update('phone_1', e.target.value)} className="h-8 text-xs" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-bold">Hotline 2</Label>
+          <Input value={content.phone_2 || ''} onChange={(e) => update('phone_2', e.target.value)} className="h-8 text-xs" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-bold">Email chính</Label>
+          <Input value={content.email_1 || ''} onChange={(e) => update('email_1', e.target.value)} className="h-8 text-xs" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-bold">Địa chỉ trụ sở</Label>
+          <Input value={content.address || ''} onChange={(e) => update('address', e.target.value)} className="h-8 text-xs" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFieldsProps) => {
   switch (sectionKey) {
     case "hero":
@@ -1138,6 +1178,9 @@ const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFie
       return <CTAEditor content={content} onChange={onChange} />;
     case "footer":
       return <FooterEditor content={content} onChange={onChange} />;
+    case "contact_info":
+    case "contact":
+      return <ContactEditor content={content} onChange={onChange} />;
     default:
       return <GenericSectionEditor sectionKey={sectionKey} content={content} onChange={onChange} />;
   }

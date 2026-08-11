@@ -39,12 +39,11 @@ export interface StoreItem {
 }
 
 const CATEGORY_META: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
-  all:           { label: 'Tất cả',         emoji: '🌐', color: 'text-primary',      bg: 'bg-primary/10' },
-  music:         { label: 'Nhạc Học Tập',   emoji: '🎵', color: 'text-amber-600',    bg: 'bg-amber-500/10' },
-  avatar_frame:  { label: 'Khung Avatar',   emoji: '🖼️', color: 'text-purple-600',   bg: 'bg-purple-500/10' },
-  theme:         { label: 'Theme Giao diện',emoji: '🎨', color: 'text-rose-600',     bg: 'bg-rose-500/10' },
-  study_boost:   { label: 'Học Tập Boost',  emoji: '⚡', color: 'text-emerald-600',  bg: 'bg-emerald-500/10' },
-  physical_gift: { label: 'Quà Vật Lý',    emoji: '🎁', color: 'text-blue-600',     bg: 'bg-blue-500/10' },
+  all:            { label: 'Tất cả',           emoji: '🌐', color: 'text-primary',      bg: 'bg-primary/10' },
+  music:          { label: 'Nhạc Học Tập',     emoji: '🎵', color: 'text-amber-600',    bg: 'bg-amber-500/10' },
+  avatar_frame:   { label: 'Khung Avatar',     emoji: '🖼️', color: 'text-purple-600',   bg: 'bg-purple-500/10' },
+  profile_banner: { label: 'Ảnh Bìa Cá Nhân',  emoji: '🎨', color: 'text-blue-600',     bg: 'bg-blue-500/10' },
+  study_boost:    { label: 'Học Tập Boost',    emoji: '⚡', color: 'text-emerald-600',  bg: 'bg-emerald-500/10' },
 };
 
 function getCatMeta(key: string) {
