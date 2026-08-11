@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Sparkles, Star, Play, BookOpen, Mic, PenTool, Headphones, 
-  ArrowRight, Users, Video, Trophy, Brain, Target, Shield, 
+import {
+  Sparkles, Star, Play, BookOpen, Mic, PenTool, Headphones,
+  ArrowRight, Users, Video, Trophy, Brain, Target, Shield,
   Zap, Award, ChevronRight, Calendar, BookText, MessageSquare
 } from "lucide-react";
 import { useTeacherProfiles } from "@/hooks/useTeachers";
@@ -18,6 +18,7 @@ import { useBlogHomeSettings } from "@/hooks/useBlogHomeSettings";
 import HeroSection from "@/components/HeroSection";
 import TestimonialsSection from "@/components/about/TestimonialsSection";
 import PartnersSection from "@/components/PartnersSection";
+import ZoomSection from "@/components/ZoomSection";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
@@ -59,52 +60,52 @@ const Index = () => {
   const heroSection = <HeroSection key="hero" />;
 
   const skillsSection = (
-      <section key="skills" className="py-24 bg-background relative">
-        <div className="container mx-auto px-4">
-          <ScrollReveal>
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-                Phát triển toàn diện ngôn ngữ
-              </h2>
-              <p className="text-base text-muted-foreground">
-                Hệ thống bài học khoa học giúp bạn tiến bộ nhanh chóng và tự tin sử dụng Tiếng Nhật
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: BookOpen, title: "Đọc hiểu", titleEn: "Reading", color: "text-blue-500", bg: "bg-blue-500/10", desc: "Hàng ngàn bài viết từ cơ bản đến nâng cao" },
-              { icon: Mic, title: "Nói", titleEn: "Speaking", color: "text-green-500", bg: "bg-green-500/10", desc: "Luyện phát âm với AI và giáo viên bản ngữ" },
-              { icon: PenTool, title: "Viết", titleEn: "Writing", color: "text-purple-500", bg: "bg-purple-500/10", desc: "AI chấm điểm và giáo viên review chi tiết" },
-              { icon: Headphones, title: "Nghe", titleEn: "Listening", color: "text-orange-500", bg: "bg-orange-500/10", desc: "Audio chất lượng cao với transcript song ngữ" },
-            ].map((skill, i) => (
-              <ScrollReveal key={skill.title} delay={i * 100} direction="up">
-                <div className="group bg-card rounded-2xl p-8 border border-border hover:border-primary/20 hover:shadow-xl transition-all duration-500 hover:-translate-y-2 h-full">
-                  <div className={`w-16 h-16 rounded-2xl ${skill.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <skill.icon className={`w-8 h-8 ${skill.color}`} />
-                  </div>
-                  <div className="flex items-baseline gap-2 mb-3">
-                    <h3 className="text-xl font-bold text-foreground">{skill.title}</h3>
-                    <span className="text-xs text-muted-foreground font-medium">{skill.titleEn}</span>
-                  </div>
-                  <p className="text-muted-foreground text-sm">{skill.desc}</p>
-                </div>
-              </ScrollReveal>
-            ))}
+    <section key="skills" className="py-24 bg-background relative">
+      <div className="container mx-auto px-4">
+        <ScrollReveal>
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
+              Phát triển toàn diện ngôn ngữ
+            </h2>
+            <p className="text-base text-muted-foreground">
+              Hệ thống bài học khoa học giúp bạn tiến bộ nhanh chóng và tự tin sử dụng Tiếng Nhật
+            </p>
           </div>
+        </ScrollReveal>
 
-          <ScrollReveal delay={400}>
-            <div className="text-center mt-12">
-              <Button variant="outline" size="lg" className="rounded-2xl h-12 px-8" asChild>
-                <Link to="/gioi-thieu">
-                  Tìm hiểu chi tiết <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </div>
-          </ScrollReveal>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { icon: BookOpen, title: "Đọc hiểu", titleEn: "Reading", color: "text-blue-500", bg: "bg-blue-500/10", desc: "Hàng ngàn bài viết từ cơ bản đến nâng cao" },
+            { icon: Mic, title: "Nói", titleEn: "Speaking", color: "text-green-500", bg: "bg-green-500/10", desc: "Luyện phát âm với AI và giáo viên bản ngữ" },
+            { icon: PenTool, title: "Viết", titleEn: "Writing", color: "text-purple-500", bg: "bg-purple-500/10", desc: "AI chấm điểm và giáo viên review chi tiết" },
+            { icon: Headphones, title: "Nghe", titleEn: "Listening", color: "text-orange-500", bg: "bg-orange-500/10", desc: "Audio chất lượng cao với transcript song ngữ" },
+          ].map((skill, i) => (
+            <ScrollReveal key={skill.title} delay={i * 100} direction="up">
+              <div className="group bg-card rounded-2xl p-8 border border-border hover:border-primary/20 hover:shadow-xl transition-all duration-500 hover:-translate-y-2 h-full">
+                <div className={`w-16 h-16 rounded-2xl ${skill.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <skill.icon className={`w-8 h-8 ${skill.color}`} />
+                </div>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <h3 className="text-xl font-bold text-foreground">{skill.title}</h3>
+                  <span className="text-xs text-muted-foreground font-medium">{skill.titleEn}</span>
+                </div>
+                <p className="text-muted-foreground text-sm">{skill.desc}</p>
+              </div>
+            </ScrollReveal>
+          ))}
         </div>
-      </section>
+
+        <ScrollReveal delay={400}>
+          <div className="text-center mt-12">
+            <Button variant="outline" size="lg" className="rounded-2xl h-12 px-8" asChild>
+              <Link to="/gioi-thieu">
+                Tìm hiểu chi tiết <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
   );
 
   // Fetch real published courses for homepage
@@ -122,325 +123,292 @@ const Index = () => {
   });
 
   const coursesSection = (
-      <section key="courses" className="py-24 bg-muted/30 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-japanese/5 rounded-full blur-3xl" />
-        </div>
-        <div className="container mx-auto px-4 relative z-10">
-          <ScrollReveal>
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3 border border-primary/20">
-                <BookOpen className="w-4 h-4" /> Các Khóa Học Thực Tế Tại Trung Tâm
-              </span>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-                Lộ trình học Tiếng Nhật chuyên sâu
-              </h2>
-              <p className="text-base text-muted-foreground">
-                Học trực tiếp với đội ngũ giảng viên giàu kinh nghiệm, cam kết đầu ra JLPT N5 - N1
-              </p>
-            </div>
-          </ScrollReveal>
+    <section key="courses" className="py-24 bg-muted/30 relative overflow-hidden">
+      <div className="absolute inset-0">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-japanese/5 rounded-full blur-3xl" />
+      </div>
+      <div className="container mx-auto px-4 relative z-10">
+        <ScrollReveal>
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3 border border-primary/20">
+              <BookOpen className="w-4 h-4" /> Các Khóa Học Thực Tế Tại Trung Tâm
+            </span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
+              Lộ trình học Tiếng Nhật chuyên sâu
+            </h2>
+            <p className="text-base text-muted-foreground">
+              Học trực tiếp với đội ngũ giảng viên giàu kinh nghiệm, cam kết đầu ra JLPT N5 - N1
+            </p>
+          </div>
+        </ScrollReveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-12">
-            {isCoursesLoading ? (
-              [1, 2, 3].map((i) => (
-                <div key={i} className="h-80 rounded-2xl bg-muted/60 animate-pulse" />
-              ))
-            ) : (realCourses && realCourses.length > 0) ? (
-              realCourses.map((c, i) => {
-                const discount = c.original_price && c.original_price > c.price
-                  ? Math.round(((c.original_price - c.price) / c.original_price) * 100)
-                  : 0;
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-12">
+          {isCoursesLoading ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="h-80 rounded-2xl bg-muted/60 animate-pulse" />
+            ))
+          ) : (realCourses && realCourses.length > 0) ? (
+            realCourses.map((c, i) => {
+              const discount = c.original_price && c.original_price > c.price
+                ? Math.round(((c.original_price - c.price) / c.original_price) * 100)
+                : 0;
 
-                return (
-                  <ScrollReveal key={c.id} delay={i * 100} direction="up">
-                    <Link
-                      to={`/khoa-hoc/${c.slug || c.id}`}
-                      className="group bg-card rounded-2xl border border-border overflow-hidden shadow-soft hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
-                    >
-                      {/* Thumbnail */}
-                      <div className="relative aspect-video bg-muted overflow-hidden">
-                        <img
-                          src={c.thumbnail_url || c.cover_image_url || 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600&auto=format&fit=crop&q=80'}
-                          alt={c.title_vi || c.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                        <Badge className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 font-bold">
-                          JLPT {c.level || 'N5'}
-                        </Badge>
-                        {discount > 0 && (
-                          <Badge variant="destructive" className="absolute top-3 right-3 font-bold">
-                            -{discount}%
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                        <div className="space-y-2">
-                          <h3 className="font-bold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                            {c.title_vi || c.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                            {c.description_vi || c.description || 'Chương trình đào tạo Tiếng Nhật chất lượng cao.'}
-                          </p>
-                        </div>
-
-                        {/* Price & Action */}
-                        <div className="pt-3 border-t flex items-center justify-between">
-                          <div className="flex items-baseline gap-2">
-                            <span className="font-extrabold text-foreground text-lg">
-                              {c.price ? `${c.price.toLocaleString()} đ` : 'Liên hệ'}
-                            </span>
-                            {c.original_price && c.original_price > c.price && (
-                              <span className="text-xs text-muted-foreground line-through">
-                                {c.original_price.toLocaleString()} đ
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                            Chi tiết <ArrowRight className="w-3.5 h-3.5" />
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  </ScrollReveal>
-                );
-              })
-            ) : (
-              /* Fallback real courses if DB query is empty */
-              [
-                { id: '1', level: 'N5', title_vi: 'N5 Nhập môn', price: 600000, original_price: 700000, img: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600' },
-                { id: '2', level: 'N5', title_vi: 'Kaiwa N5', price: 3600000, original_price: 4800000, img: 'https://images.unsplash.com/photo-1528164344705-47542687990d?w=600' },
-                { id: '3', level: 'N4', title_vi: 'N54 Từ vựng, Ngữ pháp', price: 8500000, original_price: 12000000, img: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=600' },
-              ].map((c, i) => (
+              return (
                 <ScrollReveal key={c.id} delay={i * 100} direction="up">
                   <Link
-                    to="/khoa-hoc"
+                    to={`/khoa-hoc/${c.slug || c.id}`}
                     className="group bg-card rounded-2xl border border-border overflow-hidden shadow-soft hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
                   >
+                    {/* Thumbnail */}
                     <div className="relative aspect-video bg-muted overflow-hidden">
-                      <img src={c.img} alt={c.title_vi} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <Badge className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold">JLPT {c.level}</Badge>
-                      <Badge variant="destructive" className="absolute top-3 right-3 font-bold">
-                        -{Math.round(((c.original_price - c.price) / c.original_price) * 100)}%
+                      <img
+                        src={c.thumbnail_url || c.cover_image_url || 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600&auto=format&fit=crop&q=80'}
+                        alt={c.title_vi || c.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                      <Badge className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 font-bold">
+                        JLPT {c.level || 'N5'}
                       </Badge>
+                      {discount > 0 && (
+                        <Badge variant="destructive" className="absolute top-3 right-3 font-bold">
+                          -{discount}%
+                        </Badge>
+                      )}
                     </div>
+
+                    {/* Content */}
                     <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                      <h3 className="font-bold text-lg text-foreground">{c.title_vi}</h3>
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                          {c.title_vi || c.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                          {c.description_vi || c.description || 'Chương trình đào tạo Tiếng Nhật chất lượng cao.'}
+                        </p>
+                      </div>
+
+                      {/* Price & Action */}
                       <div className="pt-3 border-t flex items-center justify-between">
                         <div className="flex items-baseline gap-2">
-                          <span className="font-extrabold text-foreground text-lg">{c.price.toLocaleString()} đ</span>
-                          <span className="text-xs text-muted-foreground line-through">{c.original_price.toLocaleString()} đ</span>
+                          <span className="font-extrabold text-foreground text-lg">
+                            {c.price ? `${c.price.toLocaleString()} đ` : 'Liên hệ'}
+                          </span>
+                          {c.original_price && c.original_price > c.price && (
+                            <span className="text-xs text-muted-foreground line-through">
+                              {c.original_price.toLocaleString()} đ
+                            </span>
+                          )}
                         </div>
-                        <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">Chi tiết <ArrowRight className="w-3.5 h-3.5" /></span>
+                        <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                          Chi tiết <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
                       </div>
                     </div>
                   </Link>
                 </ScrollReveal>
-              ))
-            )}
-          </div>
-
-          <ScrollReveal delay={300}>
-            <div className="text-center">
-              <Button size="lg" className="rounded-2xl h-14 px-10 text-base font-bold shadow-lg" asChild>
-                <Link to="/khoa-hoc">
-                  Xem Tất Cả Khóa Học Thực Tế <ArrowRight className="w-5 h-5 ml-2" />
+              );
+            })
+          ) : (
+            /* Fallback real courses if DB query is empty */
+            [
+              { id: '1', level: 'N5', title_vi: 'N5 Nhập môn', price: 600000, original_price: 700000, img: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600' },
+              { id: '2', level: 'N5', title_vi: 'Kaiwa N5', price: 3600000, original_price: 4800000, img: 'https://images.unsplash.com/photo-1528164344705-47542687990d?w=600' },
+              { id: '3', level: 'N4', title_vi: 'N54 Từ vựng, Ngữ pháp', price: 8500000, original_price: 12000000, img: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=600' },
+            ].map((c, i) => (
+              <ScrollReveal key={c.id} delay={i * 100} direction="up">
+                <Link
+                  to="/khoa-hoc"
+                  className="group bg-card rounded-2xl border border-border overflow-hidden shadow-soft hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                >
+                  <div className="relative aspect-video bg-muted overflow-hidden">
+                    <img src={c.img} alt={c.title_vi} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <Badge className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold">JLPT {c.level}</Badge>
+                    <Badge variant="destructive" className="absolute top-3 right-3 font-bold">
+                      -{Math.round(((c.original_price - c.price) / c.original_price) * 100)}%
+                    </Badge>
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <h3 className="font-bold text-lg text-foreground">{c.title_vi}</h3>
+                    <div className="pt-3 border-t flex items-center justify-between">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-extrabold text-foreground text-lg">{c.price.toLocaleString()} đ</span>
+                        <span className="text-xs text-muted-foreground line-through">{c.original_price.toLocaleString()} đ</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">Chi tiết <ArrowRight className="w-3.5 h-3.5" /></span>
+                    </div>
+                  </div>
                 </Link>
-              </Button>
-            </div>
-          </ScrollReveal>
+              </ScrollReveal>
+            ))
+          )}
         </div>
-      </section>
+
+        <ScrollReveal delay={300}>
+          <div className="text-center">
+            <Button size="lg" className="rounded-2xl h-14 px-10 text-base font-bold shadow-lg" asChild>
+              <Link to="/khoa-hoc">
+                Xem Tất Cả Khóa Học Thực Tế <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
   );
 
   const featuresSection = (
-      <section key="features" className="py-24 bg-background overflow-hidden">
-        <div className="container mx-auto px-4">
-          {/* Header Banner - Công nghệ học tập tân tiến */}
-          <ScrollReveal>
-            <div className="text-center max-w-4xl mx-auto mb-16 space-y-3">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200">
-                quangdungnihongo.com
-              </span>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
-                Công Nghệ Học Tập Tân Tiến <br className="hidden md:block" />
-                <span className="text-primary">Phục Vụ Bạn Học Và Giáo Viên</span>
-              </h2>
-              <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-                Hệ thống phần mềm tương tác bài giảng trực tiếp, giao diện Classroom hiện đại chuẩn Nhật Bản và theo dõi tiến độ thời gian thực.
-              </p>
+    <section key="features" className="py-24 bg-background overflow-hidden">
+      <div className="container mx-auto px-4">
+        {/* Header Banner - Công nghệ học tập tân tiến */}
+        <ScrollReveal>
+          <div className="text-center max-w-4xl mx-auto mb-16 space-y-3">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200">
+              quangdungnihongo.com
+            </span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
+              Công Nghệ Học Tập Tân Tiến <br className="hidden md:block" />
+              <span className="text-primary">Phục Vụ Bạn Học Và Giáo Viên</span>
+            </h2>
+            <p className="text-base text-muted-foreground max-w-2xl mx-auto">
+              Hệ thống phần mềm tương tác bài giảng trực tiếp, giao diện Classroom hiện đại chuẩn Nhật Bản và theo dõi tiến độ thời gian thực.
+            </p>
+          </div>
+        </ScrollReveal>
+
+        {/* Real Photo Grid Showcase */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch mb-12">
+          {/* Left Column: Classroom UI Screenshot */}
+          <ScrollReveal direction="left" className="h-full">
+            <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col justify-between group">
+              <div className="p-6 space-y-2">
+                <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 text-xs font-bold">📚 Giáo Trình & Bài Học</span>
+                <h3 className="font-extrabold text-lg text-foreground">Giáo Trình & Bài Học Theo Buổi / Tuần</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Phân loại bài học, slide trình chiếu và tài liệu Ebook trực quan như Google Classroom.
+                </p>
+              </div>
+              <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                <img
+                  src="/img/DungChibi_Writing.png"
+                  alt="Giáo trình bài học"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    (e.target as HTMLElement).src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              </div>
             </div>
           </ScrollReveal>
 
-          {/* Real Photo Grid Showcase */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch mb-12">
-            {/* Left Column: Classroom UI Screenshot */}
-            <ScrollReveal direction="left" className="h-full">
-              <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col justify-between group">
-                <div className="p-6 space-y-2">
-                  <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 text-xs font-bold">📚 Giáo Trình & Bài Học</span>
-                  <h3 className="font-extrabold text-lg text-foreground">Giáo Trình & Bài Học Theo Buổi / Tuần</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Phân loại bài học, slide trình chiếu và tài liệu Ebook trực quan như Google Classroom.
-                  </p>
-                </div>
-                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-                  <img
-                    src="/img/DungChibi_Writing.png"
-                    alt="Giáo trình bài học"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLElement).src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80';
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                </div>
+          {/* Center Column: Teacher & Student 1-on-1 Interaction */}
+          <ScrollReveal direction="up" delay={200} className="h-full">
+            <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between group">
+              <div className="p-6 space-y-2">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold">👨‍🏫 Kèm Trực Tiếp 1-1</span>
+                <h3 className="font-extrabold text-lg text-foreground">Giảng Viên Hướng Dẫn Tận Tụy</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Giáo viên trực tiếp giải đáp thắc mắc, chỉnh sửa ngữ pháp và kèm từng học viên.
+                </p>
               </div>
-            </ScrollReveal>
-
-            {/* Center Column: Teacher & Student 1-on-1 Interaction */}
-            <ScrollReveal direction="up" delay={200} className="h-full">
-              <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between group">
-                <div className="p-6 space-y-2">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold">👨‍🏫 Kèm Trực Tiếp 1-1</span>
-                  <h3 className="font-extrabold text-lg text-foreground">Giảng Viên Hướng Dẫn Tận Tụy</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Giáo viên trực tiếp giải đáp thắc mắc, chỉnh sửa ngữ pháp và kèm từng học viên.
-                  </p>
-                </div>
-                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop&q=80"
-                    alt="Giảng viên hướng dẫn"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                </div>
-              </div>
-            </ScrollReveal>
-
-            {/* Right Column: Code & Interactive App Study */}
-            <ScrollReveal direction="right" delay={400} className="h-full">
-              <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between group">
-                <div className="p-6 space-y-2">
-                  <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 text-xs font-bold">💻 Công Nghệ Web Live</span>
-                  <h3 className="font-extrabold text-lg text-foreground">Học Trực Tuyến Mọi Lúc Mọi Nơi</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Giao diện học tập tối ưu trên PC, Laptop và Smartphone mượt mà không độ trễ.
-                  </p>
-                </div>
-                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80"
-                    alt="Học trực tuyến"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                </div>
-              </div>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
-  );
-
-  const zoomSection = (
-    <ScrollReveal key="zoom">
-      <section className="py-24 bg-muted/30 relative overflow-hidden">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="bg-gradient-to-br from-primary to-primary/90 rounded-3xl p-12 md:p-16 text-center relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
-              <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl" />
-            </div>
-            <div className="relative z-10 max-w-3xl mx-auto space-y-4">
-              <h2 className="text-3xl md:text-5xl font-bold text-white">
-                Kết nối trực tiếp với giáo viên bản ngữ
-              </h2>
-              <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto">
-                Lớp học trực tuyến chất lượng cao, tương tác 1-1 hoặc nhóm nhỏ tối đa 6 học viên
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <Button size="lg" className="h-12 px-8 bg-white text-primary hover:bg-white/90 rounded-2xl text-base font-bold" asChild>
-                  <Link to="/meeting">
-                    <Video className="w-5 h-5 mr-2" />
-                    Đăng ký học thử
-                  </Link>
-                </Button>
-                <Button variant="outline" size="lg" className="h-12 px-8 rounded-2xl text-base border-white/30 text-white hover:bg-white/10 font-bold" asChild>
-                  <Link to="/giao-vien">
-                    Xem giáo viên <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
+              <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop&q=80"
+                  alt="Giảng viên hướng dẫn"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </div>
             </div>
-          </div>
+          </ScrollReveal>
+
+          {/* Right Column: Code & Interactive App Study */}
+          <ScrollReveal direction="right" delay={400} className="h-full">
+            <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between group">
+              <div className="p-6 space-y-2">
+                <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 text-xs font-bold">💻 Công Nghệ Web Live</span>
+                <h3 className="font-extrabold text-lg text-foreground">Học Trực Tuyến Mọi Lúc Mọi Nơi</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Giao diện học tập tối ưu trên PC, Laptop và Smartphone mượt mà không độ trễ.
+                </p>
+              </div>
+              <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80"
+                  alt="Học trực tuyến"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              </div>
+            </div>
+          </ScrollReveal>
         </div>
-      </section>
-    </ScrollReveal>
+      </div>
+    </section>
   );
+
+
+  const zoomSection = <ZoomSection key="zoom" />;
 
   const teachersSection = (
-      <section key="teachers" className="py-24 bg-background">
-        <div className="container mx-auto px-4">
-          <ScrollReveal>
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-                Giảng viên xuất sắc, tận tâm
-              </h2>
-              <p className="text-base text-muted-foreground">
-                Giáo viên bản ngữ và giáo viên Việt Nam giàu kinh nghiệm
-              </p>
-            </div>
-          </ScrollReveal>
+    <section key="teachers" className="py-24 bg-background">
+      <div className="container mx-auto px-4">
+        <ScrollReveal>
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
+              Giảng viên xuất sắc, tận tâm
+            </h2>
+            <p className="text-base text-muted-foreground">
+              Giáo viên bản ngữ và giáo viên Việt Nam giàu kinh nghiệm
+            </p>
+          </div>
+        </ScrollReveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-            {teacherList.length === 0 ? (
-              <div className="col-span-full py-14 text-center text-muted-foreground">
-                Đang cập nhật danh sách giảng viên. Vui lòng quay lại sau.
-              </div>
-            ) : (
-              teacherList.map((t, i) => (
-                <ScrollReveal key={t.id} delay={i * 100} direction="up">
-                  <div className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                    <div className="aspect-[4/3] bg-gradient-to-br from-japanese/20 to-primary/20 flex items-center justify-center">
-                      {t.avatar_url ? (
-                        <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-card shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <span className="text-3xl">👩‍🏫</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-5">
-                      <p className="text-xs text-japanese font-medium mb-0.5">{t.headline}</p>
-                      <h3 className="font-bold text-foreground">{t.name}</h3>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Star className="w-4 h-4 text-accent fill-accent" />
-                        <span className="text-sm font-semibold">{t.rating}</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+          {teacherList.length === 0 ? (
+            <div className="col-span-full py-14 text-center text-muted-foreground">
+              Đang cập nhật danh sách giảng viên. Vui lòng quay lại sau.
+            </div>
+          ) : (
+            teacherList.map((t, i) => (
+              <ScrollReveal key={t.id} delay={i * 100} direction="up">
+                <div className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                  <div className="aspect-[4/3] bg-gradient-to-br from-japanese/20 to-primary/20 flex items-center justify-center">
+                    {t.avatar_url ? (
+                      <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-card shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="text-3xl">👩‍🏫</span>
                       </div>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <p className="text-xs text-japanese font-medium mb-0.5">{t.headline}</p>
+                    <h3 className="font-bold text-foreground">{t.name}</h3>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="w-4 h-4 text-accent fill-accent" />
+                      <span className="text-sm font-semibold">{t.rating}</span>
                     </div>
                   </div>
-                </ScrollReveal>
-              ))
-            )}
-          </div>
-
-          <ScrollReveal delay={400}>
-            <div className="text-center">
-              <Button variant="outline" size="lg" className="rounded-2xl h-12 px-8" asChild>
-                <Link to="/giao-vien">
-                  Xem tất cả giáo viên <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </div>
-          </ScrollReveal>
+                </div>
+              </ScrollReveal>
+            ))
+          )}
         </div>
-      </section>
+
+        <ScrollReveal delay={400}>
+          <div className="text-center">
+            <Button variant="outline" size="lg" className="rounded-2xl h-12 px-8" asChild>
+              <Link to="/giao-vien">
+                Xem tất cả giáo viên <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
   );
 
   const ctaSection = (
@@ -639,7 +607,7 @@ const Index = () => {
     skills: skillsSection,
     courses: coursesSection,
     features: featuresSection,
-    zoom: zoomSection,
+    zoom: <ZoomSection key="zoom" />,
     teachers: teachersSection,
     partners: partnersSection,
     blog: blogSection,

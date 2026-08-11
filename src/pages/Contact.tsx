@@ -71,8 +71,43 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Contact Info Bar */}
-      <section className="py-12 bg-card border-y border-border">
+      {/* Google Maps Interactive Section - Đẩy lên trên */}
+      <section className="py-12 bg-muted/20 border-t border-border">
+        <div className="container mx-auto px-4">
+          <ScrollReveal>
+            <div className="max-w-5xl mx-auto space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-bold mb-2">
+                    <Navigation className="w-3.5 h-3.5 mr-1" /> Vị Trí Bản Đồ
+                  </Badge>
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">
+                    Bản đồ chỉ đường tới trung tâm
+                  </h2>
+                </div>
+              </div>
+
+              {/* Google Maps Embedded Frame */}
+              <div className="relative w-full h-[450px] rounded-3xl overflow-hidden border-2 border-border shadow-2xl bg-card">
+                <iframe
+                  src={mapSrc}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Google Maps Location"
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* Contact Info Bar - Đưa xuống dưới Google Maps */}
+      <section className="py-16 bg-card border-t border-border">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -118,41 +153,6 @@ const Contact = () => {
               </ScrollReveal>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Google Maps Interactive Section */}
-      <section className="py-16 bg-muted/20">
-        <div className="container mx-auto px-4">
-          <ScrollReveal>
-            <div className="max-w-5xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-bold mb-2">
-                    <Navigation className="w-3.5 h-3.5 mr-1" /> Vị Trí Bản Đồ
-                  </Badge>
-                  <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">
-                    Bản đồ chỉ đường tới trung tâm
-                  </h2>
-                </div>
-              </div>
-
-              {/* Google Maps Embedded Frame */}
-              <div className="relative w-full h-[450px] rounded-3xl overflow-hidden border-2 border-border shadow-2xl bg-card">
-                <iframe
-                  src={mapSrc}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Google Maps Location"
-                  className="w-full h-full"
-                />
-              </div>
-            </div>
-          </ScrollReveal>
         </div>
       </section>
 

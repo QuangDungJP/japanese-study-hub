@@ -112,7 +112,8 @@ const App = () => (
                 <Route path="/lien-he" element={<Contact />} />
                 <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
               <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
-              <Route path="/auth" element={<Auth />} />
+                <Route path="/faq" element={<About />} />
+                <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />

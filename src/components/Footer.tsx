@@ -97,7 +97,7 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-lg mb-4">Hỗ trợ</h4>
             <ul className="space-y-3 text-sm">
-              <li><Link to="/faq" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Hỏi & Đáp</Link></li>
+              <li><Link to="/gioi-thieu#faq" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Hỏi & Đáp (FAQ)</Link></li>
               <li><Link to="/lien-he" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Liên hệ</Link></li>
               <li><Link to="/chinh-sach-bao-mat" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Chính sách bảo mật</Link></li>
               <li><Link to="/dieu-khoan" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Điều khoản sử dụng</Link></li>
