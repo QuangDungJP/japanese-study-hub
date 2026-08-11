@@ -25,7 +25,7 @@ const defaultNavLinks = [
   { name: "Giới thiệu", href: "/gioi-thieu", key: "about" },
   { name: "Khóa học", href: "/khoa-hoc", key: "courses" },
   { name: "Giáo viên", href: "/giao-vien", key: "teachers" },
-  { name: "Google Meet", href: "/zoom", key: "zoom" },
+  { name: "Google Meet", href: "/meeting", key: "zoom" },
   { name: "Blog", href: "/blog", key: "blog" },
   { name: "Sự kiện", href: "/su-kien", key: "events" },
   { name: "Liên hệ", href: "/lien-he", key: "contact" },
