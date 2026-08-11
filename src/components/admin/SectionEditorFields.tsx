@@ -1299,6 +1299,81 @@ const PartnersEditor = ({ content, onChange }: { content: Record<string, any>; o
   );
 };
 
+const ZoomEditor = ({ content, onChange }: { content: Record<string, any>; onChange: (data: Record<string, any>) => void }) => {
+  const update = (key: string, val: any) => onChange({ ...content, [key]: val });
+  const features = Array.isArray(content.features) ? content.features : [
+    { icon: "video", title: "Lớp học 1-1", description: "Học riêng với giáo viên, tập trung vào điểm yếu của bạn" },
+    { icon: "users", title: "Lớp nhóm nhỏ", description: "Tối đa 6 học viên, tương tác và thực hành hiệu quả" },
+    { icon: "calendar", title: "Lịch linh hoạt", description: "Đặt lịch học theo thời gian phù hợp với bạn" },
+    { icon: "clock", title: "24/7 Support", description: "Hỗ trợ kỹ thuật và học thuật mọi lúc" }
+  ];
+
+  const updateFeature = (index: number, field: string, val: any) => {
+    const updated = [...features];
+    updated[index] = { ...updated[index], [field]: val };
+    update('features', updated);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="p-3.5 rounded-xl border bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent space-y-3">
+        <h4 className="text-xs font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+          📹 Cấu hình Trang Lớp Học Trực Tuyến Meeting (/meeting)
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs font-bold">Tiêu đề chính (Live Title)</Label>
+            <Input
+              value={content.title || 'Kết nối trực tiếp với giáo viên bản ngữ'}
+              onChange={(e) => update('title', e.target.value)}
+              className="h-8 text-xs font-bold"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-bold">Tên Giảng viên Live Stream</Label>
+            <Input
+              value={content.teacherName || 'Dung Sensei Live'}
+              onChange={(e) => update('teacherName', e.target.value)}
+              className="h-8 text-xs font-bold"
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label className="text-xs font-bold">Đường dẫn ảnh bài giảng thực tế (Slide Image URL)</Label>
+            <Input
+              value={content.imageUrl || '/img/zoom-meeting.png'}
+              onChange={(e) => update('imageUrl', e.target.value)}
+              placeholder="https://... hoặc /img/zoom-meeting.png"
+              className="h-8 text-xs font-mono"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs font-extrabold text-foreground">4 Tính năng nổi bật của phòng học</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {features.slice(0, 4).map((f: any, idx: number) => (
+            <div key={idx} className="p-2.5 rounded-xl border bg-card space-y-1.5">
+              <Input
+                value={f.title || ''}
+                onChange={(e) => updateFeature(idx, 'title', e.target.value)}
+                placeholder="Tiêu đề tính năng"
+                className="h-7 text-xs font-bold"
+              />
+              <Input
+                value={f.description || ''}
+                onChange={(e) => updateFeature(idx, 'description', e.target.value)}
+                placeholder="Mô tả ngắn"
+                className="h-7 text-xs"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFieldsProps) => {
   switch (sectionKey) {
     case "hero":
@@ -1311,6 +1386,8 @@ const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFie
       return <FooterEditor content={content} onChange={onChange} />;
     case "partners":
       return <PartnersEditor content={content} onChange={onChange} />;
+    case "zoom":
+      return <ZoomEditor content={content} onChange={onChange} />;
     case "contact_info":
     case "contact":
       return <ContactEditor content={content} onChange={onChange} />;
