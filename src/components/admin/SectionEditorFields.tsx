@@ -1168,6 +1168,103 @@ const ContactEditor = ({ content, onChange }: { content: Record<string, any>; on
   );
 };
 
+const PartnersEditor = ({ content, onChange }: { content: Record<string, any>; onChange: (data: Record<string, any>) => void }) => {
+  const partnersList = Array.isArray(content.partners_list) ? content.partners_list : [];
+  const update = (key: string, val: any) => onChange({ ...content, [key]: val });
+
+  const addPartner = () => {
+    const newPartner = {
+      id: Date.now().toString(),
+      name: 'Đối tác mới',
+      logoUrl: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=300&auto=format&fit=crop&q=80',
+      websiteUrl: 'https://www.quangdungnihongo.com',
+    };
+    update('partners_list', [...partnersList, newPartner]);
+  };
+
+  const updatePartner = (index: number, field: string, val: any) => {
+    const updated = [...partnersList];
+    updated[index] = { ...updated[index], [field]: val };
+    update('partners_list', updated);
+  };
+
+  const removePartner = (index: number) => {
+    const updated = partnersList.filter((_, i) => i !== index);
+    update('partners_list', updated);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-xl border bg-muted/20">
+        <div className="space-y-1">
+          <Label className="text-xs font-bold">Tiêu đề Section</Label>
+          <Input
+            value={content.section_title || 'Đơn vị kết nối'}
+            onChange={(e) => update('section_title', e.target.value)}
+            className="h-8 text-xs font-bold"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-bold">Tốc độ trượt Carousel (Giây)</Label>
+          <Input
+            type="number"
+            min={1}
+            max={20}
+            value={content.slide_speed_seconds || 3.5}
+            onChange={(e) => update('slide_speed_seconds', parseFloat(e.target.value) || 3.5)}
+            className="h-8 text-xs font-mono"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-extrabold text-foreground">Danh sách các đối tác kết nối ({partnersList.length})</Label>
+        <Button size="sm" variant="outline" onClick={addPartner} className="h-7 text-xs font-bold gap-1">
+          <Plus className="w-3.5 h-3.5" /> Thêm đối tác
+        </Button>
+      </div>
+
+      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+        {partnersList.map((partner: any, idx: number) => (
+          <div key={partner.id || idx} className="p-3 rounded-xl border bg-card space-y-2 relative group shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-muted-foreground w-5">{idx + 1}.</span>
+              <Input
+                placeholder="Tên đơn vị đối tác"
+                value={partner.name || ''}
+                onChange={(e) => updatePartner(idx, 'name', e.target.value)}
+                className="h-8 text-xs font-bold flex-1"
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => removePartner(idx)}
+                className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Input
+                placeholder="URL Logo (https://...)"
+                value={partner.logoUrl || ''}
+                onChange={(e) => updatePartner(idx, 'logoUrl', e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
+              <Input
+                placeholder="URL Website đối tác"
+                value={partner.websiteUrl || ''}
+                onChange={(e) => updatePartner(idx, 'websiteUrl', e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFieldsProps) => {
   switch (sectionKey) {
     case "hero":
@@ -1178,6 +1275,8 @@ const SectionEditorFields = ({ sectionKey, content, onChange }: SectionEditorFie
       return <CTAEditor content={content} onChange={onChange} />;
     case "footer":
       return <FooterEditor content={content} onChange={onChange} />;
+    case "partners":
+      return <PartnersEditor content={content} onChange={onChange} />;
     case "contact_info":
     case "contact":
       return <ContactEditor content={content} onChange={onChange} />;
