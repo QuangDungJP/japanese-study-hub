@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -107,14 +108,14 @@ const Index = () => {
   );
 
   // Fetch real published courses for homepage
-  const { data: realCourses } = useQuery({
+  const { data: realCourses, isLoading: isCoursesLoading } = useQuery({
     queryKey: ['home-real-courses'],
     queryFn: async () => {
       const { data } = await supabase
         .from('courses')
         .select('*')
         .eq('is_published', true)
-        .order('order_index', { ascending: true })
+        .order('level', { ascending: true })
         .limit(6);
       return data || [];
     },
@@ -141,62 +142,103 @@ const Index = () => {
           </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-12">
-            {(realCourses && realCourses.length > 0) ? (
-              realCourses.map((c, i) => (
-                <ScrollReveal key={c.id} delay={i * 100} direction="up">
-                  <div className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between h-full">
-                    <div className="relative aspect-[16/9] overflow-hidden bg-muted">
-                      <img
-                        src={c.thumbnail_url || c.cover_image_url || 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600&auto=format&fit=crop&q=80'}
-                        alt={c.title_vi || c.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-3 left-3">
-                        <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 font-black text-xs border border-white/20">
-                          {c.level || 'JLPT'}
-                        </span>
-                      </div>
-                    </div>
+            {isCoursesLoading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="h-80 rounded-2xl bg-muted/60 animate-pulse" />
+              ))
+            ) : (realCourses && realCourses.length > 0) ? (
+              realCourses.map((c, i) => {
+                const discount = c.original_price && c.original_price > c.price
+                  ? Math.round(((c.original_price - c.price) / c.original_price) * 100)
+                  : 0;
 
-                    <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <h3 className="font-extrabold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                          {c.title_vi || c.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                          {c.description_vi || c.description || 'Chương trình đào tạo Tiếng Nhật chất lượng cao.'}
-                        </p>
+                return (
+                  <ScrollReveal key={c.id} delay={i * 100} direction="up">
+                    <Link
+                      to={`/khoa-hoc/${c.slug || c.id}`}
+                      className="group bg-card rounded-2xl border border-border overflow-hidden shadow-soft hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative aspect-video bg-muted overflow-hidden">
+                        <img
+                          src={c.thumbnail_url || c.cover_image_url || 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600&auto=format&fit=crop&q=80'}
+                          alt={c.title_vi || c.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                        <Badge className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 font-bold">
+                          JLPT {c.level || 'N5'}
+                        </Badge>
+                        {discount > 0 && (
+                          <Badge variant="destructive" className="absolute top-3 right-3 font-bold">
+                            -{discount}%
+                          </Badge>
+                        )}
                       </div>
 
-                      <div className="pt-3 border-t flex items-center justify-between">
-                        <div>
-                          <span className="text-xs text-muted-foreground block font-medium">Học phí:</span>
-                          <span className="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-base">
-                            {c.price ? `${c.price.toLocaleString()}đ` : 'Liên hệ'}
+                      {/* Content */}
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <div className="space-y-2">
+                          <h3 className="font-bold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                            {c.title_vi || c.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                            {c.description_vi || c.description || 'Chương trình đào tạo Tiếng Nhật chất lượng cao.'}
+                          </p>
+                        </div>
+
+                        {/* Price & Action */}
+                        <div className="pt-3 border-t flex items-center justify-between">
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-extrabold text-foreground text-lg">
+                              {c.price ? `${c.price.toLocaleString()} đ` : 'Liên hệ'}
+                            </span>
+                            {c.original_price && c.original_price > c.price && (
+                              <span className="text-xs text-muted-foreground line-through">
+                                {c.original_price.toLocaleString()} đ
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                            Chi tiết <ArrowRight className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <Button size="sm" className="rounded-xl font-bold gap-1" asChild>
-                          <Link to={`/khoa-hoc/${c.slug || c.id}`}>
-                            Chi tiết <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </Button>
+                      </div>
+                    </Link>
+                  </ScrollReveal>
+                );
+              })
+            ) : (
+              /* Fallback real courses if DB query is empty */
+              [
+                { id: '1', level: 'N5', title_vi: 'N5 Nhập môn', price: 600000, original_price: 700000, img: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600' },
+                { id: '2', level: 'N5', title_vi: 'Kaiwa N5', price: 3600000, original_price: 4800000, img: 'https://images.unsplash.com/photo-1528164344705-47542687990d?w=600' },
+                { id: '3', level: 'N4', title_vi: 'N54 Từ vựng, Ngữ pháp', price: 8500000, original_price: 12000000, img: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=600' },
+              ].map((c, i) => (
+                <ScrollReveal key={c.id} delay={i * 100} direction="up">
+                  <Link
+                    to="/khoa-hoc"
+                    className="group bg-card rounded-2xl border border-border overflow-hidden shadow-soft hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                  >
+                    <div className="relative aspect-video bg-muted overflow-hidden">
+                      <img src={c.img} alt={c.title_vi} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <Badge className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold">JLPT {c.level}</Badge>
+                      <Badge variant="destructive" className="absolute top-3 right-3 font-bold">
+                        -{Math.round(((c.original_price - c.price) / c.original_price) * 100)}%
+                      </Badge>
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      <h3 className="font-bold text-lg text-foreground">{c.title_vi}</h3>
+                      <div className="pt-3 border-t flex items-center justify-between">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-extrabold text-foreground text-lg">{c.price.toLocaleString()} đ</span>
+                          <span className="text-xs text-muted-foreground line-through">{c.original_price.toLocaleString()} đ</span>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">Chi tiết <ArrowRight className="w-3.5 h-3.5" /></span>
                       </div>
                     </div>
-                  </div>
-                </ScrollReveal>
-              ))
-            ) : (
-              [
-                { level: "N5", name: "Khóa Học JLPT N5 Sơ Cấp", price: "2,500,000đ", img: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600" },
-                { level: "N4", name: "Khóa Học JLPT N4 Sơ Trung Cấp", price: "3,200,000đ", img: "https://images.unsplash.com/photo-1528164344705-47542687990d?w=600" },
-                { level: "N3", name: "Khóa Học JLPT N3 Trung Cấp", price: "4,500,000đ", img: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=600" },
-              ].map((c, i) => (
-                <ScrollReveal key={c.level} delay={i * 100} direction="up">
-                  <div className="bg-card rounded-3xl p-6 border border-border space-y-3">
-                    <img src={c.img} alt={c.name} className="w-full h-36 object-cover rounded-2xl" />
-                    <h3 className="font-extrabold text-base">{c.name}</h3>
-                    <p className="text-emerald-600 font-bold font-mono text-sm">{c.price}</p>
-                  </div>
+                  </Link>
                 </ScrollReveal>
               ))
             )}
