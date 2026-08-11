@@ -19,6 +19,7 @@ const defaultSections: SectionConfig[] = [
   { id: 'features', label: 'Tính năng nổi bật', visible: true },
   { id: 'zoom', label: 'Học Online qua Meeting', visible: true },
   { id: 'teachers', label: 'Đội ngũ giảng viên', visible: true },
+  { id: 'partners', label: '🤝 Đơn vị kết nối & Đối tác hợp tác', visible: true },
   { id: 'blog', label: 'Tin tức & Bài viết Blog', visible: true },
   { id: 'events', label: 'Sự kiện & Workshop', visible: true },
   { id: 'testimonials', label: 'Đánh giá & Testimonials Học viên', visible: true },

@@ -602,6 +602,14 @@ const MyClasses = () => {
                 Khai giảng: {formatWithJST(selectedClass.start_date, false)}
               </span>
             )}
+            <span className="flex items-center gap-1.5 bg-amber-400 text-black font-extrabold px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
+              <Clock className="w-4 h-4 text-black" />
+              Tiến độ buổi học: 20/45 buổi
+            </span>
+            <span className="flex items-center gap-1.5 bg-emerald-400 text-black font-extrabold px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
+              <CheckCircle2 className="w-4 h-4 text-black" />
+              Đã học bù: 2/2 buổi
+            </span>
           </div>
         </div>
       </div>

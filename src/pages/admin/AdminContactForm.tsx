@@ -171,10 +171,11 @@ const AdminContactForm = () => {
       </div>
 
       <Tabs defaultValue="fields">
-        <TabsList>
-          <TabsTrigger value="fields">Cấu hình trường</TabsTrigger>
+        <TabsList className="flex flex-wrap gap-1">
+          <TabsTrigger value="fields">📋 Cấu hình trường ({fields.length})</TabsTrigger>
+          <TabsTrigger value="preview">👁️ Live Preview Form Liên Hệ</TabsTrigger>
           <TabsTrigger value="submissions">
-            Phản hồi {submissions.filter(s => s.status === 'new').length > 0 && (
+            📬 Phản hồi {submissions.filter(s => s.status === 'new').length > 0 && (
               <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 text-xs flex items-center justify-center rounded-full">
                 {submissions.filter(s => s.status === 'new').length}
               </Badge>
@@ -287,6 +288,61 @@ const AdminContactForm = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab Preview Form Contact */}
+        <TabsContent value="preview" className="space-y-4">
+          <Card className="border-2 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/10 via-accent/10 to-transparent">
+              <CardTitle className="text-lg font-extrabold flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary" /> Live Preview - Giao diện Form Liên Hệ thực tế trên Website (/lien-he)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="max-w-xl mx-auto p-6 rounded-3xl border bg-card shadow-md space-y-4">
+                <div className="space-y-1 text-center">
+                  <h3 className="text-xl font-extrabold text-foreground">Gửi thông tin cho Trung tâm TNQDO</h3>
+                  <p className="text-xs text-muted-foreground">Điền thông tin bên dưới để được tư vấn lộ trình học phù hợp nhất</p>
+                </div>
+
+                <div className="space-y-3.5 pt-2">
+                  {fields.filter(f => f.is_active ?? true).map((f) => (
+                    <div key={f.id} className="space-y-1.5">
+                      <Label className="text-xs font-bold text-foreground">
+                        {f.label_vi} {f.is_required && <span className="text-red-500">*</span>}
+                      </Label>
+                      {f.field_type === 'textarea' ? (
+                        <textarea
+                          rows={3}
+                          placeholder={f.placeholder_vi || f.placeholder || ''}
+                          className="w-full p-2.5 text-xs rounded-xl border bg-background"
+                          disabled
+                        />
+                      ) : f.field_type === 'select' ? (
+                        <select className="w-full p-2.5 text-xs rounded-xl border bg-background" disabled>
+                          <option>{f.placeholder_vi || f.placeholder || '-- Chọn tùy chọn --'}</option>
+                          {Array.isArray(f.options) && f.options.map((opt: string, i: number) => (
+                            <option key={i}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          type={f.field_type === 'phone' ? 'tel' : f.field_type === 'email' ? 'email' : 'text'}
+                          placeholder={f.placeholder_vi || f.placeholder || ''}
+                          className="h-9 text-xs rounded-xl"
+                          disabled
+                        />
+                      )}
+                    </div>
+                  ))}
+
+                  <Button className="w-full h-10 text-xs font-bold bg-primary text-primary-foreground rounded-xl shadow-md mt-2" disabled>
+                    Gửi Thông Tin Liên Hệ 👉
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="submissions" className="space-y-4">

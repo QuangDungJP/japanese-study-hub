@@ -251,12 +251,41 @@ const AdminWebsiteCMS = () => {
 
   const fetchSections = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('website_content')
         .select('*')
         .order('order_index', { ascending: true });
 
       if (error) throw error;
+      
+      // Auto-ensure 'partners' section exists in database
+      const hasPartners = (data || []).some(s => s.section_key === 'partners');
+      if (!hasPartners) {
+        const defaultPartnersPayload = {
+          section_key: 'partners',
+          title_vi: 'Đơn vị kết nối & Đối tác hợp tác chiến lược',
+          is_active: true,
+          order_index: (data || []).length,
+          content: {
+            section_title: 'Đơn vị kết nối',
+            slide_speed_seconds: 3.5,
+            title_font_size_px: 28,
+            logo_height_px: 96,
+            logo_width_px: 220,
+            partners_list: [
+              { id: '1', name: 'Cultural Roots Global Reach', logoUrl: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=300&auto=format&fit=crop&q=80', websiteUrl: 'https://www.quangdungnihongo.com' },
+              { id: '2', name: 'FPT Education - FPT University', logoUrl: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=300&auto=format&fit=crop&q=80', websiteUrl: 'https://www.quangdungnihongo.com' },
+              { id: '3', name: 'Go4AI Life', logoUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=300&auto=format&fit=crop&q=80', websiteUrl: 'https://www.quangdungnihongo.com' },
+              { id: '4', name: 'I-TESOL International', logoUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=300&auto=format&fit=crop&q=80', websiteUrl: 'https://www.quangdungnihongo.com' },
+              { id: '5', name: 'Intracom University', logoUrl: 'https://images.unsplash.com/photo-1492571350019-22de08371fd3?w=300&auto=format&fit=crop&q=80', websiteUrl: 'https://www.quangdungnihongo.com' },
+              { id: '6', name: 'JCI Trevi', logoUrl: 'https://images.unsplash.com/photo-1528164344705-47542687990d?w=300&auto=format&fit=crop&q=80', websiteUrl: 'https://www.quangdungnihongo.com' }
+            ]
+          }
+        };
+        await supabase.from('website_content').insert(defaultPartnersPayload);
+        const { data: refetched } = await supabase.from('website_content').select('*').order('order_index', { ascending: true });
+        if (refetched) data = refetched;
+      }
       
       const typedData = (data || []).map(item => ({
         ...item,
@@ -776,14 +805,15 @@ const AdminWebsiteCMS = () => {
         {/* Sections Tab */}
         <TabsContent value="sections" className="space-y-4">
           {/* Header Action Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-muted/30 border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-accent/10 to-transparent border border-primary/20">
             <div>
               <h2 className="text-lg font-extrabold flex items-center gap-2">
                 <Globe className="w-5 h-5 text-primary" />
-                Nội dung &amp; Trang bìa từng trang
+                Quản lý Nội dung các Trang Website
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Chọn trang ở cột trái → chỉnh nội dung, ảnh bìa và layout banner của từng khối.
+                👈 <b>Bước 1</b>: Chọn trang cần sửa ở danh mục bên trái (Trang chủ, Trang giới thiệu, v.v...) <br />
+                ✏️ <b>Bước 2</b>: Bấm nút <b>"Chỉnh sửa & Preview"</b> ở ô bên phải để thay đổi Tiêu đề, Hình ảnh, Tùy chỉnh danh sách Đơn vị kết nối & Nội dung bài viết.
               </p>
             </div>
             <Button onClick={() => setIsCreateSectionOpen(true)} size="sm" className="font-bold gap-1 shrink-0">

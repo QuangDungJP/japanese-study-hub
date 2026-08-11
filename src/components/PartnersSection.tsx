@@ -111,12 +111,19 @@ export const PartnersSection = () => {
     (offset) => activePartners[(startIndex + offset) % activePartners.length]
   ).filter(Boolean);
 
+  const logoHeightPx = cmsContent?.logo_height_px || 96;
+  const logoWidthPx = cmsContent?.logo_width_px || 220;
+  const titleFontSizePx = cmsContent?.title_font_size_px || 28;
+
   return (
     <section className="py-12 bg-white dark:bg-slate-950 border-t border-b border-slate-100 dark:border-slate-800">
       <div className="container mx-auto px-4">
         <ScrollReveal>
           <div className="text-center mb-8 flex items-center justify-between max-w-5xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-extrabold text-black dark:text-white tracking-tight mx-auto pl-10">
+            <h2
+              style={{ fontSize: `${titleFontSizePx}px` }}
+              className="font-extrabold text-black dark:text-white tracking-tight mx-auto pl-10 leading-tight"
+            >
               {sectionTitle}
             </h2>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -153,7 +160,11 @@ export const PartnersSection = () => {
                 href={partner.websiteUrl || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center justify-center h-24 w-48 md:w-56 p-2 transition-all duration-300 hover:scale-105"
+                style={{
+                  height: `${logoHeightPx}px`,
+                  width: `${logoWidthPx}px`,
+                }}
+                className="group flex items-center justify-center p-2 transition-all duration-300 hover:scale-105"
                 title={partner.name}
               >
                 <img

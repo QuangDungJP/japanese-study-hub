@@ -106,6 +106,20 @@ const Index = () => {
       </section>
   );
 
+  // Fetch real published courses for homepage
+  const { data: realCourses } = useQuery({
+    queryKey: ['home-real-courses'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .order('order_index', { ascending: true })
+        .limit(6);
+      return data || [];
+    },
+  });
+
   const coursesSection = (
       <section key="courses" className="py-24 bg-muted/30 relative overflow-hidden">
         <div className="absolute inset-0">
@@ -114,39 +128,85 @@ const Index = () => {
         <div className="container mx-auto px-4 relative z-10">
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3 border border-primary/20">
+                <BookOpen className="w-4 h-4" /> Các Khóa Học Thực Tế Tại Trung Tâm
+              </span>
               <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-                Lộ trình học Tiếng Nhật toàn diện
+                Lộ trình học Tiếng Nhật chuyên sâu
               </h2>
               <p className="text-base text-muted-foreground">
-                Từ N5 đến N1, phương pháp chuẩn JLPT thiết kế riêng cho người Việt
+                Học trực tiếp với đội ngũ giảng viên giàu kinh nghiệm, cam kết đầu ra JLPT N5 - N1
               </p>
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
-            {[
-              { level: "N5", name: "Sơ cấp", color: "from-green-500 to-green-600" },
-              { level: "N4", name: "Sơ trung cấp", color: "from-blue-500 to-blue-600" },
-              { level: "N3", name: "Trung cấp", color: "from-purple-500 to-purple-600" },
-              { level: "N2", name: "Cao cấp", color: "from-orange-500 to-orange-600" },
-              { level: "N1", name: "Thành thạo", color: "from-red-500 to-red-600" },
-            ].map((c, i) => (
-              <ScrollReveal key={c.level} delay={i * 100} direction="up">
-                <div className="group bg-card rounded-2xl p-6 border border-border hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
-                    <span className="text-white font-extrabold">{c.level}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-12">
+            {(realCourses && realCourses.length > 0) ? (
+              realCourses.map((c, i) => (
+                <ScrollReveal key={c.id} delay={i * 100} direction="up">
+                  <div className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 flex flex-col justify-between h-full">
+                    <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+                      <img
+                        src={c.thumbnail_url || c.cover_image_url || 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600&auto=format&fit=crop&q=80'}
+                        alt={c.title_vi || c.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 font-black text-xs border border-white/20">
+                          {c.level || 'JLPT'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <h3 className="font-extrabold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                          {c.title_vi || c.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                          {c.description_vi || c.description || 'Chương trình đào tạo Tiếng Nhật chất lượng cao.'}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-muted-foreground block font-medium">Học phí:</span>
+                          <span className="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-base">
+                            {c.price ? `${c.price.toLocaleString()}đ` : 'Liên hệ'}
+                          </span>
+                        </div>
+                        <Button size="sm" className="rounded-xl font-bold gap-1" asChild>
+                          <Link to={`/khoa-hoc/${c.slug || c.id}`}>
+                            Chi tiết <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <h4 className="font-bold text-foreground">{c.name}</h4>
-                </div>
-              </ScrollReveal>
-            ))}
+                </ScrollReveal>
+              ))
+            ) : (
+              [
+                { level: "N5", name: "Khóa Học JLPT N5 Sơ Cấp", price: "2,500,000đ", img: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=600" },
+                { level: "N4", name: "Khóa Học JLPT N4 Sơ Trung Cấp", price: "3,200,000đ", img: "https://images.unsplash.com/photo-1528164344705-47542687990d?w=600" },
+                { level: "N3", name: "Khóa Học JLPT N3 Trung Cấp", price: "4,500,000đ", img: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=600" },
+              ].map((c, i) => (
+                <ScrollReveal key={c.level} delay={i * 100} direction="up">
+                  <div className="bg-card rounded-3xl p-6 border border-border space-y-3">
+                    <img src={c.img} alt={c.name} className="w-full h-36 object-cover rounded-2xl" />
+                    <h3 className="font-extrabold text-base">{c.name}</h3>
+                    <p className="text-emerald-600 font-bold font-mono text-sm">{c.price}</p>
+                  </div>
+                </ScrollReveal>
+              ))
+            )}
           </div>
 
-          <ScrollReveal delay={500}>
+          <ScrollReveal delay={300}>
             <div className="text-center">
-              <Button size="lg" className="rounded-2xl h-14 px-10 text-base" asChild>
+              <Button size="lg" className="rounded-2xl h-14 px-10 text-base font-bold shadow-lg" asChild>
                 <Link to="/khoa-hoc">
-                  Xem tất cả khóa học <ArrowRight className="w-5 h-5 ml-2" />
+                  Xem Tất Cả Khóa Học Thực Tế <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
             </div>
@@ -156,41 +216,91 @@ const Index = () => {
   );
 
   const featuresSection = (
-      <section key="features" className="py-24 bg-background">
+      <section key="features" className="py-24 bg-background overflow-hidden">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <ScrollReveal direction="left">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4 leading-tight">
-                  Công nghệ học tập{" "}
-                  <span className="text-primary">tiên tiến</span>
-                </h2>
-                <p className="text-base text-muted-foreground mb-8">
-                  Kết hợp AI và phương pháp giảng dạy hiện đại để mang đến trải nghiệm học tập tốt nhất
-                </p>
-                <Button size="lg" className="rounded-2xl h-12 px-8" asChild>
-                  <Link to="/gioi-thieu">Khám phá thêm <ArrowRight className="w-4 h-4 ml-2" /></Link>
-                </Button>
+          {/* Header Banner - Công nghệ học tập tân tiến */}
+          <ScrollReveal>
+            <div className="text-center max-w-4xl mx-auto mb-16 space-y-3">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200">
+                quangdungnihongo.com
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
+                Công Nghệ Học Tập Tân Tiến <br className="hidden md:block" />
+                <span className="text-primary">Phục Vụ Bạn Học Và Giáo Viên</span>
+              </h2>
+              <p className="text-base text-muted-foreground max-w-2xl mx-auto">
+                Hệ thống phần mềm tương tác bài giảng trực tiếp, giao diện Classroom hiện đại chuẩn Nhật Bản và theo dõi tiến độ thời gian thực.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          {/* Real Photo Grid Showcase */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch mb-12">
+            {/* Left Column: Classroom UI Screenshot */}
+            <ScrollReveal direction="left" className="h-full">
+              <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col justify-between group">
+                <div className="p-6 space-y-2">
+                  <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 text-xs font-bold">📚 Giáo Trình & Bài Học</span>
+                  <h3 className="font-extrabold text-lg text-foreground">Giáo Trình & Bài Học Theo Buổi / Tuần</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Phân loại bài học, slide trình chiếu và tài liệu Ebook trực quan như Google Classroom.
+                  </p>
+                </div>
+                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                  <img
+                    src="/img/DungChibi_Writing.png"
+                    alt="Giáo trình bài học"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLElement).src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                </div>
               </div>
             </ScrollReveal>
-            <div className="grid grid-cols-2 gap-5">
-              {[
-                { icon: Brain, title: "AI Cá nhân hóa", desc: "Phân tích điểm mạnh/yếu tự động" },
-                { icon: Target, title: "Lộ trình rõ ràng", desc: "Mục tiêu cụ thể theo tuần/tháng" },
-                { icon: Zap, title: "Học nhanh 3x", desc: "Phương pháp Spaced Repetition" },
-                { icon: Shield, title: "Cam kết hoàn tiền", desc: "100% hoàn tiền trong 30 ngày" },
-              ].map((f, i) => (
-                <ScrollReveal key={f.title} delay={i * 100} direction="right">
-                  <div className="bg-card rounded-2xl p-6 border border-border hover:shadow-lg transition-all duration-300 group h-full">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md">
-                      <f.icon className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                    <h3 className="font-bold text-foreground mb-1">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground">{f.desc}</p>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
+
+            {/* Center Column: Teacher & Student 1-on-1 Interaction */}
+            <ScrollReveal direction="up" delay={200} className="h-full">
+              <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between group">
+                <div className="p-6 space-y-2">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold">👨‍🏫 Kèm Trực Tiếp 1-1</span>
+                  <h3 className="font-extrabold text-lg text-foreground">Giảng Viên Hướng Dẫn Tận Tụy</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Giáo viên trực tiếp giải đáp thắc mắc, chỉnh sửa ngữ pháp và kèm từng học viên.
+                  </p>
+                </div>
+                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                  <img
+                    src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop&q=80"
+                    alt="Giảng viên hướng dẫn"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* Right Column: Code & Interactive App Study */}
+            <ScrollReveal direction="right" delay={400} className="h-full">
+              <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between group">
+                <div className="p-6 space-y-2">
+                  <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 text-xs font-bold">💻 Công Nghệ Web Live</span>
+                  <h3 className="font-extrabold text-lg text-foreground">Học Trực Tuyến Mọi Lúc Mọi Nơi</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Giao diện học tập tối ưu trên PC, Laptop và Smartphone mượt mà không độ trễ.
+                  </p>
+                </div>
+                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                  <img
+                    src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80"
+                    alt="Học trực tuyến"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -476,6 +586,12 @@ const Index = () => {
     </div>
   );
 
+  const partnersSection = (
+    <div key="partners">
+      <PartnersSection />
+    </div>
+  );
+
   const sectionMap: Record<string, React.ReactNode> = {
     hero: heroSection,
     skills: skillsSection,
@@ -483,6 +599,7 @@ const Index = () => {
     features: featuresSection,
     zoom: zoomSection,
     teachers: teachersSection,
+    partners: partnersSection,
     blog: blogSection,
     events: eventsSection,
     testimonials: testimonialsSection,
@@ -493,7 +610,6 @@ const Index = () => {
     <main className="min-h-screen">
       <Navbar />
       {visibleSections.map(id => sectionMap[id] || null)}
-      <PartnersSection />
       <Footer />
     </main>
   );
