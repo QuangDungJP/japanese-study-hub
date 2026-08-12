@@ -198,8 +198,8 @@ const ExamRunner = () => {
       let optionsList = Array.isArray(q.options) ? [...q.options] : [];
       let correctIdx = q.correct_index;
 
-      // Đảo vị trí đáp án ngẫu nhiên trong từng câu nếu bật shuffle_options hoặc shuffle_questions
-      if ((exam as any).shuffle_options || exam.shuffle_questions) {
+      // Chỉ đảo vị trí đáp án ngẫu nhiên trong từng câu nếu Admin/Giảng viên bật shuffle_options rõ ràng
+      if ((exam as any).shuffle_options) {
         const indexedOptions = optionsList.map((opt, i) => ({ opt, isCorrect: i === correctIdx }));
         indexedOptions.sort(() => Math.random() - 0.5);
         optionsList = indexedOptions.map(item => item.opt);
@@ -551,13 +551,13 @@ const ExamRunner = () => {
     submittedRef.current = true;
     setSubmitting(true);
 
-    const originalQuestions = exam.questions || [];
-    const totalPts = originalQuestions.reduce((s, q) => s + (q.points || 1), 0);
+    const totalPts = orderedQuestions.reduce((s, q) => s + (q.points || 1), 0);
     let score = 0;
 
-    const answersArr: (number | string | null)[] = originalQuestions.map((q, origIdx) => {
-      const qKey = q.id || `q_${origIdx}`;
-      const a = answers[qKey] ?? answers[origIdx] ?? answers[String(origIdx)];
+    const answersArr: (number | string | null)[] = orderedQuestions.map((q, i) => {
+      const origIdx = q.origIdx ?? i;
+      const qKey = q.qKey || q.id || `q_${origIdx}`;
+      const a = answers[qKey] ?? answers[origIdx] ?? answers[i];
       const pts = q.points || 1;
       const type = qType(q);
 
@@ -781,7 +781,7 @@ const ExamRunner = () => {
 
   // ── Review mode (post-exam) ─────────────────────────────────────────────────
   if (runMode === "review" && result) {
-    const qs = exam.questions || [];
+    const qs = orderedQuestions.length > 0 ? orderedQuestions : (exam.questions || []);
     const passing = exam.passing_score || 0;
     const passed = result.score >= passing;
     const hasEssay = qs.some(q => qType(q) === "essay");
