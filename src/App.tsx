@@ -92,6 +92,9 @@ import PromotionalPopupModal from "./components/shared/PromotionalPopupModal";
 
 const queryClient = new QueryClient();
 
+import React, { Suspense } from "react";
+import PageLoadingScreen from "@/components/shared/PageLoadingScreen";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -101,7 +104,8 @@ const App = () => (
             <Toaster />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <ScrollToTop />
-              <Routes>
+              <Suspense fallback={<PageLoadingScreen text="Đang tải trang..." />}>
+                <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/gioi-thieu" element={<About />} />
                 <Route path="/khoa-hoc" element={<CoursesPage />} />
@@ -189,6 +193,7 @@ const App = () => (
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+              </Suspense>
             <PromotionalPopupModal />
             <BackgroundMusicPlayer />
           </BrowserRouter>
