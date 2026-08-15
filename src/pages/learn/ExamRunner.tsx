@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Clock, CheckCircle2, AlertTriangle, Loader2, Trophy, Lock, Camera, Video,
   Paperclip, Video as VideoIcon, MessageSquare, X, Wifi, WifiOff, Save,
-  RotateCcw, Eye, ShieldAlert, XCircle,
+  RotateCcw, Eye, ShieldAlert, XCircle, Volume2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import BackgroundMusicPlayer from "@/components/shared/BackgroundMusicPlayer";
 import FormattedText from "@/components/shared/FormattedText";
 
-type QuestionType = "multiple_choice" | "true_false" | "short_answer" | "essay";
+type QuestionType = "multiple_choice" | "true_false" | "short_answer" | "essay" | "speaking" | "roleplay";
 type TimerMode = "countdown" | "stopwatch" | "none";
 type RunMode = "exam" | "review" | "retry_wrong" | "retry_all";
 
@@ -34,7 +34,68 @@ interface Question {
   answer?: any;
   explanation?: string;
   points?: number;
+  image_url?: string;
+  audio_url?: string;
+  audio_play_limit?: number;
 }
+
+const LimitedAudioPlayer = ({ url, limit }: { url: string; limit?: number }) => {
+  const [playCount, setPlayCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const isLimited = typeof limit === 'number' && limit > 0;
+  const isExhausted = isLimited && playCount >= limit;
+
+  const handlePlay = () => {
+    if (isExhausted || !audioRef.current) return;
+    if (isLimited && !isPlaying) {
+      setPlayCount(p => p + 1);
+    }
+    audioRef.current.play();
+    setIsPlaying(true);
+  };
+
+  const handlePause = () => {
+    if (audioRef.current) audioRef.current.pause();
+    setIsPlaying(false);
+  };
+
+  return (
+    <div className="flex items-center gap-3 bg-background border p-2 rounded-lg">
+      <audio 
+        ref={audioRef} 
+        src={url} 
+        onEnded={() => setIsPlaying(false)}
+        onPause={() => setIsPlaying(false)}
+        className="hidden" 
+      />
+      {!isLimited ? (
+        <audio src={url} controls className="w-full h-10" />
+      ) : (
+        <>
+          <Button 
+            type="button" 
+            variant={isPlaying ? "destructive" : "default"} 
+            size="sm" 
+            onClick={isPlaying ? handlePause : handlePlay}
+            disabled={isExhausted && !isPlaying}
+            className="w-24 shrink-0"
+          >
+            {isPlaying ? "Tạm dừng" : "Phát Audio"}
+          </Button>
+          <div className="flex-1">
+            {isExhausted ? (
+              <span className="text-xs text-red-500 font-semibold">Đã hết số lần nghe ({limit}/{limit})</span>
+            ) : (
+              <span className="text-xs text-muted-foreground font-medium">Số lần đã nghe: {playCount} / {limit}</span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 interface ProctoringConfig {
   detect_gaze?: boolean;
@@ -1218,6 +1279,12 @@ const ExamRunner = () => {
                         <img src={q.image_url} alt="Ảnh minh họa câu hỏi" className="w-full h-auto max-h-80 object-contain mx-auto" />
                       </div>
                     )}
+                    {q.audio_url && (
+                      <div className="mt-2 p-3 rounded-xl bg-muted/40 border flex flex-col gap-1">
+                        <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Volume2 className="w-3.5 h-3.5 text-emerald-500" /> Audio câu hỏi</span>
+                        <audio src={q.audio_url} controls className="w-full h-10" />
+                      </div>
+                    )}
                   </span>
                   <Badge variant="outline" className="shrink-0 font-normal">{pts} điểm</Badge>
                 </CardTitle>
@@ -1237,14 +1304,20 @@ const ExamRunner = () => {
                   );
                 })}
                 {type === "short_answer" && (
-                  <Input placeholder="Nhập câu trả lời của bạn…"
-                    value={typeof currentAns === "string" ? currentAns : ""}
-                    onChange={e => updateAns(e.target.value)} />
+                  <div className="space-y-1">
+                    <Textarea rows={2} placeholder="Nhập câu trả lời của bạn…"
+                      value={typeof currentAns === "string" ? currentAns : ""}
+                      onChange={e => updateAns(e.target.value)} />
+                    <p className="text-[11px] text-muted-foreground/70 italic text-right">Có thể nhấn Enter để xuống dòng</p>
+                  </div>
                 )}
-                {type === "essay" && (
-                  <Textarea rows={5} placeholder="Viết bài làm của bạn tại đây…"
-                    value={typeof currentAns === "string" ? currentAns : ""}
-                    onChange={e => updateAns(e.target.value)} />
+                {(type === "essay" || type === "speaking" || type === "roleplay") && (
+                  <div className="space-y-1">
+                    <Textarea rows={5} placeholder={type === 'speaking' ? "Dán link bài thu âm / video của bạn vào đây..." : type === 'roleplay' ? "Dán link bài hội thoại / kịch bản vào đây..." : "Viết bài làm của bạn tại đây…"}
+                      value={typeof currentAns === "string" ? currentAns : ""}
+                      onChange={e => updateAns(e.target.value)} />
+                    <p className="text-[11px] text-muted-foreground/70 italic text-right">Có thể nhấn Enter để xuống dòng</p>
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -1050,7 +1050,19 @@ const TeacherSubmissions = () => {
                         return (
                           <div key={i} className={`p-3 rounded-xl border text-xs space-y-1.5 ${isCorrect ? 'bg-emerald-500/5 border-emerald-300' : 'bg-rose-500/5 border-rose-300'}`}>
                             <div className="flex items-start justify-between gap-2 font-bold">
-                              <span>Câu {i + 1}: <FormattedText text={q.text || q.question} /></span>
+                              <span className="flex-1">
+                                Câu {i + 1}: <FormattedText text={q.text || q.question} />
+                                {q.image_url && (
+                                  <div className="mt-2 max-w-[200px] rounded-xl overflow-hidden border bg-black/5">
+                                    <img src={q.image_url} alt="Ảnh minh họa" className="w-full h-auto object-contain" />
+                                  </div>
+                                )}
+                                {q.audio_url && (
+                                  <div className="mt-2 max-w-[300px]">
+                                    <audio src={q.audio_url} controls className="w-full h-8" />
+                                  </div>
+                                )}
+                              </span>
                               {isCorrect ? (
                                 <Badge className="bg-emerald-500 text-white font-bold text-[10px]">Chính xác (+{q.points || 10}đ)</Badge>
                               ) : (
@@ -1058,8 +1070,8 @@ const TeacherSubmissions = () => {
                               )}
                             </div>
                             <div className="grid sm:grid-cols-2 gap-2 pt-1 border-t border-dashed">
-                              <p className="text-muted-foreground">Học viên chọn: <span className="font-extrabold text-foreground">{ans !== undefined && ans !== null && ans !== '' ? String(ans) : '(Bỏ trống)'}</span></p>
-                              <p className="text-muted-foreground">Đáp án đúng: <span className="font-extrabold text-emerald-600">{correctAns !== undefined ? String(correctAns) : 'N/A'}</span></p>
+                              <p className="text-muted-foreground">Học viên chọn: <span className="font-extrabold text-foreground whitespace-pre-wrap">{ans !== undefined && ans !== null && ans !== '' ? String(ans) : '(Bỏ trống)'}</span></p>
+                              <p className="text-muted-foreground">Đáp án đúng: <span className="font-extrabold text-emerald-600 whitespace-pre-wrap">{correctAns !== undefined ? String(correctAns) : 'N/A'}</span></p>
                             </div>
                           </div>
                         );
