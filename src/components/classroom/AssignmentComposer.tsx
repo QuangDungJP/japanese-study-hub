@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { X, Upload, Link2, Youtube, FileText, Sparkles, Trash2, Plus, ClipboardList, ArrowRight, ArrowLeft, CalendarClock, Users, HelpCircle, Wand2, CheckCircle2 } from 'lucide-react';
+import { X, Upload, Link2, PlayCircle, FileText, Sparkles, Trash2, Plus, ClipboardList, ArrowRight, ArrowLeft, CalendarClock, Users, HelpCircle, Wand2, CheckCircle2 } from 'lucide-react';
 
 interface Attachment { kind: 'file' | 'link' | 'youtube'; url: string; name: string }
 interface RubricCriterion { title: string; max: number }
@@ -291,7 +291,7 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
                 {attachments.length > 0 && (
                   <div className="space-y-1 pt-1">
                     {attachments.map((att, i) => {
-                      const Icon = att.kind === 'youtube' ? Youtube : att.kind === 'link' ? Link2 : FileText;
+                      const Icon = att.kind === 'youtube' ? PlayCircle : att.kind === 'link' ? Link2 : FileText;
                       return (
                         <div key={i} className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30 hover:bg-muted/50">
                           <Icon className="w-4 h-4 text-primary shrink-0" />

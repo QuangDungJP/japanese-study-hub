@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, ClipboardList, FileText, HelpCircle, Trash2, Edit, ChevronDown, ChevronRight, FolderPlus, Sparkles, ExternalLink, Link2, Youtube, CalendarClock, CheckCircle2 } from 'lucide-react';
+import { Plus, ClipboardList, FileText, HelpCircle, Trash2, Edit, ChevronDown, ChevronRight, FolderPlus, Sparkles, ExternalLink, Link2, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import AssignmentComposer from './AssignmentComposer';
 import SubmitDialog from './SubmitDialog';
