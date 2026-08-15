@@ -35,6 +35,7 @@ export interface ExamQuestion {
   explanation?: string;
   points?: number;
   audio_url?: string;
+  audio_play_limit?: number;
   image_url?: string;
 }
 
@@ -116,6 +117,7 @@ const normalizeQuestion = (q: any): ExamQuestion => {
     explanation: q?.explanation || '',
     points: typeof q?.points === 'number' ? q.points : 1,
     audio_url: q?.audio_url || undefined,
+    audio_play_limit: typeof q?.audio_play_limit === 'number' ? q.audio_play_limit : undefined,
     image_url: q?.image_url || undefined,
   };
 };
@@ -210,10 +212,12 @@ const QuickPastePopover = ({ onPaste }: QuickPasteProps) => {
 // ─── Audio Upload per Question ──────────────────────────────────────────────────
 interface AudioUploadProps {
   audioUrl?: string;
-  onChange: (url: string | undefined) => void;
+  audioPlayLimit?: number;
+  onChange: (url: string | undefined, limit: number | undefined) => void;
 }
-const AudioUpload = ({ audioUrl, onChange }: AudioUploadProps) => {
+const AudioUpload = ({ audioUrl, audioPlayLimit, onChange }: AudioUploadProps) => {
   const [uploading, setUploading] = useState(false);
+  const [linkInput, setLinkInput] = useState(audioUrl || "");
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -229,7 +233,8 @@ const AudioUpload = ({ audioUrl, onChange }: AudioUploadProps) => {
       const { error } = await supabase.storage.from('exam-audio').upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from('exam-audio').getPublicUrl(path);
-      onChange(data.publicUrl);
+      onChange(data.publicUrl, audioPlayLimit);
+      setLinkInput(data.publicUrl);
       toast({ title: '✅ Đã tải lên file âm thanh' });
     } catch (e: any) {
       toast({ title: 'Lỗi upload audio', description: e.message, variant: 'destructive' });
@@ -239,44 +244,89 @@ const AudioUpload = ({ audioUrl, onChange }: AudioUploadProps) => {
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="audio/*"
-        className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
-      />
-      {audioUrl ? (
-        <div className="flex items-center gap-2 flex-1 min-w-0 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2">
-          <Volume2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <audio controls src={audioUrl} className="h-8 flex-1 min-w-0" style={{ maxWidth: '100%' }} />
-          <button
-            type="button"
-            onClick={() => onChange(undefined)}
-            className="text-muted-foreground hover:text-destructive shrink-0"
-            title="Xóa audio"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 gap-1.5 text-xs border-dashed"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Music className="w-3.5 h-3.5" />
-          )}
-          {uploading ? 'Đang tải...' : 'Thêm Audio 🎵'}
-        </Button>
-      )}
+    <div className="flex flex-col gap-2 bg-muted/20 p-2.5 rounded-xl border border-border/80">
+      <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+        <Music className="w-3.5 h-3.5 text-emerald-500" /> File nghe Audio (Tải lên MP3/WAV hoặc dán URL)
+      </Label>
+      <div className="flex items-center gap-2 flex-wrap">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
+        />
+        {audioUrl ? (
+          <div className="flex flex-col gap-2 flex-1 w-full sm:w-auto">
+            <div className="flex items-center gap-2 min-w-0 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2">
+              <Volume2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <audio controls src={audioUrl} className="h-8 flex-1 min-w-0" style={{ maxWidth: '100%' }} />
+              <button
+                type="button"
+                onClick={() => { onChange(undefined, undefined); setLinkInput(''); }}
+                className="text-muted-foreground hover:text-destructive shrink-0"
+                title="Xóa audio"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">Giới hạn số lần nghe:</Label>
+              <Input
+                type="number"
+                min={1}
+                placeholder="Vô hạn (để trống)"
+                className="h-8 text-xs w-36 bg-background"
+                value={audioPlayLimit || ''}
+                onChange={(e) => {
+                  const val = e.target.value ? parseInt(e.target.value) : undefined;
+                  onChange(audioUrl, val);
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs border-dashed shrink-0"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Upload className="w-3.5 h-3.5 text-emerald-600" />
+              )}
+              {uploading ? 'Đang tải...' : 'Upload Audio 🎵'}
+            </Button>
+            <div className="text-xs text-muted-foreground font-medium shrink-0">hoặc</div>
+            <Input
+              placeholder="Dán link audio (https://...)"
+              className="h-8 text-xs flex-1 bg-background"
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              onBlur={() => {
+                if (linkInput && linkInput.trim() !== audioUrl) {
+                  onChange(linkInput.trim());
+                } else if (!linkInput.trim() && audioUrl) {
+                  onChange(undefined);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (linkInput && linkInput.trim() !== audioUrl) {
+                    onChange(linkInput.trim());
+                  }
+                }
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -674,7 +724,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
 
   const validate = () => {
     if (!titleVi.trim() && !title.trim()) return 'Vui lòng nhập tiêu đề bài kiểm tra';
-    if (!examDate) return 'Vui lòng chọn ngày kiểm tra';
+    if (!examDate || !examDate.trim()) return 'Vui lòng chọn ngày kiểm tra';
     return null;
   };
 
@@ -743,9 +793,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
       instructions: instructions || null,
       video_url: videoUrl || thumbnailUrl || null,
       exam_type: examType,
-      exam_date: examDate,
-      start_time: startTime,
-      duration_minutes: duration,
+      exam_date: examDate || new Date().toISOString().slice(0, 10),
+      start_time: startTime || '09:00',
+      duration_minutes: duration || 60,
       timer_mode: timerMode,
       max_score: maxScore,
       passing_score: passingScore,

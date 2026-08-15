@@ -1265,7 +1265,17 @@ const MyClasses = () => {
                                             </span>
                                             <div className="flex-1 min-w-0">
                                               <p className="font-medium text-foreground leading-snug"><FormattedText text={q.text} /></p>
-                                              {q.points && <span className="text-xs text-muted-foreground">{q.points} điểm</span>}
+                                              {q.image_url && (
+                                                <div className="mt-2 rounded-xl overflow-hidden border bg-black/5 inline-block max-w-[200px]">
+                                                  <img src={q.image_url} alt="Ảnh minh họa" className="w-full h-auto object-contain" />
+                                                </div>
+                                              )}
+                                              {q.audio_url && (
+                                                <div className="mt-2 max-w-[300px]">
+                                                  <audio src={q.audio_url} controls className="w-full h-8" />
+                                                </div>
+                                              )}
+                                              {q.points && <span className="text-xs text-muted-foreground block mt-1">{q.points} điểm</span>}
                                             </div>
                                           </div>
 
@@ -1294,7 +1304,7 @@ const MyClasses = () => {
                                             <div className="pl-8 space-y-1">
                                               <div className={`px-2 py-1.5 rounded-md text-xs ${isCorrect ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
                                                 <span className="text-muted-foreground">Bạn trả lời: </span>
-                                                <span className="font-medium">{notAnswered ? '(không trả lời)' : String(studentAns)}</span>
+                                                <span className="font-medium whitespace-pre-wrap">{notAnswered ? '(không trả lời)' : String(studentAns)}</span>
                                               </div>
                                               {!isCorrect && q.accepted_answers && q.accepted_answers.filter(Boolean).length > 0 && (
                                                 <div className="px-2 py-1.5 rounded-md text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
@@ -1305,8 +1315,8 @@ const MyClasses = () => {
                                             </div>
                                           )}
 
-                                          {/* Essay */}
-                                          {qtype === 'essay' && (
+                                          {/* Essay / Speaking / Roleplay */}
+                                          {(qtype === 'essay' || qtype === 'speaking' || qtype === 'roleplay') && (
                                             <div className="pl-8">
                                               <div className="px-2 py-1.5 rounded-md text-xs bg-muted text-muted-foreground">
                                                 <span className="font-medium">Bài làm: </span>
