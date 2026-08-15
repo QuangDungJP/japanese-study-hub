@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
-import { Plus, Loader2, Pencil, Trash2, Video, Users } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Video, Users, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +43,10 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+
   const initialExamData = useMemo(() => {
     if (editingExam) return editingExam;
     if (classId) return { class_id: classId };
@@ -50,6 +56,19 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
   const mappedClasses = useMemo(() => {
     return classes.map((c) => ({ id: c.id, name: c.name_vi }));
   }, [classes]);
+
+  const filteredExams = useMemo(() => {
+    return exams.filter((exam) => {
+      const matchesSearch = exam.title_vi.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            (exam.title && exam.title.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesStatus = statusFilter === 'all' || 
+                            (statusFilter === 'published' && exam.is_published) || 
+                            (statusFilter === 'draft' && !exam.is_published);
+      const matchesType = typeFilter === 'all' || exam.exam_type === typeFilter;
+      
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [exams, searchTerm, statusFilter, typeFilter]);
 
   useEffect(() => {
     if (user) {
@@ -147,23 +166,62 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
         </Button>
       </div>
 
-      {exams.length === 0 ? (
+      <Card className="bg-muted/30 border-dashed">
+        <CardContent className="p-4 flex flex-col sm:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Tìm kiếm bài kiểm tra..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 bg-background w-full"
+            />
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[150px] bg-background">
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                <SelectItem value="published">Đã công bố</SelectItem>
+                <SelectItem value="draft">Bản nháp</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[150px] bg-background">
+                <SelectValue placeholder="Loại bài" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả loại bài</SelectItem>
+                <SelectItem value="quiz">Quiz</SelectItem>
+                <SelectItem value="midterm">Giữa kỳ</SelectItem>
+                <SelectItem value="final">Cuối kỳ</SelectItem>
+                <SelectItem value="placement">Xếp lớp</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {filteredExams.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Chưa có bài kiểm tra nào</h3>
-            <p className="text-muted-foreground">Tạo bài kiểm tra mới để bắt đầu</p>
+            <h3 className="font-semibold text-lg mb-2">Không tìm thấy bài kiểm tra nào</h3>
+            <p className="text-muted-foreground">Thay đổi bộ lọc hoặc tạo bài kiểm tra mới để bắt đầu</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {exams.map((exam) => (
+          {filteredExams.map((exam, index) => (
             <Card key={exam.id}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold">{exam.title_vi}</h3>
+                      <Badge variant="secondary" className="font-bold rounded-md bg-secondary/50">#{index + 1}</Badge>
+                      <h3 className="font-semibold text-base">{exam.title_vi}</h3>
                       {getExamTypeBadge(exam.exam_type)}
                       <Badge variant={exam.is_published ? 'default' : 'outline'}>
                         {exam.is_published ? 'Đã công bố' : 'Nháp'}
