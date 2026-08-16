@@ -14,13 +14,14 @@ import {
   CheckCircle, Clock, FileText, Filter, Search, Loader2, Sparkles, 
   BookOpen, GraduationCap, RefreshCw, Paperclip, Video, MessageSquare, ExternalLink,
   CheckCircle2, XCircle, HelpCircle, Flame, Calendar, Award, Check, AlertCircle, ArrowUpRight,
-  BarChart3, RotateCcw
+  BarChart3, RotateCcw, Pencil
 } from 'lucide-react';
 import { formatWithJST } from '@/lib/dateUtils';
 import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
 import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
 import FormattedText from '@/components/shared/FormattedText';
 import { sendGradingNotification } from '@/lib/emailService';
+import { useNavigate } from 'react-router-dom';
 
 export interface Submission {
   id: string;
@@ -135,6 +136,7 @@ function getQuestionStats(questions: any[] = [], answers: any[] = []) {
 
 const TeacherSubmissions = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<'exercises' | 'exams'>('exercises');
   const [loading, setLoading] = useState(true);
 
@@ -1025,9 +1027,24 @@ const TeacherSubmissions = () => {
       <Dialog open={examGradingDialogOpen} onOpenChange={setExamGradingDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-black">
-              <GraduationCap className="w-6 h-6 text-purple-600" />
-              Chi Tiết Kết Quả & Chấm Đề Thi / Kiểm Tra
+            <DialogTitle className="flex items-center justify-between text-lg font-black">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-6 h-6 text-purple-600" />
+                Chi Tiết Kết Quả & Chấm Đề Thi / Kiểm Tra
+              </div>
+              {selectedExamAttempt && selectedExamAttempt.exam_id && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl border-dashed border-purple-400 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                  onClick={() => {
+                    setExamGradingDialogOpen(false);
+                    navigate('/teacher/exams', { state: { editExamId: selectedExamAttempt.exam_id } });
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-1.5" /> Sửa Đề Thi Này
+                </Button>
+              )}
             </DialogTitle>
           </DialogHeader>
 

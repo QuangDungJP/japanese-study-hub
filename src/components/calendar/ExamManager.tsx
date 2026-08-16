@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { useLocation } from 'react-router-dom';
 import ExamBuilder from './ExamBuilder';
 
 interface Exam {
@@ -37,6 +38,7 @@ interface Class {
 
 export const ExamManager = ({ classId }: { classId?: string }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const [exams, setExams] = useState<Exam[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,14 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
         .eq('teacher_id', user?.id);
 
       setClasses(classesData || []);
+
+      if (location.state?.editExamId && examsData) {
+        const target = examsData.find(e => e.id === location.state.editExamId);
+        if (target && !isDialogOpen) {
+          setEditingExam(target);
+          setIsDialogOpen(true);
+        }
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

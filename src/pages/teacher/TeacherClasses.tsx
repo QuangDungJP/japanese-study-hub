@@ -49,7 +49,7 @@ import {
   BookOpen, Star, Trophy, TrendingUp, Search, X,
   GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
   FileText, CheckCircle2, XCircle, MessageSquare, Play, Upload, Sparkles,
-  Mail, Send, Loader2, Save, RotateCcw, CheckSquare, Award
+  Mail, Send, Loader2, Save, RotateCcw, CheckSquare, Award, List, LayoutGrid
 } from 'lucide-react';
 import ClassroomChat from '@/components/classroom/ClassroomChat';
 import { sendGradingNotification } from '@/lib/emailService';
@@ -196,6 +196,7 @@ const TeacherClasses = () => {
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [searchUserTerm, setSearchUserTerm] = useState('');
   const [editingClass, setEditingClass] = useState<ClassData | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -1757,6 +1758,25 @@ const TeacherClasses = () => {
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="flex bg-muted/50 p-1 rounded-lg border ml-2">
+              <Button 
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className={`h-8 px-2.5 ${viewMode === 'grid' ? 'shadow-sm bg-background' : ''}`}
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className={`h-8 px-2.5 ${viewMode === 'list' ? 'shadow-sm bg-background' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -1776,6 +1796,75 @@ const TeacherClasses = () => {
               </Button>
             </CardContent>
           </Card>
+        ) : viewMode === 'list' ? (
+          <div className="space-y-3">
+            {filteredClasses.map((classItem, index) => (
+              <Card key={classItem.id} className="hover:shadow-md transition-all duration-300 border border-border group overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-stretch">
+                  {classItem.cover_image_url || classItem.thumbnail_url ? (
+                    <div className="sm:w-48 h-32 sm:h-auto overflow-hidden bg-muted relative shrink-0">
+                      <img
+                        src={classItem.cover_image_url || classItem.thumbnail_url || ''}
+                        alt={classItem.name_vi}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <Badge className={`absolute top-2 left-2 ${classItem.is_active ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'}`}>
+                        {classItem.is_active ? 'Đang hoạt động' : 'Đã kết thúc'}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="w-2 bg-gradient-to-b from-primary via-indigo-500 to-purple-500 shrink-0" />
+                  )}
+                  <div className="flex-1 p-4 flex flex-col justify-center">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg font-bold line-clamp-1">{classItem.name_vi}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{classItem.name}</p>
+                      </div>
+                      {!(classItem.cover_image_url || classItem.thumbnail_url) && (
+                        <Badge className={classItem.is_active ? 'bg-green-500/10 text-green-600 border-green-200' : 'bg-muted text-muted-foreground'}>
+                          {classItem.is_active ? 'Đang hoạt động' : 'Đã kết thúc'}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                      {classItem.courses && (
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="w-4 h-4" />
+                          <span className="font-semibold text-foreground">{classItem.courses.title_vi}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        <span>{classItem.student_count}/{classItem.max_students} học viên</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{classItem.start_date ? formatWithJST(classItem.start_date) : 'Chưa xác định'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 sm:border-l bg-muted/20 flex flex-row sm:flex-col justify-center gap-2">
+                    <Button variant="default" className="flex-1 sm:w-full font-bold shadow-sm" onClick={() => setSelectedClass(classItem)}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Chi tiết
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 bg-background" onClick={() => openEditDialog(classItem)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Sửa
+                      </Button>
+                      <Button variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClass(classItem.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredClasses.map((classItem, index) => (
