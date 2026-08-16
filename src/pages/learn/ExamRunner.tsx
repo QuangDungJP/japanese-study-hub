@@ -493,10 +493,10 @@ const ExamRunner = () => {
     if (!aid || submittedRef.current || !navigator.onLine) return;
     setSaving(true);
     try {
-      const answersArr = orderedQuestions.map((_, i) => {
-        const a = answersRef.current[i];
+      const answersArr = exam?.questions.map((_, origI) => {
+        const a = answersRef.current[origI];
         return a !== undefined ? a : null;
-      });
+      }) || [];
       const timeSpent = startedAtRef.current ? Math.floor((Date.now() - startedAtRef.current) / 1000) : 0;
       await supabase.from("exam_attempts").update({
         answers: answersArr, time_spent_seconds: timeSpent,
@@ -615,22 +615,26 @@ const ExamRunner = () => {
     const totalPts = orderedQuestions.reduce((s, q) => s + (q.points || 1), 0);
     let score = 0;
 
-    const answersArr: (number | string | null)[] = orderedQuestions.map((q, i) => {
-      const origIdx = q.origIdx ?? i;
-      const qKey = q.qKey || q.id || `q_${origIdx}`;
-      const a = answers[qKey] ?? answers[origIdx] ?? answers[i];
-      const pts = q.points || 1;
-      const type = qType(q);
+    const answersArr: (number | string | null)[] = exam.questions.map((q, origIdx) => {
+      // Find the question in orderedQuestions to get its points, type, and check correctness
+      const shuffledQ = orderedQuestions.find(oq => oq.origIdx === origIdx) || q;
+      const qKey = shuffledQ.qKey || shuffledQ.id || `q_${origIdx}`;
+      const a = answers[qKey] ?? answers[origIdx];
+      const pts = shuffledQ.points || 1;
+      const type = qType(shuffledQ);
 
       if (type === "multiple_choice" || type === "true_false") {
         const val = typeof a === "number" ? a : (typeof a === "string" && a !== "" && !isNaN(Number(a)) ? Number(a) : null);
-        if (val !== null && val === q.correct_index) score += pts;
-        return val;
+        if (val !== null && val === shuffledQ.correct_index) score += pts;
+        
+        // Map back to original option index for DB storage (so TeacherSubmissions sees the right answer)
+        const originalVal = (val !== null && (shuffledQ as any).original_option_map) ? (shuffledQ as any).original_option_map[val] : val;
+        return originalVal;
       }
       if (type === "short_answer") {
-        const accepted = (q.accepted_answers || []).map(normalizeText).filter(Boolean);
-        if (q.correct_answer) accepted.push(normalizeText(q.correct_answer));
-        if (q.answer) accepted.push(normalizeText(q.answer));
+        const accepted = (shuffledQ.accepted_answers || []).map(normalizeText).filter(Boolean);
+        if (shuffledQ.correct_answer) accepted.push(normalizeText(shuffledQ.correct_answer));
+        if (shuffledQ.answer) accepted.push(normalizeText(shuffledQ.answer));
         if (typeof a === "string" && a.trim() && accepted.includes(normalizeText(a))) score += pts;
         return typeof a === "string" ? a : null;
       }
@@ -1280,9 +1284,11 @@ const ExamRunner = () => {
                       </div>
                     )}
                     {q.audio_url && (
-                      <div className="mt-2 p-3 rounded-xl bg-muted/40 border flex flex-col gap-1">
-                        <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Volume2 className="w-3.5 h-3.5 text-emerald-500" /> Audio câu hỏi</span>
-                        <audio src={q.audio_url} controls className="w-full h-10" />
+                      <div className="mt-2 p-3 rounded-xl bg-muted/40 border flex flex-col gap-2">
+                        <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                          <Volume2 className="w-3.5 h-3.5 text-emerald-500" /> Audio câu hỏi
+                        </span>
+                        <LimitedAudioPlayer url={q.audio_url} limit={q.audio_play_limit} />
                       </div>
                     )}
                   </span>
