@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
-import { Plus, Loader2, Pencil, Trash2, Video, Users, Search, Filter } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Video, Users, Search, Filter, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -140,6 +140,12 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
     }
   };
 
+  const handleCopyLink = (id: string) => {
+    const link = `${window.location.origin}/learn/exams/${id}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Đã copy đường link bài kiểm tra');
+  };
+
   const getExamTypeBadge = (type: string) => {
     switch (type) {
       case 'quiz':
@@ -248,6 +254,9 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
                     )}
                   </div>
                   <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => handleCopyLink(exam.id)} title="Copy link làm bài">
+                      <Link2 className="w-4 h-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(exam)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
