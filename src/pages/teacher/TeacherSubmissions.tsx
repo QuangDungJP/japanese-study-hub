@@ -14,7 +14,7 @@ import {
   CheckCircle, Clock, FileText, Filter, Search, Loader2, Sparkles, 
   BookOpen, GraduationCap, RefreshCw, Paperclip, Video, MessageSquare, ExternalLink,
   CheckCircle2, XCircle, HelpCircle, Flame, Calendar, Award, Check, AlertCircle, ArrowUpRight,
-  BarChart3
+  BarChart3, RotateCcw
 } from 'lucide-react';
 import { formatWithJST } from '@/lib/dateUtils';
 import AvatarWithDecoration from '@/components/shared/AvatarWithDecoration';
@@ -488,6 +488,48 @@ const TeacherSubmissions = () => {
     } finally {
       setGrading(false);
     }
+  };
+
+  const handleAutoRegrade = () => {
+    if (!selectedExamAttempt || !selectedExamAttempt.exam) return;
+    
+    const questions = selectedExamAttempt.exam.questions;
+    const answers = selectedExamAttempt.answers || [];
+    
+    let rawScore = 0;
+    let totalPts = 0;
+    
+    questions.forEach((q: any, i: number) => {
+      const type = q.type || "multiple_choice";
+      const pts = q.points || 1;
+      totalPts += pts;
+      const ans = answers[i];
+      
+      if (type === "multiple_choice" || type === "true_false") {
+        if (ans !== undefined && ans !== null && Number(ans) === q.correct_index) {
+          rawScore += pts;
+        }
+      } else if (type === "short_answer") {
+        const normalizeText = (txt: string) => txt.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").replace(/\s{2,}/g, " ").trim().toLowerCase();
+        const accepted = (q.accepted_answers || []).map(normalizeText).filter(Boolean);
+        if (q.correct_answer) accepted.push(normalizeText(q.correct_answer));
+        if (q.answer) accepted.push(normalizeText(q.answer));
+        if (typeof ans === "string" && ans.trim() && accepted.includes(normalizeText(ans))) {
+          rawScore += pts;
+        }
+      }
+    });
+
+    const maxScore = selectedExamAttempt.exam.max_score || 100;
+    let finalScore = 0;
+    if (totalPts > 0) {
+      if (maxScore === 10) finalScore = parseFloat(((rawScore / totalPts) * 10).toFixed(1));
+      else if (maxScore === 100) finalScore = Math.round((rawScore / totalPts) * 100);
+      else finalScore = Math.round((rawScore / totalPts) * maxScore);
+    }
+    
+    setExamScore(finalScore.toString());
+    toast({ title: 'Đã tính toán lại điểm', description: `Điểm tự động mới: ${finalScore}/${maxScore}. Hãy bấm "Lưu điểm" để cập nhật.` });
   };
 
   const handleGradeExamAttempt = async () => {
@@ -1096,12 +1138,17 @@ const TeacherSubmissions = () => {
             );
           })()}
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl" onClick={() => setExamGradingDialogOpen(false)}>Hủy</Button>
-            <Button onClick={handleGradeExamAttempt} disabled={examGrading} className="rounded-xl font-bold bg-purple-600 hover:bg-purple-700 text-white">
-              {examGrading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              Lưu Điểm & Nhận Xét
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="outline" className="rounded-xl border-dashed border-blue-400 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20" onClick={handleAutoRegrade}>
+              <RotateCcw className="w-4 h-4 mr-1" /> Chấm lại điểm (Theo cấu trúc đề hiện tại)
             </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="rounded-xl" onClick={() => setExamGradingDialogOpen(false)}>Hủy</Button>
+              <Button onClick={handleGradeExamAttempt} disabled={examGrading} className="rounded-xl font-bold bg-purple-600 hover:bg-purple-700 text-white">
+                {examGrading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+                Lưu Điểm & Nhận Xét
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
