@@ -140,6 +140,11 @@ const AttendanceStats = ({ initialStatusFilter = 'all' }: AttendanceStatsProps) 
 
       if (error) throw error;
 
+      const normalizedAttendanceData = (attendanceData || []).map(a => ({
+        ...a,
+        status: a.status === 'excused_absence' ? 'excused' : a.status
+      }));
+
       // Fetch students in class
       const { data: classStudents } = await supabase
         .from('class_students')
@@ -163,7 +168,7 @@ const AttendanceStats = ({ initialStatusFilter = 'all' }: AttendanceStatsProps) 
 
       studentIds.forEach(studentId => {
         const profile = profiles?.find(p => p.user_id === studentId);
-        const studentRecords = attendanceData?.filter(a => a.student_id === studentId) || [];
+        const studentRecords = normalizedAttendanceData.filter(a => a.student_id === studentId);
         
         const present_count = studentRecords.filter(r => r.status === 'present').length;
         const absent_count = studentRecords.filter(r => r.status === 'absent').length;
@@ -191,10 +196,10 @@ const AttendanceStats = ({ initialStatusFilter = 'all' }: AttendanceStatsProps) 
 
       // Store all attendance data for charts
       setAllAttendanceData(
-        attendanceData?.map(a => ({
+        normalizedAttendanceData.map(a => ({
           session_date: a.session_date,
           status: a.status
-        })) || []
+        }))
       );
 
       // Calculate class-wide stats

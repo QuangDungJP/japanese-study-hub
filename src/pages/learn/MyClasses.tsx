@@ -288,7 +288,7 @@ const MyClasses = () => {
         class_id: selectedClass.id,
         student_id: user.id,
         session_date: selectedSessionToAbsence.session_date,
-        status: 'excused_absence',
+        status: 'excused',
         notes: `Báo vắng: ${absenceReason.trim() || 'Có việc bận cá nhân'}`
       });
 
@@ -721,7 +721,7 @@ const MyClasses = () => {
                                 <Play className="w-3.5 h-3.5 fill-current" /> Xem Record Video
                               </Button>
                             )}
-                            {studentAttendance.some(a => a.session_date === session.session_date && a.status === 'excused_absence') ? (
+                            {studentAttendance.some(a => a.session_date === session.session_date && a.status === 'excused') ? (
                               <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs font-semibold">
                                 Đã báo vắng
                               </Badge>
