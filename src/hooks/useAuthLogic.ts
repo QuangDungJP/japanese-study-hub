@@ -41,7 +41,8 @@ export function useAuthLogic() {
     setErrors({});
     if (!checkRateLimit()) return false;
 
-    const result = loginSchema.safeParse({ email, password });
+    const trimmedEmail = email.trim();
+    const result = loginSchema.safeParse({ email: trimmedEmail, password });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach((e) => { fieldErrors[e.path[0] as string] = e.message; });
@@ -51,7 +52,7 @@ export function useAuthLogic() {
 
     setLoading(true);
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(trimmedEmail, password);
       if (error) {
         const msg = error.message.includes('Invalid login')
           ? 'Email hoặc mật khẩu không đúng'

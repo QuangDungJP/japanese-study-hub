@@ -58,6 +58,8 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
             value={email} 
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Nhập địa chỉ email của bạn"
+            autoCapitalize="none"
+            autoCorrect="off"
             className="h-12 bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-slate-600 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent rounded-xl transition-all duration-200 text-base" 
           />
           {errors.email && (

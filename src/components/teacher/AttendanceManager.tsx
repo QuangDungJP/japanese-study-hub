@@ -53,6 +53,7 @@ interface AttendanceRecord {
   status: 'present' | 'absent' | 'late' | 'excused';
   notes: string;
   existing_id?: string | null;
+  original_status?: 'present' | 'absent' | 'late' | 'excused';
 }
 
 const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerProps) => {
@@ -217,7 +218,8 @@ const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerPro
           student_name: profile?.full_name || 'N/A',
           status: (existing?.status as AttendanceRecord['status']) || 'absent',
           notes: existing?.notes || '',
-          existing_id: existing?.id
+          existing_id: existing?.id,
+          original_status: (existing?.status as AttendanceRecord['status']) || 'absent',
         };
       });
 
@@ -245,17 +247,20 @@ const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerPro
       for (const record of attendance) {
         if (record.existing_id) {
           // Update existing
+          const updateData: any = {
+            status: record.status,
+            notes: record.notes,
+            marked_by: user?.id,
+            session_id: selectedSessionId || null,
+          };
+          if (record.status !== record.original_status) {
+            updateData.check_in_time = record.status === 'present' || record.status === 'late' 
+              ? new Date().toISOString() 
+              : null;
+          }
           await supabase
             .from('attendance')
-            .update({
-              status: record.status,
-              notes: record.notes,
-              marked_by: user?.id,
-              session_id: selectedSessionId || null,
-              check_in_time: record.status === 'present' || record.status === 'late' 
-                ? new Date().toISOString() 
-                : null
-            })
+            .update(updateData)
             .eq('id', record.existing_id);
         } else {
           // Insert new
@@ -276,10 +281,12 @@ const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerPro
         }
 
         // Auto-award XP & update streak for attending students
-        if (record.status === 'present') {
-          await awardUserXpAndStreak(record.student_id, 20, 'attendance_present');
-        } else if (record.status === 'late') {
-          await awardUserXpAndStreak(record.student_id, 10, 'attendance_late');
+        if (!record.existing_id || (record.existing_id && record.original_status !== 'present' && record.original_status !== 'late')) {
+          if (record.status === 'present') {
+            await awardUserXpAndStreak(record.student_id, 20, 'attendance_present');
+          } else if (record.status === 'late') {
+            await awardUserXpAndStreak(record.student_id, 10, 'attendance_late');
+          }
         }
       }
       toast.success('Đã lưu điểm danh & tự động cộng XP, Streak cho học viên!');
@@ -595,16 +602,16 @@ const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerPro
                       key={record.student_id}
                       className="flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-lg bg-muted/50"
                     >
-                      <div className="flex-1">
+                      <div className="flex-1 flex justify-between items-center md:block">
                         <p className="font-medium">{record.student_name}</p>
-                        {getStatusBadge(record.status)}
+                        <div className="md:mt-1">{getStatusBadge(record.status)}</div>
                       </div>
-                      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+                      <div className="flex flex-col md:flex-row gap-3 md:items-center w-full md:w-auto">
                         <Select 
                           value={record.status} 
                           onValueChange={(value) => updateAttendance(record.student_id, 'status', value)}
                         >
-                          <SelectTrigger className="w-[140px]">
+                          <SelectTrigger className="w-full md:w-[140px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
