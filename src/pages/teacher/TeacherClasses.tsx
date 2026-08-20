@@ -242,7 +242,8 @@ const TeacherClasses = () => {
     start_time: '18:00',
     meet_link: '',
     notes: '',
-    record_url: ''
+    record_url: '',
+    record_thumbnail_url: ''
   });
   const [uploadingRecord, setUploadingRecord] = useState(false);
   const [playingVideoRecord, setPlayingVideoRecord] = useState<{ url: string; title: string } | null>(null);
@@ -1332,7 +1333,7 @@ const TeacherClasses = () => {
 
   const openCreateSessionDialog = () => {
     setEditingSession(null);
-    setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '', record_url: '' });
+    setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '', record_url: '', record_thumbnail_url: '' });
     setIsSessionDialogOpen(true);
   };
 
@@ -1343,13 +1344,19 @@ const TeacherClasses = () => {
       const match = session.notes.match(/\[RECORD_URL:\s*([^\s\]]+)\]/i);
       if (match) recUrl = match[1];
     }
+    let thumbUrl = '';
+    if (session.notes) {
+      const thumbMatch = session.notes.match(/\[RECORD_THUMBNAIL_URL:\s*([^\s\]]+)\]/i);
+      if (thumbMatch) thumbUrl = thumbMatch[1];
+    }
     setSessionFormData({
       topic: session.topic || '',
       session_date: session.session_date,
       start_time: session.start_time,
       meet_link: session.meet_link || '',
-      notes: session.notes ? session.notes.replace(/\[RECORD_URL:\s*[^\s\]]+\]/gi, '').trim() : '',
-      record_url: recUrl
+      notes: session.notes ? session.notes.replace(/\[RECORD_URL:\s*[^\s\]]+\]/gi, '').replace(/\[RECORD_THUMBNAIL_URL:\s*[^\s\]]+\]/gi, '').trim() : '',
+      record_url: recUrl,
+      record_thumbnail_url: thumbUrl
     });
     setIsSessionDialogOpen(true);
   };
@@ -1402,13 +1409,18 @@ const TeacherClasses = () => {
   const handleCreateSession = async () => {
     if (!selectedClass) return;
     try {
+      let finalNotes = sessionFormData.notes || '';
+      if (sessionFormData.record_thumbnail_url) {
+        finalNotes = (finalNotes ? finalNotes + '\n' : '') + `[RECORD_THUMBNAIL_URL: ${sessionFormData.record_thumbnail_url}]`;
+      }
+
       const payload: any = {
         class_id: selectedClass.id,
         topic: sessionFormData.topic,
         session_date: sessionFormData.session_date,
         start_time: sessionFormData.start_time,
         meet_link: sessionFormData.meet_link || null,
-        notes: sessionFormData.notes || null,
+        notes: finalNotes || null,
         record_url: sessionFormData.record_url || null,
         status: 'scheduled'
       };
@@ -1433,7 +1445,7 @@ const TeacherClasses = () => {
       toast({ title: 'Thành công', description: editingSession ? 'Đã cập nhật buổi học' : 'Đã tạo buổi học mới' });
       setIsSessionDialogOpen(false);
       setEditingSession(null);
-      setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '', record_url: '' });
+      setSessionFormData({ topic: '', session_date: '', start_time: '18:00', meet_link: '', notes: '', record_url: '', record_thumbnail_url: '' });
       fetchClassroomDetails(selectedClass.id);
     } catch (err: any) {
       toast({ title: 'Lỗi', description: err.message || 'Không thể lưu buổi học', variant: 'destructive' });
@@ -2299,9 +2311,10 @@ const TeacherClasses = () => {
                         >
                           {(() => {
                             const ytMatch = recUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
-                            const thumbUrl = ytMatch 
+                            const notesThumb = session.notes?.match(/\[RECORD_THUMBNAIL_URL:\s*([^\s\]]+)\]/i)?.[1];
+                            const thumbUrl = notesThumb || (ytMatch 
                               ? `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`
-                              : selectedClass?.cover_image_url || selectedClass?.thumbnail_url || '/img/qd-team-hero.png';
+                              : selectedClass?.cover_image_url || selectedClass?.thumbnail_url || '/img/qd-team-hero.png');
                             
                             return (
                               <>
@@ -3064,16 +3077,17 @@ const TeacherClasses = () => {
             </div>
 
             {/* Record Video URL & File Upload Section */}
-            <div className="space-y-2 p-3 bg-purple-500/5 rounded-xl border border-purple-500/20">
-              <Label className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
-                <Video className="w-4 h-4 text-purple-600" /> Video Record Ghi Hình Sau Buổi Học
+            <div className="space-y-4 p-4 bg-purple-500/5 rounded-2xl border border-purple-500/20 shadow-sm">
+              <Label className="font-extrabold text-purple-700 dark:text-purple-300 flex items-center gap-2 text-base">
+                <Video className="w-5 h-5 text-purple-600" /> Cài đặt Record Video Ghi Hình
               </Label>
-              <div className="space-y-2">
+              <div className="space-y-3 bg-background p-3 rounded-xl border">
+                <Label className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">Đường dẫn Video (Google Drive/YouTube/Vimeo...)</Label>
                 <Input
                   value={sessionFormData.record_url}
                   onChange={(e) => setSessionFormData({ ...sessionFormData, record_url: e.target.value })}
-                  placeholder="Dán link Google Drive video, YouTube, Vimeo hoặc file MP4..."
-                  className="bg-background"
+                  placeholder="Dán link hoặc Upload file video MP4..."
+                  className="bg-card font-medium"
                 />
                 <div className="flex items-center gap-2">
                   <Input
@@ -3084,16 +3098,31 @@ const TeacherClasses = () => {
                       const file = e.target.files?.[0];
                       if (file) handleUploadSessionRecord(file);
                     }}
-                    className="text-xs bg-background flex-1 cursor-pointer"
+                    className="text-xs bg-background flex-1 cursor-pointer h-9"
                   />
                   {uploadingRecord && (
-                    <span className="text-xs text-purple-600 font-bold animate-pulse shrink-0">
-                      Đang tải video...
+                    <span className="text-xs text-purple-600 font-bold animate-pulse shrink-0 flex items-center gap-1">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang tải...
                     </span>
                   )}
                 </div>
+              </div>
+              
+              <div className="space-y-3 bg-background p-3 rounded-xl border">
+                <Label className="font-semibold text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Image className="w-4 h-4 text-primary" /> Thumbnail Video Siêu Đẹp (Tùy chọn)
+                </Label>
+                <MediaUploader
+                  value={sessionFormData.record_thumbnail_url}
+                  onChange={(url) => setSessionFormData({ ...sessionFormData, record_thumbnail_url: url })}
+                  accept="image"
+                  folder="lesson-thumbnails"
+                  placeholder="Tải ảnh Thumbnail hoặc chọn từ Thư viện ảnh (Media Library)"
+                  aspectRatio="banner"
+                  className="bg-card border-dashed"
+                />
                 <p className="text-[11px] text-muted-foreground">
-                  💡 Học viên & Giáo viên có thể xem trực tiếp video record buổi học với đầy đủ tính năng tua video, chuyển tốc độ ngay trên website.
+                  💡 Thumbnail sẽ được hiển thị trên thẻ (card) Record Video, làm cho kho video lớp học trở nên sinh động và chuyên nghiệp hơn. Nếu dùng link YouTube, ảnh sẽ tự động được lấy.
                 </p>
               </div>
             </div>
