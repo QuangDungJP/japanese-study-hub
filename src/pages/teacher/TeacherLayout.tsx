@@ -26,6 +26,7 @@ const navSections = [
     label: 'Quản lý Đào tạo',
     items: [
       { name: 'Lớp học Classroom', href: '/teacher/classes', icon: Users },
+      { name: 'Phòng thi ảo JLPT', href: '/teacher/mock-exams', icon: FileText },
       { name: 'Kho bài giảng mẫu', href: '/teacher/lessons', icon: BookOpen },
     ],
   },

@@ -162,24 +162,69 @@ export default function JLPTExamRunner() {
     try {
       const answersArr = exam.questions.map((_: any, i: number) => answers[i] !== undefined ? answers[i] : null);
       
-      // Calculate scores
-      let correct = 0;
+      // Calculate scores per section
+      let vocabCorrect = 0, readingCorrect = 0, listeningCorrect = 0;
+      let vocabTotal = 0, readingTotal = 0, listeningTotal = 0;
+
       exam.questions.forEach((q: any, i: number) => {
-        if (answers[i] !== undefined && answers[i] === q.correct_index) correct++;
+        const isCorrect = answers[i] !== undefined && answers[i] === q.correct_index;
+        if (sections.vocab.some(vq => vq.id === q.id || vq === q)) {
+          vocabTotal++; if (isCorrect) vocabCorrect++;
+        } else if (sections.reading.some(rq => rq.id === q.id || rq === q)) {
+          readingTotal++; if (isCorrect) readingCorrect++;
+        } else if (sections.listening.some(lq => lq.id === q.id || lq === q)) {
+          listeningTotal++; if (isCorrect) listeningCorrect++;
+        }
       });
       
-      const score = Math.round((correct / exam.questions.length) * (exam.max_score || 180));
-      const passed = score >= (exam.passing_score || 90); // Simple pass logic
+      const level = exam.level || 'N4';
+      let scoreBreakdown: any = {};
+      let totalScore = 0;
+      let passed = false;
+      const passTotal = exam.passing_score || 90;
+      
+      if (level === 'N4' || level === 'N5') {
+        // N4/N5: Knowledge (Vocab+Reading) 120pts, Listening 60pts
+        const knowledgePts = Math.round(((vocabCorrect + readingCorrect) / Math.max(1, vocabTotal + readingTotal)) * 120);
+        const listeningPts = Math.round((listeningCorrect / Math.max(1, listeningTotal)) * 60);
+        totalScore = knowledgePts + listeningPts;
+        const passKnowledge = knowledgePts >= 38;
+        const passListen = listeningPts >= 19;
+        passed = passKnowledge && passListen && (totalScore >= passTotal);
+        
+        scoreBreakdown = {
+          knowledge: { score: knowledgePts, max: 120, passed: passKnowledge, min: 38, name: "Kiến thức NN & Đọc hiểu" },
+          listening: { score: listeningPts, max: 60, passed: passListen, min: 19, name: "Nghe hiểu" }
+        };
+      } else {
+        // N1/N2/N3: Vocab 60, Reading 60, Listening 60
+        const vocabPts = Math.round((vocabCorrect / Math.max(1, vocabTotal)) * 60);
+        const readingPts = Math.round((readingCorrect / Math.max(1, readingTotal)) * 60);
+        const listeningPts = Math.round((listeningCorrect / Math.max(1, listeningTotal)) * 60);
+        totalScore = vocabPts + readingPts + listeningPts;
+        
+        const passV = vocabPts >= 19;
+        const passR = readingPts >= 19;
+        const passL = listeningPts >= 19;
+        passed = passV && passR && passL && (totalScore >= passTotal);
+        
+        scoreBreakdown = {
+          vocab: { score: vocabPts, max: 60, passed: passV, min: 19, name: "Từ vựng/Ngữ pháp" },
+          reading: { score: readingPts, max: 60, passed: passR, min: 19, name: "Đọc hiểu" },
+          listening: { score: listeningPts, max: 60, passed: passL, min: 19, name: "Nghe hiểu" }
+        };
+      }
       
       await supabase.from("exam_attempts").update({
         answers: answersArr,
         status: "submitted",
-        score,
+        score: totalScore,
         total: exam.max_score || 180,
+        metadata: { scoreBreakdown },
         submitted_at: new Date().toISOString()
       }).eq("id", attemptId);
       
-      setResult({ score, total: exam.max_score || 180, passed });
+      setResult({ score: totalScore, total: exam.max_score || 180, passed, breakdown: scoreBreakdown, level });
     } catch (err) {
       toast({ title: "Lỗi nộp bài", variant: "destructive" });
     } finally {
@@ -187,26 +232,60 @@ export default function JLPTExamRunner() {
     }
   };
 
-  if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
-  if (locked) return <div className="p-12 text-center text-red-500 font-bold">{locked}</div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950"><Loader2 className="w-10 h-10 animate-spin text-zinc-400" /></div>;
+  if (locked) return <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950"><div className="p-12 text-center text-red-500 font-bold bg-white dark:bg-zinc-900 rounded-3xl shadow-xl">{locked}</div></div>;
 
   if (result) {
     return (
-      <div className="max-w-2xl mx-auto mt-12">
-        <Card className="text-center p-8 border-2 border-primary/50 shadow-xl">
-          <CheckCircle2 className="w-20 h-20 text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-3xl font-extrabold mb-2">Đã Nộp Bài Thành Công</h2>
-          <p className="text-xl mb-6">Kết quả mô phỏng JLPT</p>
-          <div className="bg-muted p-6 rounded-xl mb-6">
-            <p className="text-5xl font-black text-primary mb-2">{result.score} / {result.total}</p>
-            <Badge className={result.passed ? "bg-green-500" : "bg-red-500"}>
-              {result.passed ? "ĐẠT (PASS)" : "TRƯỢT (FAIL)"}
-            </Badge>
-          </div>
-          <Button onClick={() => navigate("/learn/mock-exams")} className="w-full">
-            Quay lại Phòng Thi Ảo
-          </Button>
-        </Card>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          <Card className="p-8 md:p-12 border-0 shadow-2xl rounded-[2rem] bg-white dark:bg-zinc-900 relative overflow-hidden">
+            <div className={`absolute top-0 left-0 w-full h-3 ${result.passed ? 'bg-emerald-500' : 'bg-red-500'}`} />
+            
+            <div className="text-center space-y-4 mb-10">
+              <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6 ${result.passed ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                {result.passed ? <CheckCircle2 className="w-12 h-12" /> : <AlertTriangle className="w-12 h-12" />}
+              </div>
+              <h2 className="text-4xl font-black text-zinc-900 dark:text-zinc-100">
+                {result.passed ? "CHÚC MỪNG BẠN ĐÃ ĐỖ!" : "THẬT ĐÁNG TIẾC, BẠN CHƯA ĐẠT!"}
+              </h2>
+              <p className="text-xl text-zinc-500 dark:text-zinc-400">Kết quả thi thử JLPT {result.level}</p>
+            </div>
+
+            <div className="bg-zinc-50 dark:bg-zinc-950 p-8 rounded-3xl mb-8 border border-zinc-100 dark:border-zinc-800 text-center">
+              <p className="text-7xl font-black tracking-tighter text-zinc-900 dark:text-zinc-100 mb-2">
+                {result.score}<span className="text-4xl text-zinc-400">/180</span>
+              </p>
+              <p className="text-zinc-500 font-medium">Điểm đỗ yêu cầu: {exam.passing_score}</p>
+            </div>
+
+            <div className="space-y-4 mb-10">
+              <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-2">Chi tiết từng phần thi (Có điểm liệt)</h3>
+              {Object.entries(result.breakdown).map(([key, part]: [string, any]) => (
+                <div key={key} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 gap-4">
+                  <div className="flex-1">
+                    <p className="font-bold text-zinc-800 dark:text-zinc-200">{part.name}</p>
+                    <p className="text-xs text-zinc-500 mt-1">Điểm liệt: dưới {part.min}</p>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className={`text-2xl font-black ${!part.passed ? 'text-red-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                        {part.score}<span className="text-base font-medium text-zinc-400">/{part.max}</span>
+                      </p>
+                    </div>
+                    <Badge variant={part.passed ? "outline" : "destructive"} className={part.passed ? "bg-emerald-50 text-emerald-700 border-emerald-200" : ""}>
+                      {part.passed ? "Đạt" : "Điểm liệt"}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button onClick={() => navigate("/learn/mock-exams")} className="w-full h-14 text-lg rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 font-bold transition-all">
+              Quay lại sảnh chờ
+            </Button>
+          </Card>
+        </div>
       </div>
     );
   }

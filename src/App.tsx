@@ -186,6 +186,7 @@ const App = () => (
                 <Route index element={<TeacherDashboard />} />
                 <Route path="lessons" element={<TeacherLessons />} />
                 <Route path="classes" element={<TeacherClasses />} />
+                <Route path="mock-exams" element={<AdminMockExams />} />
                 <Route path="submissions" element={<TeacherSubmissions />} />
                 <Route path="meeting" element={<TeacherZoom />} />
                 <Route path="zoom" element={<TeacherZoom />} />

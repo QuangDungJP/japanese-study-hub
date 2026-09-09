@@ -4,7 +4,7 @@ import {
   BookOpen, Mic, PenTool, Headphones, LayoutDashboard,
   BookText, Trophy, Video, GraduationCap, Calendar,
   ChevronDown, ChevronRight, Dumbbell, Settings, User, Building, Bell,
-  Zap, Target, Sparkles, ArrowRight, ShoppingBag
+  Zap, Target, Sparkles, ArrowRight, ShoppingBag, FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
