@@ -20,10 +20,11 @@ import { getSavedTheme } from '@/lib/themeUtils';
 
 const allNavigation = [
   { name: 'Bảng điều khiển', href: '/learn', icon: LayoutDashboard, key: 'dashboard' },
-  { name: 'Khóa học của tôi', href: '/learn/courses', icon: BookOpen, key: 'courses' },
+  { name: 'Khóa học', href: '/learn/courses', icon: BookOpen, key: 'courses' },
+  { name: 'Phòng thi ảo', href: '/learn/mock-exams', icon: FileText, key: 'mock_exams', badge: 'Mới' },
+  { name: 'Zoom Meeting', href: '/learn/zoom', icon: Video, key: 'zoom' },
   { name: 'Lớp học của tôi', href: '/learn/my-classes', icon: Building, key: 'my_classes' },
   { name: 'Thông báo', href: '/learn/notifications', icon: Bell, key: 'notifications' },
-  { name: 'Phòng học Meeting', href: '/learn/zoom', icon: Video, key: 'zoom' },
   { name: 'Lịch học', href: '/learn/calendar', icon: Calendar, key: 'calendar' },
   { name: 'Thành tích & BXH', href: '/learn/achievements', icon: Trophy, key: 'achievements' },
   { name: '🛒 Cửa Hàng & Kho Đồ', href: '/learn/store', icon: ShoppingBag, key: 'store' },

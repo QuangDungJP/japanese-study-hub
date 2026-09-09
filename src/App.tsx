@@ -38,6 +38,8 @@ import Lessons from "./pages/learn/Lessons";
 import LessonViewer from "./pages/learn/LessonViewer";
 import Exams from "./pages/learn/Exams";
 import ExamRunner from "./pages/learn/ExamRunner";
+import VirtualExamRoom from "./pages/learn/VirtualExamRoom";
+import JLPTExamRunner from "./pages/learn/JLPTExamRunner";
 import StudentNotifications from "./pages/learn/StudentNotifications";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -59,6 +61,7 @@ import AdminContactForm from "./pages/admin/AdminContactForm";
 import AdminFAQ from "./pages/admin/AdminFAQ";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminTeachers from "./pages/admin/AdminTeachers";
+import AdminMockExams from "./pages/admin/AdminMockExams";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import TeacherLayout from "./pages/teacher/TeacherLayout";
@@ -135,6 +138,8 @@ const App = () => (
                 <Route path="lessons/:id" element={<LessonViewer />} />
                 <Route path="exams" element={<Exams />} />
                 <Route path="exams/:id" element={<ExamRunner />} />
+                <Route path="mock-exams" element={<VirtualExamRoom />} />
+                <Route path="mock-exams/:id" element={<JLPTExamRunner />} />
                 <Route path="reading" element={<Reading />} />
                 <Route path="speaking" element={<Speaking />} />
                 <Route path="writing" element={<Writing />} />
@@ -163,6 +168,7 @@ const App = () => (
                 <Route path="courses" element={<AdminCourses />} />
                 <Route path="classes" element={<TeacherClasses />} />
                 <Route path="lessons" element={<AdminLessons />} />
+                <Route path="mock-exams" element={<AdminMockExams />} />
                 <Route path="vocabulary" element={<AdminVocabulary />} />
                 <Route path="finance" element={<AdminFinance />} />
                 <Route path="orders" element={<AdminOrders />} />
