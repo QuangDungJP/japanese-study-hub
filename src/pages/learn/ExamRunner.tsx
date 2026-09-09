@@ -184,7 +184,7 @@ function gradeQuestion(q: Question, answer: number | string | undefined | null):
 // ── Main Component ─────────────────────────────────────────────────────────────
 const ExamRunner = () => {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -520,74 +520,88 @@ const ExamRunner = () => {
 
   // ── Init exam & attempt ─────────────────────────────────────────────────────
   useEffect(() => {
-    const init = async () => {
-      if (!id || !user) return;
-      setLoading(true);
+    if (authLoading) return;
 
-      const { data, error } = await supabase.from("exams").select("*").eq("id", id).maybeSingle();
-      if (error || !data) {
-        toast({ title: "Không tìm thấy bài kiểm tra", variant: "destructive" });
-        navigate("/learn");
+    const init = async () => {
+      if (!id) return;
+      if (!user) {
+        toast({ title: "Yêu cầu đăng nhập", description: "Vui lòng đăng nhập để vào phòng thi.", variant: "destructive" });
+        navigate("/auth");
         return;
       }
-      const ex = data as unknown as Exam;
-
-      if (!ex.is_published) {
-        setLocked("Bài kiểm tra chưa được công bố."); setExam(ex); setLoading(false); return;
-      }
-      const now = Date.now();
-      if (ex.starts_at && new Date(ex.starts_at).getTime() > now) {
-        setLocked(`Bài kiểm tra bắt đầu lúc ${new Date(ex.starts_at).toLocaleString("vi-VN")}.`);
-        setExam(ex); setLoading(false); return;
-      }
-      if (ex.ends_at && ex.lock_after_end && new Date(ex.ends_at).getTime() < now) {
-        setLocked("Bài kiểm tra đã đóng."); setExam(ex); setLoading(false); return;
-      }
-
-      const { data: attempts } = await supabase
-        .from("exam_attempts").select("id,status,started_at")
-        .eq("exam_id", id).eq("student_id", user.id)
-        .order("started_at", { ascending: false });
-
-      const submitted = (attempts || []).filter((a: any) => a.status !== "in_progress");
-      const isUnlimited = !ex.max_attempts || ex.max_attempts <= 0;
-      if (!isUnlimited && submitted.length >= (ex.max_attempts || 1)) {
-        setLocked("Bạn đã dùng hết số lượt làm bài."); setExam(ex); setLoading(false); return;
-      }
-
-      const inProgress = (attempts || []).find((a: any) => a.status === "in_progress");
-      let aid = inProgress?.id;
-      let start = now;
-
-      if (inProgress) {
-        const { data: full } = await supabase.from("exam_attempts").select("*").eq("id", aid).maybeSingle();
-        if (full?.started_at) start = new Date(full.started_at).getTime();
-        if (full?.answers) {
-          const map: Record<number, number | string> = {};
-          (full.answers as any[]).forEach((v, i) => { if (v !== null && v !== undefined) map[i] = v; });
-          setAnswers(map);
+      setLoading(true);
+      
+      try {
+        const { data, error } = await supabase.from("exams").select("*").eq("id", id).maybeSingle();
+        if (error || !data) {
+          toast({ title: "Không tìm thấy bài kiểm tra", variant: "destructive" });
+          navigate("/learn");
+          return;
         }
-        if (full?.student_comment) setComment(full.student_comment);
-        if (full?.video_url) setVideoUrl(full.video_url);
-        if (full?.attachment_url) setAttachment({ url: full.attachment_url, name: full.attachment_name || "Tệp đính kèm" });
-        if (full?.violations) { violationsRef.current = full.violations; setViolations(full.violations); }
-        toast({ title: "Tiếp tục bài làm", description: "Câu trả lời trước đó đã được khôi phục." });
-      } else {
-        const { data: ins, error: insErr } = await supabase
-          .from("exam_attempts")
-          .insert({ exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString() })
-          .select("id").single();
-        if (insErr) {
-          toast({ title: "Lỗi khởi tạo", description: insErr.message, variant: "destructive" });
-          setLoading(false); return;
-        }
-        aid = ins.id;
-      }
+        const ex = data as unknown as Exam;
 
-      setExam(ex); setAttemptId(aid!); setStartedAt(start); setLoading(false);
+        if (!ex.is_published) {
+          setLocked("Bài kiểm tra chưa được công bố."); setExam(ex); setLoading(false); return;
+        }
+        const now = Date.now();
+        if (ex.starts_at && new Date(ex.starts_at).getTime() > now) {
+          setLocked(`Bài kiểm tra bắt đầu lúc ${new Date(ex.starts_at).toLocaleString("vi-VN")}.`);
+          setExam(ex); setLoading(false); return;
+        }
+        if (ex.ends_at && ex.lock_after_end && new Date(ex.ends_at).getTime() < now) {
+          setLocked("Bài kiểm tra đã đóng."); setExam(ex); setLoading(false); return;
+        }
+
+        const { data: attempts } = await supabase
+          .from("exam_attempts").select("id,status,started_at")
+          .eq("exam_id", id).eq("student_id", user.id)
+          .order("started_at", { ascending: false });
+
+        const submitted = (attempts || []).filter((a: any) => a.status !== "in_progress");
+        const isUnlimited = !ex.max_attempts || ex.max_attempts <= 0;
+        if (!isUnlimited && submitted.length >= (ex.max_attempts || 1)) {
+          setLocked("Bạn đã dùng hết số lượt làm bài."); setExam(ex); setLoading(false); return;
+        }
+
+        const inProgress = (attempts || []).find((a: any) => a.status === "in_progress");
+        let aid = inProgress?.id;
+        let start = now;
+
+        if (inProgress) {
+          const { data: full } = await supabase.from("exam_attempts").select("*").eq("id", aid).maybeSingle();
+          if (full?.started_at) start = new Date(full.started_at).getTime();
+          if (full?.answers) {
+            const map: Record<number, number | string> = {};
+            const answersData = Array.isArray(full.answers) ? full.answers : Object.values(full.answers || {});
+            answersData.forEach((v, i) => { if (v !== null && v !== undefined) map[i] = v; });
+            setAnswers(map);
+          }
+          if (full?.student_comment) setComment(full.student_comment);
+          if (full?.video_url) setVideoUrl(full.video_url);
+          if (full?.attachment_url) setAttachment({ url: full.attachment_url, name: full.attachment_name || "Tệp đính kèm" });
+          if (full?.violations) { violationsRef.current = full.violations; setViolations(full.violations); }
+          toast({ title: "Tiếp tục bài làm", description: "Câu trả lời trước đó đã được khôi phục." });
+        } else {
+          const { data: ins, error: insErr } = await supabase
+            .from("exam_attempts")
+            .insert({ exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString() })
+            .select("id").single();
+          if (insErr) {
+            toast({ title: "Lỗi khởi tạo", description: insErr.message, variant: "destructive" });
+            setLoading(false); return;
+          }
+          aid = ins.id;
+        }
+
+        setExam(ex); setAttemptId(aid!); setStartedAt(start); setLoading(false);
+      } catch (err: any) {
+        console.error("Exam load error:", err);
+        toast({ title: "Lỗi kết nối", description: "Lỗi tải dữ liệu. Vui lòng thử lại.", variant: "destructive" });
+        setLoading(false);
+      }
     };
     init();
-  }, [id, user?.id]);
+  }, [id, user?.id, authLoading]);
 
   // ── Timer ───────────────────────────────────────────────────────────────────
   useEffect(() => {
