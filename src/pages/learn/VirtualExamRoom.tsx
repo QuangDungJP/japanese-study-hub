@@ -79,23 +79,33 @@ const VirtualExamRoom = () => {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
-      {/* Header Banner */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 p-8 md:p-12 text-white shadow-xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-2xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full -ml-20 -mb-20 blur-3xl pointer-events-none" />
+      {/* Premium Minimalist Header Banner */}
+      <div className="relative rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 md:p-12 shadow-sm">
+        {/* Subtle decorative elements */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-50 dark:bg-red-950/20 rounded-full -mr-[250px] -mt-[250px] opacity-70 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-zinc-50 dark:bg-zinc-800/50 rounded-full -ml-32 -mb-32 pointer-events-none" />
         
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-4 max-w-2xl">
-            <Badge className="bg-amber-400 text-amber-950 font-bold border-none px-3 py-1 shadow-sm">
-              <Sparkles className="w-4 h-4 mr-1.5" /> Tính năng mới
-            </Badge>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">Phòng Thi Ảo JLPT</h1>
-            <p className="text-white/80 text-lg leading-relaxed">
-              Trải nghiệm bài thi JLPT mô phỏng chân thực nhất với thời gian đếm ngược chuẩn, phân chia cấu trúc thi và hệ thống tính điểm liệt khắt khe như thi thật.
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-5 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-semibold">
+              <Sparkles className="w-4 h-4" />
+              <span>Chuyên sâu luyện thi JLPT</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+              Phòng Thi Ảo
+            </h1>
+            <p className="text-zinc-600 dark:text-zinc-400 text-lg leading-relaxed">
+              Trải nghiệm bài thi mô phỏng chân thực nhất. Cấu trúc đề thi, phân bổ thời gian và hệ thống chấm điểm liệt được mô phỏng 100% theo tiêu chuẩn JLPT thực tế.
             </p>
           </div>
-          <div className="hidden md:flex shrink-0 p-6 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 shadow-inner">
-            <Trophy className="w-24 h-24 text-amber-400 drop-shadow-md" />
+          <div className="hidden md:flex shrink-0">
+            {/* Elegant Torii gate or Japanese styling could go here. We'll use a clean icon composition */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-red-500 blur-3xl opacity-10 rounded-full" />
+              <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-red-50 to-white dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-center relative z-10">
+                <Trophy className="w-16 h-16 text-red-600 dark:text-red-500" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -154,59 +164,70 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
         const passed = bestAttempt && bestAttempt.score >= exam.passing_score;
 
         return (
-          <Card key={exam.id} className="overflow-hidden border border-border/50 hover:shadow-xl transition-all duration-300 group flex flex-col bg-card">
-            <div className="p-5 border-b bg-gradient-to-br from-primary/5 to-transparent relative">
-              <div className="flex justify-between items-start gap-4 mb-3">
-                <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-bold px-2 py-0.5 text-xs">
-                  {exam.level || 'JLPT'}
-                </Badge>
+          <Card key={exam.id} className="overflow-hidden border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all duration-300 group flex flex-col bg-white dark:bg-zinc-950 rounded-2xl">
+            <div className="p-6 border-b border-zinc-100 dark:border-zinc-900 relative">
+              <div className="flex justify-between items-start gap-4 mb-4">
+                <div className="flex gap-2 items-center">
+                  <Badge className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 border-none font-bold px-3 py-1 rounded-full text-xs">
+                    {exam.level || 'JLPT'}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs border-zinc-200 dark:border-zinc-800 text-zinc-500">
+                    Mô phỏng 100%
+                  </Badge>
+                </div>
                 {completedAttempts.length > 0 && (
-                  <Badge variant="outline" className={passed ? "bg-green-500/10 text-green-600 border-green-200" : "bg-red-500/10 text-red-600 border-red-200"}>
+                  <Badge variant="outline" className={passed ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800"}>
                     {passed ? 'Đã thi đỗ' : 'Thi trượt'}
                   </Badge>
                 )}
               </div>
-              <h3 className="font-extrabold text-xl text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+              <h3 className="font-bold text-xl text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                 {exam.title_vi}
               </h3>
-              <p className="text-muted-foreground text-sm mt-2 line-clamp-2">
+              <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-3 line-clamp-2 leading-relaxed">
                 {exam.description_vi || 'Đề thi thử đánh giá năng lực tiếng Nhật chuẩn JLPT.'}
               </p>
             </div>
             
-            <CardContent className="p-5 flex-1 space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground bg-muted/40 p-2 rounded-md">
-                  <Clock className="w-4 h-4 text-primary" />
-                  <span className="font-medium text-foreground">{exam.duration_minutes || 180} phút</span>
+            <CardContent className="p-6 flex-1 space-y-5 bg-zinc-50/50 dark:bg-zinc-900/20">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex flex-col gap-1 text-zinc-600 dark:text-zinc-400">
+                  <span className="text-xs uppercase tracking-wider font-semibold text-zinc-400">Thời gian</span>
+                  <div className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100 font-medium">
+                    <Clock className="w-4 h-4 text-zinc-400" />
+                    {exam.duration_minutes || 180} phút
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground bg-muted/40 p-2 rounded-md">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <span className="font-medium text-foreground">Điểm đỗ: {exam.passing_score}</span>
+                <div className="flex flex-col gap-1 text-zinc-600 dark:text-zinc-400">
+                  <span className="text-xs uppercase tracking-wider font-semibold text-zinc-400">Điểm đỗ</span>
+                  <div className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100 font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    {exam.passing_score}/{exam.max_score || 180}
+                  </div>
                 </div>
               </div>
 
               {bestAttempt && (
-                <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Kết quả cao nhất</p>
+                <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm mt-4">
+                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Kết quả cao nhất</p>
                   <div className="flex items-end gap-2">
-                    <span className="text-2xl font-extrabold text-foreground leading-none">{bestAttempt.score}</span>
-                    <span className="text-sm text-muted-foreground mb-0.5">/ {exam.max_score || 180} điểm</span>
+                    <span className="text-3xl font-black text-zinc-900 dark:text-zinc-100 leading-none">{bestAttempt.score}</span>
+                    <span className="text-sm font-medium text-zinc-500 mb-0.5">/ {exam.max_score || 180} điểm</span>
                   </div>
                 </div>
               )}
             </CardContent>
             
-            <div className="p-4 bg-muted/20 border-t flex items-center justify-between gap-3">
-              <span className="text-xs text-muted-foreground font-medium">
+            <div className="p-5 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-900 flex items-center justify-between gap-4">
+              <span className="text-sm text-zinc-500 font-medium">
                 {completedAttempts.length} lượt thi
               </span>
               <Button 
                 onClick={() => navigate(`/learn/mock-exams/${exam.id}`)}
-                className="gap-2 font-bold shadow-sm hover:shadow-md transition-all"
+                className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-xl px-6"
               >
-                <Play className="w-4 h-4 fill-current" /> 
-                {examAttempts.length > 0 ? 'Thi lại' : 'Vào thi ngay'}
+                <Play className="w-4 h-4 mr-2" /> 
+                {examAttempts.length > 0 ? 'Thi lại' : 'Vào thi'}
               </Button>
             </div>
           </Card>
