@@ -3,13 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Settings, Sparkles } from 'lucide-react';
+import { FileText, Plus, Settings, Sparkles, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageLoadingScreen from '@/components/shared/PageLoadingScreen';
+import AdminExamEditor from '@/components/admin/AdminExamEditor';
 
 export default function AdminMockExams() {
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingExam, setEditingExam] = useState<any | null>(null);
   const { toast } = useToast();
 
   const fetchExams = async () => {
@@ -50,12 +52,23 @@ export default function AdminMockExams() {
       });
 
       if (error) throw error;
-      toast({ title: 'Tạo đề thi thành công', description: 'Vui lòng cập nhật câu hỏi cho từng phần.' });
+      toast({ title: 'Tạo đề thi thành công', description: 'Vui lòng cấu hình đề thi mới tạo.' });
       fetchExams();
     } catch (err: any) {
       toast({ title: 'Lỗi tạo đề thi', description: err.message, variant: 'destructive' });
     }
   };
+
+  const handleDelete = async (id: string) => {
+    if(!window.confirm('Xóa vĩnh viễn đề thi này?')) return;
+    try {
+      await supabase.from('exams').delete().eq('id', id);
+      toast({ title: 'Xóa thành công' });
+      fetchExams();
+    } catch(e: any) {
+      toast({ title: 'Lỗi xóa đề thi', variant: 'destructive' });
+    }
+  }
 
   const handleSeedExam = async () => {
     if (!window.confirm("Hệ thống sẽ tạo tự động một đề thi N4 mẫu (gồm Từ vựng, Đọc hiểu, Nghe) để test. Tiếp tục?")) return;
@@ -79,6 +92,10 @@ export default function AdminMockExams() {
           id: crypto.randomUUID(), type: "multiple_choice", skill: "listening", text: "Nghe Audio và chọn đáp án đúng:",
           audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
           options: ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"], correct_index: 2, points: 10
+        },
+        {
+          id: crypto.randomUUID(), type: "audio_record", skill: "kaiwa", text: "[Kaiwa] Hãy giới thiệu về bản thân bạn bằng tiếng Nhật trong 1 phút.",
+          points: 10
         }
       ];
 
@@ -153,8 +170,11 @@ export default function AdminMockExams() {
                     <Badge variant={exam.is_published ? "default" : "secondary"}>
                       {exam.is_published ? "Đã xuất bản" : "Bản nháp"}
                     </Badge>
-                    <Button variant="outline" size="sm" className="gap-1 ml-4">
+                    <Button variant="outline" size="sm" onClick={() => setEditingExam(exam)} className="gap-1 ml-4">
                       <Settings className="w-4 h-4" /> Cấu hình đề
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(exam.id)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -163,6 +183,17 @@ export default function AdminMockExams() {
           )}
         </CardContent>
       </Card>
+
+      {editingExam && (
+        <AdminExamEditor 
+          exam={editingExam} 
+          onClose={() => setEditingExam(null)} 
+          onSaved={() => {
+            setEditingExam(null);
+            fetchExams();
+          }} 
+        />
+      )}
     </div>
   );
 }
