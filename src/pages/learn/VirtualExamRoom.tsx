@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { localMockExam } from '@/data/mockJlptExam';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -47,24 +48,39 @@ const VirtualExamRoom = () => {
 
       if (error) {
         console.error('Error fetching JLPT exams:', error);
-      } else {
-        setExams(examsData as any || []);
+      }
+      
+      const allExams = [localMockExam, ...(examsData as any || [])];
+      setExams(allExams);
 
-        if (examsData && examsData.length > 0) {
-          const examIds = examsData.map(e => e.id);
-          const { data: attemptsData } = await supabase
+      if (allExams.length > 0) {
+        const examIds = allExams.map(e => e.id).filter(id => !id.startsWith('mock-local'));
+        let attemptsData: any[] = [];
+        
+        if (examIds.length > 0) {
+          const { data } = await supabase
             .from('exam_attempts')
             .select('id, exam_id, score, total, status, submitted_at, time_spent_seconds')
             .in('exam_id', examIds)
             .eq('student_id', user.id);
-
-          const grouped: Record<string, any[]> = {};
-          (attemptsData || []).forEach(att => {
-            if (!grouped[att.exam_id]) grouped[att.exam_id] = [];
-            grouped[att.exam_id].push(att);
-          });
-          setAttempts(grouped);
+          attemptsData = data || [];
         }
+
+        // Local storage mock attempts for mock-local-1
+        const localAttemptsStr = localStorage.getItem(`mock_attempts_${user.id}`);
+        if (localAttemptsStr) {
+          try {
+            const localAttempts = JSON.parse(localAttemptsStr);
+            attemptsData = [...attemptsData, ...localAttempts];
+          } catch (e) {}
+        }
+
+        const grouped: Record<string, any[]> = {};
+        (attemptsData || []).forEach(att => {
+          if (!grouped[att.exam_id]) grouped[att.exam_id] = [];
+          grouped[att.exam_id].push(att);
+        });
+        setAttempts(grouped);
       }
 
       setLoading(false);

@@ -1,46 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-
-function loadEnv() {
-  try {
-    const envContent = readFileSync(resolve(process.cwd(), '.env'), 'utf-8');
-    envContent.split('\n').forEach(line => {
-      const match = line.match(/^([^=]+)=(.*)$/);
-      if (match) {
-        let val = match[2].trim();
-        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
-        if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
-        process.env[match[1].trim()] = val;
-      }
-    });
-  } catch (e) {
-    console.log('No .env file found');
-  }
-}
-loadEnv();
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase credentials in .env');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-const mockExamData = {
+export const localMockExam = {
+  id: "mock-local-1",
   title: "JLPT N4 Mock Exam (Full test - Real Data Sim)",
   title_vi: "Đề thi thử JLPT N4 - Mô phỏng đề thật",
   description_vi: "Đề thi thử đầy đủ 3 kỹ năng (Từ vựng/Chữ Hán, Đọc hiểu/Ngữ pháp, Nghe hiểu) theo cấu trúc chuẩn. Bạn có 105 phút để hoàn thành bài thi này.",
   exam_type: "jlpt_mock",
+  level: "N4",
   duration_minutes: 105,
   max_score: 180,
   passing_score: 90,
   is_published: true,
   questions: [
-    // --- VOCABULARY & KANJI ---
     {
       id: "q_v1",
       skill: "vocabulary",
@@ -62,8 +31,6 @@ const mockExamData = {
       options: ["帰ります", "寝ます", "起きます", "食べます"],
       correct_index: 1
     },
-    
-    // --- GRAMMAR & READING ---
     {
       id: "q_g1",
       skill: "grammar",
@@ -83,13 +50,11 @@ const mockExamData = {
       ],
       correct_index: 2
     },
-    
-    // --- LISTENING ---
     {
       id: "q_l1",
       skill: "listening",
       text: "問題６：音声をきいて、正しい答えを一つ選びなさい。",
-      audio_url: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg", // Dummy audio for testing
+      audio_url: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
       options: [
         "男の人は図書館へ行く。",
         "男の人は食堂へ行く。",
@@ -97,23 +62,13 @@ const mockExamData = {
         "男の人は教室で待つ。"
       ],
       correct_index: 1
+    },
+    // --- KAIWA ---
+    {
+      id: "q_k1",
+      skill: "kaiwa",
+      text: "[Giao tiếp - Kaiwa] \nTình huống: Bạn đang đi phỏng vấn xin việc bán thời gian tại một quán cà phê Nhật Bản.\n\nCâu hỏi: Hãy giới thiệu ngắn gọn về bản thân và lý do bạn muốn làm việc tại quán cà phê này trong vòng 1-2 phút.",
+      points: 20
     }
   ]
 };
-
-async function seedExam() {
-  console.log('Seeding mock exam...');
-  
-  const { data, error } = await supabase
-    .from('exams')
-    .insert([mockExamData])
-    .select('id, title_vi');
-
-  if (error) {
-    console.error('Error inserting exam:', error);
-  } else {
-    console.log('Successfully inserted exam:', data);
-  }
-}
-
-seedExam();

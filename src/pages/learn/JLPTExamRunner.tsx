@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { localMockExam } from '@/data/mockJlptExam';
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,13 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, AlertTriangle, Loader2, Play, BookOpen, Headphones, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Clock, AlertTriangle, Loader2, Play, BookOpen, Headphones, ShieldAlert, CheckCircle2, Mic, Square } from "lucide-react";
 import FormattedText from "@/components/shared/FormattedText";
 
-const SECTION_TIMERS = {
+const SECTION_TIMERS: Record<string, number> = {
   'vocab': 30 * 60,   // 30 mins
   'reading': 60 * 60, // 60 mins
-  'listening': 35 * 60 // 35 mins
+  'listening': 35 * 60, // 35 mins
+  'kaiwa': 15 * 60 // 15 mins for speaking
 };
 
 export default function JLPTExamRunner() {
@@ -28,17 +30,18 @@ export default function JLPTExamRunner() {
   const [submitting, setSubmitting] = useState(false);
   const [locked, setLocked] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<number, any>>({});
+  const [recordingId, setRecordingId] = useState<string | null>(null);
   
   // Section state
-  const [currentSection, setCurrentSection] = useState<'vocab' | 'reading' | 'listening'>('vocab');
+  const [currentSection, setCurrentSection] = useState<'vocab' | 'reading' | 'listening' | 'kaiwa'>('vocab');
   const [sectionElapsed, setSectionElapsed] = useState(0);
   const [sectionStartedAt, setSectionStartedAt] = useState<number>(Date.now());
   const [completedSections, setCompletedSections] = useState<string[]>([]);
   const [result, setResult] = useState<any>(null);
 
   // Grouped questions
-  const [sections, setSections] = useState<{ vocab: any[], reading: any[], listening: any[] }>({
-    vocab: [], reading: [], listening: []
+  const [sections, setSections] = useState<{ vocab: any[], reading: any[], listening: any[], kaiwa: any[] }>({
+    vocab: [], reading: [], listening: [], kaiwa: []
   });
 
   useEffect(() => {
@@ -53,11 +56,31 @@ export default function JLPTExamRunner() {
       setLoading(true);
       
       try {
-        const { data, error } = await supabase.from("exams").select("*").eq("id", id).maybeSingle();
-        if (error || !data) {
-          toast({ title: "Không tìm thấy đề thi", variant: "destructive" });
-          navigate("/learn/mock-exams");
-          return;
+        let data: any = null;
+        let attempts: any[] = [];
+        
+        if (id === 'mock-local-1') {
+          data = localMockExam;
+          const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
+          if (localStr) {
+             try { attempts = JSON.parse(localStr).filter((a: any) => a.exam_id === id); } catch(e){}
+          }
+        } else {
+          const res = await supabase.from("exams").select("*").eq("id", id).maybeSingle();
+          if (res.error || !res.data) {
+            toast({ title: "Không tìm thấy đề thi", variant: "destructive" });
+            navigate("/learn/mock-exams");
+            return;
+          }
+          data = res.data;
+          
+          const attemptsRes = await supabase
+            .from("exam_attempts")
+            .select("*")
+            .eq("exam_id", id)
+            .eq("student_id", user.id)
+            .order("started_at", { ascending: false });
+          attempts = attemptsRes.data || [];
         }
 
         if (!data.is_published) {
@@ -69,9 +92,10 @@ export default function JLPTExamRunner() {
         // Group questions
         const qs = data.questions || [];
         const grouped = {
-          vocab: qs.filter((q: any) => q.skill === 'vocabulary' || q.skill === 'kanji' || !q.skill),
+          vocab: qs.filter((q: any) => q.skill === 'vocabulary' || q.skill === 'kanji' || (!q.skill && !q.audio_url)),
           reading: qs.filter((q: any) => q.skill === 'reading' || q.skill === 'grammar'),
-          listening: qs.filter((q: any) => q.skill === 'listening' || q.audio_url)
+          listening: qs.filter((q: any) => q.skill === 'listening' || (q.audio_url && q.skill !== 'kaiwa')),
+          kaiwa: qs.filter((q: any) => q.skill === 'kaiwa' || q.type === 'audio_record')
         };
         
         // Ensure some questions exist
@@ -83,13 +107,6 @@ export default function JLPTExamRunner() {
         setExam(data);
 
         // Fetch or create attempt
-        const { data: attempts } = await supabase
-          .from("exam_attempts")
-          .select("*")
-          .eq("exam_id", id)
-          .eq("student_id", user.id)
-          .order("started_at", { ascending: false });
-
         const inProgress = (attempts || []).find((a: any) => a.status === "in_progress");
         
         if (inProgress) {
@@ -101,11 +118,21 @@ export default function JLPTExamRunner() {
             setAnswers(map);
           }
         } else {
-          const { data: ins } = await supabase
-            .from("exam_attempts")
-            .insert({ exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString() })
-            .select("id").single();
-          if (ins) setAttemptId(ins.id);
+          const newAttempt = { id: `attempt_${Date.now()}`, exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString() };
+          if (id === 'mock-local-1') {
+            const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
+            let allAtts = [];
+            if (localStr) try { allAtts = JSON.parse(localStr); } catch(e){}
+            allAtts.push(newAttempt);
+            localStorage.setItem(`mock_attempts_${user.id}`, JSON.stringify(allAtts));
+            setAttemptId(newAttempt.id);
+          } else {
+            const { data: ins } = await supabase
+              .from("exam_attempts")
+              .insert({ exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString() })
+              .select("id").single();
+            if (ins) setAttemptId(ins.id);
+          }
         }
 
         setLoading(false);
@@ -148,6 +175,10 @@ export default function JLPTExamRunner() {
       setSectionElapsed(0);
     } else if (currentSection === 'reading') {
       setCurrentSection('listening');
+      setSectionStartedAt(Date.now());
+      setSectionElapsed(0);
+    } else if (currentSection === 'listening' && sections.kaiwa.length > 0) {
+      setCurrentSection('kaiwa');
       setSectionStartedAt(Date.now());
       setSectionElapsed(0);
     } else {
@@ -215,14 +246,41 @@ export default function JLPTExamRunner() {
         };
       }
       
-      await supabase.from("exam_attempts").update({
-        answers: answersArr,
-        status: "submitted",
-        score: totalScore,
-        total: exam.max_score || 180,
-        metadata: { scoreBreakdown },
-        submitted_at: new Date().toISOString()
-      }).eq("id", attemptId);
+      if (sections.kaiwa.length > 0) {
+        let kaiwaMax = 0;
+        sections.kaiwa.forEach(q => kaiwaMax += (q.points || 10));
+        scoreBreakdown.kaiwa = { score: 'Pending', max: kaiwaMax, passed: true, min: 0, name: "Giao tiếp (Kaiwa)" };
+      }
+      
+      if (id === 'mock-local-1') {
+        const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
+        let allAtts = [];
+        if (localStr) try { allAtts = JSON.parse(localStr); } catch(e){}
+        const updatedAtts = allAtts.map(a => {
+          if (a.id === attemptId) {
+            return {
+              ...a,
+              answers: answersArr,
+              status: "submitted",
+              score: totalScore,
+              total: exam.max_score || 180,
+              metadata: { scoreBreakdown },
+              submitted_at: new Date().toISOString()
+            };
+          }
+          return a;
+        });
+        localStorage.setItem(`mock_attempts_${user.id}`, JSON.stringify(updatedAtts));
+      } else {
+        await supabase.from("exam_attempts").update({
+          answers: answersArr,
+          status: "submitted",
+          score: totalScore,
+          total: exam.max_score || 180,
+          metadata: { scoreBreakdown },
+          submitted_at: new Date().toISOString()
+        }).eq("id", attemptId);
+      }
       
       setResult({ score: totalScore, total: exam.max_score || 180, passed, breakdown: scoreBreakdown, level });
     } catch (err) {
@@ -322,8 +380,7 @@ export default function JLPTExamRunner() {
         </div>
       </div>
 
-      {/* Tabs representation (locked for simulation) */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Badge variant={currentSection === 'vocab' ? 'default' : completedSections.includes('vocab') ? 'outline' : 'secondary'} className="px-4 py-2 text-sm">
           Từ vựng & Chữ hán
         </Badge>
@@ -333,6 +390,11 @@ export default function JLPTExamRunner() {
         <Badge variant={currentSection === 'listening' ? 'default' : completedSections.includes('listening') ? 'outline' : 'secondary'} className="px-4 py-2 text-sm">
           Nghe hiểu
         </Badge>
+        {sections.kaiwa.length > 0 && (
+          <Badge variant={currentSection === 'kaiwa' ? 'default' : completedSections.includes('kaiwa') ? 'outline' : 'secondary'} className="px-4 py-2 text-sm">
+            Kaiwa (Giao tiếp)
+          </Badge>
+        )}
       </div>
 
       <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-200 dark:border-amber-900 flex gap-3 text-sm text-amber-800 dark:text-amber-200">
@@ -364,21 +426,54 @@ export default function JLPTExamRunner() {
                 )}
 
                 <div className="space-y-2 mt-4">
-                  {(q.options || []).map((opt: string, optIdx: number) => (
-                    <label 
-                      key={optIdx} 
-                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${ans === optIdx ? 'bg-primary/10 border-primary shadow-sm' : 'hover:bg-muted/50 border-border'}`}
-                    >
-                      <input 
-                        type="radio" 
-                        name={`q_${globalIdx}`} 
-                        checked={ans === optIdx}
-                        onChange={() => setAnswers(prev => ({ ...prev, [globalIdx]: optIdx }))}
-                        className="mt-1 w-4 h-4 accent-primary"
-                      />
-                      <span className="flex-1"><FormattedText text={opt} /></span>
-                    </label>
-                  ))}
+                  {q.skill === 'kaiwa' || q.type === 'audio_record' ? (
+                    <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl border-2 border-dashed gap-4">
+                      {ans ? (
+                        <div className="text-center space-y-4">
+                          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                            <CheckCircle2 className="w-8 h-8" />
+                          </div>
+                          <p className="font-bold text-emerald-600">Đã lưu bản ghi âm</p>
+                          <Button variant="outline" size="sm" onClick={() => setAnswers(prev => { const n = {...prev}; delete n[globalIdx]; return n; })}>
+                            Ghi âm lại
+                          </Button>
+                        </div>
+                      ) : recordingId === q.id ? (
+                        <div className="text-center space-y-4">
+                          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                            <Mic className="w-8 h-8" />
+                          </div>
+                          <p className="font-bold text-red-600 animate-pulse">Đang ghi âm...</p>
+                          <Button variant="destructive" onClick={() => {
+                            setRecordingId(null);
+                            setAnswers(prev => ({ ...prev, [globalIdx]: "recorded_audio_blob_url" }));
+                          }}>
+                            <Square className="w-4 h-4 mr-2" /> Dừng & Lưu
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="lg" onClick={() => setRecordingId(q.id)} className="bg-red-500 hover:bg-red-600 text-white gap-2 rounded-full px-8">
+                          <Mic className="w-5 h-5" /> Bắt đầu ghi âm
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    (q.options || []).map((opt: string, optIdx: number) => (
+                      <label 
+                        key={optIdx} 
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${ans === optIdx ? 'bg-primary/10 border-primary shadow-sm' : 'hover:bg-muted/50 border-border'}`}
+                      >
+                        <input 
+                          type="radio" 
+                          name={`q_${globalIdx}`} 
+                          checked={ans === optIdx}
+                          onChange={() => setAnswers(prev => ({ ...prev, [globalIdx]: optIdx }))}
+                          className="mt-1 w-4 h-4 accent-primary"
+                        />
+                        <span className="flex-1"><FormattedText text={opt} /></span>
+                      </label>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -394,7 +489,7 @@ export default function JLPTExamRunner() {
       
       <div className="flex justify-end pt-6">
         <Button size="lg" onClick={() => handleNextSection(false)} disabled={submitting}>
-          {currentSection === 'listening' ? 'Nộp bài thi' : 'Hoàn thành phần này'}
+          {currentSection === 'listening' && sections.kaiwa.length === 0 ? 'Nộp bài thi' : currentSection === 'kaiwa' ? 'Nộp bài thi' : 'Hoàn thành phần này'}
         </Button>
       </div>
     </div>
