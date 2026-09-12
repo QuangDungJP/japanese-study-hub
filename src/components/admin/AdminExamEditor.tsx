@@ -38,7 +38,8 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
           duration_minutes: editingExam.duration_minutes,
           passing_score: editingExam.passing_score,
           is_published: editingExam.is_published,
-          questions: editingExam.questions
+          questions: editingExam.questions,
+          max_attempts: editingExam.max_attempts || 0
         })
         .eq('id', editingExam.id);
         
@@ -98,6 +99,16 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
             <Textarea value={q.text} onChange={(e) => updateQuestion(q.id, { text: e.target.value })} rows={3} />
           </div>
 
+          <div className="space-y-2">
+            <Label>Link Ảnh Minh Họa (Tùy chọn)</Label>
+            <Input placeholder="https://..." value={q.image_url || ''} onChange={(e) => updateQuestion(q.id, { image_url: e.target.value })} />
+            {q.image_url && (
+              <div className="mt-2 relative inline-block">
+                <img src={q.image_url} alt="preview" className="max-h-32 rounded-md border shadow-sm object-contain" />
+              </div>
+            )}
+          </div>
+
           {q.skill === 'listening' && (
             <div className="space-y-2">
               <Label>Link Audio MP3</Label>
@@ -155,6 +166,10 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
           <div className="space-y-2">
             <Label>Điểm đỗ</Label>
             <Input type="number" value={editingExam.passing_score} onChange={e => setEditingExam({...editingExam, passing_score: parseInt(e.target.value)})} />
+          </div>
+          <div className="space-y-2">
+            <Label>Giới hạn lượt thi (0 = vô hạn)</Label>
+            <Input type="number" value={editingExam.max_attempts || 0} onChange={e => setEditingExam({...editingExam, max_attempts: parseInt(e.target.value)})} />
           </div>
           <div className="space-y-2 flex items-center gap-2 pt-8">
             <input type="checkbox" id="published" checked={editingExam.is_published} onChange={e => setEditingExam({...editingExam, is_published: e.target.checked})} className="w-4 h-4" />

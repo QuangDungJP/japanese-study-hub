@@ -8,6 +8,7 @@ export const localMockExam = {
   duration_minutes: 105,
   max_score: 180,
   passing_score: 90,
+  max_attempts: 2,
   is_published: true,
   questions: [
     {
@@ -41,12 +42,13 @@ export const localMockExam = {
     {
       id: "q_r1",
       skill: "reading",
-      text: "問題５：つぎの文章を読んで、質問に答えなさい。\n\n（メールの文章）\nスミスさんへ\nあしたのパーティーですが、午後６時に駅の前で会いましょう。山田さんも来ますよ。\n佐藤より\n\n質問：あした、何時にどこで会いますか。",
+      text: "問題４：次の文章を読んで、質問に答えなさい。\n\nわたしは 毎朝 ６時に おきます。あさごはんは いつも パンと コーヒーです。それから、７時半に うちを でて、バスで 会社へ 行きます。会社は ９時から ５時までです。\n\n質問：この人は 何時に うちを でますか。",
+      image_url: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       options: [
-        "午前６時に駅の前で会う。",
-        "午後６時に駅の中で会う。",
-        "午後６時に駅の前で会う。",
-        "午後６時に学校の前で会う。"
+        "６時",
+        "７時",
+        "７時半",
+        "９時"
       ],
       correct_index: 2
     },
