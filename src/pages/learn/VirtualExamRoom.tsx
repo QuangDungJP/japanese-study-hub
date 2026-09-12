@@ -10,6 +10,7 @@ import { Trophy, Clock, CheckCircle2, Play, AlertCircle, FileText, Sparkles, Boo
 import { useNavigate } from 'react-router-dom';
 import { formatWithJST } from '@/lib/dateUtils';
 import PageLoadingScreen from '@/components/shared/PageLoadingScreen';
+import ExamLeaderboard from '@/components/learn/ExamLeaderboard';
 
 interface JLPTExam {
   id: string;
@@ -21,6 +22,7 @@ interface JLPTExam {
   duration_minutes: number;
   max_score: number;
   passing_score: number;
+  max_attempts?: number;
   is_published: boolean;
   starts_at: string;
   ends_at: string;
@@ -124,6 +126,10 @@ const VirtualExamRoom = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-12">
+        <ExamLeaderboard examId="all" />
       </div>
 
       <Tabs defaultValue="all" className="space-y-6">
@@ -235,16 +241,38 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
             </CardContent>
             
             <div className="p-5 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-900 flex items-center justify-between gap-4">
-              <span className="text-sm text-zinc-500 font-medium">
-                {completedAttempts.length} lượt thi
-              </span>
-              <Button 
-                onClick={() => navigate(`/learn/mock-exams/${exam.id}`)}
-                className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-xl px-6"
-              >
-                <Play className="w-4 h-4 mr-2" /> 
-                {examAttempts.length > 0 ? 'Thi lại' : 'Vào thi'}
-              </Button>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm text-zinc-500 font-medium">
+                  {completedAttempts.length} lượt đã thi
+                </span>
+                {exam.max_attempts && exam.max_attempts > 0 ? (
+                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-500">
+                    (Tối đa {exam.max_attempts} lượt)
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-500">
+                    (Vô hạn lượt)
+                  </span>
+                )}
+              </div>
+              
+              {(exam.max_attempts && exam.max_attempts > 0 && completedAttempts.length >= exam.max_attempts) ? (
+                <Button 
+                  disabled
+                  className="bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-600 rounded-xl px-6 opacity-70"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> 
+                  Hết lượt
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => navigate(`/learn/mock-exams/${exam.id}`)}
+                  className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-xl px-6"
+                >
+                  <Play className="w-4 h-4 mr-2" /> 
+                  {completedAttempts.length > 0 ? 'Thi lại' : 'Vào thi'}
+                </Button>
+              )}
             </div>
           </Card>
         );
