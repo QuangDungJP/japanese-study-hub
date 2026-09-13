@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LearningProvider } from "@/contexts/LearningContext";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -92,11 +92,35 @@ import MeetingRoom from "./pages/meeting/MeetingRoom";
 
 import BackgroundMusicPlayer from "./components/shared/BackgroundMusicPlayer";
 import PromotionalPopupModal from "./components/shared/PromotionalPopupModal";
+import { toast } from "sonner";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error: any) => {
+      console.error('Query Error:', error);
+      if (error.status === 400 || error.code === '400') {
+        toast.error(error.message || 'Lỗi 400: Dữ liệu không hợp lệ (Bad Request)');
+      } else if (error.message && !error.message.includes('No current user')) {
+        toast.error(`Lỗi: ${error.message}`);
+      }
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error: any) => {
+      console.error('Mutation Error:', error);
+      if (error.status === 400 || error.code === '400') {
+        toast.error(error.message || 'Lỗi 400: Dữ liệu gửi đi không hợp lệ');
+      } else {
+        toast.error(error.message || 'Đã có lỗi xảy ra. Vui lòng thử lại!');
+      }
+    },
+  }),
+});
 
 import React, { Suspense } from "react";
 import PageLoadingScreen from "@/components/shared/PageLoadingScreen";
+
+import { ReloadPrompt } from "./components/shared/ReloadPrompt";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -105,6 +129,7 @@ const App = () => (
         <AuthProvider>
           <LearningProvider>
             <Toaster />
+            <Sonner />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <ScrollToTop />
               <Suspense fallback={<PageLoadingScreen text="Đang tải trang..." />}>
@@ -203,6 +228,7 @@ const App = () => (
               </Suspense>
             <PromotionalPopupModal />
             <BackgroundMusicPlayer />
+            <ReloadPrompt />
           </BrowserRouter>
         </LearningProvider>
       </AuthProvider>

@@ -100,10 +100,10 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
   const [shiftOpen, setShiftOpen] = useState(false);
   const [shiftData, setShiftData] = useState({
     fromSessionId: '',
-    shiftDays: 7, // Default 1 week push down
+    shiftDays: 7, // Legacy, not heavily used now
   });
 
-  // Cascade shift remaining sessions forward
+  // Cascade shift remaining sessions forward automatically based on schedule
   const handleCascadeShift = async () => {
     if (!shiftData.fromSessionId) {
       return toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn buổi học bắt đầu dời lịch', variant: 'destructive' });
@@ -119,17 +119,19 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
       return toast({ title: 'Thông báo', description: 'Không có buổi học nào bị ảnh hưởng', variant: 'destructive' });
     }
 
-    const days = Number(shiftData.shiftDays) || 7;
+    // Dynamic import to avoid circular dependency in UI
+    const { shiftSessionsToNextAvailableDay } = await import('@/lib/scheduleUtils');
+    const updatesList = shiftSessionsToNextAvailableDay(affectedSessions);
 
-    const updates = affectedSessions.map(s => {
-      const parts = s.session_date.split('-');
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      d.setDate(d.getDate() + days);
-      const newDateStr = format(d, 'yyyy-MM-dd');
+    if (updatesList.length === 0) {
+       return toast({ title: 'Thông báo', description: 'Không thể tính toán lịch mới', variant: 'destructive' });
+    }
+
+    const updates = updatesList.map(u => {
       return (supabase as any)
         .from('class_sessions')
-        .update({ session_date: newDateStr })
-        .eq('id', s.id);
+        .update({ session_date: u.newDate })
+        .eq('id', u.id);
     });
 
     const results = await Promise.all(updates);
@@ -141,7 +143,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
 
     toast({ 
       title: 'Đẩy lịch tịnh tiến thành công!', 
-      description: `Đã lùi ${affectedSessions.length} buổi học còn lại thêm ${days} ngày.` 
+      description: `Đã lùi ${affectedSessions.length} buổi học sang các ngày học tiếp theo của lớp.` 
     });
     setShiftOpen(false);
     load();
@@ -813,16 +815,16 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-              <RefreshCw className="w-5 h-5 text-amber-600" /> Tự động đẩy lùi lịch tịnh tiến (Cascade Shift)
+              <RefreshCw className="w-5 h-5 text-amber-600" /> Tự động đẩy lùi lịch học
             </DialogTitle>
             <DialogDescription>
-              Khi hoãn hoặc dời 1 buổi học, hệ thống sẽ tự động đẩy lùi tất cả các buổi học tiếp theo lùi lại để luôn bảo đảm 100% tổng số buổi học đã quy định.
+              Hệ thống sẽ tự động chuyển buổi học bị nghỉ và tất cả các buổi tiếp theo sang các ngày học kế tiếp của lớp.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div>
-              <Label>Chọn buổi bắt đầu bị dời lịch</Label>
+              <Label>Chọn buổi nghỉ / bắt đầu bị dời lịch</Label>
               <select
                 className="w-full h-9 rounded-md border bg-background px-2 text-sm mt-1"
                 value={shiftData.fromSessionId}
@@ -839,34 +841,13 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
               </select>
             </div>
 
-            <div>
-              <Label>Số ngày lùi lại (Ví dụ: 7 ngày = lùi 1 tuần)</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={shiftData.shiftDays}
-                  onChange={e => setShiftData({ ...shiftData, shiftDays: parseInt(e.target.value) || 7 })}
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShiftData({ ...shiftData, shiftDays: 7 })}
-                >
-                  Lùi 1 tuần (+7 ngày)
-                </Button>
-              </div>
-            </div>
-
             {shiftData.fromSessionId && (
               <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg text-xs space-y-1">
                 <p className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" /> Số buổi bị ảnh hưởng:
                 </p>
                 <p className="text-muted-foreground">
-                  Có {sessions.filter(s => s.session_date >= (sessions.find(x => x.id === shiftData.fromSessionId)?.session_date || '') && s.status !== 'completed').length} buổi học từ ngày này trở đi sẽ được dời lùi thêm +{shiftData.shiftDays} ngày. Tổng số buổi của khóa học được giữ nguyên đầy đủ.
+                  Có {sessions.filter(s => s.session_date >= (sessions.find(x => x.id === shiftData.fromSessionId)?.session_date || '') && s.status !== 'completed').length} buổi học từ ngày này trở đi sẽ được dời sang các ngày học kế tiếp. Tổng số buổi của khóa học được giữ nguyên.
                 </p>
               </div>
             )}
