@@ -63,7 +63,7 @@ export default function JLPTExamRunner() {
           data = localMockExam;
           const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
           if (localStr) {
-             try { attempts = JSON.parse(localStr).filter((a: any) => a.exam_id === id); } catch(e){}
+             try { attempts = JSON.parse(localStr).filter((a: any) => a.exam_id === id); } catch(e) { console.error(e); }
           }
         } else {
           const res = await supabase.from("exams").select("*").eq("id", id).maybeSingle();
@@ -122,7 +122,7 @@ export default function JLPTExamRunner() {
           if (id === 'mock-local-1') {
             const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
             let allAtts = [];
-            if (localStr) try { allAtts = JSON.parse(localStr); } catch(e){}
+            if (localStr) try { allAtts = JSON.parse(localStr); } catch(e) { console.error(e); }
             allAtts.push(newAttempt);
             localStorage.setItem(`mock_attempts_${user.id}`, JSON.stringify(allAtts));
             setAttemptId(newAttempt.id);
@@ -255,7 +255,7 @@ export default function JLPTExamRunner() {
       if (id === 'mock-local-1') {
         const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
         let allAtts = [];
-        if (localStr) try { allAtts = JSON.parse(localStr); } catch(e){}
+        if (localStr) try { allAtts = JSON.parse(localStr); } catch(e) { console.error(e); }
         const updatedAtts = allAtts.map(a => {
           if (a.id === attemptId) {
             return {

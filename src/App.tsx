@@ -121,6 +121,7 @@ import React, { Suspense } from "react";
 import PageLoadingScreen from "@/components/shared/PageLoadingScreen";
 
 import { ReloadPrompt } from "./components/shared/ReloadPrompt";
+import { AppInit } from "./components/shared/AppInit";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -128,6 +129,7 @@ const App = () => (
       <TooltipProvider>
         <AuthProvider>
           <LearningProvider>
+            <AppInit />
             <Toaster />
             <Sonner />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

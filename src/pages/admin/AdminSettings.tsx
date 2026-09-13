@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { usePageVisibility, PageVisibilitySettings } from '@/hooks/usePageVisibility';
 import { supabase } from '@/integrations/supabase/client';
+import { THEME_OPTIONS, applyTheme } from '@/lib/themeUtils';
 
 const supportedLanguages = [
   { code: 'english', name: 'English', flag: '🇬🇧', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] },
@@ -86,6 +87,8 @@ const AdminSettings = () => {
   const [authCms, setAuthCms] = useState<AuthCmsSettings>(defaultAuthCms);
   const [authCmsId, setAuthCmsId] = useState<string | null>(null);
   const [pageSettingsList, setPageSettingsList] = useState<any[]>([]);
+  const [globalTheme, setGlobalTheme] = useState<string>('sakura');
+  const [themeDocId, setThemeDocId] = useState<string | null>(null);
 
   const visibility = localVisibility || pageVisibility;
 
@@ -117,6 +120,21 @@ const AdminSettings = () => {
               vertical_text: c.vertical_text || defaultAuthCms.vertical_text,
               image_url: data.image_url || c.image_url || defaultAuthCms.image_url,
             });
+          }
+        }
+      });
+      
+    supabase
+      .from('website_content')
+      .select('id, content')
+      .eq('section_key', 'app_theme')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setThemeDocId(data.id);
+          if (data.content && typeof data.content === 'object') {
+            const c = data.content as Record<string, string>;
+            if (c.theme_id) setGlobalTheme(c.theme_id);
           }
         }
       });
@@ -195,6 +213,21 @@ const AdminSettings = () => {
     }
   };
 
+  const saveGlobalTheme = async () => {
+    const payload = {
+      section_key: 'app_theme',
+      content: { theme_id: globalTheme },
+      is_active: true,
+    };
+    if (themeDocId) {
+      await supabase.from('website_content').update(payload).eq('id', themeDocId);
+    } else {
+      const { data } = await supabase.from('website_content').insert(payload).select('id').single();
+      if (data) setThemeDocId(data.id);
+    }
+    applyTheme(globalTheme); // Apply immediately for the admin
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -202,6 +235,7 @@ const AdminSettings = () => {
         await savePageVisibility(localVisibility);
       }
       await saveAuthCms();
+      await saveGlobalTheme();
       await savePageSettings();
       toast({ title: 'Thành công', description: 'Đã lưu cài đặt' });
     } catch {
@@ -242,6 +276,9 @@ const AdminSettings = () => {
           </TabsTrigger>
           <TabsTrigger value="exercises" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" />Bài tập
+          </TabsTrigger>
+          <TabsTrigger value="theme" className="flex items-center gap-2">
+            <Monitor className="w-4 h-4" />Giao diện
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings2 className="w-4 h-4" />Chung
@@ -477,6 +514,40 @@ const AdminSettings = () => {
                   <Switch checked={settings.enabledLanguages.includes(lang.code)} onCheckedChange={() => toggleLanguage(lang.code)} />
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="theme">
+          <Card>
+            <CardHeader>
+              <CardTitle>Giao diện chung (Global Theme)</CardTitle>
+              <CardDescription>Chọn giao diện siêu đẹp mặc định cho toàn bộ người dùng (áp dụng tự động khi họ mở ứng dụng)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {THEME_OPTIONS.map((theme) => (
+                  <div 
+                    key={theme.id}
+                    onClick={() => setGlobalTheme(theme.id)}
+                    className={`cursor-pointer group relative overflow-hidden rounded-xl border-2 transition-all duration-300 ${globalTheme === theme.id ? 'border-primary ring-4 ring-primary/20 scale-[1.02]' : 'border-border hover:border-primary/50 hover:scale-[1.02]'}`}
+                  >
+                    <div className={`h-24 w-full bg-gradient-to-br ${theme.gradient} opacity-90`} />
+                    <div className="p-4 bg-card">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-bold text-base">{theme.name}</h3>
+                        <div className={`w-4 h-4 rounded-full ${globalTheme === theme.id ? 'bg-primary' : 'bg-muted'}`} />
+                      </div>
+                      <span className="text-xs font-medium px-2 py-1 bg-muted rounded-md mb-2 inline-block">
+                        {theme.name_ja}
+                      </span>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                        {theme.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
