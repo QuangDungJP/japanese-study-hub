@@ -74,7 +74,9 @@ const VirtualExamRoom = () => {
           try {
             const localAttempts = JSON.parse(localAttemptsStr);
             attemptsData = [...attemptsData, ...localAttempts];
-          } catch (e) {}
+          } catch (e) {
+            console.error('Failed to parse local attempts', e);
+          }
         }
 
         const grouped: Record<string, any[]> = {};
