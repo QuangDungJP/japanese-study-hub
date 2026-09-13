@@ -1,13 +1,55 @@
 import ThemeCustomizer from '@/components/theme/ThemeCustomizer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings as SettingsIcon, User, Bell, Shield } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Settings as SettingsIcon, User, Bell, Shield, Download, Smartphone } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 
 const Settings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsAppInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+    setDeferredPrompt(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -22,6 +64,46 @@ const Settings = () => {
       </div>
 
       <div className="grid gap-6">
+        {/* App Installation */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="w-5 h-5" />
+              Ứng dụng JP Hub
+            </CardTitle>
+            <CardDescription>
+              Cài đặt ứng dụng trực tiếp lên thiết bị của bạn để trải nghiệm tốt hơn với biểu tượng đầy đủ và thông báo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isAppInstalled ? (
+              <div className="p-4 bg-muted/50 rounded-lg flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500/10 text-green-500 rounded-lg flex items-center justify-center">
+                  <Download className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-medium">Ứng dụng đã được cài đặt</p>
+                  <p className="text-sm text-muted-foreground">Bạn có thể mở JP Hub từ màn hình chính hoặc danh sách ứng dụng.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
+                <div className="space-y-1">
+                  <p className="font-medium flex items-center gap-2">
+                    Tải app xuống thiết bị
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">Khuyên dùng</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">Tạo lối tắt trên màn hình và nhận thông báo đẩy nhanh chóng.</p>
+                </div>
+                <Button onClick={handleInstallClick} disabled={!deferredPrompt} variant={deferredPrompt ? "default" : "outline"}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Cài đặt ngay
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Theme Settings */}
         <ThemeCustomizer />
 
@@ -50,7 +132,7 @@ const Settings = () => {
               <div className="space-y-0.5">
                 <Label>Thông báo đẩy</Label>
                 <p className="text-sm text-muted-foreground">
-                  Nhận thông báo trên trình duyệt
+                  Nhận thông báo trên thiết bị/trình duyệt
                 </p>
               </div>
               <Switch

@@ -255,7 +255,7 @@ const ExamRunner = () => {
         qKey: q.id || `q_${(q as any).origIdx ?? idx}`
       }));
     }
-    let list = exam.questions.map((q, origIdx) => {
+    const list = exam.questions.map((q, origIdx) => {
       let optionsList = Array.isArray(q.options) ? [...q.options] : [];
       let correctIdx = q.correct_index;
 

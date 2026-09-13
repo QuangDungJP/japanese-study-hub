@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .select('role')
         .eq('user_id', userId);
       
-      let userRoles = (!error && data) ? data.map(r => r.role as AppRole) : [];
+      const userRoles = (!error && data) ? data.map(r => r.role as AppRole) : [];
 
       // Cấp quyền Super Admin toàn quyền nếu là email quản trị hệ thống
       if (userEmail && SUPER_ADMINS.includes(userEmail.toLowerCase())) {
