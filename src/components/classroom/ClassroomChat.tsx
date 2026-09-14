@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,10 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
   const [nameMap, setNameMap] = useState<Record<string, string>>({});
   const [replyingTo, setReplyingTo] = useState<ClassMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ClassMessage | null>(null);
+  
+  // Profile Viewer State
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
 
   const fetchMessages = async () => {
     try {
@@ -67,27 +72,19 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
       const senderIds = Array.from(new Set([...(data || []).map(m => m.sender_id), ...reactorIds])).filter(Boolean);
       const profileMap = new Map<string, any>();
       if (senderIds.length > 0) {
-        const { data: profs } = await supabase
+        const { data: profs, error: profsError } = await supabase
           .from('profiles')
-          .select('id, user_id, full_name, avatar_url, equipped_frame_code')
-          .in('user_id', senderIds);
+          .select('id, full_name, avatar_url, equipped_frame_code')
+          .in('id', senderIds);
 
-        let finalProfs = profs || [];
-        if (finalProfs.length === 0) {
-          const { data: profsById } = await supabase
-            .from('profiles')
-            .select('id, user_id, full_name, avatar_url, equipped_frame_code')
-            .in('id', senderIds);
-          finalProfs = profsById || [];
-        }
+        if (profsError) console.error("Error fetching profiles:", profsError);
 
+        const finalProfs = profs || [];
         const names: Record<string, string> = {};
+        
         finalProfs.forEach(p => {
-          if (p.user_id) profileMap.set(p.user_id, p);
-          if (p.id) profileMap.set(p.id, p);
-          const nameVal = p.full_name || 'Học viên Quang Dũng';
-          if (p.user_id) names[p.user_id] = nameVal;
-          if (p.id) names[p.id] = nameVal;
+          profileMap.set(p.id, p);
+          names[p.id] = p.full_name || 'Thành viên';
         });
         setNameMap(names);
       }
@@ -97,7 +94,7 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
         return {
           ...m,
           sender_profile: prof || {
-            full_name: m.sender_id === user?.id ? (user?.user_metadata?.full_name || 'Bạn') : 'Học viên Quang Dũng',
+            full_name: m.sender_id === user?.id ? (user?.user_metadata?.full_name || 'Bạn') : 'Thành viên',
             avatar_url: m.sender_id === user?.id ? user?.user_metadata?.avatar_url : null,
           },
         };
@@ -130,6 +127,18 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
       supabase.removeChannel(channel);
     };
   }, [classId]);
+
+  useEffect(() => {
+    if (!selectedUserId) {
+      setSelectedUserProfile(null);
+      return;
+    }
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('*').eq('id', selectedUserId).single();
+      setSelectedUserProfile(data);
+    };
+    fetchProfile();
+  }, [selectedUserId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -245,14 +254,18 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
                 key={msg.id}
                 className={`flex gap-3 max-w-[85%] group ${isSelf ? 'ml-auto flex-row-reverse' : ''}`}
               >
-                <AvatarWithDecoration
-                  userId={msg.sender_id}
-                  avatarUrl={msg.sender_profile?.avatar_url}
-                  name={msg.sender_profile?.full_name}
-                  frameCode={msg.sender_profile?.equipped_frame_code}
-                  size="sm"
-                  className="mt-1 shrink-0"
-                />
+                <div 
+                  className={`mt-1 shrink-0 ${!isSelf ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                  onClick={() => !isSelf && setSelectedUserId(msg.sender_id)}
+                >
+                  <AvatarWithDecoration
+                    userId={msg.sender_id}
+                    avatarUrl={msg.sender_profile?.avatar_url}
+                    name={msg.sender_profile?.full_name}
+                    frameCode={msg.sender_profile?.equipped_frame_code}
+                    size="sm"
+                  />
+                </div>
 
                 <div className={`space-y-1 ${isSelf ? 'items-end text-right' : 'items-start'}`}>
                   <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-semibold px-1">
@@ -403,6 +416,53 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
           </Button>
         </form>
       </div>
+
+      {/* Profile Viewer Modal */}
+      <Dialog open={!!selectedUserId} onOpenChange={(open) => !open && setSelectedUserId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center font-bold">Hồ sơ thành viên</DialogTitle>
+          </DialogHeader>
+          {selectedUserProfile ? (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <AvatarWithDecoration
+                userId={selectedUserId || ''}
+                avatarUrl={selectedUserProfile.avatar_url}
+                name={selectedUserProfile.full_name}
+                frameCode={selectedUserProfile.equipped_frame_code}
+                size="lg"
+              />
+              <div className="text-center">
+                <h3 className="font-extrabold text-lg text-foreground">{selectedUserProfile.full_name}</h3>
+                {selectedUserProfile.level && (
+                  <Badge variant="outline" className="mt-1 border-primary text-primary">
+                    Cấp độ {selectedUserProfile.level}
+                  </Badge>
+                )}
+              </div>
+              {selectedUserProfile.bio && (
+                <p className="text-sm text-center text-muted-foreground mt-2 italic px-4">
+                  "{selectedUserProfile.bio}"
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-4 w-full mt-4">
+                <div className="bg-muted p-3 rounded-xl text-center">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">Điểm XP</p>
+                  <p className="font-black text-lg text-amber-500">{selectedUserProfile.xp || 0}</p>
+                </div>
+                <div className="bg-muted p-3 rounded-xl text-center">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">Chuỗi ngày</p>
+                  <p className="font-black text-lg text-emerald-500">{selectedUserProfile.streak || 0}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-8 h-8 animate-spin text-primary opacity-50" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

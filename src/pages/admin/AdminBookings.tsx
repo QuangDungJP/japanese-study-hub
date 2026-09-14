@@ -62,15 +62,32 @@ const AdminBookings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bookings')
-        .select(`
-          *,
-          profiles:user_id (full_name, avatar_url)
-        `)
+        .select('*')
         .order('booking_date', { ascending: false })
         .order('booking_time', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      if (!data || data.length === 0) return [];
+      
+      const userIds = [...new Set(data.filter(b => b.user_id).map(b => b.user_id))];
+      
+      let profiles: any[] = [];
+      if (userIds.length > 0) {
+        const { data: pData } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', userIds);
+        profiles = pData || [];
+      }
+      
+      return data.map(booking => {
+        const p = profiles.find((p: any) => p.id === booking.user_id);
+        return {
+          ...booking,
+          profiles: p || null
+        };
+      });
     },
   });
 
