@@ -7,9 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Plus, GripVertical, Save, FileAudio, BookOpen, MessageCircle } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Save, FileAudio, BookOpen, MessageCircle, Info, Cpu, Sparkles, BrainCircuit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Slider } from '@/components/ui/slider';
+import AIGeneratorModal from './AIGeneratorModal';
 
 interface Question {
   id: string;
@@ -25,11 +27,23 @@ interface Question {
 export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any, onClose: () => void, onSaved: () => void }) {
   const [editingExam, setEditingExam] = useState<any>(JSON.parse(JSON.stringify(exam)));
   const [saving, setSaving] = useState(false);
+  const [aiModalSkill, setAiModalSkill] = useState<string | null>(null);
+  
+  // Extract or initialize scoring config
+  const configQ = (editingExam.questions || []).find((q: any) => q.type === 'system_config');
+  const [scoringConfig, setScoringConfig] = useState<any>(configQ?.config || {
+    difficulty_factor: 1.05,
+    section_pass: { language: 19, reading: 19, listening: 19, combined: 38 }
+  });
+
   const { toast } = useToast();
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const questionsWithoutConfig = (editingExam.questions || []).filter((q: any) => q.type !== 'system_config');
+      const finalQuestions = [...questionsWithoutConfig, { id: 'scoring_rules_config', type: 'system_config', config: scoringConfig }];
+
       const { error } = await supabase
         .from('exams')
         .update({
@@ -38,7 +52,7 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
           duration_minutes: editingExam.duration_minutes,
           passing_score: editingExam.passing_score,
           is_published: editingExam.is_published,
-          questions: editingExam.questions,
+          questions: finalQuestions,
           max_attempts: editingExam.max_attempts || 0
         })
         .eq('id', editingExam.id);
@@ -80,6 +94,13 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
     setEditingExam({
       ...editingExam,
       questions: editingExam.questions.filter((q: any) => q.id !== id)
+    });
+  };
+
+  const appendGeneratedQuestions = (newQuestions: Question[]) => {
+    setEditingExam({
+      ...editingExam,
+      questions: [...(editingExam.questions || []), ...newQuestions]
     });
   };
 
@@ -177,6 +198,93 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
           </div>
         </div>
 
+        <Card className="mb-6 bg-slate-50 dark:bg-slate-900/50 border-amber-200 dark:border-amber-900/50 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none"><Cpu className="w-32 h-32" /></div>
+          <CardContent className="p-6 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6 pb-6 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="flex-1 space-y-4">
+                <h3 className="font-bold flex items-center gap-2 text-lg">
+                  <Sparkles className="w-5 h-5 text-amber-500" /> Hệ số độ khó (Dự đoán điểm thi thật)
+                </h3>
+                <div className="space-y-4 max-w-md">
+                  <div className="flex items-center justify-between text-sm font-bold">
+                    <span className="text-red-500">Đề Khó (&lt; 1.0)</span>
+                    <span className="text-blue-500 text-lg">{scoringConfig.difficulty_factor.toFixed(2)}</span>
+                    <span className="text-emerald-500">Đề Dễ (&gt; 1.0)</span>
+                  </div>
+                  <Slider 
+                    min={0.5} 
+                    max={1.5} 
+                    step={0.01} 
+                    value={[scoringConfig.difficulty_factor]} 
+                    onValueChange={(val) => setScoringConfig({...scoringConfig, difficulty_factor: val[0]})}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Info className="w-3.5 h-3.5" /> Hệ số này dùng để giả lập điểm thi thật dựa trên độ khó của đề thi thử.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm min-w-[250px]">
+                <p className="text-xs font-bold uppercase text-zinc-500 mb-2">Mô phỏng dự đoán thi thật</p>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="text-center">
+                    <p className="text-[10px] text-zinc-500 mb-1">Thi thử được</p>
+                    <p className="font-bold">120 đ</p>
+                  </div>
+                  <div className="text-zinc-300">➜</div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-500 mb-1 font-bold">Thi thật (Dự đoán)</p>
+                    <p className="font-black text-xl text-amber-600 dark:text-amber-500">{Math.round(120 * scoringConfig.difficulty_factor)} đ</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="font-bold flex items-center gap-2 mb-4 text-base">
+              <span className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs">!</span>
+              Cấu hình Điểm Liệt (Tối thiểu cần đạt)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {(editingExam.level === 'N1' || editingExam.level === 'N2' || editingExam.level === 'N3') ? (
+                <>
+                  <div className="space-y-3 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                    <div className="flex justify-between items-center">
+                      <Label className="font-bold">Từ vựng/Ngữ pháp</Label>
+                      <span className="text-sm font-bold">{scoringConfig.section_pass.language}/60</span>
+                    </div>
+                    <Slider min={0} max={60} step={1} value={[scoringConfig.section_pass.language]} onValueChange={val => setScoringConfig({...scoringConfig, section_pass: {...scoringConfig.section_pass, language: val[0]}})} />
+                  </div>
+                  <div className="space-y-3 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                    <div className="flex justify-between items-center">
+                      <Label className="font-bold">Đọc hiểu</Label>
+                      <span className="text-sm font-bold">{scoringConfig.section_pass.reading}/60</span>
+                    </div>
+                    <Slider min={0} max={60} step={1} value={[scoringConfig.section_pass.reading]} onValueChange={val => setScoringConfig({...scoringConfig, section_pass: {...scoringConfig.section_pass, reading: val[0]}})} />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                  <div className="flex justify-between items-center">
+                    <Label className="font-bold">Từ vựng + Đọc hiểu</Label>
+                    <span className="text-sm font-bold">{scoringConfig.section_pass.combined}/120</span>
+                  </div>
+                  <Slider min={0} max={120} step={1} value={[scoringConfig.section_pass.combined]} onValueChange={val => setScoringConfig({...scoringConfig, section_pass: {...scoringConfig.section_pass, combined: val[0]}})} />
+                </div>
+              )}
+              
+              <div className="space-y-3 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                <div className="flex justify-between items-center">
+                  <Label className="font-bold">Nghe hiểu</Label>
+                  <span className="text-sm font-bold">{scoringConfig.section_pass.listening}/60</span>
+                </div>
+                <Slider min={0} max={60} step={1} value={[scoringConfig.section_pass.listening]} onValueChange={val => setScoringConfig({...scoringConfig, section_pass: {...scoringConfig.section_pass, listening: val[0]}})} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="vocabulary">
           <TabsList className="mb-4">
             <TabsTrigger value="vocabulary">Từ vựng & Chữ Hán</TabsTrigger>
@@ -189,7 +297,19 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
             <TabsContent key={skill} value={skill} className="mt-0">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold uppercase tracking-wider text-sm text-muted-foreground">{skill}</h3>
-                <Button size="sm" onClick={() => addQuestion(skill)}><Plus className="w-4 h-4 mr-1"/> Thêm câu {skill}</Button>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="border-purple-200 text-purple-600 hover:bg-purple-50 hover:text-purple-700 bg-purple-50/50"
+                    onClick={() => setAiModalSkill(skill)}
+                  >
+                    <BrainCircuit className="w-4 h-4 mr-1"/> AI Tạo tự động
+                  </Button>
+                  <Button size="sm" onClick={() => addQuestion(skill)}>
+                    <Plus className="w-4 h-4 mr-1"/> Thêm câu {skill}
+                  </Button>
+                </div>
               </div>
               <div className="space-y-4">
                 {questionsBySkill(skill).map((q: any, i: number) => renderQuestionEditor(q, i))}
@@ -208,6 +328,15 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
           </Button>
         </DialogFooter>
       </DialogContent>
+      
+      {aiModalSkill && (
+        <AIGeneratorModal 
+          isOpen={true} 
+          onClose={() => setAiModalSkill(null)} 
+          defaultSkill={aiModalSkill}
+          onGenerate={appendGeneratedQuestions}
+        />
+      )}
     </Dialog>
   );
 }

@@ -185,7 +185,28 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
         const completedAttempts = examAttempts.filter(a => a.status === 'submitted' || a.status === 'graded');
         const bestAttempt = completedAttempts.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
         
-        const passed = bestAttempt && bestAttempt.score >= exam.passing_score;
+        let passed = false;
+        let failedReason = '';
+        let predictedReal = undefined;
+        
+        if (bestAttempt) {
+          const bd = bestAttempt.metadata?.scoreBreakdown;
+          predictedReal = bestAttempt.metadata?.predicted_real;
+          const passedTotal = bestAttempt.score >= exam.passing_score;
+          
+          if (bd) {
+            const failedSections = Object.values(bd).filter((s: any) => s.passed === false);
+            passed = passedTotal && failedSections.length === 0;
+            if (!passedTotal) {
+              failedReason = 'Trượt tổng điểm';
+            } else if (failedSections.length > 0) {
+              failedReason = `Liệt: ${failedSections.map((s:any) => s.name).join(', ')}`;
+            }
+          } else {
+            passed = passedTotal;
+            failedReason = passedTotal ? '' : 'Trượt tổng điểm';
+          }
+        }
 
         return (
           <Card key={exam.id} className="overflow-hidden border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all duration-300 group flex flex-col bg-white dark:bg-zinc-950 rounded-2xl">
@@ -201,7 +222,7 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
                 </div>
                 {completedAttempts.length > 0 && (
                   <Badge variant="outline" className={passed ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800"}>
-                    {passed ? 'Đã thi đỗ' : 'Thi trượt'}
+                    {passed ? 'Đã thi đỗ' : (failedReason || 'Thi trượt')}
                   </Badge>
                 )}
               </div>
@@ -232,12 +253,23 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
               </div>
 
               {bestAttempt && (
-                <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm mt-4">
-                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Kết quả cao nhất</p>
-                  <div className="flex items-end gap-2">
-                    <span className="text-3xl font-black text-zinc-900 dark:text-zinc-100 leading-none">{bestAttempt.score}</span>
-                    <span className="text-sm font-medium text-zinc-500 mb-0.5">/ {exam.max_score || 180} điểm</span>
+                <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm mt-4 space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Kết quả cao nhất</p>
+                    <div className="flex items-end gap-2">
+                      <span className="text-3xl font-black text-zinc-900 dark:text-zinc-100 leading-none">{bestAttempt.score}</span>
+                      <span className="text-sm font-medium text-zinc-500 mb-0.5">/ {exam.max_score || 180} điểm</span>
+                    </div>
                   </div>
+                  {predictedReal !== undefined && (
+                    <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                      <p className="text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1"><Sparkles className="w-3 h-3"/> Dự đoán thi thật</p>
+                      <div className="flex items-end gap-2">
+                        <span className="text-2xl font-black text-amber-700 dark:text-amber-400 leading-none">{predictedReal}</span>
+                        <span className="text-xs font-medium text-amber-600/60 dark:text-amber-500/60 mb-0.5">/ 180 điểm</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
