@@ -196,8 +196,16 @@ export default function JLPTExamRunner() {
       // Calculate scores per section
       let vocabCorrect = 0, readingCorrect = 0, listeningCorrect = 0;
       let vocabTotal = 0, readingTotal = 0, listeningTotal = 0;
+      
+      const configQ = exam.questions.find((q: any) => q.type === 'system_config');
+      const scoringConfig = configQ?.config || {
+        difficulty_factor: 1.0,
+        section_pass: { language: 19, reading: 19, listening: 19, combined: 38 }
+      };
 
       exam.questions.forEach((q: any, i: number) => {
+        if (q.type === 'system_config') return;
+        
         const isCorrect = answers[i] !== undefined && answers[i] === q.correct_index;
         if (sections.vocab.some(vq => vq.id === q.id || vq === q)) {
           vocabTotal++; if (isCorrect) vocabCorrect++;
@@ -219,13 +227,14 @@ export default function JLPTExamRunner() {
         const knowledgePts = Math.round(((vocabCorrect + readingCorrect) / Math.max(1, vocabTotal + readingTotal)) * 120);
         const listeningPts = Math.round((listeningCorrect / Math.max(1, listeningTotal)) * 60);
         totalScore = knowledgePts + listeningPts;
-        const passKnowledge = knowledgePts >= 38;
-        const passListen = listeningPts >= 19;
+        
+        const passKnowledge = knowledgePts >= (scoringConfig.section_pass.combined || 38);
+        const passListen = listeningPts >= (scoringConfig.section_pass.listening || 19);
         passed = passKnowledge && passListen && (totalScore >= passTotal);
         
         scoreBreakdown = {
-          knowledge: { score: knowledgePts, max: 120, passed: passKnowledge, min: 38, name: "Kiến thức NN & Đọc hiểu" },
-          listening: { score: listeningPts, max: 60, passed: passListen, min: 19, name: "Nghe hiểu" }
+          knowledge: { score: knowledgePts, max: 120, passed: passKnowledge, min: scoringConfig.section_pass.combined || 38, name: "Kiến thức NN & Đọc hiểu" },
+          listening: { score: listeningPts, max: 60, passed: passListen, min: scoringConfig.section_pass.listening || 19, name: "Nghe hiểu" }
         };
       } else {
         // N1/N2/N3: Vocab 60, Reading 60, Listening 60
@@ -234,15 +243,15 @@ export default function JLPTExamRunner() {
         const listeningPts = Math.round((listeningCorrect / Math.max(1, listeningTotal)) * 60);
         totalScore = vocabPts + readingPts + listeningPts;
         
-        const passV = vocabPts >= 19;
-        const passR = readingPts >= 19;
-        const passL = listeningPts >= 19;
+        const passV = vocabPts >= (scoringConfig.section_pass.language || 19);
+        const passR = readingPts >= (scoringConfig.section_pass.reading || 19);
+        const passL = listeningPts >= (scoringConfig.section_pass.listening || 19);
         passed = passV && passR && passL && (totalScore >= passTotal);
         
         scoreBreakdown = {
-          vocab: { score: vocabPts, max: 60, passed: passV, min: 19, name: "Từ vựng/Ngữ pháp" },
-          reading: { score: readingPts, max: 60, passed: passR, min: 19, name: "Đọc hiểu" },
-          listening: { score: listeningPts, max: 60, passed: passL, min: 19, name: "Nghe hiểu" }
+          vocab: { score: vocabPts, max: 60, passed: passV, min: scoringConfig.section_pass.language || 19, name: "Từ vựng/Ngữ pháp" },
+          reading: { score: readingPts, max: 60, passed: passR, min: scoringConfig.section_pass.reading || 19, name: "Đọc hiểu" },
+          listening: { score: listeningPts, max: 60, passed: passL, min: scoringConfig.section_pass.listening || 19, name: "Nghe hiểu" }
         };
       }
       
@@ -251,6 +260,9 @@ export default function JLPTExamRunner() {
         sections.kaiwa.forEach(q => kaiwaMax += (q.points || 10));
         scoreBreakdown.kaiwa = { score: 'Pending', max: kaiwaMax, passed: true, min: 0, name: "Giao tiếp (Kaiwa)" };
       }
+      
+      // Calculate predicted real score
+      const predictedScore = Math.min(180, Math.max(0, Math.round(totalScore * (scoringConfig.difficulty_factor || 1.0))));
       
       if (id === 'mock-local-1') {
         const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
@@ -264,7 +276,7 @@ export default function JLPTExamRunner() {
               status: "submitted",
               score: totalScore,
               total: exam.max_score || 180,
-              metadata: { scoreBreakdown },
+              metadata: { scoreBreakdown, predicted_real: predictedScore },
               submitted_at: new Date().toISOString()
             };
           }
@@ -277,12 +289,12 @@ export default function JLPTExamRunner() {
           status: "submitted",
           score: totalScore,
           total: exam.max_score || 180,
-          metadata: { scoreBreakdown },
+          metadata: { scoreBreakdown, predicted_real: predictedScore },
           submitted_at: new Date().toISOString()
         }).eq("id", attemptId);
       }
       
-      setResult({ score: totalScore, total: exam.max_score || 180, passed, breakdown: scoreBreakdown, level });
+      setResult({ score: totalScore, total: exam.max_score || 180, passed, breakdown: scoreBreakdown, level, predicted_real: predictedScore });
     } catch (err) {
       toast({ title: "Lỗi nộp bài", variant: "destructive" });
     } finally {
@@ -310,11 +322,20 @@ export default function JLPTExamRunner() {
               <p className="text-xl text-zinc-500 dark:text-zinc-400">Kết quả thi thử JLPT {result.level}</p>
             </div>
 
-            <div className="bg-zinc-50 dark:bg-zinc-950 p-8 rounded-3xl mb-8 border border-zinc-100 dark:border-zinc-800 text-center">
+            <div className="bg-zinc-50 dark:bg-zinc-950 p-8 rounded-3xl mb-8 border border-zinc-100 dark:border-zinc-800 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10"><Trophy className="w-24 h-24" /></div>
               <p className="text-7xl font-black tracking-tighter text-zinc-900 dark:text-zinc-100 mb-2">
                 {result.score}<span className="text-4xl text-zinc-400">/180</span>
               </p>
-              <p className="text-zinc-500 font-medium">Điểm đỗ yêu cầu: {exam.passing_score}</p>
+              <p className="text-zinc-500 font-medium mb-4">Điểm đỗ yêu cầu: {exam.passing_score}</p>
+              
+              {result.predicted_real !== undefined && (
+                <div className="inline-flex flex-col items-center justify-center bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 w-full max-w-sm mx-auto shadow-sm">
+                  <span className="text-amber-800 dark:text-amber-400 text-sm font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5"><Sparkles className="w-4 h-4"/> Dự đoán điểm thi thật</span>
+                  <div className="text-3xl font-black text-amber-600 dark:text-amber-500">{result.predicted_real} <span className="text-xl font-medium text-amber-700/50">/180</span></div>
+                  <p className="text-xs text-amber-700/70 dark:text-amber-500/70 mt-2">Dựa trên độ khó của đề thi này</p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 mb-10">

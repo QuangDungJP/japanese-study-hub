@@ -33,6 +33,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 import BadgeShowcase from '@/components/shared/BadgeShowcase';
+import MockExamHistory from '@/components/learn/MockExamHistory';
 
 interface Lesson {
   id: string;
@@ -525,6 +526,12 @@ const Dashboard = () => {
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* Mock Exam History */}
+      <div className="space-y-4 pt-4">
+        <h2 className="text-2xl font-extrabold text-foreground mb-4 tracking-tight">Tiến độ Thi thử JLPT</h2>
+        <MockExamHistory />
       </div>
 
       {/* Recent Published Lessons */}
