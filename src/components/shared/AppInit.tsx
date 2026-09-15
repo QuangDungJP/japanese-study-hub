@@ -4,6 +4,14 @@ import { applyTheme, getSavedTheme } from '@/lib/themeUtils';
 
 export function AppInit() {
   useEffect(() => {
+    const toAbsoluteUrl = (value: string) => {
+      try {
+        return new URL(value, window.location.origin).href;
+      } catch {
+        return value;
+      }
+    };
+
     const fetchGlobalTheme = async () => {
       const { data, error } = await supabase
         .from('website_content')
@@ -67,19 +75,34 @@ export function AppInit() {
             
             manifest.name = pwaSettings.appName || manifest.name;
             manifest.short_name = pwaSettings.shortName || manifest.short_name;
+            manifest.id = toAbsoluteUrl(manifest.id || '/');
+            manifest.start_url = toAbsoluteUrl(manifest.start_url || '/');
+            manifest.scope = toAbsoluteUrl(manifest.scope || '/');
             if (pwaSettings.themeColor) {
               manifest.theme_color = pwaSettings.themeColor;
               manifest.background_color = pwaSettings.themeColor;
             }
             if (pwaSettings.iconUrl) {
+              const iconUrl = toAbsoluteUrl(pwaSettings.iconUrl);
               manifest.icons = [
-                { src: pwaSettings.iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
-                { src: pwaSettings.iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
-                { src: pwaSettings.iconUrl, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+                { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
+                { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
+                { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
               ];
+            } else if (Array.isArray(manifest.icons)) {
+              manifest.icons = manifest.icons.map((icon: any) => ({
+                ...icon,
+                src: icon?.src ? toAbsoluteUrl(icon.src) : icon?.src,
+              }));
+            }
+            if (Array.isArray(manifest.screenshots)) {
+              manifest.screenshots = manifest.screenshots.map((screenshot: any) => ({
+                ...screenshot,
+                src: screenshot?.src ? toAbsoluteUrl(screenshot.src) : screenshot?.src,
+              }));
             }
             
-            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
             const url = URL.createObjectURL(blob);
             
             let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
