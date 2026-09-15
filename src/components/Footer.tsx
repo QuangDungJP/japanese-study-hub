@@ -1,10 +1,48 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Phone, MapPin, Globe } from "lucide-react";
+import { Mail, Phone, MapPin, Globe, Download } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
 
 const Footer = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsAppInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    }
+    setDeferredPrompt(null);
+  };
+
   const { data: footerContent } = useQuery({
     queryKey: ['footer-section-content'],
     queryFn: async () => {
@@ -122,10 +160,17 @@ const Footer = () => {
                 <span className="text-primary-foreground/70">{email}</span>
               </li>
               <li className="flex items-center gap-3">
-                <Globe className="w-5 h-5 text-accent shrink-0" />
-                <a href={websiteDomain} target="_blank" rel="noopener noreferrer" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors truncate">
-                  {websiteDomain.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                </a>
+                <Download className="w-5 h-5 text-accent shrink-0" />
+                {isAppInstalled ? (
+                  <span className="text-primary-foreground/70 truncate">Ứng dụng đã được cài đặt</span>
+                ) : (
+                  <button 
+                    onClick={handleInstallClick} 
+                    className="text-primary-foreground/70 hover:text-primary-foreground transition-colors truncate text-left disabled:opacity-50"
+                  >
+                    Tải app (PWA)
+                  </button>
+                )}
               </li>
             </ul>
           </div>
