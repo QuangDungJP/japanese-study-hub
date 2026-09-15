@@ -22,6 +22,9 @@ interface Question {
   correct_index?: number;
   points?: number;
   audio_url?: string;
+  image_url?: string;
+  is_passage?: boolean;
+  sub_questions?: Question[];
 }
 
 export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any, onClose: () => void, onSaved: () => void }) {
@@ -48,7 +51,7 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
         .from('exams')
         .update({
           title_vi: editingExam.title_vi,
-          level: editingExam.level,
+          exam_category: editingExam.exam_category || editingExam.level,
           duration_minutes: editingExam.duration_minutes,
           passing_score: editingExam.passing_score,
           is_published: editingExam.is_published,
@@ -67,15 +70,17 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
     }
   };
 
-  const addQuestion = (skill: string) => {
+  const addQuestion = (skill: string, isPassage: boolean = false) => {
     const newQ: Question = {
       id: crypto.randomUUID(),
       type: skill === 'kaiwa' ? 'audio_record' : 'multiple_choice',
       skill: skill,
-      text: "Nội dung câu hỏi mới...",
+      text: isPassage ? "Nội dung đoạn văn..." : "Nội dung câu hỏi mới...",
       points: 5,
+      is_passage: isPassage,
+      sub_questions: isPassage ? [] : undefined
     };
-    if (skill !== 'kaiwa') {
+    if (skill !== 'kaiwa' && !isPassage) {
       newQ.options = ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"];
       newQ.correct_index = 0;
     }
@@ -106,18 +111,48 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
 
   const questionsBySkill = (skill: string) => (editingExam.questions || []).filter((q: any) => q.skill === skill);
 
+  const addSubQuestion = (qId: string) => {
+    const parent = editingExam.questions.find((q: any) => q.id === qId);
+    if (!parent) return;
+    const newSub: Question = {
+      id: crypto.randomUUID(),
+      type: 'multiple_choice',
+      skill: parent.skill,
+      text: "Câu hỏi phụ...",
+      options: ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"],
+      correct_index: 0,
+      points: 5
+    };
+    updateQuestion(qId, { sub_questions: [...(parent.sub_questions || []), newSub] });
+  };
+
+  const updateSubQuestion = (qId: string, subId: string, updates: any) => {
+    const parent = editingExam.questions.find((q: any) => q.id === qId);
+    if (!parent) return;
+    const newSubs = (parent.sub_questions || []).map((sq: any) => sq.id === subId ? { ...sq, ...updates } : sq);
+    updateQuestion(qId, { sub_questions: newSubs });
+  };
+
+  const deleteSubQuestion = (qId: string, subId: string) => {
+    if (!confirm('Xóa câu hỏi phụ này?')) return;
+    const parent = editingExam.questions.find((q: any) => q.id === qId);
+    if (!parent) return;
+    const newSubs = (parent.sub_questions || []).filter((sq: any) => sq.id !== subId);
+    updateQuestion(qId, { sub_questions: newSubs });
+  };
+
   const renderQuestionEditor = (q: any, idx: number) => {
     return (
       <Card key={q.id} className="mb-4 border-2">
         <CardContent className="p-4 space-y-4">
           <div className="flex justify-between items-start">
-            <h4 className="font-bold text-sm">Câu {idx + 1}</h4>
+            <h4 className="font-bold text-sm">Câu {idx + 1} {q.is_passage ? '(Đoạn văn)' : ''}</h4>
             <Button variant="ghost" size="sm" onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-4 h-4"/></Button>
           </div>
           
           <div className="space-y-2">
-            <Label>Đề bài / Prompt</Label>
-            <Textarea value={q.text} onChange={(e) => updateQuestion(q.id, { text: e.target.value })} rows={3} />
+            <Label>{q.is_passage ? 'Nội dung đoạn văn' : 'Đề bài / Prompt'}</Label>
+            <Textarea value={q.text} onChange={(e) => updateQuestion(q.id, { text: e.target.value })} rows={q.is_passage ? 6 : 3} />
           </div>
 
           <div className="space-y-2">
@@ -137,7 +172,43 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
             </div>
           )}
 
-          {q.skill !== 'kaiwa' ? (
+          {q.skill === 'kaiwa' ? (
+            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Đây là câu hỏi Kaiwa (Giao tiếp). Học viên sẽ được yêu cầu ghi âm câu trả lời.</p>
+            </div>
+          ) : q.is_passage ? (
+            <div className="space-y-4 mt-6 border-t pt-4">
+              <div className="flex justify-between items-center">
+                <h5 className="font-bold text-sm">Các câu hỏi phụ</h5>
+                <Button size="sm" variant="outline" onClick={() => addSubQuestion(q.id)}><Plus className="w-4 h-4 mr-1"/> Thêm câu hỏi phụ</Button>
+              </div>
+              <div className="space-y-4">
+                {(q.sub_questions || []).map((sq: any, sIdx: number) => (
+                  <Card key={sq.id} className="border bg-slate-50 dark:bg-slate-900">
+                    <CardContent className="p-4 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <Label className="font-bold text-xs uppercase">Câu {idx + 1}.{sIdx + 1}</Label>
+                        <Button variant="ghost" size="sm" onClick={() => deleteSubQuestion(q.id, sq.id)} className="h-6 w-6 p-0 text-red-500 hover:bg-red-100"><Trash2 className="w-3 h-3"/></Button>
+                      </div>
+                      <Input placeholder="Nội dung câu hỏi phụ..." value={sq.text} onChange={e => updateSubQuestion(q.id, sq.id, { text: e.target.value })} />
+                      <div className="space-y-2">
+                        {(sq.options || []).map((opt: string, oIdx: number) => (
+                          <div key={oIdx} className="flex items-center gap-2">
+                            <input type="radio" name={`correct_${sq.id}`} checked={sq.correct_index === oIdx} onChange={() => updateSubQuestion(q.id, sq.id, { correct_index: oIdx })} className="w-4 h-4" />
+                            <Input value={opt} onChange={(e) => {
+                              const newOpts = [...(sq.options || [])];
+                              newOpts[oIdx] = e.target.value;
+                              updateSubQuestion(q.id, sq.id, { options: newOpts });
+                            }} />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
             <div className="space-y-2">
               <Label>Các đáp án (Đánh dấu Check vào đáp án đúng)</Label>
               <div className="space-y-2 mt-2">
@@ -152,10 +223,6 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
                   </div>
                 ))}
               </div>
-            </div>
-          ) : (
-            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Đây là câu hỏi Kaiwa (Giao tiếp). Học viên sẽ được yêu cầu ghi âm câu trả lời.</p>
             </div>
           )}
         </CardContent>
@@ -178,7 +245,7 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
           </div>
           <div className="space-y-2">
             <Label>Cấp độ</Label>
-            <Input value={editingExam.level} onChange={e => setEditingExam({...editingExam, level: e.target.value})} />
+            <Input value={editingExam.exam_category || editingExam.level || ''} onChange={e => setEditingExam({...editingExam, exam_category: e.target.value})} />
           </div>
           <div className="space-y-2">
             <Label>Thời gian (phút)</Label>
@@ -306,7 +373,12 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
                   >
                     <BrainCircuit className="w-4 h-4 mr-1"/> AI Tạo tự động
                   </Button>
-                  <Button size="sm" onClick={() => addQuestion(skill)}>
+                  {(skill === 'reading' || skill === 'listening') && (
+                    <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50" onClick={() => addQuestion(skill, true)}>
+                      <BookOpen className="w-4 h-4 mr-1"/> Thêm đoạn văn
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={() => addQuestion(skill, false)}>
                     <Plus className="w-4 h-4 mr-1"/> Thêm câu {skill}
                   </Button>
                 </div>

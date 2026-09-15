@@ -206,17 +206,27 @@ export default function JLPTExamRunner() {
       exam.questions.forEach((q: any, i: number) => {
         if (q.type === 'system_config') return;
         
-        const isCorrect = answers[i] !== undefined && answers[i] === q.correct_index;
-        if (sections.vocab.some(vq => vq.id === q.id || vq === q)) {
-          vocabTotal++; if (isCorrect) vocabCorrect++;
-        } else if (sections.reading.some(rq => rq.id === q.id || rq === q)) {
-          readingTotal++; if (isCorrect) readingCorrect++;
-        } else if (sections.listening.some(lq => lq.id === q.id || lq === q)) {
-          listeningTotal++; if (isCorrect) listeningCorrect++;
+        const processQuestion = (question: any, answerKey: string | number) => {
+          const isCorrect = answers[answerKey] !== undefined && answers[answerKey] === question.correct_index;
+          if (sections.vocab.some(vq => vq.id === q.id || vq === q)) {
+            vocabTotal++; if (isCorrect) vocabCorrect++;
+          } else if (sections.reading.some(rq => rq.id === q.id || rq === q)) {
+            readingTotal++; if (isCorrect) readingCorrect++;
+          } else if (sections.listening.some(lq => lq.id === q.id || lq === q)) {
+            listeningTotal++; if (isCorrect) listeningCorrect++;
+          }
+        };
+
+        if (q.is_passage && q.sub_questions) {
+          q.sub_questions.forEach((sq: any, sIdx: number) => {
+            processQuestion(sq, `${i}_${sIdx}`);
+          });
+        } else {
+          processQuestion(q, i);
         }
       });
       
-      const level = exam.level || 'N4';
+      const level = exam.exam_category || exam.level || 'N4';
       let scoreBreakdown: any = {};
       let totalScore = 0;
       let passed = false;
@@ -447,7 +457,40 @@ export default function JLPTExamRunner() {
                 )}
 
                 <div className="space-y-2 mt-4">
-                  {q.skill === 'kaiwa' || q.type === 'audio_record' ? (
+                  {q.is_passage ? (
+                    <div className="space-y-6 mt-6 border-t pt-4">
+                      <h4 className="font-bold text-sm text-primary">Các câu hỏi phụ</h4>
+                      {(q.sub_questions || []).map((sq: any, sIdx: number) => {
+                        const sqKey = `${globalIdx}_${sIdx}`;
+                        const sqAns = answers[sqKey];
+                        return (
+                          <Card key={sq.id} className="border bg-card shadow-sm">
+                            <CardContent className="p-4 space-y-4">
+                              <div className="font-bold text-sm">Câu {localIdx + 1}.{sIdx + 1}</div>
+                              <div className="font-medium text-base"><FormattedText text={sq.text || ''} /></div>
+                              <div className="space-y-2">
+                                {(sq.options || []).map((opt: string, optIdx: number) => (
+                                  <label 
+                                    key={optIdx} 
+                                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${sqAns === optIdx ? 'bg-primary/10 border-primary shadow-sm' : 'hover:bg-muted/50 border-border'}`}
+                                  >
+                                    <input 
+                                      type="radio" 
+                                      name={`q_${sqKey}`} 
+                                      checked={sqAns === optIdx}
+                                      onChange={() => setAnswers(prev => ({ ...prev, [sqKey]: optIdx }))}
+                                      className="mt-1 w-4 h-4 accent-primary"
+                                    />
+                                    <span className="flex-1"><FormattedText text={opt} /></span>
+                                  </label>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  ) : q.skill === 'kaiwa' || q.type === 'audio_record' ? (
                     <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl border-2 border-dashed gap-4">
                       {ans ? (
                         <div className="text-center space-y-4">
