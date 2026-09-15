@@ -23,7 +23,85 @@ export function AppInit() {
       applyTheme(getSavedTheme());
     };
 
+    const applyDynamicPwaSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('website_content')
+          .select('content')
+          .eq('section_key', 'pwa_settings')
+          .maybeSingle();
+
+        if (error || !data || !data.content) return;
+
+        const pwaSettings = data.content as any;
+        
+        // Update Title if specified
+        if (pwaSettings.appName) {
+          document.title = pwaSettings.appName;
+        }
+
+        // Update Favicon and Apple Touch Icon if specified
+        if (pwaSettings.iconUrl) {
+          let faviconLink = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+          if (!faviconLink) {
+            faviconLink = document.createElement('link');
+            faviconLink.rel = 'icon';
+            document.head.appendChild(faviconLink);
+          }
+          faviconLink.href = pwaSettings.iconUrl;
+
+          let appleIconLink = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement;
+          if (!appleIconLink) {
+            appleIconLink = document.createElement('link');
+            appleIconLink.rel = 'apple-touch-icon';
+            document.head.appendChild(appleIconLink);
+          }
+          appleIconLink.href = pwaSettings.iconUrl;
+        }
+
+        // Dynamically override manifest
+        try {
+          const res = await fetch('/manifest.webmanifest');
+          if (res.ok) {
+            const manifest = await res.json();
+            
+            manifest.name = pwaSettings.appName || manifest.name;
+            manifest.short_name = pwaSettings.shortName || manifest.short_name;
+            if (pwaSettings.themeColor) {
+              manifest.theme_color = pwaSettings.themeColor;
+              manifest.background_color = pwaSettings.themeColor;
+            }
+            if (pwaSettings.iconUrl) {
+              manifest.icons = [
+                { src: pwaSettings.iconUrl, sizes: '192x192', type: 'image/png' },
+                { src: pwaSettings.iconUrl, sizes: '512x512', type: 'image/png' },
+                { src: pwaSettings.iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+              ];
+            }
+            
+            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
+            if (manifestLink) {
+              manifestLink.href = url;
+            } else {
+              manifestLink = document.createElement('link');
+              manifestLink.rel = 'manifest';
+              manifestLink.href = url;
+              document.head.appendChild(manifestLink);
+            }
+          }
+        } catch (manifestError) {
+          console.error('Could not dynamically update manifest', manifestError);
+        }
+      } catch (err) {
+        console.error('Error fetching PWA settings:', err);
+      }
+    };
+
     fetchGlobalTheme();
+    applyDynamicPwaSettings();
   }, []);
 
   return null;

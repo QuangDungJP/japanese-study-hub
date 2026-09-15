@@ -16,9 +16,9 @@ export default defineConfig(({ mode }) => ({
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Japanese Study Hub',
-        short_name: 'JP Hub',
-        description: 'Ứng dụng học tiếng Nhật trực tuyến chuyên nghiệp',
+        name: 'Quang Dũng Nihongo',
+        short_name: 'Quang Dũng',
+        description: 'Trung tâm đào tạo Nhật ngữ trực tuyến chuyên nghiệp',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
