@@ -14,6 +14,7 @@ import ZoomPage from "./pages/ZoomPage";
 import Contact from "./pages/Contact";
 import CourseDetail from "./pages/CourseDetail";
 import TeacherDetail from "./pages/TeacherDetail";
+import InstallGuide from "./pages/InstallGuide";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -147,6 +148,7 @@ const App = () => (
                 <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
               <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
                 <Route path="/faq" element={<About />} />
+                <Route path="/huong-dan-cai-dat" element={<InstallGuide />} />
                 <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />

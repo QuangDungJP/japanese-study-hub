@@ -43,6 +43,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5000000 // 5MB
+      },
+      devOptions: {
+        enabled: true
       }
     })
   ].filter(Boolean),

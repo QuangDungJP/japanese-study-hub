@@ -5,8 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
+  const navigate = useNavigate();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -40,7 +42,10 @@ const Settings = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      navigate('/huong-dan-cai-dat');
+      return;
+    }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
@@ -95,9 +100,9 @@ const Settings = () => {
                   </p>
                   <p className="text-sm text-muted-foreground">Tạo lối tắt trên màn hình và nhận thông báo đẩy nhanh chóng.</p>
                 </div>
-                <Button onClick={handleInstallClick} disabled={!deferredPrompt} variant={deferredPrompt ? "default" : "outline"}>
+                <Button onClick={handleInstallClick} variant={deferredPrompt ? "default" : "outline"}>
                   <Download className="w-4 h-4 mr-2" />
-                  Cài đặt ngay
+                  {deferredPrompt ? "Cài đặt ngay" : "Xem hướng dẫn cài"}
                 </Button>
               </div>
             )}

@@ -228,6 +228,9 @@ const FloatingChat = () => {
             className="p-3 border-t border-border bg-card flex items-center gap-2"
           >
             <input
+              id="chatbot-input"
+              name="chat"
+              aria-label="Tin nhắn"
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
