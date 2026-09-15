@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit } from 'lucide-react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit, Smartphone } from 'lucide-react';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,20 @@ const defaultAuthCms: AuthCmsSettings = {
   image_url: '/teachers/quang-dung.png',
 };
 
+interface PwaSettings {
+  appName: string;
+  shortName: string;
+  themeColor: string;
+  iconUrl: string;
+}
+
+const defaultPwaSettings: PwaSettings = {
+  appName: 'Quang Dũng Nihongo',
+  shortName: 'Quang Dũng',
+  themeColor: '#ffffff',
+  iconUrl: '/logo.jpg', // or og-image.png, but logo.jpg seems to be the brand logo
+};
+
 const AdminSettings = () => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -89,6 +103,8 @@ const AdminSettings = () => {
   const [pageSettingsList, setPageSettingsList] = useState<any[]>([]);
   const [globalTheme, setGlobalTheme] = useState<string>('sakura');
   const [themeDocId, setThemeDocId] = useState<string | null>(null);
+  const [pwaSettings, setPwaSettings] = useState<PwaSettings>(defaultPwaSettings);
+  const [pwaDocId, setPwaDocId] = useState<string | null>(null);
 
   const visibility = localVisibility || pageVisibility;
 
@@ -135,6 +151,26 @@ const AdminSettings = () => {
           if (data.content && typeof data.content === 'object') {
             const c = data.content as Record<string, string>;
             if (c.theme_id) setGlobalTheme(c.theme_id);
+          }
+        }
+      });
+
+    supabase
+      .from('website_content')
+      .select('id, content')
+      .eq('section_key', 'pwa_settings')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setPwaDocId(data.id);
+          if (data.content && typeof data.content === 'object') {
+            const c = data.content as unknown as PwaSettings;
+            setPwaSettings({
+              appName: c.appName || defaultPwaSettings.appName,
+              shortName: c.shortName || defaultPwaSettings.shortName,
+              themeColor: c.themeColor || defaultPwaSettings.themeColor,
+              iconUrl: c.iconUrl || defaultPwaSettings.iconUrl,
+            });
           }
         }
       });
@@ -228,6 +264,20 @@ const AdminSettings = () => {
     applyTheme(globalTheme); // Apply immediately for the admin
   };
 
+  const savePwaSettings = async () => {
+    const payload = {
+      section_key: 'pwa_settings',
+      content: pwaSettings,
+      is_active: true,
+    };
+    if (pwaDocId) {
+      await supabase.from('website_content').update(payload as any).eq('id', pwaDocId);
+    } else {
+      const { data } = await supabase.from('website_content').insert(payload as any).select('id').single();
+      if (data) setPwaDocId(data.id);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -236,6 +286,7 @@ const AdminSettings = () => {
       }
       await saveAuthCms();
       await saveGlobalTheme();
+      await savePwaSettings();
       await savePageSettings();
       toast({ title: 'Thành công', description: 'Đã lưu cài đặt' });
     } catch {
@@ -282,6 +333,9 @@ const AdminSettings = () => {
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings2 className="w-4 h-4" />Chung
+          </TabsTrigger>
+          <TabsTrigger value="pwa" className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4" />Ứng dụng (PWA)
           </TabsTrigger>
         </TabsList>
 
@@ -613,6 +667,71 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+        <TabsContent value="pwa" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cấu hình Ứng dụng (PWA)</CardTitle>
+              <CardDescription>Cài đặt Tên hiển thị, Tên rút gọn và Biểu tượng (Logo) khi học viên cài ứng dụng ra màn hình chính.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Tên ứng dụng (App Name)</label>
+                  <Input
+                    value={pwaSettings.appName}
+                    onChange={(e) => setPwaSettings(prev => ({ ...prev, appName: e.target.value }))}
+                    placeholder="Quang Dũng Nihongo"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Hiển thị khi cài đặt và trên trình quản lý máy tính.</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Tên rút gọn (Short Name)</label>
+                  <Input
+                    value={pwaSettings.shortName}
+                    onChange={(e) => setPwaSettings(prev => ({ ...prev, shortName: e.target.value }))}
+                    placeholder="Quang Dũng"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Hiển thị trên màn hình chính của điện thoại.</p>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Màu chủ đạo (Theme Color)</label>
+                <div className="flex gap-3 mt-1">
+                  <Input
+                    type="color"
+                    className="w-16 h-10 p-1 cursor-pointer"
+                    value={pwaSettings.themeColor}
+                    onChange={(e) => setPwaSettings(prev => ({ ...prev, themeColor: e.target.value }))}
+                  />
+                  <Input
+                    value={pwaSettings.themeColor}
+                    onChange={(e) => setPwaSettings(prev => ({ ...prev, themeColor: e.target.value }))}
+                    placeholder="#ffffff"
+                    className="flex-1 uppercase font-mono"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Đường dẫn Logo (Icon URL)</label>
+                <Input
+                  value={pwaSettings.iconUrl}
+                  onChange={(e) => setPwaSettings(prev => ({ ...prev, iconUrl: e.target.value }))}
+                  placeholder="/logo.jpg"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Khuyên dùng ảnh hình vuông (.png hoặc .jpg) dung lượng thấp.</p>
+                {pwaSettings.iconUrl && (
+                  <div className="mt-3 p-4 border rounded-xl flex items-center gap-4 bg-muted/20">
+                    <img src={pwaSettings.iconUrl} alt="App Icon" className="w-16 h-16 rounded-2xl object-cover shadow-sm border" />
+                    <div>
+                      <p className="font-bold">{pwaSettings.appName}</p>
+                      <p className="text-xs text-muted-foreground">{pwaSettings.iconUrl}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
