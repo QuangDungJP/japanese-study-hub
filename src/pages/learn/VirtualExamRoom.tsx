@@ -154,7 +154,7 @@ const VirtualExamRoom = () => {
           <TabsContent key={level} value={level} className="m-0 space-y-6">
             <ExamGrid 
               // Assumes level is stored in exam metadata or parsed from title/level field
-              exams={exams.filter(e => e.level === level || e.title.includes(level))} 
+              exams={exams.filter(e => e.exam_category === level || e.level === level || e.title.includes(level))} 
               attempts={attempts} 
               navigate={navigate} 
             />
@@ -214,7 +214,7 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
               <div className="flex justify-between items-start gap-4 mb-4">
                 <div className="flex gap-2 items-center">
                   <Badge className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 border-none font-bold px-3 py-1 rounded-full text-xs">
-                    {exam.level || 'JLPT'}
+                    {exam.exam_category || exam.level || 'JLPT'}
                   </Badge>
                   <Badge variant="outline" className="text-xs border-zinc-200 dark:border-zinc-800 text-zinc-500">
                     Mô phỏng 100%

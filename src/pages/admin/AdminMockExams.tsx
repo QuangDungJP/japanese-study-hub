@@ -43,7 +43,7 @@ export default function AdminMockExams() {
         title_vi: title,
         title: title,
         exam_type: 'jlpt_mock',
-        level: level,
+        exam_category: level,
         is_published: false,
         duration_minutes: 180,
         max_score: 180,
@@ -103,7 +103,7 @@ export default function AdminMockExams() {
         title_vi: "Đề Thi Thử Mẫu JLPT N4 (Auto Generated)",
         title: "Mock Test N4",
         exam_type: 'jlpt_mock',
-        level: 'N4',
+        exam_category: 'N4',
         is_published: true,
         duration_minutes: 155, // N4 default time
         max_score: 180,
@@ -145,7 +145,7 @@ export default function AdminMockExams() {
                 title_vi: title,
                 title: title,
                 exam_type: 'jlpt_mock',
-                level: level,
+                exam_category: level,
                 is_published: true,
                 duration_minutes: 0,
                 max_score: 0,
@@ -193,7 +193,7 @@ export default function AdminMockExams() {
                     <div>
                       <h3 className="font-bold text-lg">{exam.title_vi}</h3>
                       <div className="flex gap-2 text-sm text-muted-foreground mt-1">
-                        <Badge variant="outline">{exam.level || 'N/A'}</Badge>
+                        <Badge variant="outline">{exam.exam_category || exam.level || 'N/A'}</Badge>
                         {isExternal ? (
                           <span className="text-blue-500 flex items-center gap-1"><ExternalLink className="w-3 h-3"/> Link ngoài (Azota/Google Form)</span>
                         ) : (
