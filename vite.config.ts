@@ -14,30 +14,52 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'pwa-192x192.png', 'pwa-512x512.png', 'screenshot-mobile.png', 'screenshot-desktop.png'],
       manifest: {
+        id: '/',
         name: 'Quang Dũng Nihongo',
         short_name: 'Quang Dũng',
         description: 'Trung tâm đào tạo Nhật ngữ trực tuyến chuyên nghiệp',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        start_url: '/',
+        scope: '/',
+        theme_color: '#0f0f1e',
+        background_color: '#0f0f1e',
         display: 'standalone',
+        orientation: 'portrait-primary',
+        lang: 'vi',
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: 'screenshot-mobile.png',
+            sizes: '390x844',
+            type: 'image/png',
+            label: 'Quang Dũng Nihongo - Học tiếng Nhật trên điện thoại'
+          },
+          {
+            src: 'screenshot-desktop.png',
+            sizes: '1280x800',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Quang Dũng Nihongo - Học tiếng Nhật trên máy tính'
           }
         ]
       },
