@@ -511,7 +511,7 @@ const InstallGuide = () => {
                   <StepCard
                     step={2}
                     icon={<PlusSquare className="w-4 h-4" />}
-                    title="Chọn \"Thêm vào Màn hình chính\""
+                    title="Chọn &quot;Thêm vào Màn hình chính&quot;"
                     description={
                       <span>
                         Bảng tùy chọn xuất hiện từ dưới lên. Cuộn xuống và nhấn{' '}
@@ -591,7 +591,7 @@ const InstallGuide = () => {
                   <StepCard
                     step={2}
                     icon={<Download className="w-4 h-4" />}
-                    title="Chọn \"Cài đặt ứng dụng\""
+                    title="Chọn &quot;Cài đặt ứng dụng&quot;"
                     description={
                       <span>
                         Trong menu xổ xuống, tìm và nhấn{' '}
@@ -675,7 +675,7 @@ const InstallGuide = () => {
                   <StepCard
                     step={2}
                     icon={<PlusSquare className="w-4 h-4" />}
-                    title="Nhấn \"Cài đặt\" trong popup"
+                    title="Nhấn &quot;Cài đặt&quot; trong popup"
                     description={
                       <span>
                         Nhấn vào biểu tượng đó. Popup nhỏ hiện lên —
