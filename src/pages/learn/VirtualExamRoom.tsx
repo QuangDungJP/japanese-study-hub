@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Clock, CheckCircle2, Play, AlertCircle, FileText, Sparkles, BookOpen } from 'lucide-react';
+import { Trophy, Clock, CheckCircle2, Play, AlertCircle, FileText, Sparkles, BookOpen, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatWithJST } from '@/lib/dateUtils';
 import PageLoadingScreen from '@/components/shared/PageLoadingScreen';
@@ -300,11 +300,21 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
                 </Button>
               ) : (
                 <Button 
-                  onClick={() => navigate(`/learn/mock-exams/${exam.id}`)}
+                  onClick={() => {
+                    const isExternal = exam.questions && Array.isArray(exam.questions) && exam.questions[0]?.type === 'external_link';
+                    if (isExternal && exam.questions[0]?.url) {
+                      window.open(exam.questions[0].url, '_blank');
+                    } else {
+                      navigate(`/learn/mock-exams/${exam.id}`);
+                    }
+                  }}
                   className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-xl px-6"
                 >
-                  <Play className="w-4 h-4 mr-2" /> 
-                  {completedAttempts.length > 0 ? 'Thi lại' : 'Vào thi'}
+                  {(() => {
+                    const isExternal = exam.questions && Array.isArray(exam.questions) && exam.questions[0]?.type === 'external_link';
+                    if (isExternal) return <><Globe className="w-4 h-4 mr-2" /> Làm bài (Link ngoài)</>;
+                    return <><Play className="w-4 h-4 mr-2" /> {completedAttempts.length > 0 ? 'Thi lại' : 'Vào thi'}</>;
+                  })()}
                 </Button>
               )}
             </div>

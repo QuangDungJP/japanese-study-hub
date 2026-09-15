@@ -377,7 +377,7 @@ const Index = () => {
                 <div className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                   <div className="aspect-[4/3] bg-gradient-to-br from-japanese/20 to-primary/20 flex items-center justify-center">
                     {t.avatar_url ? (
-                      <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
+                      <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover object-top" />
                     ) : (
                       <div className="w-20 h-20 rounded-full bg-card shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                         <span className="text-3xl">👩‍🏫</span>

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Settings, Sparkles, Trash2 } from 'lucide-react';
+import { FileText, Plus, Settings, Sparkles, Trash2, Globe, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageLoadingScreen from '@/components/shared/PageLoadingScreen';
 import AdminExamEditor from '@/components/admin/AdminExamEditor';
@@ -133,6 +133,35 @@ export default function AdminMockExams() {
           <Button variant="outline" onClick={handleSeedExam} className="gap-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50">
             <Sparkles className="w-4 h-4" /> Tạo Đề Mẫu N4
           </Button>
+          <Button variant="outline" onClick={async () => {
+            const url = prompt("Nhập link bài thi (Google Form, Azota, v.v.):");
+            if (!url) return;
+            const title = prompt("Nhập tên Đề thi (vd: Đề thi thử JLPT N4 - T12/2024):");
+            if (!title) return;
+            const level = prompt("Nhập cấp độ (N1, N2, N3, N4, N5):", "N4");
+            
+            try {
+              const { error } = await supabase.from('exams').insert({
+                title_vi: title,
+                title: title,
+                exam_type: 'jlpt_mock',
+                level: level,
+                is_published: true,
+                duration_minutes: 0,
+                max_score: 0,
+                passing_score: 0,
+                questions: [{ type: 'external_link', url: url }]
+              });
+
+              if (error) throw error;
+              toast({ title: 'Tạo đề từ link thành công' });
+              fetchExams();
+            } catch (err: any) {
+              toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+            }
+          }} className="gap-2 border-blue-500 text-blue-600 hover:bg-blue-50">
+            <Globe className="w-4 h-4" /> Đề từ Link ngoài
+          </Button>
           <Button onClick={handleCreateMockExam} className="gap-2">
             <Plus className="w-4 h-4" /> Tạo Đề thi mới
           </Button>
@@ -151,18 +180,28 @@ export default function AdminMockExams() {
             </div>
           ) : (
             <div className="space-y-4">
-              {exams.map(exam => (
+              {exams.map(exam => {
+                const isExternal = exam.questions && Array.isArray(exam.questions) && exam.questions[0]?.type === 'external_link';
+                const externalUrl = isExternal ? exam.questions[0].url : null;
+                
+                return (
                 <div key={exam.id} className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-primary" />
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isExternal ? 'bg-blue-500/10' : 'bg-primary/10'}`}>
+                      {isExternal ? <Globe className="w-6 h-6 text-blue-500" /> : <FileText className="w-6 h-6 text-primary" />}
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{exam.title_vi}</h3>
                       <div className="flex gap-2 text-sm text-muted-foreground mt-1">
                         <Badge variant="outline">{exam.level || 'N/A'}</Badge>
-                        <span>{exam.duration_minutes} phút</span>
-                        <span>Điểm đỗ: {exam.passing_score}/{exam.max_score}</span>
+                        {isExternal ? (
+                          <span className="text-blue-500 flex items-center gap-1"><ExternalLink className="w-3 h-3"/> Link ngoài (Azota/Google Form)</span>
+                        ) : (
+                          <>
+                            <span>{exam.duration_minutes} phút</span>
+                            <span>Điểm đỗ: {exam.passing_score}/{exam.max_score}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -170,15 +209,21 @@ export default function AdminMockExams() {
                     <Badge variant={exam.is_published ? "default" : "secondary"}>
                       {exam.is_published ? "Đã xuất bản" : "Bản nháp"}
                     </Badge>
-                    <Button variant="outline" size="sm" onClick={() => setEditingExam(exam)} className="gap-1 ml-4">
-                      <Settings className="w-4 h-4" /> Cấu hình đề
-                    </Button>
+                    {isExternal ? (
+                      <Button variant="outline" size="sm" onClick={() => window.open(externalUrl, '_blank')} className="gap-1 ml-4 text-blue-600 border-blue-200 hover:bg-blue-50">
+                        <ExternalLink className="w-4 h-4" /> Mở Link
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => setEditingExam(exam)} className="gap-1 ml-4">
+                        <Settings className="w-4 h-4" /> Cấu hình đề
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(exam.id)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </CardContent>

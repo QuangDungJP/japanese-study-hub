@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,6 +93,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
 
 export default function AdminTeachers() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -153,6 +155,8 @@ export default function AdminTeachers() {
     setTeachers(data || []);
     setLoading(false);
     setOrderChanged(false);
+    // Invalidate react-query cache so frontend updates immediately
+    queryClient.invalidateQueries({ queryKey: ["teacher-profiles"] });
   };
 
   useEffect(() => { fetchTeachers(); }, []);
@@ -552,20 +556,34 @@ export default function AdminTeachers() {
                   <input ref={cropInputRef} type="file" accept="image/*" className="hidden" onChange={handleCropFileSelect} />
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label>Ảnh đại diện</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('image_url'); openCropForFile('image_url'); }}>
-                        <Crop className="w-3.5 h-3.5 mr-1" /> Chọn & Cắt ảnh
-                      </Button>
+                      <Label>Ảnh đại diện (Sẽ hiển thị tỷ lệ 4:3)</Label>
+                      <div className="flex gap-2">
+                        {formData.image_url && (
+                          <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('image_url'); setCropImageSrc(formData.image_url); setCropModalOpen(true); }}>
+                            <Crop className="w-3.5 h-3.5 mr-1" /> Cắt ảnh hiện tại
+                          </Button>
+                        )}
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setCropTarget('image_url'); openCropForFile('image_url'); }}>
+                          <Crop className="w-3.5 h-3.5 mr-1" /> Tải lên mới
+                        </Button>
+                      </div>
                     </div>
-                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" aspectRatio="square" accept="image" />
+                    <MediaUploader value={formData.image_url} onChange={(url) => set("image_url", url)} folder="teachers" aspectRatio="video" accept="image" />
                     <Input value={formData.image_url} onChange={(e) => set("image_url", e.target.value)} placeholder="Hoặc dán URL ảnh..." className="text-xs" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Ảnh bìa (Cover)</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('cover_image_url'); openCropForFile('cover_image_url'); }}>
-                        <Crop className="w-3.5 h-3.5 mr-1" /> Chọn & Cắt ảnh
-                      </Button>
+                      <div className="flex gap-2">
+                        {formData.cover_image_url && (
+                          <Button type="button" variant="outline" size="sm" onClick={() => { setCropTarget('cover_image_url'); setCropImageSrc(formData.cover_image_url); setCropModalOpen(true); }}>
+                            <Crop className="w-3.5 h-3.5 mr-1" /> Cắt ảnh hiện tại
+                          </Button>
+                        )}
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setCropTarget('cover_image_url'); openCropForFile('cover_image_url'); }}>
+                          <Crop className="w-3.5 h-3.5 mr-1" /> Tải lên mới
+                        </Button>
+                      </div>
                     </div>
                     <MediaUploader value={formData.cover_image_url} onChange={(url) => set("cover_image_url", url)} folder="teachers" aspectRatio="banner" accept="image" />
                     <Input value={formData.cover_image_url} onChange={(e) => set("cover_image_url", e.target.value)} placeholder="Hoặc dán URL ảnh bìa..." className="text-xs" />
@@ -627,8 +645,9 @@ export default function AdminTeachers() {
         onClose={() => setCropModalOpen(false)}
         imageSrc={cropImageSrc}
         onCropComplete={handleCropComplete}
-        aspect={cropTarget === 'image_url' ? 1 : 3}
+        aspect={cropTarget === 'image_url' ? 4 / 3 : 3}
         title={cropTarget === 'image_url' ? 'Cắt ảnh đại diện' : 'Cắt ảnh bìa'}
+        isAvatar={cropTarget === 'image_url'}
       />
     </div>
   );
