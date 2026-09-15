@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Mail, Phone, MapPin, Globe, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import Logo from "@/components/Logo";
 
 const Footer = () => {
@@ -34,7 +35,15 @@ const Footer = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      toast.info('Trình duyệt của bạn yêu cầu cài đặt thủ công.', {
+        action: {
+          label: 'Xem hướng dẫn',
+          onClick: () => window.location.href = '/huong-dan-cai-dat'
+        }
+      });
+      return;
+    }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
