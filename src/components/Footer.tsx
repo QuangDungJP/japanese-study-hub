@@ -1,14 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Phone, MapPin, Globe, Download } from "lucide-react";
+import { Mail, Phone, MapPin, Globe, Download, X, Share, MoreVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 
+// Detect platform
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isAndroid = () => /android/i.test(navigator.userAgent);
+
 const Footer = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installPlatform, setInstallPlatform] = useState<'ios' | 'android' | null>(null);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
@@ -36,12 +42,16 @@ const Footer = () => {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      toast.info('Trình duyệt của bạn yêu cầu cài đặt thủ công.', {
-        action: {
-          label: 'Xem hướng dẫn',
-          onClick: () => window.location.href = '/huong-dan-cai-dat'
-        }
-      });
+      // Show platform-specific install guide
+      if (isIOS()) {
+        setInstallPlatform('ios');
+        setShowInstallModal(true);
+      } else if (isAndroid()) {
+        setInstallPlatform('android');
+        setShowInstallModal(true);
+      } else {
+        toast.info('Trình duyệt của bạn không hỗ trợ cài đặt PWA tự động. Hãy dùng Chrome để cài đặt.');
+      }
       return;
     }
     deferredPrompt.prompt();
@@ -89,6 +99,85 @@ const Footer = () => {
   };
 
   return (
+    <>
+    {/* PWA Install Guide Modal */}
+    {showInstallModal && (
+      <div
+        className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+        onClick={() => setShowInstallModal(false)}
+      >
+        <div
+          className="bg-gray-900 text-white rounded-t-2xl sm:rounded-2xl w-full max-w-sm mx-auto p-6 shadow-2xl border border-white/10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <Download className="w-5 h-5 text-blue-400" />
+              Cài đặt ứng dụng
+            </h3>
+            <button
+              onClick={() => setShowInstallModal(false)}
+              className="p-1 rounded-full hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {installPlatform === 'ios' && (
+            <div className="space-y-4 text-sm">
+              <p className="text-white/70">Để cài đặt app trên iPhone/iPad, làm theo các bước sau:</p>
+              <ol className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">1</span>
+                  <span>Nhấn nút <strong>Chia sẻ</strong> <span className="inline-flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-xs"><Share className="w-3 h-3" /> Share</span> ở thanh dưới Safari</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">2</span>
+                  <span>Cuộn xuống và chọn <strong>"Thêm vào màn hình chính"</strong> (Add to Home Screen)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">3</span>
+                  <span>Nhấn <strong>"Thêm"</strong> ở góc trên bên phải</span>
+                </li>
+              </ol>
+              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs">
+                ⚠️ Chỉ hoạt động trên trình duyệt <strong>Safari</strong> của iPhone/iPad
+              </div>
+            </div>
+          )}
+
+          {installPlatform === 'android' && (
+            <div className="space-y-4 text-sm">
+              <p className="text-white/70">Để cài đặt app trên Android, làm theo các bước sau:</p>
+              <ol className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center font-bold">1</span>
+                  <span>Mở trang web bằng <strong>Google Chrome</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center font-bold">2</span>
+                  <span>Nhấn dấu <strong>⋮ (3 chấm)</strong> <span className="inline-flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-xs"><MoreVertical className="w-3 h-3" /></span> ở góc trên bên phải</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center font-bold">3</span>
+                  <span>Chọn <strong>"Thêm vào màn hình chính"</strong> hoặc <strong>"Cài đặt ứng dụng"</strong></span>
+                </li>
+              </ol>
+              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-blue-300 text-xs">
+                💡 Nếu bạn đang dùng Samsung Internet hoặc trình duyệt khác, hãy chuyển sang <strong>Chrome</strong> để cài đặt dễ hơn
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowInstallModal(false)}
+            className="mt-6 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors text-sm font-semibold"
+          >
+            Đã hiểu
+          </button>
+        </div>
+      </div>
+    )}
     <footer className="bg-foreground text-primary-foreground py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
@@ -241,8 +330,8 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+    </>
   );
 };
 
 export default Footer;
-
