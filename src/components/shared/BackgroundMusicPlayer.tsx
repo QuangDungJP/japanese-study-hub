@@ -30,7 +30,13 @@ export const BackgroundMusicPlayer = () => {
   const [visible, setVisible] = useState<boolean>(() => {
     return localStorage.getItem('bg_music_enabled') !== 'false';
   });
-  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isMinimized, setIsMinimized] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return true;
+    }
+    return false;
+  });
+  const [hasOpenDialog, setHasOpenDialog] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -39,6 +45,19 @@ export const BackgroundMusicPlayer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
+
+  // Auto-hide or minimize on mobile when a Dialog / Modal is open
+  useEffect(() => {
+    const checkDialog = () => {
+      const isDialogOpen = !!document.querySelector('[role="dialog"]') ||
+                           document.body.getAttribute('data-scroll-locked') === '1';
+      setHasOpenDialog(isDialogOpen);
+    };
+    checkDialog();
+    const observer = new MutationObserver(checkDialog);
+    observer.observe(document.body, { attributes: true, childList: true, subtree: false });
+    return () => observer.disconnect();
+  }, []);
 
   // Draggable position state (YouTube Premium style)
   const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
@@ -256,6 +275,8 @@ export const BackgroundMusicPlayer = () => {
   // Chỉ hiển thị trình phát nhạc cho người dùng đã đăng nhập
   if (!user) return null;
   if (!visible && tracks.length === 0) return null;
+  // Ẩn hoàn toàn khi có Dialog / Modal đang mở để tránh che nút Hủy / Tiếp tục / Lưu
+  if (hasOpenDialog) return null;
 
   return (
     <>
@@ -277,9 +298,11 @@ export const BackgroundMusicPlayer = () => {
           style={
             pos
               ? { left: `${pos.x}px`, top: `${pos.y}px` }
-              : { left: '50%', transform: 'translateX(-50%)', bottom: '24px' }
+              : undefined
           }
-          className={`fixed z-[999] touch-none select-none ${isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab'}`}
+          className={`fixed z-40 touch-none select-none ${
+            pos ? '' : 'bottom-20 right-4 sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto'
+          } ${isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab'}`}
         >
           <div
             onClick={(e) => {
@@ -324,7 +347,7 @@ export const BackgroundMusicPlayer = () => {
       {/* Main Full Music Player Popup Bar */}
       {visible && !isMinimized && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] max-w-2xl w-[94vw] sm:w-[680px] transition-all duration-300 animate-in fade-in slide-in-from-bottom-6"
+          className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[94vw] sm:w-[680px] transition-all duration-300 animate-in fade-in slide-in-from-bottom-6"
         >
           <div className="relative bg-card/95 backdrop-blur-2xl border-2 border-amber-500/40 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)] overflow-hidden">
             {/* Cover artwork backdrop */}
