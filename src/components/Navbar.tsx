@@ -184,13 +184,72 @@ const Navbar = () => {
             )}
           </div>
 
-          <button className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="flex items-center gap-1 lg:hidden">
+            <DarkModeToggle variant="compact" />
+            <button
+              className="p-2 rounded-xl hover:bg-muted text-foreground transition-colors active:scale-95"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Mở menu"
+            >
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
         {isOpen && (
-          <div className="lg:hidden py-4 border-t border-border animate-slide-up">
+          <div className="lg:hidden py-4 border-t border-border animate-slide-up max-h-[80vh] overflow-y-auto">
+            {/* User Profile Card or Welcome Banner */}
+            {user ? (
+              <div className="p-3.5 rounded-2xl bg-muted/60 border border-border/80 mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <AvatarWithDecoration userId={user.id} name={displayName} size="md" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                </div>
+                <Link
+                  to="/learn"
+                  onClick={() => setIsOpen(false)}
+                  className="shrink-0 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs active:scale-95"
+                >
+                  Vào học →
+                </Link>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/10 via-japanese/5 to-accent/10 border border-primary/20 mb-3">
+                <p className="text-xs font-bold text-foreground mb-1">👋 Chào mừng bạn đến với Quang Dũng Nihongo!</p>
+                <p className="text-[11px] text-muted-foreground mb-2.5">Đăng ký tài khoản để học thử miễn phí và làm bài thi thử JLPT.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-xs rounded-xl font-bold" asChild>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>Đăng nhập</Link>
+                  </Button>
+                  <Button size="sm" className="h-8 text-xs rounded-xl font-bold bg-primary" asChild>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>Bắt đầu ngay</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* PWA App Install Shortcut Card */}
+            <Link
+              to="/huong-dan-cai-dat"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center justify-between p-3 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20 mb-3 active:scale-98 transition-all"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center text-sm shadow-xs">
+                  📲
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Cài đặt App lên điện thoại</p>
+                  <p className="text-[10px] text-muted-foreground">Trải nghiệm như ứng dụng thật không thanh địa chỉ</p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-rose-600">Xem →</span>
+            </Link>
+
+            {/* Navigation Links */}
             <div className="flex flex-col gap-1">
               {navLinks.map(link => (
                 <Link
@@ -198,54 +257,60 @@ const Navbar = () => {
                   to={link.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "px-4 py-3 rounded-xl text-sm font-medium transition-all",
+                    "px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-between",
                     location.pathname === link.href
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary font-bold"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   )}
                 >
-                  {link.name}
+                  <span>{link.name}</span>
+                  <span className="text-xs opacity-50">›</span>
                 </Link>
               ))}
-              <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-sm font-medium text-muted-foreground">Chế độ hiển thị</span>
-                  <DarkModeToggle variant="compact" />
+
+              {/* Student Portal Shortcuts */}
+              {user && (
+                <div className="flex flex-col gap-1 pt-2 border-t border-border mt-2">
+                  <Link
+                    to="/learn"
+                    onClick={() => setIsOpen(false)}
+                    className="px-3.5 py-2.5 rounded-xl text-sm font-bold text-primary hover:bg-primary/10 transition-colors flex items-center gap-2"
+                  >
+                    <LayoutDashboard className="w-4 h-4" /> Bàn học cá nhân
+                  </Link>
+                  <Link
+                    to="/learn/profile"
+                    onClick={() => setIsOpen(false)}
+                    className="px-3.5 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <UserIcon className="w-4 h-4" /> Hồ sơ & Bảng vàng
+                  </Link>
+                  {isTeacherOrAbove && (
+                    <Link
+                      to="/teacher"
+                      onClick={() => setIsOpen(false)}
+                      className="px-3.5 py-2.5 rounded-xl text-sm font-medium text-amber-600 hover:bg-amber-500/10 transition-colors flex items-center gap-2"
+                    >
+                      <Settings className="w-4 h-4" /> Khu vực Giáo viên
+                    </Link>
+                  )}
+                  {isModeratorOrAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="px-3.5 py-2.5 rounded-xl text-sm font-medium text-purple-600 hover:bg-purple-500/10 transition-colors flex items-center gap-2"
+                    >
+                      <Settings className="w-4 h-4" /> Quản trị Admin
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => { setIsOpen(false); handleSignOut(); }}
+                    className="px-3.5 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-2 text-left"
+                  >
+                    <LogOut className="w-4 h-4" /> Đăng xuất
+                  </button>
                 </div>
-                {user ? (
-                  <>
-                    <div className="px-1 pb-1">
-                      <p className="text-sm font-medium truncate">{displayName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                    </div>
-                    <Button variant="ghost" className="w-full justify-start" asChild>
-                      <Link to="/learn/profile" onClick={() => setIsOpen(false)}>
-                        <UserIcon className="w-4 h-4 mr-2" /> Hồ sơ của tôi
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" className="w-full justify-start" asChild>
-                      <Link to="/learn" onClick={() => setIsOpen(false)}>
-                        <LayoutDashboard className="w-4 h-4 mr-2" /> Vào trang học
-                      </Link>
-                    </Button>
-                    {isModeratorOrAdmin && (
-                      <Button variant="ghost" className="w-full justify-start" asChild>
-                        <Link to="/admin" onClick={() => setIsOpen(false)}>
-                          <Settings className="w-4 h-4 mr-2" /> {isAdmin ? 'Quản trị viên' : 'Quản lý'}
-                        </Link>
-                      </Button>
-                    )}
-                    <Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => { setIsOpen(false); handleSignOut(); }}>
-                      <LogOut className="w-4 h-4 mr-2" /> Đăng xuất
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button variant="ghost" className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Đăng nhập</Link></Button>
-                    <Button className="w-full" asChild><Link to="/auth" onClick={() => setIsOpen(false)}>Bắt đầu miễn phí</Link></Button>
-                  </>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}

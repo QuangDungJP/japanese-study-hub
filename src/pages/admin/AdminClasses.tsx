@@ -166,8 +166,8 @@ const AdminClasses = () => {
   );
 
   const renderTable = () => (
-    <Card>
-      <CardContent className="p-0">
+    <Card className="w-full max-w-full overflow-hidden border">
+      <CardContent className="p-0 overflow-x-auto w-full">
         <Table>
           <TableHeader>
             <TableRow>
@@ -237,21 +237,23 @@ const AdminClasses = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Quản lý lớp học</h1>
-        <p className="text-muted-foreground mt-1">Duyệt và quản lý các lớp học do giáo viên tạo</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Quản lý lớp học</h1>
+        <p className="text-muted-foreground mt-1 text-sm">Duyệt và quản lý các lớp học do giáo viên tạo</p>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="pending">
-            Chờ duyệt ({classes.filter(c => c.approval_status === 'pending').length})
-          </TabsTrigger>
-          <TabsTrigger value="approved">Đã duyệt</TabsTrigger>
-          <TabsTrigger value="rejected">Bị từ chối</TabsTrigger>
-          <TabsTrigger value="all">Tất cả</TabsTrigger>
-        </TabsList>
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <div className="overflow-x-auto no-scrollbar pb-1 w-full">
+          <TabsList className="inline-flex w-max min-w-full">
+            <TabsTrigger value="pending">
+              Chờ duyệt ({classes.filter(c => c.approval_status === 'pending').length})
+            </TabsTrigger>
+            <TabsTrigger value="approved">Đã duyệt</TabsTrigger>
+            <TabsTrigger value="rejected">Bị từ chối</TabsTrigger>
+            <TabsTrigger value="all">Tất cả</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value={tab} className="mt-4">
           {loading ? <div className="text-center py-12 text-muted-foreground">Đang tải...</div> : renderTable()}
         </TabsContent>
@@ -274,13 +276,13 @@ const AdminClasses = () => {
 
       {/* Detail dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader><DialogTitle>{selected?.name_vi}</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-3 text-sm">
               <div><span className="text-muted-foreground">Giáo viên: </span><span className="font-medium">{selected.teacher_name}</span></div>
               <div><span className="text-muted-foreground">Mô tả: </span>{selected.description_vi || '—'}</div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div><span className="text-muted-foreground">Sĩ số: </span>{selected.student_count}/{selected.max_students}</div>
                 <div><span className="text-muted-foreground">Bắt đầu: </span>{selected.start_date || '—'}</div>
               </div>
@@ -312,12 +314,12 @@ const AdminClasses = () => {
 
       {/* Students dialog */}
       <Dialog open={studentsOpen} onOpenChange={setStudentsOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader><DialogTitle>Học viên - {selected?.name_vi}</DialogTitle></DialogHeader>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <div className="font-medium mb-2 text-sm">Đã thêm ({classStudents.length})</div>
-              <div className="border rounded max-h-[400px] overflow-y-auto">
+              <div className="border rounded max-h-[300px] sm:max-h-[400px] overflow-y-auto">
                 {classStudents.length === 0 ? (
                   <div className="text-center text-muted-foreground py-6 text-sm">Chưa có học viên</div>
                 ) : classStudents.map(s => (
@@ -339,7 +341,7 @@ const AdminClasses = () => {
                 <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
                 <Input className="pl-8" placeholder="Tìm tên học viên..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
               </div>
-              <div className="border rounded max-h-[360px] overflow-y-auto">
+              <div className="border rounded max-h-[260px] sm:max-h-[360px] overflow-y-auto">
                 {availableUsers.filter(u => !userSearch || u.full_name?.toLowerCase().includes(userSearch.toLowerCase())).length === 0 ? (
                   <div className="text-center text-muted-foreground py-6 text-sm">Không có học viên khả dụng</div>
                 ) : availableUsers
@@ -364,7 +366,7 @@ const AdminClasses = () => {
 
       {/* Sessions dialog */}
       <Dialog open={sessionsOpen} onOpenChange={setSessionsOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader><DialogTitle>Lịch học - {selected?.name_vi}</DialogTitle></DialogHeader>
           {selected && <ClassSessionsManager classId={selected.id} className={selected.name_vi} canEdit />}
           <DialogFooter>

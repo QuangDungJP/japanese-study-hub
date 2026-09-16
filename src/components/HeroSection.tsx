@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Sparkles, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Sparkles, Star, ChevronLeft, ChevronRight, BookOpen, Video, FileText, ArrowRight, Flame, Award, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveBannerStyle, bannerOverlayStyle, BANNER_HEIGHT_CLASS, BANNER_WIDTH_CLASS } from "@/components/admin/BannerStyleEditor";
 import { Link } from "react-router-dom";
@@ -16,6 +16,90 @@ export interface HeroSlide {
   button_text_vi?: string;
   button_url?: string;
 }
+
+// Mobile Quick Navigation & Level Discovery Component
+export const MobileQuickActions = () => (
+  <div className="md:hidden mt-5 space-y-3.5">
+    {/* Quick Level Pills */}
+    <div>
+      <div className="flex items-center justify-between mb-1.5 px-0.5">
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+          <Flame className="w-3.5 h-3.5 text-rose-500" /> Chọn cấp độ học
+        </span>
+        <Link to="/khoa-hoc" className="text-[11px] font-bold text-primary hover:underline flex items-center">
+          Tất cả <ArrowRight className="w-3 h-3 ml-0.5" />
+        </Link>
+      </div>
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+        {[
+          { level: "N5", name: "Nhập môn", color: "from-blue-500 to-cyan-500", href: "/khoa-hoc?level=N5" },
+          { level: "N4", name: "Sơ cấp", color: "from-emerald-500 to-teal-500", href: "/khoa-hoc?level=N4" },
+          { level: "N3", name: "Trung cấp", color: "from-amber-500 to-orange-500", href: "/khoa-hoc?level=N3" },
+          { level: "N2", name: "Cao cấp", color: "from-rose-500 to-pink-500", href: "/khoa-hoc?level=N2" },
+          { level: "N1", name: "Chuyên sâu", color: "from-purple-500 to-indigo-500", href: "/khoa-hoc?level=N1" },
+          { level: "Kaiwa", name: "Giao tiếp", color: "from-violet-500 to-fuchsia-500", href: "/khoa-hoc" },
+        ].map((item) => (
+          <Link
+            key={item.level}
+            to={item.href}
+            className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-card border border-border/80 shadow-xs active:scale-95 transition-all text-xs font-bold hover:border-primary/50"
+          >
+            <span className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${item.color}`} />
+            <span>{item.level}</span>
+            <span className="text-[10px] text-muted-foreground font-normal">{item.name}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+
+    {/* 4 App-style Quick Action Cards */}
+    <div className="grid grid-cols-4 gap-2">
+      <Link
+        to="/learn/mock-exams"
+        className="flex flex-col items-center justify-center p-2 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20 active:scale-95 transition-all text-center group"
+      >
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center shadow-xs mb-1 group-hover:scale-105 transition-transform">
+          <FileText className="w-4 h-4" />
+        </div>
+        <span className="text-[11px] font-bold text-foreground">Thi JLPT</span>
+        <span className="text-[9px] text-muted-foreground">Đề thi thử</span>
+      </Link>
+
+      <Link
+        to="/meeting"
+        className="flex flex-col items-center justify-center p-2 rounded-2xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 active:scale-95 transition-all text-center group"
+      >
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-xs mb-1 group-hover:scale-105 transition-transform">
+          <Video className="w-4 h-4" />
+        </div>
+        <span className="text-[11px] font-bold text-foreground">Vào Meet</span>
+        <span className="text-[9px] text-muted-foreground">Lớp học Live</span>
+      </Link>
+
+      <Link
+        to="/khoa-hoc"
+        className="flex flex-col items-center justify-center p-2 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 active:scale-95 transition-all text-center group"
+      >
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-xs mb-1 group-hover:scale-105 transition-transform">
+          <BookOpen className="w-4 h-4" />
+        </div>
+        <span className="text-[11px] font-bold text-foreground">Khóa học</span>
+        <span className="text-[9px] text-muted-foreground">Lộ trình chuẩn</span>
+      </Link>
+
+      <Link
+        to="/giao-vien"
+        className="flex flex-col items-center justify-center p-2 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 active:scale-95 transition-all text-center group"
+      >
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-xs mb-1 group-hover:scale-105 transition-transform">
+          <Award className="w-4 h-4" />
+        </div>
+        <span className="text-[11px] font-bold text-foreground">Giáo viên</span>
+        <span className="text-[9px] text-muted-foreground">Bản ngữ & N1</span>
+      </Link>
+    </div>
+  </div>
+);
 
 const HeroSection = () => {
   const { data: content, isLoading } = useAllWebsiteContent();
@@ -314,52 +398,57 @@ const HeroSection = () => {
   // MODE: CENTER POSTER FULL SCREEN 100% EDGE-TO-EDGE
   if (heroMode === 'center_full' || heroMode === 'full_screen') {
     return (
-      <section className="relative min-h-[85vh] bg-gradient-to-b from-background via-background to-primary/5 pt-20 pb-16 overflow-hidden w-full">
+      <section className="relative min-h-0 md:min-h-[85vh] bg-gradient-to-b from-background via-background to-primary/5 pt-14 pb-8 md:pt-20 md:pb-16 overflow-hidden w-full">
         {/* Top Centered Main Headline (nếu có title) */}
         {title && (
-          <div className="text-center mb-8 px-4">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.12] tracking-tight">
+          <div className="text-center mb-4 md:mb-8 px-4">
+            <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.15] tracking-tight">
               {title}
             </h1>
           </div>
         )}
 
         {/* Center Team Image Poster - 100% Full Display không bị cắt */}
-        <div className="w-full px-2 sm:px-6 lg:px-12 mb-10">
-          <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl border-2 sm:border-4 border-background bg-card">
+        <div className="w-full px-2 sm:px-6 lg:px-12 mb-4 md:mb-8">
+          <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl border-2 sm:border-4 border-background bg-card group">
             <img
               src={heroContent?.image_url || "/img/qd-team-hero.png"}
               alt="TNQDO Teachers Team Full"
               className="w-full h-auto max-h-[720px] object-contain bg-muted/20"
             />
+            <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold border border-white/20 shadow-md">
+                <span>🇯🇵</span> Tiếng Nhật N5 - N1
+              </span>
+            </div>
           </div>
         </div>
 
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Bottom Details & CTA Buttons Row */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 py-4">
-            <div className="flex-1 text-center md:text-left space-y-2">
-              <h3 className="text-lg sm:text-xl font-bold text-foreground">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 py-2 md:py-4">
+            <div className="flex-1 text-center md:text-left space-y-1.5 md:space-y-2">
+              <h3 className="text-base sm:text-xl font-bold text-foreground">
                 {statsContent?.tagline || "Mở cánh cửa tương lai Nhật Bản, kết nối toàn cầu."}
               </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto md:mx-0">
                 {description}
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0 pt-1 md:pt-0">
               {activeButtons.map((btn: any, idx: number) => (
                 <Button
                   key={btn.id || idx}
                   size="lg"
-                  className={`h-12 px-6 text-sm font-bold rounded-xl shadow-lg gap-2 ${
+                  className={`h-11 sm:h-12 px-6 text-sm font-bold rounded-xl shadow-md gap-2 w-full sm:w-auto active:scale-95 transition-transform ${
                     btn.variant === 'outline'
-                      ? 'bg-white text-foreground border-2 border-slate-900 hover:bg-slate-50'
+                      ? 'bg-card text-foreground border-2 border-slate-900 dark:border-slate-700 hover:bg-muted'
                       : btn.variant === 'rose'
                       ? 'bg-rose-600 hover:bg-rose-700 text-white'
                       : btn.variant === 'gold'
                       ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
-                      : 'bg-[#1e293b] hover:bg-[#0f172a] text-white'
+                      : 'bg-[#1e293b] hover:bg-[#0f172a] text-white dark:bg-primary dark:text-primary-foreground'
                   }`}
                   asChild
                 >
@@ -372,24 +461,27 @@ const HeroSection = () => {
             </div>
           </div>
 
+          {/* Mobile Quick Discovery & Action Grid */}
+          <MobileQuickActions />
+
           {/* Bottom KPI Metrics Row */}
           {statsContent?.show_stats !== false && (
-            <div className="mt-8 pt-8 border-t border-border/60 flex items-center justify-start gap-12 sm:gap-16">
-              <div className="flex items-center gap-3">
-                <div className="text-3xl font-black text-foreground">{students}</div>
-                <div className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+            <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-border/60 grid grid-cols-3 gap-2 sm:flex sm:items-center sm:justify-start sm:gap-16">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-center sm:text-left">
+                <div className="text-2xl sm:text-3xl font-black text-foreground">{students}</div>
+                <div className="text-[11px] sm:text-xs font-bold text-muted-foreground flex items-center justify-center sm:justify-start gap-1">
                   <span className="text-indigo-600">👥</span> Học viên
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-3xl font-black text-foreground">{teachers}</div>
-                <div className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-center sm:text-left">
+                <div className="text-2xl sm:text-3xl font-black text-foreground">{teachers}</div>
+                <div className="text-[11px] sm:text-xs font-bold text-muted-foreground flex items-center justify-center sm:justify-start gap-1">
                   <span className="text-amber-600">👨‍🏫</span> Giáo viên
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-3xl font-black text-foreground">{lessons}</div>
-                <div className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-center sm:text-left">
+                <div className="text-2xl sm:text-3xl font-black text-foreground">{lessons}</div>
+                <div className="text-[11px] sm:text-xs font-bold text-muted-foreground flex items-center justify-center sm:justify-start gap-1">
                   <span className="text-emerald-600">📚</span> Bài học
                 </div>
               </div>
@@ -403,19 +495,19 @@ const HeroSection = () => {
   // MODE 3: CENTER POSTER MODE (Matching Exact Latest User Screenshot)
   if (heroMode === 'center_poster') {
     return (
-      <section className="relative min-h-[85vh] bg-gradient-to-b from-background via-background to-primary/5 pt-24 pb-16 overflow-hidden">
+      <section className="relative min-h-0 md:min-h-[85vh] bg-gradient-to-b from-background via-background to-primary/5 pt-16 pb-8 md:pt-24 md:pb-16 overflow-hidden">
         <div className="container mx-auto px-4 relative z-10 max-w-5xl">
           {/* Top Centered Pill Badge */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-rose-50 text-rose-600 border border-rose-200 shadow-xs">
-              <Sparkles className="w-4 h-4 text-rose-500 animate-pulse" />
+          <div className="text-center mb-4 md:mb-6">
+            <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
               <span className="text-xs sm:text-sm font-bold">{subtitle}</span>
             </div>
           </div>
 
           {/* Top Centered Main Headline */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.12] tracking-tight">
+          <div className="text-center mb-5 md:mb-8">
+            <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.15] tracking-tight">
               {title.includes("Tiếng Nhật") ? (
                 <>
                   {title.split("Tiếng Nhật")[0]}
@@ -434,30 +526,35 @@ const HeroSection = () => {
           </div>
 
           {/* Center Team Image Poster - Full un-cropped display */}
-          <div className="relative w-full max-w-5xl mx-auto mb-10 group">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-background bg-card">
+          <div className="relative w-full max-w-5xl mx-auto mb-4 md:mb-8 group">
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl border-2 sm:border-4 border-background bg-card">
               <img
                 src={heroContent?.image_url || "/img/qd-team-hero.png"}
                 alt="TNQDO Teachers Team"
                 className="w-full h-auto max-h-[580px] object-contain bg-muted/20 transition-transform duration-700 group-hover:scale-[1.005]"
               />
+              <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold border border-white/20 shadow-md">
+                  <span>🇯🇵</span> Đội ngũ Giảng viên TNQDO
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Bottom Details & CTA Buttons Row */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 py-4">
-            <div className="flex-1 text-center md:text-left space-y-2">
-              <h3 className="text-lg sm:text-xl font-bold text-foreground">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 py-2 md:py-4">
+            <div className="flex-1 text-center md:text-left space-y-1.5 md:space-y-2">
+              <h3 className="text-base sm:text-xl font-bold text-foreground">
                 {statsContent?.tagline || "Mở cánh cửa tương lai Nhật Bản, kết nối toàn cầu."}
               </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto md:mx-0">
                 {description}
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0 pt-1 md:pt-0">
               {primaryBtn.enabled && (
-                <Button size="lg" className="h-12 px-6 text-sm font-bold bg-[#1e293b] hover:bg-[#0f172a] text-white rounded-xl shadow-lg gap-2" asChild>
+                <Button size="lg" className="h-11 sm:h-12 px-6 text-sm font-bold bg-[#1e293b] hover:bg-[#0f172a] text-white dark:bg-primary dark:text-primary-foreground rounded-xl shadow-md gap-2 w-full sm:w-auto active:scale-95 transition-transform" asChild>
                   <Link to={primaryBtn.url}>
                     <Sparkles className="w-4 h-4 text-amber-400" />
                     {primaryBtn.text}
@@ -465,7 +562,7 @@ const HeroSection = () => {
                 </Button>
               )}
               {secondaryBtn.enabled && (
-                <Button variant="outline" size="lg" className="h-12 px-6 text-sm font-bold bg-white text-foreground border-2 border-slate-900 hover:bg-slate-50 rounded-xl gap-2" asChild>
+                <Button variant="outline" size="lg" className="h-11 sm:h-12 px-6 text-sm font-bold bg-card text-foreground border-2 border-slate-900 dark:border-slate-700 hover:bg-muted rounded-xl gap-2 w-full sm:w-auto active:scale-95 transition-transform" asChild>
                   <Link to={secondaryBtn.url}>
                     <Play className="w-4 h-4 text-foreground" />
                     {secondaryBtn.text}
@@ -475,23 +572,26 @@ const HeroSection = () => {
             </div>
           </div>
 
+          {/* Mobile Quick Discovery & Action Grid */}
+          <MobileQuickActions />
+
           {/* Bottom KPI Metrics Row */}
-          <div className="mt-8 pt-8 border-t border-border/60 flex items-center justify-start gap-12 sm:gap-16">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl font-black text-foreground">{students}</div>
-              <div className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+          <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-border/60 grid grid-cols-3 gap-2 sm:flex sm:items-center sm:justify-start sm:gap-16">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-center sm:text-left">
+              <div className="text-2xl sm:text-3xl font-black text-foreground">{students}</div>
+              <div className="text-[11px] sm:text-xs font-bold text-muted-foreground flex items-center justify-center sm:justify-start gap-1">
                 <span className="text-indigo-600">👥</span> Học viên
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-3xl font-black text-foreground">{teachers}</div>
-              <div className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-center sm:text-left">
+              <div className="text-2xl sm:text-3xl font-black text-foreground">{teachers}</div>
+              <div className="text-[11px] sm:text-xs font-bold text-muted-foreground flex items-center justify-center sm:justify-start gap-1">
                 <span className="text-amber-600">👨‍🏫</span> Giáo viên
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-3xl font-black text-foreground">{lessons}</div>
-              <div className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-center sm:text-left">
+              <div className="text-2xl sm:text-3xl font-black text-foreground">{lessons}</div>
+              <div className="text-[11px] sm:text-xs font-bold text-muted-foreground flex items-center justify-center sm:justify-start gap-1">
                 <span className="text-emerald-600">📚</span> Bài học
               </div>
             </div>
@@ -503,7 +603,7 @@ const HeroSection = () => {
 
   // MODE 4: STANDARD DELUXE SPLIT MODE (Text Left + Media Card Right)
   return (
-    <section className="relative min-h-[90vh] bg-gradient-to-br from-background via-background to-primary/5 pt-20 pb-16 overflow-hidden">
+    <section className="relative min-h-0 md:min-h-[90vh] bg-gradient-to-br from-background via-background to-primary/5 pt-16 pb-8 md:pt-20 md:pb-16 overflow-hidden">
       {/* Parallax ambient background graphics */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-10 left-10 w-96 h-96 bg-japanese/8 rounded-full blur-3xl animate-float" />
@@ -512,17 +612,17 @@ const HeroSection = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16 py-12 lg:py-20">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-16 py-6 lg:py-20">
           {/* Left Column Content */}
           <div className="flex-1 text-center lg:text-left max-w-2xl">
             {/* Pill Tag */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-japanese/10 text-japanese border border-japanese/20 mb-6 animate-slide-up shadow-xs">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-japanese/10 text-japanese border border-japanese/20 mb-4 md:mb-6 animate-slide-up shadow-xs">
               <Sparkles className="w-4 h-4 text-japanese animate-pulse" />
               <span className="text-xs sm:text-sm font-bold tracking-wide">{subtitle}</span>
             </div>
             
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground leading-[1.12] mb-5 animate-slide-up animation-delay-100 tracking-tight">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-foreground leading-[1.15] mb-4 md:mb-5 animate-slide-up animation-delay-100 tracking-tight">
               {title.includes("Tiếng Nhật") ? (
                 <>
                   {title.split("Tiếng Nhật")[0]}
@@ -540,19 +640,19 @@ const HeroSection = () => {
             </h1>
 
             {/* Tagline / Subtitle */}
-            <p className="text-xl sm:text-2xl font-bold text-foreground/80 mb-4 animate-slide-up animation-delay-150">
+            <p className="text-lg sm:text-2xl font-bold text-foreground/80 mb-3 md:mb-4 animate-slide-up animation-delay-150">
               {statsContent?.tagline || "Mở cánh cửa tương lai Nhật Bản, kết nối toàn cầu."}
             </p>
             
             {/* Main Description */}
-            <p className="text-base sm:text-lg text-muted-foreground mb-8 animate-slide-up animation-delay-200 leading-relaxed">
+            <p className="text-xs sm:text-lg text-muted-foreground mb-6 md:mb-8 animate-slide-up animation-delay-200 leading-relaxed">
               {description}
             </p>
 
             {/* CTA Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up animation-delay-300">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start animate-slide-up animation-delay-300">
               {primaryBtn.enabled && (
-                <Button size="xl" className="h-14 px-8 text-base font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all bg-primary text-primary-foreground hover:bg-primary/90 gap-2" asChild>
+                <Button size="xl" className="h-12 sm:h-14 px-8 text-sm sm:text-base font-bold rounded-2xl shadow-lg hover:shadow-2xl transition-all bg-primary text-primary-foreground hover:bg-primary/90 gap-2 active:scale-95" asChild>
                   <Link to={primaryBtn.url}>
                     <Sparkles className="w-5 h-5" />
                     {primaryBtn.text}
@@ -560,7 +660,7 @@ const HeroSection = () => {
                 </Button>
               )}
               {secondaryBtn.enabled && (
-                <Button variant="outline" size="xl" className="h-14 px-8 text-base font-bold rounded-2xl border-2 hover:bg-muted/60 transition-all gap-2" asChild>
+                <Button variant="outline" size="xl" className="h-12 sm:h-14 px-8 text-sm sm:text-base font-bold rounded-2xl border-2 hover:bg-muted/60 transition-all gap-2 active:scale-95" asChild>
                   <Link to={secondaryBtn.url}>
                     <Play className="w-5 h-5 text-primary" />
                     {secondaryBtn.text}
@@ -569,23 +669,26 @@ const HeroSection = () => {
               )}
             </div>
 
+            {/* Mobile App Quick Discovery & Actions */}
+            <MobileQuickActions />
+
             {/* Top KPI Metrics Row */}
-            <div className="flex flex-wrap justify-center lg:justify-start gap-8 sm:gap-12 mt-12 pt-8 border-t border-border/60 animate-slide-up animation-delay-400">
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap justify-center lg:justify-start sm:gap-12 mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border/60 animate-slide-up animation-delay-400">
               <div className="text-center lg:text-left">
-                <div className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">{students}</div>
-                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-1 flex items-center gap-1 justify-center lg:justify-start">
+                <div className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">{students}</div>
+                <div className="text-[11px] sm:text-sm font-semibold text-muted-foreground mt-1 flex items-center gap-1 justify-center lg:justify-start">
                   <span>👥 Học viên</span>
                 </div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">{teachers}</div>
-                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-1 flex items-center gap-1 justify-center lg:justify-start">
+                <div className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">{teachers}</div>
+                <div className="text-[11px] sm:text-sm font-semibold text-muted-foreground mt-1 flex items-center gap-1 justify-center lg:justify-start">
                   <span>👨‍🏫 Giáo viên</span>
                 </div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">{lessons}</div>
-                <div className="text-sm font-semibold text-muted-foreground mt-1 flex items-center gap-1 justify-center lg:justify-start">
+                <div className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">{lessons}</div>
+                <div className="text-[11px] sm:text-sm font-semibold text-muted-foreground mt-1 flex items-center gap-1 justify-center lg:justify-start">
                   <span>📚 Bài học</span>
                 </div>
               </div>

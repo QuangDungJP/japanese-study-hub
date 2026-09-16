@@ -617,7 +617,7 @@ const Index = () => {
   };
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-16 lg:pb-0">
       <Navbar />
       {visibleSections.map(id => sectionMap[id] || null)}
       <Footer />

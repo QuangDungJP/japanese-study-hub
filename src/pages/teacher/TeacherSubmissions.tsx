@@ -661,7 +661,7 @@ const TeacherSubmissions = () => {
               Theo dõi chính xác thời gian làm bài, mốc bắt đầu/kết thúc, số câu đúng/sai và lịch sử số lần nộp bài của học viên.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0 w-full md:w-auto">
             <Button
               onClick={() => {
                 const csvData = (activeCategory === 'exercises' ? filteredSubmissions : filteredExamAttempts).map((item: any, idx) => ({
@@ -685,11 +685,11 @@ const TeacherSubmissions = () => {
                 document.body.removeChild(link);
               }}
               variant="outline"
-              className="font-bold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-md"
+              className="font-bold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-md w-full sm:w-auto"
             >
               📊 Xuất Bảng Điểm Excel / Google Sheets
             </Button>
-            <Button onClick={fetchAllData} disabled={loading} variant="secondary" className="font-bold gap-2 rounded-xl">
+            <Button onClick={fetchAllData} disabled={loading} variant="secondary" className="font-bold gap-2 rounded-xl w-full sm:w-auto">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Làm mới dữ liệu
             </Button>
@@ -698,7 +698,7 @@ const TeacherSubmissions = () => {
       </div>
 
       {/* Main Category Tabs: Separate Homework Exercises vs Exams */}
-      <div className="grid grid-cols-2 gap-3 bg-muted/60 p-1.5 rounded-2xl border">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 bg-muted/60 p-1.5 rounded-2xl border">
         <button
           type="button"
           onClick={() => setActiveCategory('exercises')}
@@ -742,7 +742,7 @@ const TeacherSubmissions = () => {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[170px] h-10 rounded-xl font-medium text-xs">
+                <SelectTrigger className="w-full sm:w-[170px] h-10 rounded-xl font-medium text-xs">
                   <Filter className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
@@ -759,7 +759,7 @@ const TeacherSubmissions = () => {
 
       {/* CATEGORY 1: LESSON EXERCISES */}
       {activeCategory === 'exercises' && (
-        <Card className="rounded-2xl border overflow-hidden shadow-soft">
+        <Card className="rounded-2xl border overflow-x-auto w-full min-w-0 shadow-soft">
           {loading ? (
             <CardContent className="py-20 text-center text-muted-foreground">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
@@ -846,7 +846,7 @@ const TeacherSubmissions = () => {
 
       {/* CATEGORY 2: EXAM ATTEMPTS (IN-DEPTH METRICS) */}
       {activeCategory === 'exams' && (
-        <Card className="rounded-2xl border overflow-hidden shadow-soft">
+        <Card className="rounded-2xl border overflow-x-auto w-full min-w-0 shadow-soft">
           {loading ? (
             <CardContent className="py-20 text-center text-muted-foreground">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-purple-600" />

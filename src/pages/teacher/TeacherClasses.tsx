@@ -1730,14 +1730,14 @@ const TeacherClasses = () => {
         </div>
 
         {/* --- SMART CLASS SEARCH & FILTER TOOLBAR --- */}
-        <div className="flex flex-col md:flex-row gap-3 bg-card p-3 rounded-2xl border shadow-2xs">
-          <div className="relative flex-1">
+        <div className="flex flex-col md:flex-row gap-2.5 bg-card p-3 rounded-2xl border shadow-2xs w-full min-w-0">
+          <div className="relative w-full md:flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={classSearchTerm}
               onChange={(e) => setClassSearchTerm(e.target.value)}
               placeholder="Tìm kiếm theo tên lớp học..."
-              className="pl-9 h-10 bg-background text-sm"
+              className="pl-9 h-10 bg-background text-sm w-full"
             />
             {classSearchTerm && (
               <button onClick={() => setClassSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -1745,9 +1745,9 @@ const TeacherClasses = () => {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
             <Select value={classStatusFilter} onValueChange={setClassStatusFilter}>
-              <SelectTrigger className="h-10 w-44 bg-background text-xs font-semibold">
+              <SelectTrigger className="h-10 flex-1 sm:w-40 bg-background text-xs font-semibold">
                 <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
               <SelectContent>
@@ -1758,7 +1758,7 @@ const TeacherClasses = () => {
             </Select>
 
             <Select value={classCourseFilter} onValueChange={setClassCourseFilter}>
-              <SelectTrigger className="h-10 w-48 bg-background text-xs font-semibold">
+              <SelectTrigger className="h-10 flex-1 sm:w-44 bg-background text-xs font-semibold">
                 <SelectValue placeholder="Theo khóa học" />
               </SelectTrigger>
               <SelectContent>
@@ -1771,7 +1771,7 @@ const TeacherClasses = () => {
               </SelectContent>
             </Select>
 
-            <div className="flex bg-muted/50 p-1 rounded-lg border ml-2">
+            <div className="flex bg-muted/50 p-1 rounded-lg border shrink-0">
               <Button 
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
                 size="sm" 
@@ -2000,22 +2000,19 @@ const TeacherClasses = () => {
   return (
     <div className="space-y-6">
       {/* Class Switcher Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-2xl border border-border shadow-sm w-full min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1 min-w-0">
           <Button 
             variant="outline" 
             size="sm"
             onClick={() => setSelectedClass(null)}
-            className="gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 shrink-0"
+            className="gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 w-full sm:w-auto shrink-0"
           >
             <ArrowLeft className="w-4 h-4" /> Tất cả lớp học
           </Button>
           <div className="h-6 w-px bg-border hidden sm:block shrink-0" />
-          <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <Label className="text-xs text-muted-foreground block mb-1 font-medium">Đang chọn Lớp học (Google Classroom)</Label>
+          <div className="flex-1 min-w-0 w-full">
+            <Label className="text-[11px] text-muted-foreground block mb-1 font-medium">Đang chọn Lớp học (Google Classroom)</Label>
             <Select 
               value={selectedClass.id} 
               onValueChange={(classId) => {
@@ -2026,7 +2023,7 @@ const TeacherClasses = () => {
                 }
               }}
             >
-              <SelectTrigger className="w-full max-w-md font-bold text-base h-10 border-primary/30">
+              <SelectTrigger className="w-full font-bold text-sm sm:text-base h-10 border-primary/30">
                 <SelectValue placeholder="Chọn lớp..." />
               </SelectTrigger>
               <SelectContent>
@@ -2040,39 +2037,39 @@ const TeacherClasses = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="hero" size="sm" onClick={openAddStudentDialog}>
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+          <Button variant="hero" size="sm" onClick={openAddStudentDialog} className="flex-1 sm:flex-none">
             <UserPlus className="w-4 h-4 mr-1.5" /> Thêm học viên
           </Button>
-          <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedClass)}>
-            <Edit className="w-4 h-4 mr-1.5" /> Sửa lớp này
+          <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedClass)} className="flex-1 sm:flex-none">
+            <Edit className="w-4 h-4 mr-1.5" /> Sửa lớp
           </Button>
         </div>
       </div>
 
       {/* Classroom Banner Card */}
-      <div className="rounded-2xl bg-gradient-to-r from-primary/90 to-accent/90 p-6 md:p-8 text-white shadow-soft relative overflow-hidden">
+      <div className="rounded-2xl bg-gradient-to-r from-primary/90 to-accent/90 p-5 sm:p-8 text-white shadow-soft relative overflow-hidden w-full min-w-0">
         <div className="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -mr-12 -mt-12 blur-lg pointer-events-none" />
         <div className="relative z-10 space-y-3">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{selectedClass.name_vi}</h1>
-            <p className="text-white/80 font-medium text-sm md:text-base">{selectedClass.name}</p>
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight">{selectedClass.name_vi}</h1>
+            <p className="text-white/80 font-medium text-xs sm:text-base">{selectedClass.name}</p>
           </div>
-          <p className="text-white/70 text-sm max-w-2xl line-clamp-2">
+          <p className="text-white/70 text-xs sm:text-sm max-w-2xl line-clamp-2">
             {selectedClass.description_vi || 'Lớp học trực quan, tương tác cao với học viên.'}
           </p>
-          <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm pt-2 text-white/90">
-            <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
-              <Users className="w-4 h-4" />
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs md:text-sm pt-1 text-white/90">
+            <span className="flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm">
+              <Users className="w-3.5 h-3.5" />
               Sĩ số: {selectedClass.student_count}/{selectedClass.max_students}
             </span>
-            <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm font-semibold">
-              <Clock className="w-4 h-4" />
+            <span className="flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm font-semibold">
+              <Clock className="w-3.5 h-3.5" />
               Tổng: {selectedClass.total_sessions || selectedClass.custom_fields?.total_sessions || 24} buổi học
             </span>
             {selectedClass.start_date && (
-              <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
-                <Calendar className="w-4 h-4" />
+              <span className="flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                <Calendar className="w-3.5 h-3.5" />
                 Bắt đầu: {formatWithJST(selectedClass.start_date, false)}
               </span>
             )}
@@ -2080,25 +2077,25 @@ const TeacherClasses = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
-        <TabsList className="bg-muted p-1 rounded-xl w-full md:w-auto flex flex-wrap gap-1">
-          <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold">Bảng tin</TabsTrigger>
-          <TabsTrigger value="chat" className="rounded-lg text-xs md:text-sm font-semibold">
-            Thảo luận
-          </TabsTrigger>
-          <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold">Bài học (Buổi/Tuần)</TabsTrigger>
-          <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1.5">
-            🎬 Record Buổi Học
-          </TabsTrigger>
-          <TabsTrigger value="attendance" className="rounded-lg text-xs md:text-sm font-semibold">Điểm danh học viên</TabsTrigger>
-          <TabsTrigger value="timesheet" className="rounded-lg text-xs md:text-sm font-semibold">Chấm công & Thù lao</TabsTrigger>
-          <TabsTrigger value="email-notifications" className="rounded-lg text-xs md:text-sm font-bold text-emerald-600 dark:text-emerald-400 gap-1.5">
-            ✉️ Gửi Mail Lịch Học
-          </TabsTrigger>
-          <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold">Bài kiểm tra</TabsTrigger>
-          <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold">Chấm bài</TabsTrigger>
-          <TabsTrigger value="students" className="rounded-lg text-xs md:text-sm font-semibold">Học viên</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-4 w-full min-w-0">
+        <div className="w-full overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+          <TabsList className="bg-muted p-1 rounded-xl inline-flex w-max min-w-full gap-1">
+            <TabsTrigger value="stream" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Bảng tin</TabsTrigger>
+            <TabsTrigger value="chat" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Thảo luận</TabsTrigger>
+            <TabsTrigger value="lessons" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Bài học (Buổi/Tuần)</TabsTrigger>
+            <TabsTrigger value="recordings" className="rounded-lg text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 gap-1 shrink-0">
+              🎬 Record Buổi Học
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Điểm danh</TabsTrigger>
+            <TabsTrigger value="timesheet" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Chấm công</TabsTrigger>
+            <TabsTrigger value="email-notifications" className="rounded-lg text-xs md:text-sm font-bold text-emerald-600 dark:text-emerald-400 gap-1 shrink-0">
+              ✉️ Mail Lịch Học
+            </TabsTrigger>
+            <TabsTrigger value="exams" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Bài kiểm tra</TabsTrigger>
+            <TabsTrigger value="submissions" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Chấm bài</TabsTrigger>
+            <TabsTrigger value="students" className="rounded-lg text-xs md:text-sm font-semibold shrink-0">Học viên</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Tab Realtime Chat */}
         <TabsContent value="chat" className="space-y-6">
@@ -2649,7 +2646,7 @@ const TeacherClasses = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="border rounded-xl overflow-hidden bg-card">
+            <div className="border rounded-xl overflow-x-auto w-full min-w-0 bg-card">
               {(() => {
                 const filtered = classSubmissions.filter((sub) => {
                   if (submissionStudentFilter !== 'all' && sub.user_id !== submissionStudentFilter) return false;
@@ -2834,7 +2831,7 @@ const TeacherClasses = () => {
               <p>Chưa có học viên nào trong lớp. Hãy nhấn Thêm học viên để đưa học viên vào lớp.</p>
             </div>
           ) : (
-            <div className="border rounded-xl overflow-hidden bg-card">
+            <div className="border rounded-xl overflow-x-auto w-full min-w-0 bg-card">
               <Table>
                 <TableHeader>
                   <TableRow>
