@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, AlertTriangle, Loader2, Play, BookOpen, Headphones, ShieldAlert, CheckCircle2, Mic, Square } from "lucide-react";
 import FormattedText from "@/components/shared/FormattedText";
+import { StudentTextTools } from "@/components/learn/StudentTextTools";
 
 const SECTION_TIMERS: Record<string, number> = {
   'vocab': 30 * 60,   // 30 mins
@@ -390,6 +391,7 @@ export default function JLPTExamRunner() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24">
+      <StudentTextTools />
       {/* Header bar */}
       <div className="sticky top-0 z-40 bg-card border-b p-4 shadow-sm flex items-center justify-between rounded-b-xl">
         <div>

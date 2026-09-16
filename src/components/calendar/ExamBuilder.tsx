@@ -1025,7 +1025,11 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                     <button
                       key={o.v}
                       type="button"
-                      onClick={() => setExamType(o.v)}
+                      onClick={() => {
+                        setExamType(o.v);
+                        if (o.v === 'quiz') setMaxAttempts(0);
+                        else setMaxAttempts(1);
+                      }}
                       className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${examType === o.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
                         }`}
                     >
