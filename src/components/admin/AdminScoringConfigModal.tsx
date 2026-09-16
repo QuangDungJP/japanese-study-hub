@@ -115,7 +115,7 @@ export function AdminScoringConfigModal({
         .from('exams')
         .select('id, questions')
         .eq('exam_type', 'jlpt_mock')
-        .or(`exam_category.eq.${activeTab},level.eq.${activeTab}`);
+        .eq('exam_category', activeTab);
 
       if (error) throw error;
 

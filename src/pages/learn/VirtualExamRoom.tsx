@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Clock, CheckCircle2, Play, AlertCircle, FileText, Sparkles, BookOpen, Globe, Layers, Database, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Trophy, Clock, CheckCircle2, Play, AlertCircle, FileText, Sparkles, BookOpen, Globe, Layers, Database, Zap, ArrowRight, ShieldCheck, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatWithJST } from '@/lib/dateUtils';
 import PageLoadingScreen from '@/components/shared/PageLoadingScreen';
@@ -19,6 +19,9 @@ import {
   getExamPoolId,
   ExamPool,
 } from '@/lib/examPoolService';
+import { AdminScoringConfigModal } from '@/components/admin/AdminScoringConfigModal';
+import { AdminExamPoolsModal } from '@/components/admin/AdminExamPoolsModal';
+import { AdminAIExamGeneratorModal } from '@/components/admin/AdminAIExamGeneratorModal';
 
 interface JLPTExam {
   id: string;
@@ -39,13 +42,20 @@ interface JLPTExam {
 }
 
 const VirtualExamRoom = () => {
-  const { user } = useAuth();
+  const { user, isTeacherOrAbove, isAdmin } = useAuth();
+  const isInstructor = isTeacherOrAbove || isAdmin;
   const navigate = useNavigate();
   const { toast } = useToast();
   const [exams, setExams] = useState<JLPTExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState<Record<string, any[]>>({});
   const [activeTab, setActiveTab] = useState('all');
+
+  // Instructor modals
+  const [scoringModalOpen, setScoringModalOpen] = useState(false);
+  const [poolsModalOpen, setPoolsModalOpen] = useState(false);
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
+  const [aiPoolId, setAiPoolId] = useState('pool-1');
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -276,6 +286,86 @@ const VirtualExamRoom = () => {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Instructor / Admin Toolbar */}
+      {isInstructor && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/20 via-indigo-950/15 to-blue-950/10 border border-purple-500/30 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <Settings className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                Công cụ Giảng viên & Quản trị viên
+                <Badge className="bg-purple-600 text-white border-0 text-[10px] py-0">Instructor Mode</Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tạo đề thi bằng AI, tinh chỉnh thang điểm & điểm liệt, hoặc quản lý kho đề trực tiếp:
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                setAiPoolId('pool-1');
+                setAiGeneratorOpen(true);
+              }}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs h-9 gap-1.5 rounded-xl shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300" /> AI Tạo Đề Thi
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setScoringModalOpen(true)}
+              className="text-xs h-9 gap-1.5 rounded-xl border-border/80"
+            >
+              <Settings className="w-3.5 h-3.5 text-amber-500" /> Thang Điểm JLPT
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPoolsModalOpen(true)}
+              className="text-xs h-9 gap-1.5 rounded-xl border-border/80"
+            >
+              <Layers className="w-3.5 h-3.5 text-purple-500" /> Quản Lý Kho Đề
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => navigate('/teacher/mock-exams')}
+              className="text-xs h-9 gap-1 text-muted-foreground hover:text-foreground rounded-xl"
+            >
+              Trang quản lý chi tiết <ArrowRight className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* INSTRUCTOR MODALS */}
+      <AdminScoringConfigModal
+        open={scoringModalOpen}
+        onOpenChange={setScoringModalOpen}
+        onApplied={() => fetchExams()}
+      />
+      <AdminExamPoolsModal
+        open={poolsModalOpen}
+        onOpenChange={setPoolsModalOpen}
+        exams={exams}
+        onPoolsUpdated={() => fetchExams()}
+        onOpenAIGenerator={(poolId) => {
+          setAiPoolId(poolId);
+          setAiGeneratorOpen(true);
+        }}
+      />
+      <AdminAIExamGeneratorModal
+        open={aiGeneratorOpen}
+        onOpenChange={setAiGeneratorOpen}
+        defaultPoolId={aiPoolId}
+        onExamCreated={() => fetchExams()}
+      />
     </div>
   );
 };
