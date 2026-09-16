@@ -1165,16 +1165,16 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
         className={`p-0 overflow-hidden gap-0 flex flex-col transition-all duration-200 ${
           isFullscreen
             ? '!left-0 !top-0 !translate-x-0 !translate-y-0 !max-w-none w-screen h-[100dvh] rounded-none border-0'
-            : 'max-w-4xl w-[calc(100vw-2rem)] h-[92dvh] max-h-[92dvh]'
+            : 'w-full sm:max-w-4xl sm:w-[calc(100vw-2rem)] h-[100dvh] sm:h-[92dvh] sm:max-h-[92dvh] rounded-none sm:rounded-2xl border-0 sm:border'
         }`}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => { e.preventDefault(); handleCloseAttempt(); }}
       >
         {/* Draft restore banner */}
         {draftRestorePrompt && (
-          <div className="flex items-center gap-3 px-6 py-2.5 bg-amber-500/10 border-b border-amber-500/30 text-sm">
+          <div className="flex items-center gap-3 px-4 sm:px-6 py-2.5 bg-amber-500/10 border-b border-amber-500/30 text-sm">
             <Save className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="flex-1 text-amber-700 dark:text-amber-400 font-medium">📝 Tìm thấy bản nháp chưa lưu. Khôi phục?</span>
+            <span className="flex-1 text-amber-700 dark:text-amber-400 font-medium text-xs sm:text-sm">📝 Tìm thấy bản nháp chưa lưu. Khôi phục?</span>
             <Button size="sm" variant="outline" className="h-7 text-xs border-amber-500/50 text-amber-700"
               onClick={() => {
                 try {
@@ -1220,47 +1220,47 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
         )}
 
         {/* Header + stepper */}
-        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent space-y-3">
+        <DialogHeader className="px-3 sm:px-6 py-3 sm:py-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent space-y-2.5 sm:space-y-3 shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
-                <ListChecks className="w-5 h-5" />
+            <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <ListChecks className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              {isEdit ? 'Chỉnh sửa bài kiểm tra' : 'Tạo bài kiểm tra mới'}
+              <span className="truncate">{isEdit ? 'Chỉnh sửa bài kiểm tra' : 'Tạo bài kiểm tra mới'}</span>
             </DialogTitle>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {/* Autosave indicator */}
               <span className="text-[10px] text-muted-foreground hidden sm:flex items-center gap-1 mr-2">
                 <Save className="w-3 h-3" /> Tự động lưu
               </span>
               {/* Fullscreen toggle */}
-              <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(f => !f)} title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(f => !f)} title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}>
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </Button>
               {/* Close button with confirmation */}
-              <Button variant="ghost" size="icon" onClick={handleCloseAttempt}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCloseAttempt}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {steps.map((s, i) => {
               const Icon = s.icon;
               const active = step === s.id;
               const done = step > s.id;
               return (
-                <div key={s.id} className="flex items-center gap-2 flex-1">
+                <div key={s.id} className="flex items-center gap-1 sm:gap-2 flex-1">
                   <button
                     type="button"
                     onClick={() => setStep(s.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${active ? 'bg-primary text-primary-foreground shadow-md'
+                    className={`flex items-center justify-center gap-1 sm:gap-2 w-full px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all ${active ? 'bg-primary text-primary-foreground shadow-md'
                         : done ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
                       }`}
                   >
-                    {done ? <CheckCircle2 className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
-                    <span className="hidden sm:inline">{s.id}. {s.label}</span>
+                    {done ? <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> : <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />}
+                    <span className="text-[11px] sm:text-sm">{s.id}. <span className="hidden sm:inline">{s.label}</span></span>
                   </button>
-                  {i < steps.length - 1 && <div className={`flex-1 h-0.5 ${done ? 'bg-primary/40' : 'bg-muted'}`} />}
+                  {i < steps.length - 1 && <div className={`w-3 sm:flex-1 h-0.5 shrink-0 ${done ? 'bg-primary/40' : 'bg-muted'}`} />}
                 </div>
               );
             })}
@@ -1268,7 +1268,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
         </DialogHeader>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-6">
           {/* ── Step 1: Cơ bản ── */}
           {step === 1 && (
             <div className="space-y-5 max-w-2xl mx-auto">
@@ -1296,7 +1296,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
 
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">Loại bài kiểm tra</Label>
-                <div className="grid grid-cols-4 gap-2 mt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
                   {([
                     { v: 'quiz', label: 'Quiz' },
                     { v: 'midterm', label: 'Giữa kỳ' },
@@ -1311,7 +1311,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                         if (o.v === 'quiz') setMaxAttempts(0);
                         else setMaxAttempts(1);
                       }}
-                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${examType === o.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
+                      className={`p-2.5 sm:p-3 rounded-xl border-2 text-xs sm:text-sm font-medium transition-all text-center ${examType === o.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
                         }`}
                     >
                       {o.label}
@@ -1391,28 +1391,28 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
           {step === 2 && (
             <div className="space-y-4 max-w-4xl mx-auto">
               {/* Toolbar & Stats Bar */}
-              <div className="sticky -top-6 bg-background/95 backdrop-blur py-2.5 z-20 border-b space-y-2">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 text-sm flex-wrap">
-                    <Badge variant="outline" className="gap-1 font-semibold">
+              <div className="sticky -top-3.5 sm:-top-6 bg-background/95 backdrop-blur py-2 sm:py-2.5 z-20 border-b space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm shrink-0">
+                    <Badge variant="outline" className="gap-1 font-semibold text-[11px] sm:text-xs">
                       <ListChecks className="w-3.5 h-3.5 text-primary" />
                       {totalQuestionsCount} câu ({questions.length} mục)
                     </Badge>
-                    <Badge variant="secondary" className="font-bold text-primary">
+                    <Badge variant="secondary" className="font-bold text-primary text-[11px] sm:text-xs">
                       {totalPoints} điểm
                     </Badge>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">
+                    <span className="text-xs text-muted-foreground hidden md:inline">
                       {autoGraded} tự chấm • {totalQuestionsCount - autoGraded} chấm tay
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                     {/* Bulk points popover */}
                     <Popover open={showBulkPointsPopover} onOpenChange={setShowBulkPointsPopover}>
                       <PopoverTrigger asChild>
-                        <Button type="button" variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                        <Button type="button" variant="outline" size="sm" className="h-7 sm:h-8 gap-1 text-[11px] sm:text-xs shrink-0">
                           <Sliders className="w-3.5 h-3.5 text-blue-500" />
-                          <span>Đặt điểm nhanh</span>
+                          <span>Đặt điểm</span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-64 p-3 space-y-2.5" align="end">
@@ -1456,16 +1456,16 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                       variant="ghost"
                       size="sm"
                       onClick={toggleCollapseAll}
-                      className="h-8 text-xs gap-1"
+                      className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 shrink-0"
                       title="Thu gọn hoặc mở rộng toàn bộ"
                     >
                       {questions.length > 0 && questions.every((_, idx) => collapsedCards[idx]) ? (
                         <>
-                          <ChevronDown className="w-3.5 h-3.5" /> Mở rộng hết
+                          <ChevronDown className="w-3.5 h-3.5" /> Mở rộng
                         </>
                       ) : (
                         <>
-                          <ChevronUp className="w-3.5 h-3.5" /> Thu gọn hết
+                          <ChevronUp className="w-3.5 h-3.5" /> Thu gọn
                         </>
                       )}
                     </Button>
@@ -1477,14 +1477,13 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                       size="sm"
                       onClick={() => runAI('exam_questions', { count: 5 })}
                       disabled={!!aiLoading}
-                      className="h-8 gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                      className="h-7 sm:h-8 gap-1 text-[11px] sm:text-xs border-primary/40 text-primary hover:bg-primary/10 shrink-0"
                     >
                       {aiLoading === 'exam_questions' ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
-                        <Sparkles className="w-3.5 h-3.5" />
+                        <Wand2 className="w-3.5 h-3.5" />
                       )}
-                      AI sinh thêm câu
                     </Button>
                   </div>
                 </div>
@@ -1566,8 +1565,8 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                       className="rounded-2xl border-2 border-purple-500/40 bg-gradient-to-b from-purple-500/[0.04] to-card p-4 md:p-5 space-y-4 shadow-sm"
                     >
                       {/* Passage Header */}
-                      <div className="flex items-center justify-between gap-2 flex-wrap border-b border-purple-500/20 pb-3">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-500/20 pb-2.5">
+                        <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap w-full sm:w-auto">
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <button
                               type="button"
@@ -1578,26 +1577,60 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                             >
                               <GripVertical className="w-4 h-4" />
                             </button>
-                            <span className="w-7 h-7 rounded-xl bg-purple-600 text-white text-xs font-bold flex items-center justify-center shadow-sm">
+                            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-purple-600 text-white text-xs font-bold flex items-center justify-center shadow-sm shrink-0">
                               {i + 1}
                             </span>
                           </div>
 
                           <Badge className="bg-purple-600 hover:bg-purple-700 text-white gap-1 text-xs">
-                            <BookOpen className="w-3 h-3" /> Chùm Đọc Hiểu / Nghe Hiểu
+                            <BookOpen className="w-3 h-3" /> Đọc / Nghe Hiểu
                           </Badge>
 
                           <Badge variant="outline" className="border-purple-500/40 text-purple-700 dark:text-purple-300 text-xs">
-                            {subCount} câu hỏi con
+                            {subCount} câu con
                           </Badge>
 
                           <Badge variant="secondary" className="font-bold text-xs">
-                            {passagePoints} điểm
+                            {passagePoints}đ
                           </Badge>
+
+                          {/* Action buttons on mobile inline */}
+                          <div className="flex sm:hidden items-center gap-0.5 ml-auto">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground"
+                              onClick={() => setCollapsedCards((p) => ({ ...p, [i]: !p[i] }))}
+                              title={isCollapsed ? 'Mở rộng bài đọc' : 'Thu gọn bài đọc'}
+                            >
+                              {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={() => duplicateQuestion(i)}
+                              title="Nhân bản bài đọc này"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => removeQuestion(i)}
+                              title="Xóa bài đọc này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-1">
-                          {/* Collapse / Expand */}
+                        {/* Desktop Action buttons */}
+                        <div className="hidden sm:flex items-center gap-1">
                           <Button
                             type="button"
                             variant="ghost"
@@ -2003,54 +2036,94 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                     className="rounded-2xl border-2 bg-card p-4 md:p-5 space-y-3 shadow-xs hover:border-primary/40 transition-colors"
                   >
                     {/* Card Header */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap border-b pb-2.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <button
-                            type="button"
-                            className="hover:text-foreground disabled:opacity-30 p-1"
-                            onClick={() => moveQuestion(i, -1)}
-                            disabled={i === 0}
-                            title="Di chuyển lên"
-                          >
-                            <GripVertical className="w-4 h-4" />
-                          </button>
-                          <span className="w-7 h-7 rounded-xl bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
-                            {i + 1}
-                          </span>
+                    <div className="space-y-2 border-b pb-2.5">
+                      {/* Row 1: Index, Question Type, Auto badge, and Action buttons */}
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-1 text-muted-foreground shrink-0">
+                            <button
+                              type="button"
+                              className="hover:text-foreground disabled:opacity-30 p-0.5"
+                              onClick={() => moveQuestion(i, -1)}
+                              disabled={i === 0}
+                              title="Di chuyển lên"
+                            >
+                              <GripVertical className="w-4 h-4" />
+                            </button>
+                            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-primary/15 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                              {i + 1}
+                            </span>
+                          </div>
+
+                          <Select value={q.type} onValueChange={(v) => changeType(i, v as QuestionType)}>
+                            <SelectTrigger className="h-8 max-w-[140px] sm:max-w-none sm:w-36 text-xs font-medium">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(questionTypeMeta) as QuestionType[]).map((t) => (
+                                <SelectItem key={t} value={t} className="text-xs">
+                                  {questionTypeMeta[t].label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Badge variant="outline" className="gap-1 text-[11px] shrink-0 hidden sm:inline-flex">
+                            <TypeIcon className="w-3 h-3" />
+                            {meta.auto ? 'Tự chấm' : 'Chấm tay'}
+                          </Badge>
                         </div>
 
-                        <Select value={q.type} onValueChange={(v) => changeType(i, v as QuestionType)}>
-                          <SelectTrigger className="h-8 w-36 text-xs font-medium">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.keys(questionTypeMeta) as QuestionType[]).map((t) => (
-                              <SelectItem key={t} value={t} className="text-xs">
-                                {questionTypeMeta[t].label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {/* Actions */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground"
+                            onClick={() => setCollapsedCards((p) => ({ ...p, [i]: !p[i] }))}
+                            title={isCollapsed ? 'Mở rộng câu hỏi' : 'Thu gọn câu hỏi'}
+                          >
+                            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => duplicateQuestion(i)}
+                            title="Nhân bản câu này"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:bg-destructive/10"
+                            onClick={() => removeQuestion(i)}
+                            title="Xóa câu này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
 
-                        <Badge variant="outline" className="gap-1 text-xs">
-                          <TypeIcon className="w-3 h-3" />
-                          {meta.auto ? 'Tự chấm' : 'Chấm tay'}
-                        </Badge>
-
-                        <div className="flex items-center gap-1 ml-1">
-                          <span className="text-xs text-muted-foreground">Điểm:</span>
+                      {/* Row 2: Điểm + Compact Media Toggles */}
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-xs text-muted-foreground font-medium">Điểm:</span>
                           <Input
                             type="number"
                             min={0}
-                            className="w-14 h-8 text-xs font-bold"
+                            className="w-14 h-7 text-xs font-bold"
                             value={q.points ?? 0}
                             onChange={(e) => patchQ(i, { points: parseInt(e.target.value) || 0 })}
                           />
                         </div>
 
                         {/* Compact Media Toggles */}
-                        <div className="flex items-center gap-1 flex-wrap">
+                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                           {q.audio_url ? (
                             <Badge
                               variant="outline"
@@ -2126,39 +2199,6 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                             </Button>
                           )}
                         </div>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground"
-                          onClick={() => setCollapsedCards((p) => ({ ...p, [i]: !p[i] }))}
-                          title={isCollapsed ? 'Mở rộng câu hỏi' : 'Thu gọn câu hỏi'}
-                        >
-                          {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                          onClick={() => duplicateQuestion(i)}
-                          title="Nhân bản câu này"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => removeQuestion(i)}
-                          title="Xóa câu này"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
 
@@ -2272,7 +2312,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                         {(q.type === 'multiple_choice' || q.type === 'true_false') && (
                           <div className="space-y-2">
                             {q.type === 'multiple_choice' && (
-                              <div className="flex items-center gap-2 flex-wrap">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
                                 <p className="text-xs text-muted-foreground flex-1">
                                   💡 Paste nhiều dòng vào ô bất kỳ → tự điền A B C D
                                 </p>
@@ -2809,18 +2849,21 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t flex items-center justify-between gap-2 bg-muted/30">
-          <Button type="button" variant="ghost" onClick={() => (step > 1 ? setStep(step - 1) : onOpenChange(false))}>
+        {/* Footer — sticky bottom bar on mobile */}
+        <div
+          className="shrink-0 px-3 sm:px-6 py-3 sm:py-4 border-t flex items-center justify-between gap-2 bg-background/95 backdrop-blur-sm"
+          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}
+        >
+          <Button type="button" variant="ghost" size="sm" className="text-xs sm:text-sm" onClick={() => (step > 1 ? setStep(step - 1) : onOpenChange(false))}>
             {step > 1 ? <><ArrowLeft className="w-4 h-4 mr-1" />Quay lại</> : 'Hủy'}
           </Button>
           <div className="flex items-center gap-2">
             {step < 3 ? (
-              <Button type="button" onClick={handleNextStep}>
+              <Button type="button" size="sm" className="text-xs sm:text-sm" onClick={handleNextStep}>
                 Tiếp tục<ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button type="button" onClick={save} disabled={saving}>
+              <Button type="button" size="sm" className="text-xs sm:text-sm" onClick={save} disabled={saving}>
                 {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
                 {isEdit ? 'Lưu thay đổi' : 'Tạo bài kiểm tra'}
               </Button>
