@@ -16,7 +16,8 @@ import {
   Wand2, Sparkles, Plus, Trash2, Copy, Loader2, Users, CircleDot, ToggleRight,
   Type, AlignLeft, GripVertical, Clipboard, Music, Upload, Volume2, Timer,
   Infinity as InfinityIcon, Clock, Mic, MessageSquare, Video, Eye, Camera, ShieldAlert, Laptop,
-  Save, AlertTriangle, Maximize2, Minimize2, Image
+  Save, AlertTriangle, Maximize2, Minimize2, Image, BookOpen, ChevronDown, ChevronUp,
+  Layers, CheckSquare, Hash, CornerDownRight, Sliders
 } from 'lucide-react';
 import FormattedText from '@/components/shared/FormattedText';
 import MediaUploader from '@/components/shared/MediaUploader';
@@ -24,6 +25,16 @@ import MediaUploader from '@/components/shared/MediaUploader';
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer' | 'essay' | 'speaking' | 'roleplay';
 export type TimerMode = 'none' | 'stopwatch' | 'countdown';
 export type ExamCategory = 'written' | 'speaking_meeting' | 'speaking_ai';
+
+export interface SubQuestion {
+  id?: string;
+  _key?: string;
+  text: string;
+  options: string[];
+  correct_index: number;
+  explanation?: string;
+  points?: number;
+}
 
 export interface ExamQuestion {
   _key?: string;
@@ -37,6 +48,9 @@ export interface ExamQuestion {
   audio_url?: string;
   audio_play_limit?: number;
   image_url?: string;
+  is_passage?: boolean;
+  passage_title?: string;
+  sub_questions?: SubQuestion[];
 }
 
 interface ClassOption { id: string; name: string }
@@ -75,8 +89,83 @@ const emptyQuestion = (type: QuestionType = 'multiple_choice'): ExamQuestion => 
   return { _key, type, text: '', options: ['', '', '', ''], correct_index: 0, points: 1, explanation: '' };
 };
 
+const emptyPassageQuestion = (): ExamQuestion => {
+  const _key = generateKey();
+  return {
+    _key,
+    type: 'multiple_choice',
+    is_passage: true,
+    passage_title: 'Bài đọc hiểu',
+    text: '',
+    options: [],
+    correct_index: 0,
+    points: 0,
+    sub_questions: [
+      {
+        id: generateKey(),
+        text: 'Câu hỏi 1:',
+        options: ['', '', '', ''],
+        correct_index: 0,
+        points: 2,
+        explanation: '',
+      },
+      {
+        id: generateKey(),
+        text: 'Câu hỏi 2:',
+        options: ['', '', '', ''],
+        correct_index: 0,
+        points: 2,
+        explanation: '',
+      },
+    ],
+  };
+};
+
 const normalizeQuestion = (q: any): ExamQuestion => {
+  const is_passage = Boolean(q?.is_passage);
   const type: QuestionType = q?.type || 'multiple_choice';
+
+  if (is_passage) {
+    const rawSubs: any[] = Array.isArray(q?.sub_questions) ? q.sub_questions : [];
+    const sub_questions: SubQuestion[] = rawSubs.map((sq: any, sidx: number) => {
+      let opts: string[] = Array.isArray(sq?.options) ? [...sq.options] : ['', '', '', ''];
+      if (opts.length < 2) opts = ['', '', '', ''];
+      let cIdx = typeof sq?.correct_index === 'number' ? sq.correct_index : 0;
+      if (typeof sq?.correct_answer === 'number') {
+        cIdx = sq.correct_answer;
+      } else if (typeof sq?.correct_answer === 'string') {
+        const letter = sq.correct_answer.toUpperCase().trim();
+        if (['A', 'B', 'C', 'D', 'E', 'F'].includes(letter)) {
+          cIdx = letter.charCodeAt(0) - 65;
+        }
+      }
+      cIdx = Math.max(0, Math.min(cIdx, Math.max(0, opts.length - 1)));
+      return {
+        id: sq?.id || generateKey(),
+        text: sq?.text || `Câu hỏi ${sidx + 1}:`,
+        options: opts,
+        correct_index: cIdx,
+        points: typeof sq?.points === 'number' ? sq.points : 2,
+        explanation: sq?.explanation || '',
+      };
+    });
+
+    return {
+      _key: q?._key || generateKey(),
+      type: 'multiple_choice',
+      is_passage: true,
+      passage_title: q?.passage_title || q?.title || 'Bài đọc hiểu',
+      text: q?.text || q?.passage || '',
+      options: [],
+      correct_index: 0,
+      points: typeof q?.points === 'number' ? q.points : 0,
+      audio_url: q?.audio_url || undefined,
+      audio_play_limit: typeof q?.audio_play_limit === 'number' ? q.audio_play_limit : undefined,
+      image_url: q?.image_url || undefined,
+      sub_questions,
+    };
+  }
+
   let options: string[] = Array.isArray(q?.options) ? [...q.options] : [];
 
   if (type === 'true_false') {
@@ -214,8 +303,9 @@ interface AudioUploadProps {
   audioUrl?: string;
   audioPlayLimit?: number;
   onChange: (url: string | undefined, limit: number | undefined) => void;
+  onClose?: () => void;
 }
-const AudioUpload = ({ audioUrl, audioPlayLimit, onChange }: AudioUploadProps) => {
+const AudioUpload = ({ audioUrl, audioPlayLimit, onChange, onClose }: AudioUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [linkInput, setLinkInput] = useState(audioUrl || "");
   const { toast } = useToast();
@@ -245,9 +335,16 @@ const AudioUpload = ({ audioUrl, audioPlayLimit, onChange }: AudioUploadProps) =
 
   return (
     <div className="flex flex-col gap-2 bg-muted/20 p-2.5 rounded-xl border border-border/80">
-      <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-        <Music className="w-3.5 h-3.5 text-emerald-500" /> File nghe Audio (Tải lên MP3/WAV hoặc dán URL)
-      </Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          <Music className="w-3.5 h-3.5 text-emerald-500" /> File nghe Audio (Tải lên MP3/WAV hoặc dán URL)
+        </Label>
+        {onClose && (
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground text-xs p-0.5 rounded" title="Đóng ô tải Audio">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <input
           ref={inputRef}
@@ -603,8 +700,34 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     }
   }, [open, initial]);
 
-  const totalPoints = useMemo(() => questions.reduce((s, q) => s + (q.points || 0), 0), [questions]);
-  const autoGraded = useMemo(() => questions.filter((q) => questionTypeMeta[q.type].auto).length, [questions]);
+  // State for collapsible cards and media toggles
+  const [openAudio, setOpenAudio] = useState<Record<number, boolean>>({});
+  const [openImage, setOpenImage] = useState<Record<number, boolean>>({});
+  const [openExplanation, setOpenExplanation] = useState<Record<number, boolean>>({});
+  const [collapsedCards, setCollapsedCards] = useState<Record<number, boolean>>({});
+  const [bulkPointsInput, setBulkPointsInput] = useState<number>(2);
+  const [showBulkPointsPopover, setShowBulkPointsPopover] = useState(false);
+
+  const totalPoints = useMemo(() => questions.reduce((s, q) => {
+    if (q.is_passage && Array.isArray(q.sub_questions)) {
+      return s + q.sub_questions.reduce((subSum, sq) => subSum + (sq.points ?? 0), 0);
+    }
+    return s + (q.points || 0);
+  }, 0), [questions]);
+
+  const totalQuestionsCount = useMemo(() => questions.reduce((s, q) => {
+    if (q.is_passage && Array.isArray(q.sub_questions)) {
+      return s + q.sub_questions.length;
+    }
+    return s + 1;
+  }, 0), [questions]);
+
+  const autoGraded = useMemo(() => questions.reduce((s, q) => {
+    if (q.is_passage && Array.isArray(q.sub_questions)) {
+      return s + q.sub_questions.length;
+    }
+    return s + (questionTypeMeta[q.type]?.auto ? 1 : 0);
+  }, 0), [questions]);
 
   // ── Score preview calculation ─────────────────────────────────────────────────
   const scorePreview = useMemo(() => {
@@ -628,6 +751,45 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     setQuestions((arr) => arr.map((q, idx) => (idx === i ? { ...emptyQuestion(type), text: q.text, points: q.points } : q)));
 
   const addQuestion = (type: QuestionType = 'multiple_choice') => setQuestions((a) => [...a, emptyQuestion(type)]);
+  const addPassageQuestion = () => setQuestions((a) => [...a, emptyPassageQuestion()]);
+
+  const addSubQuestion = (qIndex: number) => {
+    setQuestions((arr) =>
+      arr.map((q, idx) => {
+        if (idx !== qIndex) return q;
+        const subs = q.sub_questions || [];
+        const newSub: SubQuestion = {
+          id: generateKey(),
+          text: `Câu hỏi ${subs.length + 1}:`,
+          options: ['', '', '', ''],
+          correct_index: 0,
+          points: 2,
+          explanation: '',
+        };
+        return { ...q, sub_questions: [...subs, newSub] };
+      })
+    );
+  };
+
+  const removeSubQuestion = (qIndex: number, subIndex: number) => {
+    setQuestions((arr) =>
+      arr.map((q, idx) => {
+        if (idx !== qIndex || !q.sub_questions) return q;
+        return { ...q, sub_questions: q.sub_questions.filter((_, sidx) => sidx !== subIndex) };
+      })
+    );
+  };
+
+  const patchSubQ = (qIndex: number, subIndex: number, patch: Partial<SubQuestion>) => {
+    setQuestions((arr) =>
+      arr.map((q, idx) => {
+        if (idx !== qIndex || !q.sub_questions) return q;
+        const sub_questions = q.sub_questions.map((sq, sidx) => (sidx === subIndex ? { ...sq, ...patch } : sq));
+        return { ...q, sub_questions };
+      })
+    );
+  };
+
   const removeQuestion = (i: number) => setQuestions((a) => a.filter((_, idx) => idx !== i));
   const duplicateQuestion = (i: number) =>
     setQuestions((a) => [
@@ -636,6 +798,9 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
         ...a[i],
         _key: generateKey(),
         options: [...a[i].options],
+        sub_questions: a[i].sub_questions
+          ? a[i].sub_questions.map((sq) => ({ ...sq, id: generateKey(), options: [...sq.options] }))
+          : undefined,
         accepted_answers: a[i].accepted_answers ? [...a[i].accepted_answers!] : undefined,
       },
       ...a.slice(i + 1),
@@ -653,6 +818,27 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
           newCorrect = Math.min(q.correct_index, newOptions.length - 1);
         }
         return { ...q, options: newOptions, correct_index: Math.max(0, newCorrect) };
+      })
+    );
+  };
+
+  const removeSubOption = (qIndex: number, subIndex: number, optIndex: number) => {
+    setQuestions((arr) =>
+      arr.map((q, idx) => {
+        if (idx !== qIndex || !q.sub_questions) return q;
+        const targetSub = q.sub_questions[subIndex];
+        if (!targetSub) return q;
+        const newOptions = targetSub.options.filter((_, x) => x !== optIndex);
+        let newCorrect = targetSub.correct_index;
+        if (optIndex < targetSub.correct_index) {
+          newCorrect = Math.max(0, targetSub.correct_index - 1);
+        } else if (optIndex === targetSub.correct_index) {
+          newCorrect = Math.min(targetSub.correct_index, newOptions.length - 1);
+        }
+        const sub_questions = q.sub_questions.map((sq, sidx) =>
+          sidx === subIndex ? { ...sq, options: newOptions, correct_index: Math.max(0, newCorrect) } : sq
+        );
+        return { ...q, sub_questions };
       })
     );
   };
@@ -696,6 +882,68 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     [toast]
   );
 
+  const handleSubOptionPaste = useCallback(
+    (qIndex: number, subIndex: number, optStartIndex: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+      const text = e.clipboardData?.getData('text') || '';
+      const lines = parsePasteLines(text);
+      if (lines.length < 2) return;
+      e.preventDefault();
+      setQuestions((arr) =>
+        arr.map((q, idx) => {
+          if (idx !== qIndex || !q.sub_questions) return q;
+          const targetSub = q.sub_questions[subIndex];
+          if (!targetSub) return q;
+          const newOptions = [...targetSub.options];
+          lines.forEach((line, li) => {
+            const targetIdx = optStartIndex + li;
+            if (targetIdx < 6) {
+              if (targetIdx >= newOptions.length) newOptions.push(line);
+              else newOptions[targetIdx] = line;
+            }
+          });
+          const sub_questions = q.sub_questions.map((sq, sidx) =>
+            sidx === subIndex ? { ...sq, options: newOptions } : sq
+          );
+          return { ...q, sub_questions };
+        })
+      );
+      toast({
+        title: `✅ Đã điền ${lines.length} đáp án cho câu hỏi con`,
+        description: 'Paste thông minh từ clipboard',
+      });
+    },
+    [toast]
+  );
+
+  const applyBulkPoints = (pts: number) => {
+    setQuestions((prev) =>
+      prev.map((q) => {
+        if (q.is_passage && q.sub_questions) {
+          return {
+            ...q,
+            sub_questions: q.sub_questions.map((sq) => ({ ...sq, points: pts })),
+          };
+        }
+        return { ...q, points: pts };
+      })
+    );
+    setShowBulkPointsPopover(false);
+    toast({ title: `✅ Đã gán ${pts} điểm cho toàn bộ câu hỏi` });
+  };
+
+  const toggleCollapseAll = () => {
+    const allCollapsed = questions.length > 0 && questions.every((_, i) => collapsedCards[i]);
+    if (allCollapsed) {
+      setCollapsedCards({});
+    } else {
+      const next: Record<number, boolean> = {};
+      questions.forEach((_, i) => {
+        next[i] = true;
+      });
+      setCollapsedCards(next);
+    }
+  };
+
   const runAI = async (action: 'exam_generate' | 'exam_questions', extra: any = {}) => {
     if (!title.trim() && !titleVi.trim()) {
       toast({ title: 'Nhập tiêu đề trước khi dùng AI', variant: 'destructive' });
@@ -732,6 +980,26 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     if (questions.length === 0) return 'Vui lòng thêm ít nhất 1 câu hỏi';
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
+      if (q.is_passage) {
+        if (!q.text.trim()) {
+          return `Bài đọc ${i + 1}: Vui lòng nhập nội dung đoạn văn`;
+        }
+        if (!q.sub_questions || q.sub_questions.length === 0) {
+          return `Bài đọc ${i + 1}: Cần ít nhất 1 câu hỏi con`;
+        }
+        for (let s = 0; s < q.sub_questions.length; s++) {
+          const sq = q.sub_questions[s];
+          if (!sq.text.trim()) {
+            return `Bài đọc ${i + 1}, câu con ${s + 1}: Vui lòng nhập nội dung câu hỏi`;
+          }
+          const validOpts = (sq.options || []).filter((o) => o.trim().length > 0);
+          if (validOpts.length < 2) {
+            return `Bài đọc ${i + 1}, câu con ${s + 1}: Cần ít nhất 2 đáp án không để trống`;
+          }
+        }
+        continue;
+      }
+
       if (!q.text.trim()) {
         return `Câu ${i + 1}: Vui lòng nhập nội dung câu hỏi`;
       }
@@ -784,7 +1052,20 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
     }
 
     setSaving(true);
-    const cleanQuestions = questions.map(({ _key, ...q }) => q);
+    const cleanQuestions = questions.map(({ _key, ...q }) => {
+      if (q.is_passage && Array.isArray(q.sub_questions)) {
+        const totalSubPts = q.sub_questions.reduce((sum, sq) => sum + (sq.points || 0), 0);
+        return {
+          ...q,
+          points: totalSubPts,
+          sub_questions: q.sub_questions.map((sq) => {
+            const { _key: _, ...cleanSq } = sq as any;
+            return cleanSq;
+          }),
+        };
+      }
+      return q;
+    });
 
     const base: any = {
       title: (title || titleVi).trim(),
@@ -1108,59 +1389,797 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
 
           {/* ── Step 2: Câu hỏi ── */}
           {step === 2 && (
-            <div className="space-y-4 max-w-3xl mx-auto">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between gap-2 flex-wrap sticky -top-6 bg-background/95 backdrop-blur py-2 z-10">
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="gap-1"><ListChecks className="w-3 h-3" />{questions.length} câu</Badge>
-                  <Badge variant="secondary">{totalPoints} điểm</Badge>
-                  <span className="text-xs text-muted-foreground">{autoGraded} câu tự chấm • {questions.length - autoGraded} câu chấm tay</span>
+            <div className="space-y-4 max-w-4xl mx-auto">
+              {/* Toolbar & Stats Bar */}
+              <div className="sticky -top-6 bg-background/95 backdrop-blur py-2.5 z-20 border-b space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 text-sm flex-wrap">
+                    <Badge variant="outline" className="gap-1 font-semibold">
+                      <ListChecks className="w-3.5 h-3.5 text-primary" />
+                      {totalQuestionsCount} câu ({questions.length} mục)
+                    </Badge>
+                    <Badge variant="secondary" className="font-bold text-primary">
+                      {totalPoints} điểm
+                    </Badge>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
+                      {autoGraded} tự chấm • {totalQuestionsCount - autoGraded} chấm tay
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Bulk points popover */}
+                    <Popover open={showBulkPointsPopover} onOpenChange={setShowBulkPointsPopover}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                          <Sliders className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Đặt điểm nhanh</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-3 space-y-2.5" align="end">
+                        <p className="font-bold text-xs">Đặt điểm đồng bộ cho tất cả câu</p>
+                        <p className="text-[11px] text-muted-foreground">Áp dụng cho mọi câu hỏi và câu con trong đề.</p>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            value={bulkPointsInput}
+                            onChange={(e) => setBulkPointsInput(parseInt(e.target.value) || 1)}
+                            className="h-8 text-xs font-bold w-20"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-8 text-xs flex-1"
+                            onClick={() => applyBulkPoints(bulkPointsInput)}
+                          >
+                            Áp dụng
+                          </Button>
+                        </div>
+                        <div className="flex gap-1">
+                          {[1, 2, 5, 10].map((p) => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => applyBulkPoints(p)}
+                              className="px-2 py-0.5 text-[11px] font-semibold rounded bg-muted hover:bg-primary/20 border"
+                            >
+                              {p}đ
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Collapse / Expand all */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleCollapseAll}
+                      className="h-8 text-xs gap-1"
+                      title="Thu gọn hoặc mở rộng toàn bộ"
+                    >
+                      {questions.length > 0 && questions.every((_, idx) => collapsedCards[idx]) ? (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5" /> Mở rộng hết
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5" /> Thu gọn hết
+                        </>
+                      )}
+                    </Button>
+
+                    {/* AI Generator */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => runAI('exam_questions', { count: 5 })}
+                      disabled={!!aiLoading}
+                      className="h-8 gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                    >
+                      {aiLoading === 'exam_questions' ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      )}
+                      AI sinh thêm câu
+                    </Button>
+                  </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => runAI('exam_questions', { count: 5 })} disabled={!!aiLoading}>
-                  {aiLoading === 'exam_questions' ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
-                  AI sinh thêm câu hỏi
-                </Button>
+
+                {/* Mini-map / Quick Navigation Bar */}
+                {questions.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto py-1.5 scrollbar-thin scrollbar-thumb-muted-foreground/20">
+                    <span className="text-[11px] font-bold text-muted-foreground shrink-0 mr-1 flex items-center gap-1">
+                      <Layers className="w-3 h-3 text-primary" /> Bản đồ câu:
+                    </span>
+                    {questions.map((q, idx) => {
+                      const isPassage = !!q.is_passage;
+                      const subCount = q.sub_questions?.length || 0;
+                      const isFilled = isPassage ? (q.text.trim().length > 0 && subCount > 0) : q.text.trim().length > 0;
+                      return (
+                        <button
+                          key={q._key || idx}
+                          type="button"
+                          onClick={() => {
+                            const el = document.getElementById(`exam-card-${idx}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className={`px-2.5 py-0.5 rounded-md text-xs font-semibold shrink-0 transition-all flex items-center gap-1 border ${
+                            isPassage
+                              ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/40 hover:bg-purple-500/20'
+                              : isFilled
+                                ? 'bg-muted/80 text-foreground border-border hover:border-primary/50'
+                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/40'
+                          }`}
+                          title={isPassage ? `Bài đọc ${idx + 1} (${subCount} câu con)` : `Câu ${idx + 1}`}
+                        >
+                          {isPassage ? (
+                            <>
+                              <BookOpen className="w-3 h-3" />
+                              <span>Đọc {idx + 1} ({subCount}c)</span>
+                            </>
+                          ) : (
+                            <span>{idx + 1}</span>
+                          )}
+                          {!isFilled && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {questions.length === 0 && (
-                <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-xl">
-                  <ListChecks className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                  <p className="mb-3">Chưa có câu hỏi nào.</p>
-                  <p className="text-xs">Thêm thủ công bên dưới hoặc dùng AI để sinh nhanh.</p>
+                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl p-6 bg-muted/10 space-y-3">
+                  <ListChecks className="w-12 h-12 mx-auto text-muted-foreground/40" />
+                  <p className="font-semibold text-foreground text-base">Chưa có câu hỏi nào trong đề.</p>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                    Thêm câu trắc nghiệm đơn lẻ hoặc thêm Chùm bài đọc hiểu (Đoạn văn kèm nhiều câu con) bằng các nút bên dưới.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
+                    <Button type="button" size="sm" onClick={() => addQuestion('multiple_choice')}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Thêm câu trắc nghiệm
+                    </Button>
+                    <Button type="button" size="sm" variant="default" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={addPassageQuestion}>
+                      <BookOpen className="w-3.5 h-3.5 mr-1.5" /> + Chùm bài Đọc hiểu (Passage)
+                    </Button>
+                  </div>
                 </div>
               )}
 
+              {/* Question list */}
               {questions.map((q, i) => {
-                const meta = questionTypeMeta[q.type];
-                const TypeIcon = meta.icon;
-                return (
-                  <div key={q._key || i} className="rounded-xl border-2 bg-card p-4 space-y-3">
-                    <div className="flex items-start gap-2">
-                      <div className="flex flex-col items-center gap-1 pt-1">
-                        <button type="button" className="text-muted-foreground hover:text-foreground disabled:opacity-30" onClick={() => moveQuestion(i, -1)} disabled={i === 0}><GripVertical className="w-4 h-4" /></button>
-                        <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-sm font-bold flex items-center justify-center">{i + 1}</span>
-                      </div>
-                      <div className="flex-1 space-y-2">
+                const isCollapsed = !!collapsedCards[i];
+
+                // ── CASE A: PASSAGE GROUP QUESTION ────────────────────────────
+                if (q.is_passage) {
+                  const subCount = q.sub_questions?.length || 0;
+                  const passagePoints = (q.sub_questions || []).reduce((s, sq) => s + (sq.points || 0), 0);
+
+                  return (
+                    <div
+                      key={q._key || i}
+                      id={`exam-card-${i}`}
+                      className="rounded-2xl border-2 border-purple-500/40 bg-gradient-to-b from-purple-500/[0.04] to-card p-4 md:p-5 space-y-4 shadow-sm"
+                    >
+                      {/* Passage Header */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap border-b border-purple-500/20 pb-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Select value={q.type} onValueChange={(v) => changeType(i, v as QuestionType)}>
-                            <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {(Object.keys(questionTypeMeta) as QuestionType[]).map((t) => (
-                                <SelectItem key={t} value={t}>{questionTypeMeta[t].label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Badge variant="outline" className="gap-1 text-xs"><TypeIcon className="w-3 h-3" />{meta.auto ? 'Tự chấm' : 'Chấm tay'}</Badge>
-                          <div className="flex items-center gap-1 ml-auto">
-                            <span className="text-xs text-muted-foreground">Điểm</span>
-                            <Input type="number" min={0} className="w-16 h-8" value={q.points ?? 0} onChange={(e) => patchQ(i, { points: parseInt(e.target.value) || 0 })} />
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <button
+                              type="button"
+                              className="hover:text-foreground disabled:opacity-30 p-1"
+                              onClick={() => moveQuestion(i, -1)}
+                              disabled={i === 0}
+                              title="Di chuyển lên"
+                            >
+                              <GripVertical className="w-4 h-4" />
+                            </button>
+                            <span className="w-7 h-7 rounded-xl bg-purple-600 text-white text-xs font-bold flex items-center justify-center shadow-sm">
+                              {i + 1}
+                            </span>
                           </div>
+
+                          <Badge className="bg-purple-600 hover:bg-purple-700 text-white gap-1 text-xs">
+                            <BookOpen className="w-3 h-3" /> Chùm Đọc Hiểu / Nghe Hiểu
+                          </Badge>
+
+                          <Badge variant="outline" className="border-purple-500/40 text-purple-700 dark:text-purple-300 text-xs">
+                            {subCount} câu hỏi con
+                          </Badge>
+
+                          <Badge variant="secondary" className="font-bold text-xs">
+                            {passagePoints} điểm
+                          </Badge>
                         </div>
 
+                        <div className="flex items-center gap-1">
+                          {/* Collapse / Expand */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground"
+                            onClick={() => setCollapsedCards((p) => ({ ...p, [i]: !p[i] }))}
+                            title={isCollapsed ? 'Mở rộng bài đọc' : 'Thu gọn bài đọc'}
+                          >
+                            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => duplicateQuestion(i)}
+                            title="Nhân bản bài đọc này"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => removeQuestion(i)}
+                            title="Xóa bài đọc này"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Collapsed summary */}
+                      {isCollapsed ? (
+                        <div className="text-xs text-muted-foreground py-1 flex items-center justify-between cursor-pointer" onClick={() => setCollapsedCards((p) => ({ ...p, [i]: false }))}>
+                          <span className="font-medium truncate max-w-xl">
+                            {q.passage_title ? `[${q.passage_title}] ` : ''}
+                            {q.text ? q.text.slice(0, 100) + '...' : 'Đoạn văn đọc hiểu chưa nhập nội dung'}
+                          </span>
+                          <span className="text-primary font-medium shrink-0 ml-2">Mở chi tiết &gt;</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {/* Passage Title */}
+                          <div>
+                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                              Tiêu đề bài đọc (tùy chọn)
+                            </Label>
+                            <Input
+                              value={q.passage_title || ''}
+                              onChange={(e) => patchQ(i, { passage_title: e.target.value })}
+                              placeholder="VD: Đoạn văn 1 - Đọc hiểu trung văn N4 (Văn hóa trà đạo), Hội thoại Kaiwa..."
+                              className="mt-1 font-semibold text-sm bg-background"
+                            />
+                          </div>
+
+                          {/* Passage Body */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                                Nội dung đoạn văn đọc hiểu *
+                              </Label>
+                              <div className="flex items-center gap-1 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    const target = e.currentTarget.closest('.space-y-1\\.5')?.querySelector('textarea') as HTMLTextAreaElement;
+                                    if (target) {
+                                      const start = target.selectionStart;
+                                      const end = target.selectionEnd;
+                                      const val = target.value;
+                                      const sel = val.substring(start, end);
+                                      const newText = sel ? val.substring(0, start) + `**${sel}**` + val.substring(end) : val + ' **chữ đậm**';
+                                      patchQ(i, { text: newText });
+                                    }
+                                  }}
+                                  className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground font-bold border border-border text-[11px]"
+                                  title="In đậm văn bản"
+                                >
+                                  B
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    const target = e.currentTarget.closest('.space-y-1\\.5')?.querySelector('textarea') as HTMLTextAreaElement;
+                                    if (target) {
+                                      const start = target.selectionStart;
+                                      const end = target.selectionEnd;
+                                      const val = target.value;
+                                      const sel = val.substring(start, end);
+                                      const newText = sel ? val.substring(0, start) + `*${sel}*` + val.substring(end) : val + ' *chữ nghiêng*';
+                                      patchQ(i, { text: newText });
+                                    }
+                                  }}
+                                  className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground italic border border-border text-[11px]"
+                                  title="In nghiêng văn bản"
+                                >
+                                  I
+                                </button>
+                              </div>
+                            </div>
+                            <Textarea
+                              value={q.text}
+                              onChange={(e) => patchQ(i, { text: e.target.value })}
+                              rows={5}
+                              placeholder="Dán hoặc soạn nội dung đoạn văn đọc hiểu tại đây... (Hỗ trợ **in đậm**, *in nghiêng*, chữ Kanji/Furigana)"
+                              className="font-medium bg-background"
+                            />
+                            {q.text && (q.text.includes('*') || q.text.includes('<')) && (
+                              <div className="text-xs bg-muted/40 p-3 rounded-xl border text-muted-foreground">
+                                <span className="font-semibold text-foreground">Xem trước đoạn văn: </span>
+                                <div className="mt-1 text-foreground leading-relaxed whitespace-pre-wrap">
+                                  <FormattedText text={q.text} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Media chips for passage */}
+                          <div className="flex items-center gap-2 flex-wrap pt-1">
+                            <span className="text-xs text-muted-foreground font-semibold">Tùy chọn đính kèm:</span>
+                            {/* Audio toggle */}
+                            {q.audio_url ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1 text-xs cursor-pointer"
+                                onClick={() => setOpenAudio((p) => ({ ...p, [i]: !p[i] }))}
+                              >
+                                <Music className="w-3 h-3" /> Đã có Audio bài đọc
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className={`h-7 px-2.5 text-xs gap-1 border border-dashed rounded-lg ${
+                                  openAudio[i]
+                                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/40'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                                onClick={() => setOpenAudio((p) => ({ ...p, [i]: !p[i] }))}
+                              >
+                                <Music className="w-3 h-3 text-emerald-500" />
+                                {openAudio[i] ? 'Đóng ô Audio' : '+ Audio bài đọc'}
+                              </Button>
+                            )}
+
+                            {/* Image toggle */}
+                            {q.image_url ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-blue-500/10 text-blue-600 border-blue-500/30 gap-1 text-xs cursor-pointer"
+                                onClick={() => setOpenImage((p) => ({ ...p, [i]: !p[i] }))}
+                              >
+                                <Image className="w-3 h-3" /> Đã có Ảnh / Biểu đồ
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className={`h-7 px-2.5 text-xs gap-1 border border-dashed rounded-lg ${
+                                  openImage[i]
+                                    ? 'bg-blue-500/10 text-blue-600 border-blue-500/40'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                                onClick={() => setOpenImage((p) => ({ ...p, [i]: !p[i] }))}
+                              >
+                                <Image className="w-3 h-3 text-blue-500" />
+                                {openImage[i] ? 'Đóng ô Ảnh' : '+ Ảnh / Biểu đồ bài đọc'}
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Expandable Audio for passage */}
+                          {(q.audio_url || openAudio[i]) && (
+                            <AudioUpload
+                              audioUrl={q.audio_url}
+                              onChange={(url) => patchQ(i, { audio_url: url || undefined })}
+                              onClose={() => setOpenAudio((p) => ({ ...p, [i]: false }))}
+                            />
+                          )}
+
+                          {/* Expandable Image for passage */}
+                          {(q.image_url || openImage[i]) && (
+                            <div className="space-y-1.5 bg-muted/20 p-2.5 rounded-xl border border-border/80">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                  <Image className="w-3.5 h-3.5 text-blue-500" /> Ảnh / Biểu đồ minh họa bài đọc
+                                </Label>
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenImage((p) => ({ ...p, [i]: false }))}
+                                  className="text-muted-foreground hover:text-foreground text-xs p-0.5 rounded"
+                                  title="Đóng ô ảnh"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <MediaUploader
+                                value={q.image_url || ''}
+                                onChange={(url) => patchQ(i, { image_url: url || undefined })}
+                                accept="image"
+                                folder="exam-question-images"
+                                placeholder="Tải ảnh minh họa hoặc chọn từ thư viện"
+                                aspectRatio="auto"
+                              />
+                            </div>
+                          )}
+
+                          {/* ── SUB-QUESTIONS CONTAINER ────────────────────────── */}
+                          <div className="space-y-3 pt-2 border-t border-purple-500/20">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                                  <CornerDownRight className="w-4 h-4 text-purple-600" />
+                                  Danh sách câu hỏi con ({subCount})
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => addSubQuestion(i)}
+                                className="h-8 text-xs gap-1.5 border-purple-500/40 text-purple-700 dark:text-purple-300 hover:bg-purple-500/10"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Thêm câu hỏi con
+                              </Button>
+                            </div>
+
+                            {/* Sub-question cards */}
+                            <div className="space-y-3 pl-2 md:pl-4 border-l-2 border-purple-500/30">
+                              {(q.sub_questions || []).map((sq, sIdx) => (
+                                <div
+                                  key={sq.id || sIdx}
+                                  className="bg-card border border-border/90 rounded-xl p-3.5 space-y-3 shadow-xs"
+                                >
+                                  {/* Sub-question top row */}
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center justify-center border border-purple-300 dark:border-purple-800">
+                                        {i + 1}.{sIdx + 1}
+                                      </span>
+                                      <span className="text-xs font-semibold text-muted-foreground">
+                                        Câu hỏi {sIdx + 1}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground">Điểm:</span>
+                                        <Input
+                                          type="number"
+                                          min={0}
+                                          value={sq.points ?? 2}
+                                          onChange={(e) =>
+                                            patchSubQ(i, sIdx, { points: parseInt(e.target.value) || 0 })
+                                          }
+                                          className="w-14 h-7 text-xs font-bold"
+                                        />
+                                      </div>
+
+                                      {subCount > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeSubQuestion(i, sIdx)}
+                                          className="text-muted-foreground hover:text-destructive p-1 rounded"
+                                          title="Xóa câu hỏi con này"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Sub-question text */}
+                                  <div>
+                                    <Input
+                                      value={sq.text}
+                                      onChange={(e) => patchSubQ(i, sIdx, { text: e.target.value })}
+                                      placeholder={`Nội dung câu hỏi con ${sIdx + 1}...`}
+                                      className="font-medium text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Sub-question options */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-xs text-muted-foreground">
+                                        Chọn đáp án đúng (tích vào chữ cái tròn):
+                                      </span>
+                                      <QuickPastePopover
+                                        onPaste={(lines) => {
+                                          const newOptions = [...sq.options];
+                                          lines.forEach((line, li) => {
+                                            if (li < 6) {
+                                              if (li >= newOptions.length) newOptions.push(line);
+                                              else newOptions[li] = line;
+                                            }
+                                          });
+                                          patchSubQ(i, sIdx, { options: newOptions });
+                                          toast({ title: `✅ Đã điền ${Math.min(lines.length, 6)} đáp án` });
+                                        }}
+                                      />
+                                    </div>
+
+                                    <div className="grid sm:grid-cols-2 gap-2">
+                                      {sq.options.map((opt, oi) => (
+                                        <div key={oi} className="flex items-center gap-1.5">
+                                          <button
+                                            type="button"
+                                            onClick={() => patchSubQ(i, sIdx, { correct_index: oi })}
+                                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
+                                              sq.correct_index === oi
+                                                ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                : 'border-muted-foreground/40 hover:border-emerald-500'
+                                            }`}
+                                            title={`Chọn ${String.fromCharCode(65 + oi)} là đáp án đúng`}
+                                          >
+                                            {String.fromCharCode(65 + oi)}
+                                          </button>
+                                          <Input
+                                            value={opt}
+                                            onChange={(e) => {
+                                              const arr = [...sq.options];
+                                              arr[oi] = e.target.value;
+                                              patchSubQ(i, sIdx, { options: arr });
+                                            }}
+                                            onPaste={(e) => handleSubOptionPaste(i, sIdx, oi, e)}
+                                            placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`}
+                                            className="h-8 text-xs"
+                                          />
+                                          {sq.options.length > 2 && (
+                                            <button
+                                              type="button"
+                                              className="text-muted-foreground hover:text-destructive p-0.5"
+                                              onClick={() => removeSubOption(i, sIdx, oi)}
+                                              title="Xóa đáp án này"
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {sq.options.length < 6 && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                                        onClick={() =>
+                                          patchSubQ(i, sIdx, { options: [...sq.options, ''] })
+                                        }
+                                      >
+                                        <Plus className="w-3 h-3 mr-1" /> Thêm đáp án
+                                      </Button>
+                                    )}
+                                  </div>
+
+                                  {/* Sub-question explanation */}
+                                  <div>
+                                    <Input
+                                      value={sq.explanation || ''}
+                                      onChange={(e) =>
+                                        patchSubQ(i, sIdx, { explanation: e.target.value })
+                                      }
+                                      placeholder="Giải thích đáp án cho câu hỏi con (tùy chọn)"
+                                      className="h-7 text-xs"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => addSubQuestion(i)}
+                              className="w-full h-8 text-xs text-purple-700 dark:text-purple-300 border border-dashed border-purple-400/40 hover:bg-purple-500/10"
+                            >
+                              <Plus className="w-3.5 h-3.5 mr-1" /> Thêm câu hỏi con vào bài đọc này
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // ── CASE B: REGULAR SINGLE QUESTION (ULTRA CLEAN & COMPACT) ──
+                const meta = questionTypeMeta[q.type];
+                const TypeIcon = meta.icon;
+
+                return (
+                  <div
+                    key={q._key || i}
+                    id={`exam-card-${i}`}
+                    className="rounded-2xl border-2 bg-card p-4 md:p-5 space-y-3 shadow-xs hover:border-primary/40 transition-colors"
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap border-b pb-2.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <button
+                            type="button"
+                            className="hover:text-foreground disabled:opacity-30 p-1"
+                            onClick={() => moveQuestion(i, -1)}
+                            disabled={i === 0}
+                            title="Di chuyển lên"
+                          >
+                            <GripVertical className="w-4 h-4" />
+                          </button>
+                          <span className="w-7 h-7 rounded-xl bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
+                            {i + 1}
+                          </span>
+                        </div>
+
+                        <Select value={q.type} onValueChange={(v) => changeType(i, v as QuestionType)}>
+                          <SelectTrigger className="h-8 w-36 text-xs font-medium">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(questionTypeMeta) as QuestionType[]).map((t) => (
+                              <SelectItem key={t} value={t} className="text-xs">
+                                {questionTypeMeta[t].label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <TypeIcon className="w-3 h-3" />
+                          {meta.auto ? 'Tự chấm' : 'Chấm tay'}
+                        </Badge>
+
+                        <div className="flex items-center gap-1 ml-1">
+                          <span className="text-xs text-muted-foreground">Điểm:</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            className="w-14 h-8 text-xs font-bold"
+                            value={q.points ?? 0}
+                            onChange={(e) => patchQ(i, { points: parseInt(e.target.value) || 0 })}
+                          />
+                        </div>
+
+                        {/* Compact Media Toggles */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {q.audio_url ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1 text-[11px] cursor-pointer"
+                              onClick={() => setOpenAudio((p) => ({ ...p, [i]: !p[i] }))}
+                            >
+                              <Music className="w-3 h-3" /> Audio
+                            </Badge>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={`h-7 px-2 text-xs gap-1 border border-dashed rounded-lg ${
+                                openAudio[i]
+                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/40'
+                                  : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                              onClick={() => setOpenAudio((p) => ({ ...p, [i]: !p[i] }))}
+                            >
+                              <Music className="w-3 h-3 text-emerald-500" />
+                              {openAudio[i] ? 'Đóng' : '+ Audio'}
+                            </Button>
+                          )}
+
+                          {q.image_url ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-500/10 text-blue-600 border-blue-500/30 gap-1 text-[11px] cursor-pointer"
+                              onClick={() => setOpenImage((p) => ({ ...p, [i]: !p[i] }))}
+                            >
+                              <Image className="w-3 h-3" /> Ảnh
+                            </Badge>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={`h-7 px-2 text-xs gap-1 border border-dashed rounded-lg ${
+                                openImage[i]
+                                  ? 'bg-blue-500/10 text-blue-600 border-blue-500/40'
+                                  : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                              onClick={() => setOpenImage((p) => ({ ...p, [i]: !p[i] }))}
+                            >
+                              <Image className="w-3 h-3 text-blue-500" />
+                              {openImage[i] ? 'Đóng' : '+ Ảnh'}
+                            </Button>
+                          )}
+
+                          {q.explanation ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1 text-[11px] cursor-pointer"
+                              onClick={() => setOpenExplanation((p) => ({ ...p, [i]: !p[i] }))}
+                            >
+                              💡 Giải thích
+                            </Badge>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={`h-7 px-2 text-xs gap-1 border border-dashed rounded-lg ${
+                                openExplanation[i]
+                                  ? 'bg-amber-500/10 text-amber-600 border-amber-500/40'
+                                  : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                              onClick={() => setOpenExplanation((p) => ({ ...p, [i]: !p[i] }))}
+                            >
+                              <span className="text-amber-500 font-bold">💡</span>
+                              {openExplanation[i] ? 'Đóng' : '+ Giải thích'}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground"
+                          onClick={() => setCollapsedCards((p) => ({ ...p, [i]: !p[i] }))}
+                          title={isCollapsed ? 'Mở rộng câu hỏi' : 'Thu gọn câu hỏi'}
+                        >
+                          {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => duplicateQuestion(i)}
+                          title="Nhân bản câu này"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => removeQuestion(i)}
+                          title="Xóa câu này"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Collapsed summary */}
+                    {isCollapsed ? (
+                      <div
+                        className="text-xs text-muted-foreground py-1 flex items-center justify-between cursor-pointer"
+                        onClick={() => setCollapsedCards((p) => ({ ...p, [i]: false }))}
+                      >
+                        <span className="font-medium truncate max-w-xl">
+                          {q.text ? q.text : 'Chưa có nội dung câu hỏi'}
+                        </span>
+                        <span className="text-primary font-medium shrink-0 ml-2">Mở chi tiết &gt;</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Question Text */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between gap-2">
-                            <Label className="text-xs font-semibold text-muted-foreground">Nội dung câu hỏi</Label>
-                            <div className="flex items-center gap-1.5 text-xs">
+                            <Label className="text-xs font-semibold text-muted-foreground">Nội dung câu hỏi *</Label>
+                            <div className="flex items-center gap-1 text-xs">
                               <button
                                 type="button"
                                 title="Bôi đậm phần văn bản đang chọn hoặc thêm mẫu"
@@ -1173,8 +2192,6 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                                     const sel = val.substring(start, end);
                                     const newText = sel ? val.substring(0, start) + `**${sel}**` + val.substring(end) : val + ' **chữ đậm**';
                                     patchQ(i, { text: newText });
-                                  } else {
-                                    patchQ(i, { text: (q.text || '') + ' **chữ đậm**' });
                                   }
                                 }}
                                 className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground font-bold border border-border text-[11px]"
@@ -1183,7 +2200,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                               </button>
                               <button
                                 type="button"
-                                title="In nghiêng phần văn bản đang chọn hoặc thêm mẫu"
+                                title="In nghiêng"
                                 onClick={(e) => {
                                   const target = e.currentTarget.closest('.space-y-1')?.querySelector('textarea') as HTMLTextAreaElement;
                                   if (target) {
@@ -1193,33 +2210,11 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                                     const sel = val.substring(start, end);
                                     const newText = sel ? val.substring(0, start) + `*${sel}*` + val.substring(end) : val + ' *chữ nghiêng*';
                                     patchQ(i, { text: newText });
-                                  } else {
-                                    patchQ(i, { text: (q.text || '') + ' *chữ nghiêng*' });
                                   }
                                 }}
                                 className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground italic border border-border text-[11px]"
                               >
                                 I
-                              </button>
-                              <button
-                                type="button"
-                                title="Đậm & Nghiêng phần văn bản đang chọn hoặc thêm mẫu"
-                                onClick={(e) => {
-                                  const target = e.currentTarget.closest('.space-y-1')?.querySelector('textarea') as HTMLTextAreaElement;
-                                  if (target) {
-                                    const start = target.selectionStart;
-                                    const end = target.selectionEnd;
-                                    const val = target.value;
-                                    const sel = val.substring(start, end);
-                                    const newText = sel ? val.substring(0, start) + `***${sel}***` + val.substring(end) : val + ' ***đậm nghiêng***';
-                                    patchQ(i, { text: newText });
-                                  } else {
-                                    patchQ(i, { text: (q.text || '') + ' ***đậm nghiêng***' });
-                                  }
-                                }}
-                                className="px-2 py-0.5 rounded bg-muted hover:bg-primary/20 text-foreground font-bold italic border border-border text-[11px]"
-                              >
-                                B I
                               </button>
                             </div>
                           </div>
@@ -1227,7 +2222,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                             value={q.text}
                             onChange={(e) => patchQ(i, { text: e.target.value })}
                             rows={2}
-                            placeholder="Nội dung câu hỏi… (Hỗ trợ **in đậm**, *in nghiêng*, ***đậm nghiêng***)"
+                            placeholder="Nội dung câu hỏi… (Hỗ trợ **in đậm**, *in nghiêng*)"
                           />
                           {q.text && (q.text.includes('*') || q.text.includes('<')) && (
                             <div className="text-xs bg-muted/40 p-2 rounded-md border text-muted-foreground">
@@ -1237,30 +2232,45 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                           )}
                         </div>
 
-                        {/* ── Audio upload ── */}
-                        <AudioUpload
-                          audioUrl={q.audio_url}
-                          onChange={(url) => patchQ(i, { audio_url: url || undefined })}
-                        />
-
-                        {/* ── Question Image Upload / URL Library ── */}
-                        <div className="space-y-1 bg-muted/20 p-2.5 rounded-xl border border-border/80">
-                          <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                            <Image className="w-3.5 h-3.5 text-blue-500" /> Ảnh minh họa câu hỏi (Tải lên / Chọn từ thư viện media / Dán URL)
-                          </Label>
-                          <MediaUploader
-                            value={q.image_url || ''}
-                            onChange={(url) => patchQ(i, { image_url: url || undefined })}
-                            accept="image"
-                            folder="exam-question-images"
-                            placeholder="Tải ảnh minh họa hoặc chọn từ thư viện"
-                            aspectRatio="auto"
+                        {/* Collapsible Audio Upload */}
+                        {(q.audio_url || openAudio[i]) && (
+                          <AudioUpload
+                            audioUrl={q.audio_url}
+                            onChange={(url) => patchQ(i, { audio_url: url || undefined })}
+                            onClose={() => setOpenAudio((p) => ({ ...p, [i]: false }))}
                           />
-                        </div>
+                        )}
 
+                        {/* Collapsible Image Upload */}
+                        {(q.image_url || openImage[i]) && (
+                          <div className="space-y-1 bg-muted/20 p-2.5 rounded-xl border border-border/80">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                <Image className="w-3.5 h-3.5 text-blue-500" /> Ảnh minh họa câu hỏi
+                              </Label>
+                              <button
+                                type="button"
+                                onClick={() => setOpenImage((p) => ({ ...p, [i]: false }))}
+                                className="text-muted-foreground hover:text-foreground text-xs p-0.5 rounded"
+                                title="Đóng ô ảnh"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <MediaUploader
+                              value={q.image_url || ''}
+                              onChange={(url) => patchQ(i, { image_url: url || undefined })}
+                              accept="image"
+                              folder="exam-question-images"
+                              placeholder="Tải ảnh minh họa hoặc chọn từ thư viện"
+                              aspectRatio="auto"
+                            />
+                          </div>
+                        )}
+
+                        {/* Options for multiple choice & true/false */}
                         {(q.type === 'multiple_choice' || q.type === 'true_false') && (
                           <div className="space-y-2">
-                            {/* Smart paste hint */}
                             {q.type === 'multiple_choice' && (
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-xs text-muted-foreground flex-1">
@@ -1287,29 +2297,48 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                                   <button
                                     type="button"
                                     onClick={() => patchQ(i, { correct_index: oi })}
-                                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 ${q.correct_index === oi ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-muted-foreground/40'
-                                      }`}
+                                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
+                                      q.correct_index === oi
+                                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                                        : 'border-muted-foreground/40 hover:border-emerald-500'
+                                    }`}
+                                    title={`Chọn ${String.fromCharCode(65 + oi)} là đáp án đúng`}
                                   >
                                     {String.fromCharCode(65 + oi)}
                                   </button>
                                   <Input
                                     value={opt}
-                                    onChange={(e) => { const arr = [...q.options]; arr[oi] = e.target.value; patchQ(i, { options: arr }); }}
+                                    onChange={(e) => {
+                                      const arr = [...q.options];
+                                      arr[oi] = e.target.value;
+                                      patchQ(i, { options: arr });
+                                    }}
                                     onPaste={(e) => handleOptionPaste(i, oi, e)}
                                     placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`}
                                     disabled={q.type === 'true_false'}
                                     className="h-8"
                                   />
                                   {q.type === 'multiple_choice' && q.options.length > 2 && (
-                                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => removeOption(i, oi)}>
+                                    <button
+                                      type="button"
+                                      className="text-muted-foreground hover:text-destructive p-1"
+                                      onClick={() => removeOption(i, oi)}
+                                      title="Xóa đáp án này"
+                                    >
                                       <X className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                 </div>
                               ))}
                               {q.type === 'multiple_choice' && q.options.length < 6 && (
-                                <Button type="button" variant="ghost" size="sm" className="h-8 justify-start text-muted-foreground" onClick={() => patchQ(i, { options: [...q.options, ''] })}>
-                                  <Plus className="w-3.5 h-3.5 mr-1" />Thêm đáp án
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 justify-start text-muted-foreground"
+                                  onClick={() => patchQ(i, { options: [...q.options, ''] })}
+                                >
+                                  <Plus className="w-3.5 h-3.5 mr-1" /> Thêm đáp án
                                 </Button>
                               )}
                             </div>
@@ -1329,29 +2358,71 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                         )}
 
                         {q.type === 'essay' && (
-                          <p className="text-xs text-muted-foreground italic">Câu tự luận sẽ do giáo viên chấm tay sau khi học viên nộp.</p>
+                          <p className="text-xs text-muted-foreground italic">
+                            Câu tự luận sẽ do giáo viên chấm tay sau khi học viên nộp.
+                          </p>
                         )}
 
-                        <Input value={q.explanation || ''} onChange={(e) => patchQ(i, { explanation: e.target.value })} placeholder="Giải thích đáp án (tùy chọn)" className="h-8 text-sm" />
+                        {/* Collapsible Explanation */}
+                        {(q.explanation || openExplanation[i]) && (
+                          <div className="space-y-1 bg-amber-500/5 p-2 rounded-xl border border-amber-500/20">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                                💡 Giải thích chi tiết đáp án
+                              </Label>
+                              <button
+                                type="button"
+                                onClick={() => setOpenExplanation((p) => ({ ...p, [i]: false }))}
+                                className="text-muted-foreground hover:text-foreground text-xs p-0.5 rounded"
+                                title="Đóng ô giải thích"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <Input
+                              value={q.explanation || ''}
+                              onChange={(e) => patchQ(i, { explanation: e.target.value })}
+                              placeholder="Giải thích tại sao đáp án này đúng, mẹo ghi nhớ…"
+                              className="h-8 text-xs bg-background"
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => duplicateQuestion(i)}><Copy className="w-4 h-4" /></Button>
-                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => removeQuestion(i)}><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
 
-              <div className="flex flex-wrap gap-2">
+              {/* Bottom Add Buttons */}
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t bg-muted/20 p-3 rounded-2xl">
+                <span className="text-xs font-bold text-muted-foreground mr-1">Thêm câu hỏi:</span>
                 {(Object.keys(questionTypeMeta) as QuestionType[]).map((t) => {
                   const Icon = questionTypeMeta[t].icon;
                   return (
-                    <Button key={t} type="button" variant="outline" size="sm" onClick={() => addQuestion(t)}>
-                      <Icon className="w-3.5 h-3.5 mr-1" />{questionTypeMeta[t].label}
+                    <Button
+                      key={t}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addQuestion(t)}
+                      className="h-8 text-xs gap-1.5"
+                    >
+                      <Icon className="w-3.5 h-3.5 text-primary" />
+                      {questionTypeMeta[t].label}
                     </Button>
                   );
                 })}
+
+                {/* Big Prominent Passage Group Button */}
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={addPassageQuestion}
+                  className="h-8 text-xs gap-1.5 bg-purple-600 hover:bg-purple-700 text-white shadow-sm font-semibold ml-auto"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  + Chùm Đọc Hiểu (Passage + Câu hỏi con)
+                </Button>
               </div>
             </div>
           )}

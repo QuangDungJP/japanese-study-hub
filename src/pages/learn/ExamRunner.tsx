@@ -38,6 +38,9 @@ interface Question {
   image_url?: string;
   audio_url?: string;
   audio_play_limit?: number;
+  is_passage?: boolean;
+  passage_title?: string;
+  sub_questions?: any[];
 }
 
 const LimitedAudioPlayer = ({ url, limit }: { url: string; limit?: number }) => {
@@ -1339,6 +1342,45 @@ const ExamRunner = () => {
                       value={typeof currentAns === "string" ? currentAns : ""}
                       onChange={e => updateAns(e.target.value)} />
                     <p className="text-[11px] text-muted-foreground/70 italic text-right">Có thể nhấn Enter để xuống dòng</p>
+                  </div>
+                )}
+
+                {/* Passage Sub-questions */}
+                {q.is_passage && Array.isArray(q.sub_questions) && q.sub_questions.length > 0 && (
+                  <div className="space-y-4 mt-4 border-t pt-4">
+                    <p className="text-xs font-bold text-primary uppercase tracking-wider">
+                      Các câu hỏi con trong bài đọc:
+                    </p>
+                    {q.sub_questions.map((sq: any, sIdx: number) => {
+                      const sqKey = `${qKey}_sub_${sIdx}`;
+                      const sqAns = answers[sqKey];
+                      return (
+                        <div key={sIdx} className="p-4 rounded-xl border bg-muted/20 space-y-3">
+                          <div className="flex items-center justify-between text-sm font-semibold">
+                            <span>Câu {i + 1}.{sIdx + 1}: {sq.text}</span>
+                            <Badge variant="outline" className="text-xs font-normal">{sq.points || 2} điểm</Badge>
+                          </div>
+                          <div className="space-y-1.5">
+                            {(sq.options || []).map((opt: string, oi: number) => {
+                              const selected = sqAns === oi;
+                              return (
+                                <button
+                                  key={oi}
+                                  type="button"
+                                  onClick={() => setAnswers(a => ({ ...a, [sqKey]: oi }))}
+                                  className={`w-full text-left p-2.5 rounded-lg border-2 transition-all flex items-center gap-2.5 ${selected ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'}`}
+                                >
+                                  <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-semibold shrink-0 ${selected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'}`}>
+                                    {String.fromCharCode(65 + oi)}
+                                  </span>
+                                  <FormattedText text={opt} />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
