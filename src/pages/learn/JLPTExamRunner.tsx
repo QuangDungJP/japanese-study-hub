@@ -446,101 +446,164 @@ export default function JLPTExamRunner() {
               <div className="bg-muted/30 px-4 py-2 border-b flex items-center justify-between">
                 <span className="font-bold text-sm">Câu {localIdx + 1}</span>
               </div>
-              <CardContent className="p-5 space-y-4">
-                <div className="font-medium text-base"><FormattedText text={q.text || ''} /></div>
-                
-                {q.image_url && <img src={q.image_url} alt="Minh họa" className="max-w-md rounded-lg border" />}
-                
-                {q.audio_url && currentSection === 'listening' && (
-                  <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
-                    <p className="text-xs font-bold text-primary mb-2 flex items-center gap-1"><Headphones className="w-4 h-4"/> Audio Nghe Hiểu (Chỉ nghe 1 lần)</p>
-                    <audio src={q.audio_url} controls controlsList="nodownload" className="w-full h-10" />
-                  </div>
-                )}
-
-                <div className="space-y-2 mt-4">
-                  {q.is_passage ? (
-                    <div className="space-y-6 mt-6 border-t pt-4">
-                      <h4 className="font-bold text-sm text-primary">Các câu hỏi phụ</h4>
+              <CardContent className="p-0">
+                {q.is_passage ? (
+                  <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-t">
+                    <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                      <div className="font-medium text-base leading-relaxed"><FormattedText text={q.text || ''} /></div>
+                      
+                      {q.image_url && <img src={q.image_url} alt="Minh họa" className="max-w-full rounded-lg border" />}
+                      
+                      {q.audio_url && currentSection === 'listening' && (
+                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 sticky bottom-0">
+                          <p className="text-xs font-bold text-primary mb-2 flex items-center gap-1"><Headphones className="w-4 h-4"/> Audio Nghe Hiểu (Chỉ nghe 1 lần)</p>
+                          <audio src={q.audio_url} controls controlsList="nodownload" className="w-full h-10" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-5 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar bg-muted/10 relative">
+                      <h4 className="font-bold text-sm text-primary sticky top-0 bg-muted/80 backdrop-blur-md z-10 py-2 px-1 -mx-1 -mt-2">Các câu hỏi phụ</h4>
                       {(q.sub_questions || []).map((sq: any, sIdx: number) => {
                         const sqKey = `${globalIdx}_${sIdx}`;
                         const sqAns = answers[sqKey];
                         return (
-                          <Card key={sq.id} className="border bg-card shadow-sm">
+                          <Card key={sq.id || sIdx} className="border bg-card shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-purple-500/50" />
                             <CardContent className="p-4 space-y-4">
-                              <div className="font-bold text-sm">Câu {localIdx + 1}.{sIdx + 1}</div>
+                              <div className="font-bold text-sm text-purple-700 dark:text-purple-400">Câu {localIdx + 1}.{sIdx + 1}</div>
                               <div className="font-medium text-base"><FormattedText text={sq.text || ''} /></div>
                               <div className="space-y-2">
-                                {(sq.options || []).map((opt: string, optIdx: number) => (
-                                  <label 
-                                    key={optIdx} 
-                                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${sqAns === optIdx ? 'bg-primary/10 border-primary shadow-sm' : 'hover:bg-muted/50 border-border'}`}
-                                  >
+                                {(!sq.type || sq.type === 'multiple_choice') ? (
+                                  (sq.options || []).map((opt: string, optIdx: number) => (
+                                    <label 
+                                      key={optIdx} 
+                                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${sqAns === optIdx ? 'bg-primary/10 border-primary shadow-sm' : 'hover:bg-muted/50 border-border'}`}
+                                    >
+                                      <input 
+                                        type="radio" 
+                                        name={`q_${sqKey}`} 
+                                        checked={sqAns === optIdx}
+                                        onChange={() => setAnswers(prev => ({ ...prev, [sqKey]: optIdx }))}
+                                        className="mt-1 w-4 h-4 accent-primary"
+                                      />
+                                      <span className="flex-1"><FormattedText text={opt} /></span>
+                                    </label>
+                                  ))
+                                ) : sq.type === 'short_answer' ? (
+                                  <div className="pt-2">
                                     <input 
-                                      type="radio" 
-                                      name={`q_${sqKey}`} 
-                                      checked={sqAns === optIdx}
-                                      onChange={() => setAnswers(prev => ({ ...prev, [sqKey]: optIdx }))}
-                                      className="mt-1 w-4 h-4 accent-primary"
+                                      type="text" 
+                                      placeholder="Nhập câu trả lời..."
+                                      value={sqAns || ''}
+                                      onChange={(e) => setAnswers(prev => ({ ...prev, [sqKey]: e.target.value }))}
+                                      className="w-full p-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 text-base"
                                     />
-                                    <span className="flex-1"><FormattedText text={opt} /></span>
-                                  </label>
-                                ))}
+                                  </div>
+                                ) : sq.type === 'speaking' ? (
+                                    <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-xl border-2 border-dashed gap-4">
+                                      {sqAns ? (
+                                        <div className="text-center space-y-3">
+                                          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                                            <CheckCircle2 className="w-6 h-6" />
+                                          </div>
+                                          <p className="font-bold text-sm text-emerald-600">Đã lưu bản ghi âm</p>
+                                          <Button variant="outline" size="sm" onClick={() => setAnswers(prev => { const n = {...prev}; delete n[sqKey]; return n; })}>
+                                            Ghi âm lại
+                                          </Button>
+                                        </div>
+                                      ) : recordingId === sqKey ? (
+                                        <div className="text-center space-y-3">
+                                          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                                            <Mic className="w-6 h-6" />
+                                          </div>
+                                          <p className="font-bold text-sm text-red-600 animate-pulse">Đang ghi âm...</p>
+                                          <Button variant="destructive" size="sm" onClick={() => {
+                                            setRecordingId(null);
+                                            setAnswers(prev => ({ ...prev, [sqKey]: "recorded_audio_blob_url" }));
+                                          }}>
+                                            <Square className="w-4 h-4 mr-2" /> Dừng & Lưu
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <Button size="sm" onClick={() => setRecordingId(sqKey)} className="bg-red-500 hover:bg-red-600 text-white gap-2 rounded-full px-6">
+                                          <Mic className="w-4 h-4" /> Bắt đầu ghi âm
+                                        </Button>
+                                      )}
+                                    </div>
+                                ) : null}
                               </div>
                             </CardContent>
                           </Card>
                         )
                       })}
                     </div>
-                  ) : q.skill === 'kaiwa' || q.type === 'audio_record' ? (
-                    <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl border-2 border-dashed gap-4">
-                      {ans ? (
-                        <div className="text-center space-y-4">
-                          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                            <CheckCircle2 className="w-8 h-8" />
-                          </div>
-                          <p className="font-bold text-emerald-600">Đã lưu bản ghi âm</p>
-                          <Button variant="outline" size="sm" onClick={() => setAnswers(prev => { const n = {...prev}; delete n[globalIdx]; return n; })}>
-                            Ghi âm lại
-                          </Button>
-                        </div>
-                      ) : recordingId === q.id ? (
-                        <div className="text-center space-y-4">
-                          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                            <Mic className="w-8 h-8" />
-                          </div>
-                          <p className="font-bold text-red-600 animate-pulse">Đang ghi âm...</p>
-                          <Button variant="destructive" onClick={() => {
-                            setRecordingId(null);
-                            setAnswers(prev => ({ ...prev, [globalIdx]: "recorded_audio_blob_url" }));
-                          }}>
-                            <Square className="w-4 h-4 mr-2" /> Dừng & Lưu
-                          </Button>
+                  </div>
+                ) : (
+                  <div className="p-5 space-y-4">
+                    <div className="font-medium text-base"><FormattedText text={q.text || ''} /></div>
+                    
+                    {q.image_url && <img src={q.image_url} alt="Minh họa" className="max-w-md rounded-lg border" />}
+                    
+                    {q.audio_url && currentSection === 'listening' && (
+                      <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
+                        <p className="text-xs font-bold text-primary mb-2 flex items-center gap-1"><Headphones className="w-4 h-4"/> Audio Nghe Hiểu (Chỉ nghe 1 lần)</p>
+                        <audio src={q.audio_url} controls controlsList="nodownload" className="w-full h-10" />
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2 mt-4">
+                      {q.skill === 'kaiwa' || q.type === 'audio_record' ? (
+                        <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl border-2 border-dashed gap-4">
+                          {ans ? (
+                            <div className="text-center space-y-4">
+                              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                                <CheckCircle2 className="w-8 h-8" />
+                              </div>
+                              <p className="font-bold text-emerald-600">Đã lưu bản ghi âm</p>
+                              <Button variant="outline" size="sm" onClick={() => setAnswers(prev => { const n = {...prev}; delete n[globalIdx]; return n; })}>
+                                Ghi âm lại
+                              </Button>
+                            </div>
+                          ) : recordingId === q.id ? (
+                            <div className="text-center space-y-4">
+                              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                                <Mic className="w-8 h-8" />
+                              </div>
+                              <p className="font-bold text-red-600 animate-pulse">Đang ghi âm...</p>
+                              <Button variant="destructive" onClick={() => {
+                                setRecordingId(null);
+                                setAnswers(prev => ({ ...prev, [globalIdx]: "recorded_audio_blob_url" }));
+                              }}>
+                                <Square className="w-4 h-4 mr-2" /> Dừng & Lưu
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button size="lg" onClick={() => setRecordingId(q.id)} className="bg-red-500 hover:bg-red-600 text-white gap-2 rounded-full px-8">
+                              <Mic className="w-5 h-5" /> Bắt đầu ghi âm
+                            </Button>
+                          )}
                         </div>
                       ) : (
-                        <Button size="lg" onClick={() => setRecordingId(q.id)} className="bg-red-500 hover:bg-red-600 text-white gap-2 rounded-full px-8">
-                          <Mic className="w-5 h-5" /> Bắt đầu ghi âm
-                        </Button>
+                        (q.options || []).map((opt: string, optIdx: number) => (
+                          <label 
+                            key={optIdx} 
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${ans === optIdx ? 'bg-primary/10 border-primary shadow-sm' : 'hover:bg-muted/50 border-border'}`}
+                          >
+                            <input 
+                              type="radio" 
+                              name={`q_${globalIdx}`} 
+                              checked={ans === optIdx}
+                              onChange={() => setAnswers(prev => ({ ...prev, [globalIdx]: optIdx }))}
+                              className="mt-1 w-4 h-4 accent-primary"
+                            />
+                            <span className="flex-1"><FormattedText text={opt} /></span>
+                          </label>
+                        ))
                       )}
                     </div>
-                  ) : (
-                    (q.options || []).map((opt: string, optIdx: number) => (
-                      <label 
-                        key={optIdx} 
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${ans === optIdx ? 'bg-primary/10 border-primary shadow-sm' : 'hover:bg-muted/50 border-border'}`}
-                      >
-                        <input 
-                          type="radio" 
-                          name={`q_${globalIdx}`} 
-                          checked={ans === optIdx}
-                          onChange={() => setAnswers(prev => ({ ...prev, [globalIdx]: optIdx }))}
-                          className="mt-1 w-4 h-4 accent-primary"
-                        />
-                        <span className="flex-1"><FormattedText text={opt} /></span>
-                      </label>
-                    ))
-                  )}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );

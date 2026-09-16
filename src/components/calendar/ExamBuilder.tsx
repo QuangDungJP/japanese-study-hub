@@ -29,9 +29,11 @@ export type ExamCategory = 'written' | 'speaking_meeting' | 'speaking_ai';
 export interface SubQuestion {
   id?: string;
   _key?: string;
+  type?: QuestionType;
   text: string;
   options: string[];
   correct_index: number;
+  accepted_answers?: string[];
   explanation?: string;
   points?: number;
 }
@@ -103,6 +105,7 @@ const emptyPassageQuestion = (): ExamQuestion => {
     sub_questions: [
       {
         id: generateKey(),
+        type: 'multiple_choice',
         text: 'Câu hỏi 1:',
         options: ['', '', '', ''],
         correct_index: 0,
@@ -111,6 +114,7 @@ const emptyPassageQuestion = (): ExamQuestion => {
       },
       {
         id: generateKey(),
+        type: 'multiple_choice',
         text: 'Câu hỏi 2:',
         options: ['', '', '', ''],
         correct_index: 0,
@@ -142,9 +146,11 @@ const normalizeQuestion = (q: any): ExamQuestion => {
       cIdx = Math.max(0, Math.min(cIdx, Math.max(0, opts.length - 1)));
       return {
         id: sq?.id || generateKey(),
+        type: sq?.type || 'multiple_choice',
         text: sq?.text || `Câu hỏi ${sidx + 1}:`,
         options: opts,
         correct_index: cIdx,
+        accepted_answers: Array.isArray(sq?.accepted_answers) ? sq.accepted_answers : undefined,
         points: typeof sq?.points === 'number' ? sq.points : 2,
         explanation: sq?.explanation || '',
       };
@@ -760,6 +766,7 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
         const subs = q.sub_questions || [];
         const newSub: SubQuestion = {
           id: generateKey(),
+          type: 'multiple_choice',
           text: `Câu hỏi ${subs.length + 1}:`,
           options: ['', '', '', ''],
           correct_index: 0,
@@ -1876,9 +1883,16 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
                                       <span className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center justify-center border border-purple-300 dark:border-purple-800">
                                         {i + 1}.{sIdx + 1}
                                       </span>
-                                      <span className="text-xs font-semibold text-muted-foreground">
-                                        Câu hỏi {sIdx + 1}
-                                      </span>
+                                      <Select value={sq.type || 'multiple_choice'} onValueChange={(v) => patchSubQ(i, sIdx, { type: v as QuestionType })}>
+                                        <SelectTrigger className="h-7 w-32 sm:w-40 text-xs font-medium border-purple-200 dark:border-purple-800/80 bg-purple-50/50 dark:bg-purple-950/30">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="multiple_choice" className="text-xs">Trắc nghiệm</SelectItem>
+                                          <SelectItem value="short_answer" className="text-xs">Điền từ / Trả lời ngắn</SelectItem>
+                                          <SelectItem value="speaking" className="text-xs">Thi Nói / Ghi âm</SelectItem>
+                                        </SelectContent>
+                                      </Select>
                                     </div>
 
                                     <div className="flex items-center gap-2">
@@ -1920,77 +1934,100 @@ const ExamBuilder = ({ open, onOpenChange, classes, teacherId, initial, onSaved 
 
                                   {/* Sub-question options */}
                                   <div className="space-y-2">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-xs text-muted-foreground">
-                                        Chọn đáp án đúng (tích vào chữ cái tròn):
-                                      </span>
-                                      <QuickPastePopover
-                                        onPaste={(lines) => {
-                                          const newOptions = [...sq.options];
-                                          lines.forEach((line, li) => {
-                                            if (li < 6) {
-                                              if (li >= newOptions.length) newOptions.push(line);
-                                              else newOptions[li] = line;
-                                            }
-                                          });
-                                          patchSubQ(i, sIdx, { options: newOptions });
-                                          toast({ title: `✅ Đã điền ${Math.min(lines.length, 6)} đáp án` });
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div className="grid sm:grid-cols-2 gap-2">
-                                      {sq.options.map((opt, oi) => (
-                                        <div key={oi} className="flex items-center gap-1.5">
-                                          <button
-                                            type="button"
-                                            onClick={() => patchSubQ(i, sIdx, { correct_index: oi })}
-                                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
-                                              sq.correct_index === oi
-                                                ? 'border-emerald-500 bg-emerald-500 text-white'
-                                                : 'border-muted-foreground/40 hover:border-emerald-500'
-                                            }`}
-                                            title={`Chọn ${String.fromCharCode(65 + oi)} là đáp án đúng`}
-                                          >
-                                            {String.fromCharCode(65 + oi)}
-                                          </button>
-                                          <Input
-                                            value={opt}
-                                            onChange={(e) => {
-                                              const arr = [...sq.options];
-                                              arr[oi] = e.target.value;
-                                              patchSubQ(i, sIdx, { options: arr });
+                                    {(!sq.type || sq.type === 'multiple_choice') && (
+                                      <>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="text-xs text-muted-foreground">
+                                            Chọn đáp án đúng (tích vào chữ cái tròn):
+                                          </span>
+                                          <QuickPastePopover
+                                            onPaste={(lines) => {
+                                              const newOptions = [...sq.options];
+                                              lines.forEach((line, li) => {
+                                                if (li < 6) {
+                                                  if (li >= newOptions.length) newOptions.push(line);
+                                                  else newOptions[li] = line;
+                                                }
+                                              });
+                                              patchSubQ(i, sIdx, { options: newOptions });
+                                              toast({ title: `✅ Đã điền ${Math.min(lines.length, 6)} đáp án` });
                                             }}
-                                            onPaste={(e) => handleSubOptionPaste(i, sIdx, oi, e)}
-                                            placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`}
-                                            className="h-8 text-xs"
                                           />
-                                          {sq.options.length > 2 && (
-                                            <button
-                                              type="button"
-                                              className="text-muted-foreground hover:text-destructive p-0.5"
-                                              onClick={() => removeSubOption(i, sIdx, oi)}
-                                              title="Xóa đáp án này"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          )}
                                         </div>
-                                      ))}
-                                    </div>
 
-                                    {sq.options.length < 6 && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                                        onClick={() =>
-                                          patchSubQ(i, sIdx, { options: [...sq.options, ''] })
-                                        }
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" /> Thêm đáp án
-                                      </Button>
+                                        <div className="grid sm:grid-cols-2 gap-2">
+                                          {sq.options.map((opt, oi) => (
+                                            <div key={oi} className="flex items-center gap-1.5">
+                                              <button
+                                                type="button"
+                                                onClick={() => patchSubQ(i, sIdx, { correct_index: oi })}
+                                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
+                                                  sq.correct_index === oi
+                                                    ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                    : 'border-muted-foreground/40 hover:border-emerald-500'
+                                                }`}
+                                                title={`Chọn ${String.fromCharCode(65 + oi)} là đáp án đúng`}
+                                              >
+                                                {String.fromCharCode(65 + oi)}
+                                              </button>
+                                              <Input
+                                                value={opt}
+                                                onChange={(e) => {
+                                                  const arr = [...sq.options];
+                                                  arr[oi] = e.target.value;
+                                                  patchSubQ(i, sIdx, { options: arr });
+                                                }}
+                                                onPaste={(e) => handleSubOptionPaste(i, sIdx, oi, e)}
+                                                placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`}
+                                                className="h-8 text-xs"
+                                              />
+                                              {sq.options.length > 2 && (
+                                                <button
+                                                  type="button"
+                                                  className="text-muted-foreground hover:text-destructive p-0.5"
+                                                  onClick={() => removeSubOption(i, sIdx, oi)}
+                                                  title="Xóa đáp án này"
+                                                >
+                                                  <X className="w-3 h-3" />
+                                                </button>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        {sq.options.length < 6 && (
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                                            onClick={() =>
+                                              patchSubQ(i, sIdx, { options: [...sq.options, ''] })
+                                            }
+                                          >
+                                            <Plus className="w-3 h-3 mr-1" /> Thêm đáp án
+                                          </Button>
+                                        )}
+                                      </>
+                                    )}
+
+                                    {sq.type === 'short_answer' && (
+                                      <div className="space-y-1 mt-2">
+                                        <Label className="text-xs text-muted-foreground">Đáp án được chấp nhận (mỗi dòng là 1 cách viết đúng)</Label>
+                                        <Textarea
+                                          rows={2}
+                                          value={(sq.accepted_answers || []).join('\n')}
+                                          onChange={(e) => patchSubQ(i, sIdx, { accepted_answers: e.target.value.split('\n') })}
+                                          placeholder={'VD:\nありがとう\nArigatou'}
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                    )}
+
+                                    {sq.type === 'speaking' && (
+                                      <div className="mt-2 text-xs text-muted-foreground italic bg-muted/40 p-2.5 rounded-lg border border-dashed">
+                                        Câu hỏi ghi âm. Học viên sẽ thu âm trực tiếp qua mic để trả lời câu hỏi này. (Chấm tay sau)
+                                      </div>
                                     )}
                                   </div>
 
