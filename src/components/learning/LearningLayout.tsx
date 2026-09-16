@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu, Bell, Flame } from 'lucide-react';
 import DarkModeToggle from '@/components/theme/DarkModeToggle';
@@ -31,6 +31,10 @@ const LearningLayout = () => {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 flex flex-col">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Menu học viên</SheetTitle>
+                <SheetDescription>Bảng điều hướng học tập</SheetDescription>
+              </SheetHeader>
               <Sidebar onNavigate={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>

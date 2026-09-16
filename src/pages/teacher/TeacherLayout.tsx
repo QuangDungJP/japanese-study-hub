@@ -6,7 +6,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { useState } from 'react';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -199,6 +199,10 @@ const TeacherLayout = () => {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 flex flex-col">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Menu giảng viên</SheetTitle>
+              <SheetDescription>Bảng điều hướng thanh công cụ giảng viên</SheetDescription>
+            </SheetHeader>
             <SidebarContent onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
         </Sheet>

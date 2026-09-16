@@ -6,11 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Clock, CheckCircle2, Play, AlertCircle, FileText, Sparkles, BookOpen, Globe } from 'lucide-react';
+import { Trophy, Clock, CheckCircle2, Play, AlertCircle, FileText, Sparkles, BookOpen, Globe, Layers, Database, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatWithJST } from '@/lib/dateUtils';
 import PageLoadingScreen from '@/components/shared/PageLoadingScreen';
 import ExamLeaderboard from '@/components/learn/ExamLeaderboard';
+import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
+import {
+  getNextUntakenExam,
+  getExamPools,
+  getExamPoolId,
+  ExamPool,
+} from '@/lib/examPoolService';
 
 interface JLPTExam {
   id: string;
@@ -26,14 +34,18 @@ interface JLPTExam {
   is_published: boolean;
   starts_at: string;
   ends_at: string;
+  questions?: any[];
+  exam_category?: string;
 }
 
 const VirtualExamRoom = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [exams, setExams] = useState<JLPTExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState<Record<string, any[]>>({});
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -93,6 +105,55 @@ const VirtualExamRoom = () => {
     fetchExams();
   }, [user]);
 
+  // List of exam IDs the student has submitted/completed
+  const completedExamIds = useState<string[]>([]);
+  const completedIds = Object.keys(attempts).filter((id) =>
+    (attempts[id] || []).some((a) => a.status === 'submitted' || a.status === 'graded')
+  );
+
+  const targetLevelForDraw = activeTab === 'all' ? 'N4' : activeTab;
+  const poolDrawInfo = getNextUntakenExam(targetLevelForDraw, exams, completedIds);
+
+  const handleSmartExamPick = (lvl: string) => {
+    const result = getNextUntakenExam(lvl, exams, completedIds);
+    if (!result.exam) {
+      toast({
+        title: `Chưa có đề thi ${lvl}`,
+        description: 'Vui lòng chọn cấp độ khác hoặc liên hệ giáo viên để tạo thêm đề.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (result.isAllPoolsCompleted) {
+      toast({
+        title: '🎉 Bạn đã hoàn thành toàn bộ kho đề!',
+        description: `Hệ thống bốc ngẫu nhiên đề trong ${result.currentPool.name} để bạn cọ xát và nâng cao phản xạ!`,
+      });
+    } else if (result.poolSwitched) {
+      toast({
+        title: '🚀 Tiến vào Kho Đề Tiếp Theo!',
+        description: `Chúc mừng bạn đã hoàn thành hết đề trong kho trước. Đang mở ${result.currentPool.name}.`,
+      });
+    } else {
+      toast({
+        title: `🎯 Bốc thành công từ ${result.currentPool.name}`,
+        description: result.exam.title_vi || result.exam.title,
+      });
+    }
+
+    const isExternal =
+      result.exam.questions &&
+      Array.isArray(result.exam.questions) &&
+      result.exam.questions[0]?.type === 'external_link';
+
+    if (isExternal && result.exam.questions[0]?.url) {
+      window.open(result.exam.questions[0].url, '_blank');
+    } else {
+      navigate(`/learn/mock-exams/${result.exam.id}`);
+    }
+  };
+
   if (loading) return <PageLoadingScreen text="Đang tải Phòng thi ảo..." />;
 
   const jlptLevels = ['N1', 'N2', 'N3', 'N4', 'N5'];
@@ -119,7 +180,6 @@ const VirtualExamRoom = () => {
             </p>
           </div>
           <div className="hidden md:flex shrink-0">
-            {/* Elegant Torii gate or Japanese styling could go here. We'll use a clean icon composition */}
             <div className="relative">
               <div className="absolute inset-0 bg-red-500 blur-3xl opacity-10 rounded-full" />
               <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-red-50 to-white dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-center relative z-10">
@@ -130,11 +190,67 @@ const VirtualExamRoom = () => {
         </div>
       </div>
 
+      {/* Smart Anti-Duplicate Exam Picker Banner */}
+      <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-r from-purple-950/20 via-indigo-950/15 to-slate-900/40 p-6 sm:p-7 shadow-lg space-y-4 relative overflow-hidden backdrop-blur-sm">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs gap-1 border-0">
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                Bốc Đề Chống Trùng Lặp Tự Động
+              </Badge>
+              <Badge variant="outline" className="text-xs border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 font-semibold gap-1">
+                <Database className="w-3 h-3 text-purple-500" />
+                {poolDrawInfo.currentPool.name}
+              </Badge>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-foreground">
+              Tự Động Bốc Đề {targetLevelForDraw} Chưa Từng Thi 🎯
+            </h3>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Hệ thống ưu tiên chọn đề thi bạn <b className="text-foreground">chưa từng làm</b> trong kho đề hiện tại. Khi làm hết các đề của kho này, hệ thống sẽ tự động chuyển sang kho đề tiếp theo để bạn không bao giờ bị trùng đề!
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <Button
+              onClick={() => handleSmartExamPick(targetLevelForDraw)}
+              size="lg"
+              className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-2xl px-6 h-12 shadow-xl shadow-purple-900/30 gap-2 text-sm"
+            >
+              <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300 animate-pulse" />
+              Bốc Đề {targetLevelForDraw} Ngay
+            </Button>
+          </div>
+        </div>
+
+        {/* Pool Progress Indicator */}
+        <div className="relative z-10 pt-3 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-purple-500 shrink-0" />
+            <span>
+              Tiến độ kho: <strong className="text-foreground">{poolDrawInfo.completedInPool} / {poolDrawInfo.totalInPool} đề {targetLevelForDraw}</strong>
+            </span>
+          </div>
+          {poolDrawInfo.isAllPoolsCompleted ? (
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Bạn đã làm sạch tất cả các đề thuộc mọi kho!
+            </span>
+          ) : (
+            <span className="text-purple-600 dark:text-purple-400 font-medium">
+              Còn {Math.max(0, poolDrawInfo.totalInPool - poolDrawInfo.completedInPool)} đề mới tinh trong kho này
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="mb-12">
         <ExamLeaderboard examId="all" />
       </div>
 
-      <Tabs defaultValue="all" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-muted/50 p-1 w-full flex-wrap justify-start h-auto gap-2">
           <TabsTrigger value="all" className="rounded-md font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shadow-sm">
             Tất cả cấp độ
@@ -153,7 +269,6 @@ const VirtualExamRoom = () => {
         {jlptLevels.map(level => (
           <TabsContent key={level} value={level} className="m-0 space-y-6">
             <ExamGrid 
-              // Assumes level is stored in exam metadata or parsed from title/level field
               exams={exams.filter(e => e.exam_category === level || e.level === level || e.title.includes(level))} 
               attempts={attempts} 
               navigate={navigate} 
@@ -166,6 +281,8 @@ const VirtualExamRoom = () => {
 };
 
 const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: Record<string, any[]>, navigate: any }) => {
+  const pools = getExamPools();
+
   if (exams.length === 0) {
     return (
       <Card className="border-dashed bg-muted/20">
@@ -184,6 +301,9 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
         const examAttempts = attempts[exam.id] || [];
         const completedAttempts = examAttempts.filter(a => a.status === 'submitted' || a.status === 'graded');
         const bestAttempt = completedAttempts.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+        const examPoolId = getExamPoolId(exam);
+        const currentPool = pools.find((p) => p.id === examPoolId) || pools[0];
+        const isUntaken = completedAttempts.length === 0;
         
         let passed = false;
         let failedReason = '';
@@ -212,13 +332,25 @@ const ExamGrid = ({ exams, attempts, navigate }: { exams: JLPTExam[], attempts: 
           <Card key={exam.id} className="overflow-hidden border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all duration-300 group flex flex-col bg-white dark:bg-zinc-950 rounded-2xl">
             <div className="p-6 border-b border-zinc-100 dark:border-zinc-900 relative">
               <div className="flex justify-between items-start gap-4 mb-4">
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-1.5 items-center flex-wrap">
                   <Badge className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 border-none font-bold px-3 py-1 rounded-full text-xs">
                     {exam.exam_category || exam.level || 'JLPT'}
                   </Badge>
-                  <Badge variant="outline" className="text-xs border-zinc-200 dark:border-zinc-800 text-zinc-500">
-                    Mô phỏng 100%
-                  </Badge>
+                  {currentPool && (
+                    <Badge variant="outline" className="text-xs border-purple-200 dark:border-purple-800/80 bg-purple-500/10 text-purple-700 dark:text-purple-300 gap-1 font-semibold">
+                      <Database className="w-3 h-3 text-purple-500" />
+                      {currentPool.name.split('(')[0].trim()}
+                    </Badge>
+                  )}
+                  {isUntaken ? (
+                    <Badge variant="outline" className="text-xs border-emerald-300 dark:border-emerald-800 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                      Đề mới
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs border-zinc-200 dark:border-zinc-800 text-zinc-400">
+                      Đã thi ({completedAttempts.length})
+                    </Badge>
+                  )}
                 </div>
                 {completedAttempts.length > 0 && (
                   <Badge variant="outline" className={passed ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800"}>

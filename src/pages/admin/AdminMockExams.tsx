@@ -49,11 +49,21 @@ import {
   RefreshCw,
   SlidersHorizontal,
   Send,
+  Database,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageLoadingScreen from '@/components/shared/PageLoadingScreen';
 import AdminExamEditor from '@/components/admin/AdminExamEditor';
 import { useNavigate } from 'react-router-dom';
+import { AdminScoringConfigModal } from '@/components/admin/AdminScoringConfigModal';
+import { AdminExamPoolsModal } from '@/components/admin/AdminExamPoolsModal';
+import { AdminAIExamGeneratorModal } from '@/components/admin/AdminAIExamGeneratorModal';
+import {
+  getExamPools,
+  getExamPoolId,
+  assignExamToPool,
+  ExamPool,
+} from '@/lib/examPoolService';
 
 const LEVEL_DEFAULTS: Record<string, { duration: number; maxScore: number; passingScore: number; color: string; badgeColor: string }> = {
   N1: { duration: 165, maxScore: 180, passingScore: 100, color: 'border-rose-500/30 text-rose-600 bg-rose-500/10', badgeColor: 'bg-rose-500 text-white' },
@@ -75,6 +85,14 @@ export default function AdminMockExams() {
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedPoolFilter, setSelectedPoolFilter] = useState<string>('all');
+
+  // Scoring, Pools & AI Generator Modals state
+  const [scoringModalOpen, setScoringModalOpen] = useState(false);
+  const [poolsModalOpen, setPoolsModalOpen] = useState(false);
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
+  const [aiGeneratorPoolId, setAiGeneratorPoolId] = useState('pool-1');
+  const [pools, setPools] = useState<ExamPool[]>(getExamPools());
 
   // Modal Dialogs state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -346,9 +364,13 @@ export default function AdminMockExams() {
         (selectedType === 'internal' && !isExternal) ||
         (selectedType === 'external' && isExternal);
 
-      return matchesSearch && matchesLevel && matchesStatus && matchesType;
+      const examPoolId = getExamPoolId(exam);
+      const matchesPool =
+        selectedPoolFilter === 'all' || examPoolId === selectedPoolFilter;
+
+      return matchesSearch && matchesLevel && matchesStatus && matchesType && matchesPool;
     });
-  }, [exams, searchQuery, selectedLevel, selectedStatus, selectedType]);
+  }, [exams, searchQuery, selectedLevel, selectedStatus, selectedType, selectedPoolFilter]);
 
   if (loading) return <PageLoadingScreen text="Đang tải danh sách đề thi thử JLPT..." />;
 
@@ -370,30 +392,53 @@ export default function AdminMockExams() {
               Quản Lý Đề Thi Thử JLPT ⛩️
             </h1>
             <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
-              Thiết lập bộ đề thi thử chuẩn cấu trúc đề thi JLPT N5 đến N1. Tự động tính điểm đỗ/trượt, đếm ngược thời gian từng phần thi hoặc tích hợp linh hoạt biểu mẫu bên ngoài (Azota, Google Forms).
+              Thiết lập bộ đề thi thử chuẩn cấu trúc đề thi JLPT N5 đến N1. Cấu hình thang điểm và điểm liệt quốc tế, AI tự sinh trọn bộ đề thi theo từng Kho Đề để chống trùng đề cho học viên.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+            <Button
+              onClick={() => {
+                setAiGeneratorPoolId('pool-1');
+                setAiGeneratorOpen(true);
+              }}
+              className="bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold gap-2 rounded-xl shadow-lg shadow-purple-950/40 w-full sm:w-auto h-11"
+            >
+              <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" /> AI Tạo Đề Thi
+            </Button>
+            <Button
+              onClick={() => setScoringModalOpen(true)}
+              variant="outline"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold gap-2 rounded-xl backdrop-blur-md w-full sm:w-auto h-11"
+            >
+              <Settings className="w-4 h-4 text-amber-300" /> Thang Điểm JLPT
+            </Button>
+            <Button
+              onClick={() => setPoolsModalOpen(true)}
+              variant="outline"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold gap-2 rounded-xl backdrop-blur-md w-full sm:w-auto h-11"
+            >
+              <Layers className="w-4 h-4 text-purple-300" /> Quản Lý Kho Đề
+            </Button>
             <Button
               onClick={() => setCreateModalOpen(true)}
               className="bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold gap-2 rounded-xl shadow-lg shadow-rose-950/40 w-full sm:w-auto h-11"
             >
-              <Plus className="w-4 h-4" /> Tạo Đề Thi Mới
+              <Plus className="w-4 h-4" /> Tạo Đề Mới
             </Button>
             <Button
               onClick={() => setExternalModalOpen(true)}
-              variant="outline"
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold gap-2 rounded-xl backdrop-blur-md w-full sm:w-auto h-11"
+              variant="ghost"
+              className="text-white/80 hover:text-white hover:bg-white/10 font-medium gap-1.5 rounded-xl w-full sm:w-auto h-11 text-xs"
             >
-              <Globe className="w-4 h-4 text-blue-300" /> Đề Link Ngoài (Azota/Google)
+              <Globe className="w-3.5 h-3.5 text-blue-300" /> Link Ngoài
             </Button>
             <Button
               onClick={handleSeedExam}
               variant="ghost"
-              className="text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 font-bold gap-2 rounded-xl w-full sm:w-auto h-11 border border-emerald-400/30"
+              className="text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 font-medium gap-1.5 rounded-xl w-full sm:w-auto h-11 text-xs border border-emerald-400/30"
             >
-              <Sparkles className="w-4 h-4 text-emerald-400" /> Tạo Đề Mẫu N4
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" /> Đề Mẫu N4
             </Button>
           </div>
         </div>
@@ -476,8 +521,24 @@ export default function AdminMockExams() {
 
             {/* Dropdown Filters */}
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
+              {/* Pool Filter */}
+              <Select value={selectedPoolFilter} onValueChange={setSelectedPoolFilter}>
+                <SelectTrigger className="w-full sm:w-[175px] h-11 rounded-xl text-xs font-semibold">
+                  <Database className="w-3.5 h-3.5 mr-1.5 text-purple-500" />
+                  <SelectValue placeholder="Kho đề" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all">Tất cả kho đề</SelectItem>
+                  {pools.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name.length > 20 ? p.name.slice(0, 20) + '...' : p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-full sm:w-[160px] h-11 rounded-xl text-xs font-semibold">
+                <SelectTrigger className="w-full sm:w-[155px] h-11 rounded-xl text-xs font-semibold">
                   <Filter className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
@@ -489,7 +550,7 @@ export default function AdminMockExams() {
               </Select>
 
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full sm:w-[170px] h-11 rounded-xl text-xs font-semibold">
+                <SelectTrigger className="w-full sm:w-[165px] h-11 rounded-xl text-xs font-semibold">
                   <Layers className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Loại đề thi" />
                 </SelectTrigger>
@@ -592,6 +653,8 @@ export default function AdminMockExams() {
             const lvl = (exam.exam_category || exam.level || 'N4').toUpperCase();
             const levelConfig = LEVEL_DEFAULTS[lvl] || LEVEL_DEFAULTS.N4;
             const questionCount = Array.isArray(exam.questions) ? exam.questions.filter((q: any) => q.type !== 'system_config').length : 0;
+            const examPoolId = getExamPoolId(exam);
+            const currentPool = pools.find((p) => p.id === examPoolId) || pools[0];
 
             return (
               <Card
@@ -601,10 +664,16 @@ export default function AdminMockExams() {
                 {/* Card Header & Badge Strip */}
                 <div className="p-5 pb-3 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${levelConfig.color}`}>
                         {lvl}
                       </span>
+                      {currentPool && (
+                        <Badge variant="outline" className="text-[10px] font-medium bg-muted/60 text-muted-foreground border-border/80 gap-1 py-0.5">
+                          <Database className="w-2.5 h-2.5 text-purple-500" />
+                          {currentPool.name.split('(')[0].trim()}
+                        </Badge>
+                      )}
                       {isExternal ? (
                         <Badge variant="outline" className="text-[11px] font-semibold text-blue-600 bg-blue-500/10 border-blue-200 gap-1">
                           <Globe className="w-3 h-3" /> Link ngoài
@@ -706,7 +775,7 @@ export default function AdminMockExams() {
                         <MoreVertical className="w-4 h-4 text-muted-foreground" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                    <DropdownMenuContent align="end" className="w-52 rounded-xl">
                       {!isExternal && (
                         <DropdownMenuItem onClick={() => navigate(`/learn/mock-exams/${exam.id}`)} className="gap-2 cursor-pointer font-medium text-xs">
                           <Eye className="w-4 h-4 text-primary" /> Xem giao diện học viên
@@ -724,6 +793,34 @@ export default function AdminMockExams() {
                       <DropdownMenuItem onClick={() => handleCloneExam(exam)} className="gap-2 cursor-pointer font-medium text-xs">
                         <Copy className="w-4 h-4 text-blue-600" /> Nhân bản đề thi này
                       </DropdownMenuItem>
+
+                      {/* Move to Pool submenu */}
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Phân vào Kho đề
+                      </div>
+                      {pools.map((p) => (
+                        <DropdownMenuItem
+                          key={p.id}
+                          onClick={async () => {
+                            const ok = await assignExamToPool(exam.id, p.id, p.name);
+                            if (ok) {
+                              toast({ title: `Đã đưa vào ${p.name}` });
+                              fetchExams();
+                            }
+                          }}
+                          className={`text-xs gap-2 cursor-pointer ${
+                            examPoolId === p.id ? 'font-bold text-purple-600 bg-purple-500/10' : ''
+                          }`}
+                        >
+                          <Database className="w-3.5 h-3.5 text-purple-500" />
+                          <span className="truncate">{p.name.split('(')[0].trim()}</span>
+                          {examPoolId === p.id && (
+                            <span className="ml-auto text-xs font-black text-purple-600">✓</span>
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setDeleteConfirmExam(exam)}
@@ -958,6 +1055,36 @@ export default function AdminMockExams() {
           }}
         />
       )}
+
+      {/* MODAL: JLPT SCORING CONFIG */}
+      <AdminScoringConfigModal
+        open={scoringModalOpen}
+        onOpenChange={setScoringModalOpen}
+        onApplied={() => fetchExams()}
+      />
+
+      {/* MODAL: EXAM POOLS */}
+      <AdminExamPoolsModal
+        open={poolsModalOpen}
+        onOpenChange={setPoolsModalOpen}
+        exams={exams}
+        onPoolsUpdated={() => {
+          setPools(getExamPools());
+          fetchExams();
+        }}
+        onOpenAIGenerator={(poolId) => {
+          setAiGeneratorPoolId(poolId);
+          setAiGeneratorOpen(true);
+        }}
+      />
+
+      {/* MODAL: AI EXAM GENERATOR */}
+      <AdminAIExamGeneratorModal
+        open={aiGeneratorOpen}
+        onOpenChange={setAiGeneratorOpen}
+        defaultPoolId={aiGeneratorPoolId}
+        onExamCreated={() => fetchExams()}
+      />
     </div>
   );
 }
