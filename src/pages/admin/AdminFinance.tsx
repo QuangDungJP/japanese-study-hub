@@ -194,15 +194,15 @@ const AdminFinance = () => {
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" /></div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Quản lý tài chính</h1>
-          <p className="text-muted-foreground">Theo dõi doanh thu, báo cáo và quản lý hoàn tiền</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Quản lý tài chính</h1>
+          <p className="text-muted-foreground text-sm">Theo dõi doanh thu, báo cáo và quản lý hoàn tiền</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[140px] sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -217,57 +217,59 @@ const AdminFinance = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-xl bg-primary/10"><DollarSign className="w-5 h-5 text-primary" /></div>
-              {kpi.revenueGrowth >= 0 ? <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs"><ArrowUpRight className="w-3 h-3 mr-0.5" />{kpi.revenueGrowth.toFixed(1)}%</Badge> : <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30 text-xs"><ArrowDownRight className="w-3 h-3 mr-0.5" />{Math.abs(kpi.revenueGrowth).toFixed(1)}%</Badge>}
+              <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10"><DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /></div>
+              {kpi.revenueGrowth >= 0 ? <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-[10px] sm:text-xs"><ArrowUpRight className="w-3 h-3 mr-0.5" />{kpi.revenueGrowth.toFixed(1)}%</Badge> : <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30 text-[10px] sm:text-xs"><ArrowDownRight className="w-3 h-3 mr-0.5" />{Math.abs(kpi.revenueGrowth).toFixed(1)}%</Badge>}
             </div>
-            <p className="text-xs text-muted-foreground mt-3">Tổng doanh thu</p>
-            <p className="text-xl font-bold text-foreground">{formatPrice(kpi.totalRevenue)}</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">Tổng doanh thu</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground truncate">{formatPrice(kpi.totalRevenue)}</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-5">
-            <div className="p-2.5 rounded-xl bg-accent/10 w-fit"><ShoppingCart className="w-5 h-5 text-accent-foreground" /></div>
-            <p className="text-xs text-muted-foreground mt-3">Đơn hoàn thành</p>
-            <p className="text-xl font-bold text-foreground">{kpi.completedOrders}/{kpi.totalOrders}</p>
+          <CardContent className="p-4 sm:p-5">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-accent/10 w-fit"><ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-accent-foreground" /></div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">Đơn hoàn thành</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{kpi.completedOrders}/{kpi.totalOrders}</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-5">
-            <div className="p-2.5 rounded-xl bg-green-500/10 w-fit"><TrendingUp className="w-5 h-5 text-green-600" /></div>
-            <p className="text-xs text-muted-foreground mt-3">Giá trị trung bình</p>
-            <p className="text-xl font-bold text-foreground">{formatPrice(kpi.avgOrderValue)}</p>
+          <CardContent className="p-4 sm:p-5">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-green-500/10 w-fit"><TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" /></div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">Giá trị trung bình</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground truncate">{formatPrice(kpi.avgOrderValue)}</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-5">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 w-fit"><Users className="w-5 h-5 text-blue-600" /></div>
-            <p className="text-xs text-muted-foreground mt-3">Khách hàng mới</p>
-            <p className="text-xl font-bold text-foreground">{kpi.uniqueCustomers}</p>
+          <CardContent className="p-4 sm:p-5">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-blue-500/10 w-fit"><Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" /></div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">Khách hàng mới</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{kpi.uniqueCustomers}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-5">
-            <div className="p-2.5 rounded-xl bg-orange-500/10 w-fit"><TrendingUp className="w-5 h-5 text-orange-600" /></div>
-            <p className="text-xs text-muted-foreground mt-3">Tỷ lệ chuyển đổi</p>
-            <p className="text-xl font-bold text-foreground">{kpi.conversionRate.toFixed(1)}%</p>
+        <Card className="col-span-2 md:col-span-1">
+          <CardContent className="p-4 sm:p-5">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-orange-500/10 w-fit"><TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" /></div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">Tỷ lệ chuyển đổi</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{kpi.conversionRate.toFixed(1)}%</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-          <TabsTrigger value="reports">Báo cáo chi tiết</TabsTrigger>
-          <TabsTrigger value="refunds">Hoàn tiền ({refundedOrders.length})</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="overview" className="space-y-4 w-full">
+        <div className="overflow-x-auto no-scrollbar pb-1 w-full">
+          <TabsList className="inline-flex w-max min-w-full">
+            <TabsTrigger value="overview">Tổng quan</TabsTrigger>
+            <TabsTrigger value="reports">Báo cáo chi tiết</TabsTrigger>
+            <TabsTrigger value="refunds">Hoàn tiền ({refundedOrders.length})</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           {/* Revenue Chart */}
@@ -348,12 +350,12 @@ const AdminFinance = () => {
         </TabsContent>
 
         <TabsContent value="reports">
-          <Card>
+          <Card className="w-full max-w-full overflow-hidden border">
             <CardHeader>
               <CardTitle>Báo cáo chi tiết đơn hàng</CardTitle>
               <CardDescription>Tổng số: {filteredOrders.length} đơn hàng | Hoàn thành: {kpi.completedOrders} | Chờ duyệt: {kpi.pendingOrders} | Hoàn tiền: {refundedOrders.length}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6 overflow-x-auto w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -396,12 +398,12 @@ const AdminFinance = () => {
 
         <TabsContent value="refunds" className="space-y-6">
           {/* Refund eligible */}
-          <Card>
+          <Card className="w-full max-w-full overflow-hidden border">
             <CardHeader>
               <CardTitle>Đơn hàng có thể hoàn tiền</CardTitle>
               <CardDescription>Các đơn hàng đã hoàn thành có thể được hoàn tiền</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6 overflow-x-auto w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -435,12 +437,12 @@ const AdminFinance = () => {
           </Card>
 
           {/* Refund history */}
-          <Card>
+          <Card className="w-full max-w-full overflow-hidden border">
             <CardHeader>
               <CardTitle>Lịch sử hoàn tiền</CardTitle>
               <CardDescription>Tổng hoàn tiền: {formatPrice(kpi.refundedAmount)}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6 overflow-x-auto w-full">
               <Table>
                 <TableHeader>
                   <TableRow>

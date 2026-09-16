@@ -170,19 +170,19 @@ const AdminUsers = () => {
   const getLevel = (xp: number) => Math.floor(xp / 500) + 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Quản lý người dùng</h1>
-          <p className="text-muted-foreground">Quản lý vai trò, tiến độ và thông tin chi tiết</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Quản lý người dùng</h1>
+          <p className="text-muted-foreground text-sm">Quản lý vai trò, tiến độ và thông tin chi tiết</p>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-xs sm:text-sm">
             <Users className="w-4 h-4" />
             {users.length} người dùng
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 font-medium">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 font-medium text-xs sm:text-sm">
             <TrendingUp className="w-4 h-4" />
             {activeToday} online hôm nay
           </div>
@@ -237,8 +237,8 @@ const AdminUsers = () => {
       </div>
 
       {/* Users Table */}
-      <Card>
-        <CardContent className="p-0">
+      <Card className="w-full max-w-full overflow-hidden border shadow-xs">
+        <CardContent className="p-0 overflow-x-auto w-full">
           {loading ? (
             <div className="flex items-center justify-center p-16">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -350,7 +350,7 @@ const AdminUsers = () => {
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>

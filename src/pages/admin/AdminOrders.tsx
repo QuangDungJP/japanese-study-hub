@@ -237,16 +237,16 @@ const AdminOrders = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Quản lý đơn hàng</h1>
-          <p className="text-muted-foreground mt-1">Xem và duyệt các đơn hàng mua khóa học</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Quản lý đơn hàng</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Xem và duyệt các đơn hàng mua khóa học</p>
         </div>
         {orders.length > 0 && (
           <Button
             variant="outline"
-            className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50 font-semibold"
+            className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50 font-semibold w-full sm:w-auto"
             onClick={() => {
               const headers = ['Mã đơn hàng', 'Khách hàng', 'Khóa học', 'Số tiền (VND)', 'Phương thức', 'Trạng thái', 'Ngày tạo'];
               const rows = orders.map(o => [
@@ -267,58 +267,58 @@ const AdminOrders = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10">
-                <ShoppingCart className="w-6 h-6 text-primary" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-primary/10 shrink-0">
+                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Tổng đơn hàng</p>
-                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Tổng đơn hàng</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-yellow-500/10">
-                <Clock className="w-6 h-6 text-yellow-600" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-yellow-500/10 shrink-0">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Chờ duyệt</p>
-                <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-green-500/10">
-                <Check className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Hoàn thành</p>
-                <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Chờ duyệt</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.pending}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-japanese-primary/10">
-                <TrendingUp className="w-6 h-6 text-japanese-primary" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-green-500/10 shrink-0">
+                <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Doanh thu</p>
-                <p className="text-2xl font-bold text-foreground">{formatPrice(stats.revenue)}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Hoàn thành</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.completed}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-japanese-primary/10 shrink-0">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-japanese-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Doanh thu</p>
+                <p className="text-lg sm:text-2xl font-bold text-foreground truncate">{formatPrice(stats.revenue)}</p>
               </div>
             </div>
           </CardContent>
@@ -326,12 +326,12 @@ const AdminOrders = () => {
       </div>
 
       {/* Filter */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Danh sách đơn hàng</CardTitle>
+      <Card className="w-full max-w-full overflow-hidden border">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <CardTitle className="text-lg sm:text-xl">Danh sách đơn hàng</CardTitle>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Lọc trạng thái" />
               </SelectTrigger>
               <SelectContent>
@@ -344,7 +344,7 @@ const AdminOrders = () => {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 overflow-x-auto w-full">
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -412,19 +412,19 @@ const AdminOrders = () => {
 
       {/* View/Edit Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle>Chi tiết đơn hàng</DialogTitle>
           </DialogHeader>
           
           {selectedOrder && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1 sm:space-y-2">
                   <p className="text-sm text-muted-foreground">Mã đơn hàng</p>
-                  <p className="font-mono">{selectedOrder.id}</p>
+                  <p className="font-mono text-xs break-all">{selectedOrder.id}</p>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <p className="text-sm text-muted-foreground">Trạng thái</p>
                   {getStatusBadge(selectedOrder.payment_status)}
                 </div>

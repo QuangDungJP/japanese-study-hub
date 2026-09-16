@@ -191,21 +191,21 @@ const AdminLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row w-full max-w-full overflow-x-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-60 bg-card border-r border-border flex-col z-40">
         <SidebarContent />
       </aside>
 
       {/* Mobile header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border flex items-center px-4 z-40">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-md border-b border-border flex items-center px-4 z-40">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="shrink-0">
+            <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9 rounded-xl active:scale-95">
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-60 p-0 flex flex-col">
+          <SheetContent side="left" className="w-64 p-0 flex flex-col">
             <SidebarContent onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
         </Sheet>
@@ -220,7 +220,9 @@ const AdminLayout = () => {
         </div>
       </header>
 
-      <main className="flex-1 lg:ml-60 p-4 pt-20 lg:pt-6 lg:p-6 xl:p-8"><Outlet /></main>
+      <main className="flex-1 w-full max-w-full min-w-0 lg:ml-60 p-3 sm:p-4 pt-18 lg:pt-6 lg:p-6 xl:p-8 overflow-x-hidden">
+        <Outlet />
+      </main>
     </div>
   );
 };

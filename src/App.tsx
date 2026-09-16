@@ -123,6 +123,8 @@ import PageLoadingScreen from "@/components/shared/PageLoadingScreen";
 
 import { ReloadPrompt } from "./components/shared/ReloadPrompt";
 import { AppInit } from "./components/shared/AppInit";
+import MobileBottomNav from "./components/navigation/MobileBottomNav";
+import PWAInstallPrompt from "./components/shared/PWAInstallPrompt";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -233,6 +235,8 @@ const App = () => (
             <PromotionalPopupModal />
             <BackgroundMusicPlayer />
             <ReloadPrompt />
+            <PWAInstallPrompt />
+            <MobileBottomNav />
           </BrowserRouter>
         </LearningProvider>
       </AuthProvider>
