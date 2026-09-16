@@ -321,7 +321,9 @@ export const AdminAIExamGeneratorModal: React.FC<AdminAIExamGeneratorModalProps>
             ? customTitle.trim()
             : `Đề Thi Thử JLPT ${level} - Mã Đề #${examNum} [${selectedPool.name.split(' ')[0]} ${selectedPool.name.split(' ')[1] || ''}]`;
 
-        const title = `JLPT ${level} Official Mock Test #${examNum}`;
+        // Get current user id for teacher_id
+        const { data: authData } = await supabase.auth.getUser();
+        const currentUserId = authData?.user?.id || '00000000-0000-0000-0000-000000000000';
 
         // Insert into Supabase exams table
         const { data: inserted, error } = await supabase
@@ -335,6 +337,9 @@ export const AdminAIExamGeneratorModal: React.FC<AdminAIExamGeneratorModalProps>
             passing_score: rule.passingTotal,
             max_score: rule.totalMax,
             is_published: true,
+            exam_date: new Date().toISOString().slice(0, 10),
+            start_time: '08:00',
+            teacher_id: currentUserId,
             questions: fullQuestions,
           })
           .select()
