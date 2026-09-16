@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import BackgroundMusicPlayer from "@/components/shared/BackgroundMusicPlayer";
 import FormattedText from "@/components/shared/FormattedText";
+import { StudentTextTools } from "@/components/learn/StudentTextTools";
 
 type QuestionType = "multiple_choice" | "true_false" | "short_answer" | "essay" | "speaking" | "roleplay";
 type TimerMode = "countdown" | "stopwatch" | "none";
@@ -1105,6 +1106,7 @@ const ExamRunner = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      <StudentTextTools />
       {/* Anti-cheat violation warning overlay */}
       {showViolationWarning && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
