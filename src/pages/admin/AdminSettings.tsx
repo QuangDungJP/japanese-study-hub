@@ -91,7 +91,7 @@ const defaultPwaSettings: PwaSettings = {
   appName: 'Quang Dũng Nihongo',
   shortName: 'Quang Dũng',
   themeColor: '#ffffff',
-  iconUrl: '/logo.jpg', // or og-image.png, but logo.jpg seems to be the brand logo
+  iconUrl: '/pwa-192x192.png', // or og-image.png, but pwa-192x192.png seems to be the brand logo
 };
 
 const AdminSettings = () => {
@@ -835,7 +835,7 @@ const AdminSettings = () => {
                 <Input
                   value={pwaSettings.iconUrl}
                   onChange={(e) => setPwaSettings(prev => ({ ...prev, iconUrl: e.target.value }))}
-                  placeholder="/logo.jpg"
+                  placeholder="/pwa-192x192.png"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Khuyên dùng ảnh hình vuông (.png hoặc .jpg) dung lượng thấp.</p>
                 {pwaSettings.iconUrl && (

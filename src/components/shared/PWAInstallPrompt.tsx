@@ -84,7 +84,7 @@ export const PWAInstallPrompt = () => {
           {/* App Icon */}
           <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 p-0.5 shadow-md shrink-0">
             <img
-              src="/logo.jpg"
+              src="/pwa-192x192.png"
               alt="Quang Dũng Nihongo"
               className="w-full h-full rounded-[10px] object-cover"
               onError={(e) => {

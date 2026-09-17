@@ -117,7 +117,7 @@ const TeacherLayout = () => {
       <div className="p-3 border-b border-border">
         <Link to="/teacher" className="flex items-center gap-2" onClick={onNavigate}>
           <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <img src="/logo.jpg" alt="TNQDO" className="w-5 h-5 rounded-lg object-cover" />
+            <img src="/pwa-192x192.png" alt="TNQDO" className="w-5 h-5 rounded-lg object-cover" />
           </div>
           <div>
             <span className="text-base font-bold text-foreground">TNQDO</span>
@@ -208,7 +208,7 @@ const TeacherLayout = () => {
         </Sheet>
         <div className="flex items-center gap-2 ml-2">
           <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-            <img src="/logo.jpg" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
+            <img src="/pwa-192x192.png" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
           </div>
           <span className="text-sm font-bold text-foreground">TNQDO Teacher</span>
         </div>
