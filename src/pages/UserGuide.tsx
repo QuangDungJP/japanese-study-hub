@@ -200,7 +200,7 @@ const UserGuide = () => {
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-card border border-border/80 shadow-sm mb-6 backdrop-blur-md">
-                <img src="/logo.jpg" alt="TNQDO Logo" className="w-7 h-7 rounded-lg object-cover" />
+                <img src="/pwa-192x192.png" alt="TNQDO Logo" className="w-7 h-7 rounded-lg object-cover" />
                 <span className="text-sm font-bold text-foreground">TNQDO Japanese Study Hub</span>
               </div>
               

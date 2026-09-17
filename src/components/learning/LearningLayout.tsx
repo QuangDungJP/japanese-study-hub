@@ -40,7 +40,7 @@ const LearningLayout = () => {
           </Sheet>
           <Link to="/learn" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-primary flex items-center justify-center shadow-xs">
-              <img src="/logo.jpg" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
+              <img src="/pwa-192x192.png" alt="TNQDO" className="w-4 h-4 rounded-md object-cover" />
             </div>
             <span className="text-sm font-extrabold text-foreground">Quang Dũng Nihongo</span>
           </Link>
