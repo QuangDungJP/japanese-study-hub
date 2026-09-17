@@ -2311,7 +2311,7 @@ const TeacherClasses = () => {
                             const notesThumb = session.notes?.match(/\[RECORD_THUMBNAIL_URL:\s*([^\s\]]+)\]/i)?.[1];
                             const thumbUrl = notesThumb || (ytMatch 
                               ? `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`
-                              : selectedClass?.cover_image_url || selectedClass?.thumbnail_url || '/img/qd-team-hero.png');
+                              : selectedClass?.cover_image_url || selectedClass?.thumbnail_url || '/img/record-thumbnail.jpg');
                             
                             return (
                               <>
