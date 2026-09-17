@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { applyTheme, getSavedTheme } from '@/lib/themeUtils';
+import { checkForceUpdate } from '@/lib/appVersion';
 
 export function AppInit() {
   useEffect(() => {
@@ -125,6 +126,7 @@ export function AppInit() {
 
     fetchGlobalTheme();
     applyDynamicPwaSettings();
+    checkForceUpdate(); // Check if server pushed a force update
   }, []);
 
   return null;

@@ -286,6 +286,14 @@ export const BackgroundMusicPlayer = () => {
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
         onEnded={playNext}
+        onError={(e) => {
+          console.error("Audio playback error:", e);
+          if (tracks.length > 1) {
+            playNext();
+          } else {
+            setIsPlaying(false);
+          }
+        }}
         style={{ display: 'none' }}
       />
 
