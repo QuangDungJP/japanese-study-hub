@@ -95,12 +95,17 @@ export default function AdminStore() {
 
     setGiftSending(true);
     try {
-      // Find user by email from profiles / auth
-      const { data: prof } = await (supabase as any)
+      // Find user by email from profiles
+      const { data: prof, error: profError } = await (supabase as any)
         .from('profiles')
         .select('id, full_name, email')
-        .eq('email', giftUserEmail.trim())
+        .eq('email', giftUserEmail.trim().toLowerCase())
         .maybeSingle();
+
+      if (profError) {
+        console.error("Profile query error:", profError);
+        throw new Error("Không thể truy vấn thông tin học viên. Vui lòng kiểm tra lại quyền hoặc cấu hình bảng profiles.");
+      }
 
       if (!prof) {
         toast({ title: 'Không tìm thấy học viên', description: `Không tìm thấy tài khoản với email ${giftUserEmail}`, variant: 'destructive' });

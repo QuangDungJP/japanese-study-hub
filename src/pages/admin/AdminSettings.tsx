@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit, Smartphone } from 'lucide-react';
+import { Save, Globe, BookOpen, Layers, Volume2, Settings2, Loader2, Eye, Layout, Monitor, Home, Lock, FileEdit, Smartphone, RefreshCw, Shield, Zap, AlertTriangle, CheckCircle2, Wifi } from 'lucide-react';
+import { APP_VERSION, APP_BUILD_TIME } from '@/lib/appVersion';
 import HomepageSectionOrder from '@/components/admin/HomepageSectionOrder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +106,8 @@ const AdminSettings = () => {
   const [themeDocId, setThemeDocId] = useState<string | null>(null);
   const [pwaSettings, setPwaSettings] = useState<PwaSettings>(defaultPwaSettings);
   const [pwaDocId, setPwaDocId] = useState<string | null>(null);
+  const [forceUpdating, setForceUpdating] = useState(false);
+  const [lastForceVersion, setLastForceVersion] = useState<string | null>(null);
 
   const visibility = localVisibility || pageVisibility;
 
@@ -278,6 +281,55 @@ const AdminSettings = () => {
     }
   };
 
+  // Force update: push a new version to Supabase so all clients will clear cache
+  const triggerForceUpdate = async () => {
+    setForceUpdating(true);
+    try {
+      const newVersion = `force-${Date.now()}`;
+      const payload = {
+        section_key: 'force_update_version',
+        content: { version: newVersion, triggered_at: new Date().toISOString() },
+        is_active: true,
+      };
+
+      // Check if record exists
+      const { data: existing } = await supabase
+        .from('website_content')
+        .select('id')
+        .eq('section_key', 'force_update_version')
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('website_content').update(payload as any).eq('id', existing.id);
+      } else {
+        await supabase.from('website_content').insert(payload as any);
+      }
+
+      setLastForceVersion(newVersion);
+      toast({
+        title: '✅ Đã gửi lệnh cập nhật',
+        description: 'Tất cả user sẽ tự động xóa cache và tải lại khi mở app lần tiếp theo.',
+      });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message || 'Không thể gửi lệnh', variant: 'destructive' });
+    }
+    setForceUpdating(false);
+  };
+
+  // Load last force update version on mount
+  useEffect(() => {
+    supabase
+      .from('website_content')
+      .select('content')
+      .eq('section_key', 'force_update_version')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.content) {
+          setLastForceVersion((data.content as any)?.version || null);
+        }
+      });
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -309,7 +361,7 @@ const AdminSettings = () => {
       </div>
 
       <Tabs defaultValue="homepage" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 p-1 mb-4">
           <TabsTrigger value="homepage" className="flex items-center gap-2">
             <Home className="w-4 h-4" />Trang chủ
           </TabsTrigger>
@@ -669,6 +721,72 @@ const AdminSettings = () => {
           </div>
         </TabsContent>
         <TabsContent value="pwa" className="space-y-4">
+          {/* PWA Status Dashboard */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                Trạng thái ứng dụng (PWA)
+              </CardTitle>
+              <CardDescription>Thông tin phiên bản hiện tại và quản lý cập nhật cho tất cả người dùng.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl border bg-background flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Phiên bản</p>
+                    <p className="text-sm font-mono font-bold">{APP_VERSION}</p>
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl border bg-background flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Wifi className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Build lúc</p>
+                    <p className="text-sm font-mono">{new Date(APP_BUILD_TIME).toLocaleString('vi-VN')}</p>
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl border bg-background flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${lastForceVersion ? 'bg-amber-500/10' : 'bg-muted'}`}>
+                    <RefreshCw className={`w-5 h-5 ${lastForceVersion ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Force Update</p>
+                    <p className="text-sm font-mono">{lastForceVersion ? lastForceVersion.replace('force-', '').slice(0, 10) + '...' : 'Chưa có'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border-2 border-dashed border-amber-400/50 bg-amber-50/50 dark:bg-amber-950/20 space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">Buộc tất cả user xóa cache & cập nhật</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Khi bạn đổi logo, cập nhật giao diện, hoặc fix lỗi quan trọng — bấm nút này để buộc tất cả user (đã cài app PWA) 
+                      tự động xóa bộ nhớ cache cũ và tải phiên bản mới nhất khi mở app lần tiếp theo.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={forceUpdating}
+                  onClick={triggerForceUpdate}
+                  className="gap-2"
+                >
+                  {forceUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  {forceUpdating ? 'Đang gửi...' : '🔄 Buộc cập nhật tất cả user'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* PWA Config Card */}
           <Card>
             <CardHeader>
               <CardTitle>Cấu hình Ứng dụng (PWA)</CardTitle>
@@ -721,14 +839,70 @@ const AdminSettings = () => {
                 />
                 <p className="text-xs text-muted-foreground mt-1">Khuyên dùng ảnh hình vuông (.png hoặc .jpg) dung lượng thấp.</p>
                 {pwaSettings.iconUrl && (
-                  <div className="mt-3 p-4 border rounded-xl flex items-center gap-4 bg-muted/20">
-                    <img src={pwaSettings.iconUrl} alt="App Icon" className="w-16 h-16 rounded-2xl object-cover shadow-sm border" />
-                    <div>
-                      <p className="font-bold">{pwaSettings.appName}</p>
-                      <p className="text-xs text-muted-foreground">{pwaSettings.iconUrl}</p>
+                  <div className="mt-6 p-6 border rounded-xl bg-muted/20">
+                    <p className="text-sm font-semibold mb-6 flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-primary" /> Preview ứng dụng (PWA)
+                    </p>
+                    <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12">
+                      {/* Icon preview */}
+                      <div className="flex-1 min-w-[250px] space-y-4">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">1. Ngoài màn hình chính</p>
+                        <div className="flex items-center gap-4 bg-background p-4 rounded-2xl shadow-sm border">
+                          <div className="flex flex-col items-center gap-2">
+                            <img src={pwaSettings.iconUrl} alt="App Icon" className="w-16 h-16 rounded-2xl object-cover shadow-md border" />
+                            <span className="text-[11px] font-medium max-w-[70px] text-center truncate">{pwaSettings.shortName || pwaSettings.appName}</span>
+                          </div>
+                          <div className="flex-1 space-y-1.5">
+                            <p className="font-bold text-sm leading-tight">{pwaSettings.appName}</p>
+                            <p className="text-xs text-muted-foreground">{pwaSettings.shortName}</p>
+                            <div className="flex items-center gap-2 pt-1">
+                              <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: pwaSettings.themeColor }} />
+                              <span className="text-[11px] font-mono text-muted-foreground">{pwaSettings.themeColor}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Phone frame simulation */}
+                      <div className="flex-1 flex flex-col items-center">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 self-start lg:self-center">2. Trải nghiệm trong App</p>
+                        <div className="relative border-[10px] border-zinc-900 rounded-[2.5rem] h-[550px] w-[270px] shadow-2xl overflow-hidden bg-background shrink-0 ring-4 ring-black/5">
+                          {/* Status bar simulation */}
+                          <div className="absolute top-0 inset-x-0 h-7 flex items-center justify-between px-4 z-20" style={{ backgroundColor: pwaSettings.themeColor }}>
+                            <span className="text-[10px] font-medium text-white mix-blend-difference">09:41</span>
+                            <div className="flex gap-1 opacity-80 mix-blend-difference">
+                              <div className="w-3 h-2.5 bg-white rounded-sm"></div>
+                              <div className="w-3 h-2.5 bg-white rounded-sm"></div>
+                              <div className="w-4 h-2.5 bg-white rounded-sm"></div>
+                            </div>
+                          </div>
+                          {/* Notch */}
+                          <div className="absolute top-0 inset-x-0 h-5 bg-zinc-900 rounded-b-2xl mx-auto w-[40%] z-30"></div>
+                          
+                          {/* App content iframe */}
+                          <div className="absolute inset-0 pt-7 z-10 bg-background">
+                            <iframe 
+                              src="/"
+                              className="w-full h-full border-0 rounded-b-[2rem]"
+                              title="Mobile App Preview"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    <strong>Lưu ý:</strong> Thay đổi logo PWA sẽ có hiệu lực ngay cho các user mới cài app. 
+                    Với user đã cài trước đó, bạn cần bấm "Buộc cập nhật tất cả user" ở phần trạng thái phía trên 
+                    để user tự xóa cache cũ khi mở app lần tiếp theo.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

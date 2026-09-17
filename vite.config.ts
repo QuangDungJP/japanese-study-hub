@@ -3,11 +3,19 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Build-time version stamp
+const buildTimestamp = new Date().toISOString();
+const buildVersion = `v${Date.now()}`;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(buildVersion),
+    __APP_BUILD_TIME__: JSON.stringify(buildTimestamp),
   },
   plugins: [
     react(),
@@ -64,7 +72,17 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5000000 // 5MB
+        maximumFileSizeToCacheInBytes: 5000000, // 5MB
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [
+          /^\/api\//,       // Don't cache API calls
+          /^\/auth\//,      // Don't cache auth callbacks
+          /^\/rest\//,      // Don't cache Supabase REST
+          /supabase/,       // Don't cache supabase requests
+        ],
       },
       devOptions: {
         enabled: true

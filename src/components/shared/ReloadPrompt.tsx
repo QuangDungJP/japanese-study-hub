@@ -1,6 +1,13 @@
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { useLocation } from 'react-router-dom';
+
+// Check for SW updates every 60 seconds
+const UPDATE_CHECK_INTERVAL_MS = 60 * 1000;
+
+// Pages where auto-reload is dangerous (user might be editing)
+const EDITING_PATH_PREFIXES = ['/admin', '/teacher'];
 
 // Xóa toàn bộ cache cũ của Service Worker
 async function cleanOldCaches() {
@@ -12,53 +19,87 @@ async function cleanOldCaches() {
         return caches.delete(name);
       })
     );
+    console.log(`[ReloadPrompt] Cleared ${cacheNames.length} caches`);
   } catch (e) {
     // Bỏ qua lỗi nếu browser không hỗ trợ
   }
 }
 
 export function ReloadPrompt() {
+  const location = useLocation();
+
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     offlineReady: [offlineReady, setOfflineReady],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(_r) {
-      // SW registered silently
+    onRegistered(registration) {
+      if (!registration) return;
+      
+      // Periodic check for SW updates
+      setInterval(() => {
+        registration.update().catch(() => {
+          // Silent fail on update check
+        });
+      }, UPDATE_CHECK_INTERVAL_MS);
+      
+      console.log('[ReloadPrompt] SW registered, periodic update check enabled');
     },
     onRegisterError(_error) {
-      // SW registration error - silent fail
+      console.warn('[ReloadPrompt] SW registration error');
     },
   });
 
-  useEffect(() => {
-    if (offlineReady) {
-      toast.success('Ứng dụng sẵn sàng hoạt động ngoại tuyến 🎉');
+  // Smart auto-update handler
+  const performUpdate = useCallback(async () => {
+    try {
+      await cleanOldCaches();
+      await updateServiceWorker(true);
+      setNeedRefresh(false);
+    } catch (err) {
+      console.warn('[ReloadPrompt] Update failed, reloading...', err);
+      window.location.reload();
     }
-  }, [offlineReady]);
+  }, [updateServiceWorker, setNeedRefresh]);
 
   useEffect(() => {
-    if (needRefresh) {
-      toast('🆕 Có phiên bản mới của ứng dụng!', {
-        description: 'Cập nhật để nhận tính năng mới nhất và dọn dẹp bộ nhớ cũ.',
+    if (offlineReady) {
+      // Don't show offline ready toast — it's confusing for users
+      setOfflineReady(false);
+    }
+  }, [offlineReady, setOfflineReady]);
+
+  useEffect(() => {
+    if (!needRefresh) return;
+
+    const isEditing = EDITING_PATH_PREFIXES.some((p) => location.pathname.startsWith(p));
+
+    if (isEditing) {
+      // User is on admin/teacher page — show confirmation toast
+      toast('🆕 Có phiên bản mới!', {
+        description: 'Cập nhật ngay để nhận giao diện & tính năng mới nhất.',
         action: {
-          label: 'Cập nhật & Làm sạch',
-          onClick: async () => {
-            // 1. Xóa cache cũ trước khi cập nhật
-            await cleanOldCaches();
-            // 2. Kích hoạt Service Worker mới (tải trang mới)
-            await updateServiceWorker(true);
-            setNeedRefresh(false);
-          },
+          label: '🔄 Cập nhật ngay',
+          onClick: performUpdate,
         },
         cancel: {
           label: 'Để sau',
           onClick: () => setNeedRefresh(false),
         },
-        duration: Infinity,
+        duration: 15000, // 15 seconds then auto-dismiss
       });
+    } else {
+      // User is on public/learn page — show brief notice then auto-update
+      toast.info('🔄 Đang cập nhật phiên bản mới...', {
+        description: 'Trang sẽ tự tải lại trong giây lát.',
+        duration: 2000,
+      });
+      
+      // Auto-update after 2 seconds
+      const timer = setTimeout(performUpdate, 2000);
+      return () => clearTimeout(timer);
     }
-  }, [needRefresh, updateServiceWorker, setNeedRefresh]);
+  }, [needRefresh, location.pathname, performUpdate, setNeedRefresh]);
 
   return null;
 }

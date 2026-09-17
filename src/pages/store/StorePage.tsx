@@ -78,12 +78,17 @@ export function StoreContent() {
       setItems((storeData || []) as StoreItem[]);
 
       if (user) {
+        // Fetch inventory to compute spent XP
         const { data: invData } = await (supabase as any)
           .from('user_inventory')
-          .select('item_code')
+          .select('item_code, amount_paid')
           .eq('user_id', user.id);
 
-        if (invData) setOwnedItemCodes(new Set((invData as any[]).map((i: any) => i.item_code)));
+        let spentXp = 0;
+        if (invData) {
+          setOwnedItemCodes(new Set((invData as any[]).map((i: any) => i.item_code)));
+          spentXp = (invData as any[]).reduce((acc, curr) => acc + (curr.amount_paid || 0), 0);
+        }
 
         const { data: prog } = await (supabase as any)
           .from('user_progress')
@@ -91,7 +96,12 @@ export function StoreContent() {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (prog) { setUserXp((prog as any).total_xp || 0); setUserStreak((prog as any).streak || 0); }
+        if (prog) {
+          // Available XP (Coins) = Lifetime total_xp - spent XP
+          const lifetimeXp = (prog as any).total_xp || 0;
+          setUserXp(Math.max(0, lifetimeXp - spentXp));
+          setUserStreak((prog as any).streak || 0); 
+        }
       }
     } catch (err) {
       console.error('Error fetching store data:', err);
@@ -103,17 +113,16 @@ export function StoreContent() {
   const handleBuyXp = async (item: StoreItem) => {
     if (!user) { toast({ title: 'Vui lòng đăng nhập', variant: 'destructive' }); return; }
     if (userXp < item.price_xp) {
-      toast({ title: 'Không đủ XP', description: 'Bạn cần tích lũy thêm XP để mua vật phẩm này', variant: 'destructive' });
+      toast({ title: 'Không đủ Điểm thưởng', description: 'Bạn cần tích lũy thêm XP để đổi vật phẩm này', variant: 'destructive' });
       return;
     }
 
     setPurchasing(true);
     try {
-      const newXp = Math.max(0, userXp - item.price_xp);
-      await (supabase as any).from('user_progress')
-        .update({ total_xp: newXp, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id);
-
+      // NOTE: We no longer deduct from user_progress.total_xp (which is Lifetime XP used for Ranking/Badges).
+      // Instead, we just record the purchase in user_inventory with amount_paid.
+      // The available XP is dynamically calculated on load (Lifetime XP - Spent XP).
+      
       await (supabase as any).from('user_inventory').insert({
         user_id: user.id,
         item_id: item.id,
@@ -139,14 +148,15 @@ export function StoreContent() {
         localStorage.setItem(`active_xp_boost_${user.id}`, JSON.stringify({ multiplier: 2, expiresAt: expireTime }));
         toast({ title: '⚡ Đã kích hoạt Thẻ Nhân Đôi XP (24 Giờ)!', description: 'Tất cả XP nhận được khi học bài & làm bài thi sẽ được x2 trong 24h.' });
       } else {
-        toast({ title: '🎉 Mua thành công!', description: `Đã mở khóa ${item.title_vi}` });
+        toast({ title: '🎉 Đổi thành công!', description: `Đã mở khóa ${item.title_vi}` });
       }
 
-      setUserXp(newXp);
+      // Update local state dynamically
+      setUserXp(prev => Math.max(0, prev - item.price_xp));
       setOwnedItemCodes(prev => new Set(prev).add(item.code));
       setPurchasingItem(null);
     } catch (err: any) {
-      toast({ title: 'Lỗi mua hàng', description: err.message, variant: 'destructive' });
+      toast({ title: 'Lỗi đổi điểm', description: err.message, variant: 'destructive' });
     } finally {
       setPurchasing(false);
     }
