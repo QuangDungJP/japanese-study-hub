@@ -25,18 +25,18 @@ const StepCard = ({
   title: string;
   description: React.ReactNode;
 }) => (
-  <div className="group relative flex gap-4 md:gap-6 p-5 md:p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/[0.08] transition-all duration-300">
+  <div className="group relative flex gap-4 md:gap-6 p-5 md:p-6 rounded-2xl bg-card border border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-300 shadow-sm">
     <div className="flex flex-col items-center gap-2 flex-shrink-0">
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/30">
+      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg shadow-primary/30">
         {step}
       </div>
     </div>
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-blue-400">{icon}</span>
-        <h3 className="font-semibold text-white text-base md:text-lg">{title}</h3>
+        <span className="text-primary">{icon}</span>
+        <h3 className="font-semibold text-foreground text-base md:text-lg">{title}</h3>
       </div>
-      <div className="text-white/65 text-sm md:text-base leading-relaxed">{description}</div>
+      <div className="text-muted-foreground text-sm md:text-base leading-relaxed">{description}</div>
     </div>
   </div>
 );
@@ -93,14 +93,12 @@ const IOSShareScreen = () => (
       </div>
       <div className="flex-1 bg-[#0f0f1e] mx-2 my-1 rounded-lg overflow-hidden">
         <div className="p-2 space-y-1.5">
-          <div className="w-8 h-8 rounded-full bg-blue-600 mx-auto flex items-center justify-center">
-            <span className="text-white font-bold text-[10px]">QD</span>
-          </div>
-          <div className="h-2 bg-white/20 rounded mx-4" />
-          <div className="h-1.5 bg-white/10 rounded mx-6" />
+          <img src="/pwa-192x192.png" alt="Logo" className="w-8 h-8 rounded-full mx-auto" />
+          <div className="h-2 bg-muted-foreground/20 rounded mx-4" />
+          <div className="h-1.5 bg-muted-foreground/10 rounded mx-6" />
           <div className="grid grid-cols-2 gap-1 mt-2">
-            <div className="h-8 bg-blue-900/40 rounded" />
-            <div className="h-8 bg-indigo-900/40 rounded" />
+            <div className="h-8 bg-blue-500/20 rounded" />
+            <div className="h-8 bg-indigo-500/20 rounded" />
           </div>
         </div>
       </div>
@@ -180,16 +178,12 @@ const IOSConfirmScreen = () => (
         <span className="text-blue-400 text-[9px] font-bold animate-pulse">Thêm ✓</span>
       </div>
       <div className="flex-1 bg-gray-900 p-4 flex flex-col items-center">
-        <div className="mt-4 w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg">
-          <span className="text-white font-bold text-lg">QD</span>
-        </div>
+        <img src="/pwa-192x192.png" alt="Logo" className="mt-4 w-14 h-14 rounded-2xl shadow-lg" />
         <p className="text-white text-[11px] font-medium mt-2">Quang Dũng Nihongo</p>
         <p className="text-gray-400 text-[9px] mt-0.5">quangdungnihongo.com</p>
         <div className="mt-4 w-full p-3 bg-gray-800 rounded-xl">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center">
-              <span className="text-white text-[8px] font-bold">QD</span>
-            </div>
+            <img src="/pwa-192x192.png" alt="Logo" className="w-6 h-6 rounded-lg" />
             <div className="flex-1">
               <p className="text-[9px] text-white">Quang Dũng Nihongo</p>
               <p className="text-[8px] text-gray-400">quangdungnihongo.com</p>
@@ -220,9 +214,7 @@ const AndroidMenuScreen = () => (
         </div>
       </div>
       <div className="flex-1 bg-[#0f0f1e] p-2 space-y-1">
-        <div className="w-8 h-8 rounded-full bg-blue-600 mx-auto mt-1 flex items-center justify-center">
-          <span className="text-white font-bold text-[10px]">QD</span>
-        </div>
+        <img src="/pwa-192x192.png" alt="Logo" className="w-8 h-8 rounded-full mx-auto mt-1 shadow-sm" />
         <div className="h-2 bg-white/20 rounded mx-4" />
         <div className="h-1.5 bg-white/10 rounded mx-6" />
       </div>
@@ -270,9 +262,7 @@ const AndroidConfirmScreen = () => (
       <div className="flex-1 bg-[#0f0f1e] relative">
         <div className="absolute bottom-0 left-0 right-0 bg-gray-800 rounded-t-2xl p-4 border-t border-gray-700">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">QD</span>
-            </div>
+            <img src="/pwa-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-md" />
             <div>
               <p className="text-white text-[11px] font-semibold">Cài đặt ứng dụng?</p>
               <p className="text-gray-400 text-[9px]">Quang Dũng Nihongo</p>
@@ -304,9 +294,7 @@ const PCInstallScreen = () => (
       </div>
       <div className="bg-gray-700 rounded-xl p-3 border border-gray-600 shadow-xl">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">QD</span>
-          </div>
+          <img src="/pwa-192x192.png" alt="Logo" className="w-8 h-8 rounded-xl shadow-md" />
           <div>
             <p className="text-white text-xs font-semibold">Cài đặt Quang Dũng Nihongo</p>
             <p className="text-gray-400 text-[10px]">quangdungnihongo.com</p>
@@ -368,7 +356,7 @@ const InstallGuide = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a1a]">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
       {/* Hero Section */}
@@ -394,13 +382,13 @@ const InstallGuide = () => {
               Ứng dụng PWA miễn phí — Không cần App Store
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-5 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-5 leading-tight">
               Tải ứng dụng{' '}
               <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                 Quang Dũng Nihongo
               </span>
             </h1>
-            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Cài đặt ứng dụng miễn phí ngay trên thiết bị của bạn — không cần App Store hay Google Play. Nhanh, gọn, dễ dàng trên mọi thiết bị.
             </p>
 
@@ -447,12 +435,12 @@ const InstallGuide = () => {
       <section className="flex-1 px-4 pb-20">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Hướng dẫn cài đặt chi tiết</h2>
-            <p className="text-white/50">Chọn thiết bị của bạn để xem hướng dẫn phù hợp — tự động nhận diện thiết bị của bạn</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Hướng dẫn cài đặt chi tiết</h2>
+            <p className="text-muted-foreground">Chọn thiết bị của bạn để xem hướng dẫn phù hợp — tự động nhận diện thiết bị của bạn</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-10 h-14 bg-white/5 border border-white/10 rounded-2xl p-1.5 gap-1">
+            <TabsList className="grid w-full grid-cols-3 mb-10 h-14 bg-muted/50 border border-border rounded-2xl p-1.5 gap-1">
               <TabsTrigger
                 value="ios"
                 className="flex items-center gap-2 h-full rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-white/60 transition-all"
@@ -470,7 +458,7 @@ const InstallGuide = () => {
               </TabsTrigger>
               <TabsTrigger
                 value="pc"
-                className="flex items-center gap-2 h-full rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-white/60 transition-all"
+                className="flex items-center gap-2 h-full rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-foreground/60 transition-all"
               >
                 <Monitor className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
                 <span className="hidden sm:inline font-medium">Máy tính</span>
@@ -709,11 +697,9 @@ const InstallGuide = () => {
                     <PCInstallScreen />
                     <p className="text-white/40 text-xs text-center">Nhấn biểu tượng tải xuống trong thanh địa chỉ Chrome</p>
                   </div>
-                  <div className="w-full max-w-sm bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border border-blue-500/20 rounded-2xl p-5 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/30">
-                      <span className="text-white font-bold text-xl">QD</span>
-                    </div>
-                    <p className="text-white font-semibold">Quang Dũng Nihongo</p>
+                  <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-5 text-center shadow-md">
+                    <img src="/pwa-192x192.png" alt="Logo" className="w-16 h-16 rounded-2xl mx-auto mb-3 shadow-lg" />
+                    <p className="text-foreground font-semibold">Quang Dũng Nihongo</p>
                     <p className="text-white/40 text-sm mt-1">Ứng dụng Desktop độc lập</p>
                     <div className="mt-3 flex items-center justify-center gap-2 text-green-400 text-sm">
                       <CheckCircle2 className="w-4 h-4" />
@@ -726,8 +712,8 @@ const InstallGuide = () => {
           </Tabs>
 
           {/* FAQ Section */}
-          <div className="mt-16 border-t border-white/10 pt-12">
-            <h2 className="text-2xl font-bold text-white text-center mb-8">Câu hỏi thường gặp</h2>
+          <div className="mt-16 border-t border-border pt-12">
+            <h2 className="text-2xl font-bold text-foreground text-center mb-8">Câu hỏi thường gặp</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {[
                 { q: 'PWA có tốn dung lượng không?', a: 'Rất nhẹ! Chỉ khoảng 1-5MB so với hàng chục MB của app gốc trên App Store/Play Store.' },
@@ -737,12 +723,12 @@ const InstallGuide = () => {
                 { q: 'PWA có nhận thông báo push không?', a: 'Có trên Android Chrome và Desktop. iOS Safari cũng đã hỗ trợ từ phiên bản 16.4 trở lên.' },
                 { q: 'Có thể cài trên nhiều thiết bị không?', a: 'Hoàn toàn có thể! Cài trên điện thoại, máy tính bảng và máy tính — tài khoản đồng bộ trên tất cả thiết bị.' },
               ].map((faq, i) => (
-                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 hover:border-white/20 transition-all duration-300">
-                  <p className="text-white font-semibold mb-2 flex items-start gap-2">
+                <div key={i} className="bg-card border border-border rounded-2xl p-5 hover:bg-muted/50 hover:border-primary/30 transition-all duration-300 shadow-sm">
+                  <p className="text-foreground font-semibold mb-2 flex items-start gap-2">
                     <span className="text-blue-400 mt-0.5 flex-shrink-0 font-bold">Q.</span>
                     {faq.q}
                   </p>
-                  <p className="text-white/55 text-sm leading-relaxed pl-5">{faq.a}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed pl-5">{faq.a}</p>
                 </div>
               ))}
             </div>
