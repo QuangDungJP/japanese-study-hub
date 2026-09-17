@@ -471,9 +471,9 @@ const InstallGuide = () => {
               <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-start gap-3">
                 <Apple className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-blue-300 font-semibold text-sm mb-1">Dành cho iPhone & iPad (iOS Safari)</p>
-                  <p className="text-blue-200/60 text-sm">
-                    Yêu cầu trình duyệt <strong className="text-blue-200">Safari</strong>.
+                  <p className="text-blue-700 dark:text-blue-300 font-semibold text-sm mb-1">Dành cho iPhone & iPad (iOS Safari)</p>
+                  <p className="text-blue-600 dark:text-blue-200/80 text-sm">
+                    Yêu cầu trình duyệt <strong className="text-blue-700 dark:text-blue-200">Safari</strong>.
                     Nếu đang dùng Chrome/Firefox trên iOS, hãy sao chép URL và dán vào Safari.
                   </p>
                 </div>
@@ -487,12 +487,12 @@ const InstallGuide = () => {
                     title="Nhấn nút Chia sẻ (Share)"
                     description={
                       <span>
-                        Mở trang <strong className="text-white">quangdungnihongo.com</strong> bằng Safari.
+                        Mở trang <strong className="text-foreground">quangdungnihongo.com</strong> bằng Safari.
                         Nhấn vào biểu tượng{' '}
-                        <span className="inline-flex items-center gap-1 bg-blue-500/20 border border-blue-400/30 px-2 py-0.5 rounded-lg mx-1 text-blue-300">
+                        <span className="inline-flex items-center gap-1 bg-blue-500/20 border border-blue-400/30 px-2 py-0.5 rounded-lg mx-1 text-blue-700 dark:text-blue-300">
                           <Share2 className="w-3 h-3" /> Share
                         </span>{' '}
-                        ở <strong className="text-white">thanh công cụ phía dưới cùng</strong> của Safari.
+                        ở <strong className="text-foreground">thanh công cụ phía dưới cùng</strong> của Safari.
                       </span>
                     }
                   />
@@ -503,7 +503,7 @@ const InstallGuide = () => {
                     description={
                       <span>
                         Bảng tùy chọn xuất hiện từ dưới lên. Cuộn xuống và nhấn{' '}
-                        <strong className="text-white">「Add to Home Screen」</strong>{' '}
+                        <strong className="text-foreground">「Add to Home Screen」</strong>{' '}
                         (Thêm vào Màn hình chính).
                       </span>
                     }
@@ -515,7 +515,7 @@ const InstallGuide = () => {
                     description={
                       <span>
                         Đổi tên ứng dụng nếu muốn, sau đó nhấn{' '}
-                        <strong className="text-white">「Thêm」(Add)</strong>{' '}
+                        <strong className="text-foreground">「Thêm」(Add)</strong>{' '}
                         ở góc trên bên phải. Icon ứng dụng xuất hiện ngay trên màn hình chính!
                       </span>
                     }
@@ -523,8 +523,8 @@ const InstallGuide = () => {
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl flex items-start gap-3">
                     <span className="text-xl flex-shrink-0">💡</span>
                     <div>
-                      <p className="text-yellow-300 font-semibold text-sm mb-1">Sau khi cài đặt</p>
-                      <p className="text-yellow-200/60 text-sm">Ứng dụng sẽ mở toàn màn hình như app gốc, không có thanh địa chỉ Safari. Hoạt động offline cho các bài đã học!</p>
+                      <p className="text-yellow-700 dark:text-yellow-300 font-semibold text-sm mb-1">Sau khi cài đặt</p>
+                      <p className="text-yellow-600 dark:text-yellow-200/80 text-sm">Ứng dụng sẽ mở toàn màn hình như app gốc, không có thanh địa chỉ Safari. Hoạt động offline cho các bài đã học!</p>
                     </div>
                   </div>
                 </div>
@@ -552,9 +552,9 @@ const InstallGuide = () => {
               <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-2xl flex items-start gap-3">
                 <Smartphone className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-300 font-semibold text-sm mb-1">Dành cho điện thoại & máy tính bảng Android</p>
-                  <p className="text-green-200/60 text-sm">
-                    Hoạt động tốt nhất với <strong className="text-green-200">Google Chrome</strong>.
+                  <p className="text-green-700 dark:text-green-300 font-semibold text-sm mb-1">Dành cho điện thoại & máy tính bảng Android</p>
+                  <p className="text-green-600 dark:text-green-200/80 text-sm">
+                    Hoạt động tốt nhất với <strong className="text-green-700 dark:text-green-200">Google Chrome</strong>.
                     Samsung Internet và các trình duyệt khác cũng hỗ trợ với các bước tương tự.
                   </p>
                 </div>
@@ -568,11 +568,11 @@ const InstallGuide = () => {
                     title="Nhấn menu 3 chấm dọc (⋮)"
                     description={
                       <span>
-                        Mở <strong className="text-white">Chrome</strong> và vào trang web. Nhấn vào biểu tượng{' '}
-                        <span className="inline-flex items-center gap-1 bg-green-500/20 border border-green-400/30 px-2 py-0.5 rounded-lg mx-1 text-green-300">
+                        Mở <strong className="text-foreground">Chrome</strong> và vào trang web. Nhấn vào biểu tượng{' '}
+                        <span className="inline-flex items-center gap-1 bg-green-500/20 border border-green-400/30 px-2 py-0.5 rounded-lg mx-1 text-green-700 dark:text-green-300">
                           <MoreVertical className="w-3 h-3" /> Menu
                         </span>{' '}
-                        ở <strong className="text-white">góc trên bên phải</strong> màn hình.
+                        ở <strong className="text-foreground">góc trên bên phải</strong> màn hình.
                       </span>
                     }
                   />
@@ -583,8 +583,8 @@ const InstallGuide = () => {
                     description={
                       <span>
                         Trong menu xổ xuống, tìm và nhấn{' '}
-                        <strong className="text-white">「Cài đặt ứng dụng」</strong> hoặc{' '}
-                        <strong className="text-white">「Thêm vào màn hình chính」</strong>.
+                        <strong className="text-foreground">「Cài đặt ứng dụng」</strong> hoặc{' '}
+                        <strong className="text-foreground">「Thêm vào màn hình chính」</strong>.
                         Tùy phiên bản Chrome tên có thể khác nhau.
                       </span>
                     }
@@ -596,7 +596,7 @@ const InstallGuide = () => {
                     description={
                       <span>
                         Bảng thông báo hiện lên từ dưới màn hình. Nhấn{' '}
-                        <strong className="text-white">「Cài đặt」</strong>{' '}
+                        <strong className="text-foreground">「Cài đặt」</strong>{' '}
                         để hoàn tất. Ứng dụng xuất hiện ngay trên màn hình chính!
                       </span>
                     }
@@ -604,10 +604,10 @@ const InstallGuide = () => {
                   <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-2xl flex items-start gap-3">
                     <span className="text-xl flex-shrink-0">🤖</span>
                     <div>
-                      <p className="text-green-300 font-semibold text-sm mb-1">Chrome tự động gợi ý</p>
-                      <p className="text-green-200/60 text-sm">
+                      <p className="text-green-700 dark:text-green-300 font-semibold text-sm mb-1">Chrome tự động gợi ý</p>
+                      <p className="text-green-600 dark:text-green-200/80 text-sm">
                         Nếu bạn thường xuyên truy cập, Chrome sẽ tự động hiện banner{' '}
-                        <strong className="text-green-200">「Thêm vào màn hình chính」</strong>{' '}
+                        <strong className="text-green-700 dark:text-green-200">「Thêm vào màn hình chính」</strong>{' '}
                         ở dưới màn hình — nhấn để cài ngay!
                       </p>
                     </div>
@@ -636,9 +636,9 @@ const InstallGuide = () => {
               <div className="mb-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-2xl flex items-start gap-3">
                 <Monitor className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-purple-300 font-semibold text-sm mb-1">Dành cho máy tính PC & Mac</p>
-                  <p className="text-purple-200/60 text-sm">
-                    Hỗ trợ trên <strong className="text-purple-200">Chrome, Edge, Cốc Cốc, Brave</strong>.
+                  <p className="text-purple-700 dark:text-purple-300 font-semibold text-sm mb-1">Dành cho máy tính PC & Mac</p>
+                  <p className="text-purple-600 dark:text-purple-200/80 text-sm">
+                    Hỗ trợ trên <strong className="text-purple-700 dark:text-purple-200">Chrome, Edge, Cốc Cốc, Brave</strong>.
                     Safari macOS cũng hỗ trợ từ phiên bản 17+.
                   </p>
                 </div>
@@ -653,8 +653,8 @@ const InstallGuide = () => {
                     description={
                       <span>
                         Mở Chrome và vào trang web. Nhìn vào{' '}
-                        <strong className="text-white">thanh địa chỉ (URL bar)</strong> — bên phải sẽ có biểu tượng{' '}
-                        <span className="inline-flex items-center gap-1 bg-purple-500/20 border border-purple-400/30 px-2 py-0.5 rounded-lg mx-1 text-purple-300">
+                        <strong className="text-foreground">thanh địa chỉ (URL bar)</strong> — bên phải sẽ có biểu tượng{' '}
+                        <span className="inline-flex items-center gap-1 bg-purple-500/20 border border-purple-400/30 px-2 py-0.5 rounded-lg mx-1 text-purple-700 dark:text-purple-300">
                           <Download className="w-3 h-3" /> Cài đặt
                         </span>.
                       </span>
@@ -667,7 +667,7 @@ const InstallGuide = () => {
                     description={
                       <span>
                         Nhấn vào biểu tượng đó. Popup nhỏ hiện lên —
-                        nhấn <strong className="text-white">「Cài đặt」</strong> để tiếp tục.
+                        nhấn <strong className="text-foreground">「Cài đặt」</strong> để tiếp tục.
                       </span>
                     }
                   />
@@ -678,16 +678,16 @@ const InstallGuide = () => {
                     description={
                       <span>
                         Ứng dụng mở trong cửa sổ riêng, không có thanh địa chỉ trình duyệt.
-                        Shortcut cũng được tạo trên <strong className="text-white">Desktop và Start Menu</strong>!
+                        Shortcut cũng được tạo trên <strong className="text-foreground">Desktop và Start Menu</strong>!
                       </span>
                     }
                   />
                   <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-2xl">
-                    <p className="text-purple-300 font-semibold text-sm mb-2">🔄 Không thấy biểu tượng? Dùng menu:</p>
-                    <ol className="text-purple-200/60 text-sm space-y-1.5">
-                      <li className="flex gap-2"><span className="text-purple-400 font-bold flex-shrink-0">1.</span>Nhấn menu <strong className="text-purple-200">⋮ (3 chấm)</strong> góc phải</li>
-                      <li className="flex gap-2"><span className="text-purple-400 font-bold flex-shrink-0">2.</span>Chọn <strong className="text-purple-200">「Truyền, lưu và chia sẻ」</strong></li>
-                      <li className="flex gap-2"><span className="text-purple-400 font-bold flex-shrink-0">3.</span>Chọn <strong className="text-purple-200">「Cài đặt trang này như ứng dụng」</strong></li>
+                    <p className="text-purple-700 dark:text-purple-300 font-semibold text-sm mb-2">🔄 Không thấy biểu tượng? Dùng menu:</p>
+                    <ol className="text-purple-600 dark:text-purple-200/80 text-sm space-y-1.5">
+                      <li className="flex gap-2"><span className="text-purple-700 dark:text-purple-400 font-bold flex-shrink-0">1.</span>Nhấn menu <strong className="text-purple-700 dark:text-purple-200">⋮ (3 chấm)</strong> góc phải</li>
+                      <li className="flex gap-2"><span className="text-purple-700 dark:text-purple-400 font-bold flex-shrink-0">2.</span>Chọn <strong className="text-purple-700 dark:text-purple-200">「Truyền, lưu và chia sẻ」</strong></li>
+                      <li className="flex gap-2"><span className="text-purple-700 dark:text-purple-400 font-bold flex-shrink-0">3.</span>Chọn <strong className="text-purple-700 dark:text-purple-200">「Cài đặt trang này như ứng dụng」</strong></li>
                     </ol>
                   </div>
                 </div>
@@ -695,12 +695,12 @@ const InstallGuide = () => {
                 <div className="flex flex-col items-center justify-center gap-6">
                   <div className="flex flex-col items-center gap-3 w-full">
                     <PCInstallScreen />
-                    <p className="text-white/40 text-xs text-center">Nhấn biểu tượng tải xuống trong thanh địa chỉ Chrome</p>
+                    <p className="text-muted-foreground text-xs text-center">Nhấn biểu tượng tải xuống trong thanh địa chỉ Chrome</p>
                   </div>
                   <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-5 text-center shadow-md">
                     <img src="/pwa-192x192.png" alt="Logo" className="w-16 h-16 rounded-2xl mx-auto mb-3 shadow-lg" />
                     <p className="text-foreground font-semibold">Quang Dũng Nihongo</p>
-                    <p className="text-white/40 text-sm mt-1">Ứng dụng Desktop độc lập</p>
+                    <p className="text-muted-foreground text-sm mt-1">Ứng dụng Desktop độc lập</p>
                     <div className="mt-3 flex items-center justify-center gap-2 text-green-400 text-sm">
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Sẵn sàng sử dụng!</span>
