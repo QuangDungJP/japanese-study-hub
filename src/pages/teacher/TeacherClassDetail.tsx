@@ -47,6 +47,12 @@ const TeacherClassDetail = () => {
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [searchUser, setSearchUser] = useState('');
 
+  // Add teacher dialog & state
+  const [coTeachers, setCoTeachers] = useState<any[]>([]);
+  const [addTeacherOpen, setAddTeacherOpen] = useState(false);
+  const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
+  const [searchTeacher, setSearchTeacher] = useState('');
+
   useEffect(() => { if (id) fetchAll(); }, [id]);
 
   const fetchAll = async () => {
@@ -97,6 +103,19 @@ const TeacherClassDetail = () => {
       } else setSubmissions([]);
     } else setSubmissions([]);
 
+    // class teachers (co-teachers)
+    const { data: ct } = await sb.from('class_teachers').select('*').eq('class_id', id!);
+    const ctIds = (ct || []).map((x: any) => x.teacher_id);
+    if (ctIds.length) {
+      const { data: ctProfs } = await supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', ctIds);
+      setCoTeachers((ct || []).map((x: any) => ({
+        ...x,
+        profile: ctProfs?.find(p => p.user_id === x.teacher_id),
+      })));
+    } else {
+      setCoTeachers([]);
+    }
+
     setLoading(false);
   };
 
@@ -123,6 +142,32 @@ const TeacherClassDetail = () => {
     if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     toast({ title: 'Đã thêm học viên vào lớp' });
     setAvailableUsers((prev) => prev.filter((u) => u.user_id !== uid));
+    fetchAll();
+  };
+
+  const openAddTeacher = async () => {
+    setAddTeacherOpen(true);
+    setSearchTeacher('');
+    const existingIds = [cls?.teacher_id, ...coTeachers.map(t => t.teacher_id)].filter(Boolean);
+    const { data: roles } = await supabase.from('user_roles').select('user_id').in('role', ['teacher', 'senior_teacher', 'admin']);
+    const candidateIds = (roles || []).map((r: any) => r.user_id).filter((u: string) => !existingIds.includes(u));
+    if (candidateIds.length === 0) { setAvailableTeachers([]); return; }
+    const { data: profs } = await supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', candidateIds);
+    setAvailableTeachers(profs || []);
+  };
+
+  const addTeacher = async (uid: string) => {
+    const { error } = await supabase.from('class_teachers').insert({ class_id: id, teacher_id: uid });
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    toast({ title: 'Đã thêm giáo viên phụ trách' });
+    setAvailableTeachers(prev => prev.filter(u => u.user_id !== uid));
+    fetchAll();
+  };
+
+  const removeTeacher = async (tid: string) => {
+    if (!confirm('Xóa giáo viên này khỏi lớp?')) return;
+    const { error } = await supabase.from('class_teachers').delete().eq('class_id', id!).eq('teacher_id', tid);
+    if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     fetchAll();
   };
 
@@ -193,6 +238,7 @@ const TeacherClassDetail = () => {
           <TabsTrigger value="gradebook"><ClipboardCheck className="w-4 h-4 mr-1" />Sổ điểm</TabsTrigger>
           <TabsTrigger value="analytics"><BarChart3 className="w-4 h-4 mr-1" />Phân tích</TabsTrigger>
           <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" />Học viên</TabsTrigger>
+          <TabsTrigger value="teachers"><Users className="w-4 h-4 mr-1" />Giáo viên</TabsTrigger>
           <TabsTrigger value="sessions"><CalendarDays className="w-4 h-4 mr-1" />Lịch học</TabsTrigger>
           <TabsTrigger value="lessons"><BookOpen className="w-4 h-4 mr-1" />Bài học</TabsTrigger>
           <TabsTrigger value="materials"><FileText className="w-4 h-4 mr-1" />Tài liệu</TabsTrigger>
@@ -243,6 +289,38 @@ const TeacherClassDetail = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+              </TableBody>
+            </Table>
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="teachers" className="mt-4">
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-sm text-muted-foreground">Giáo viên phụ trách</p>
+            <Button size="sm" onClick={openAddTeacher}>
+              <UserPlus className="w-4 h-4 mr-1" />Thêm giáo viên
+            </Button>
+          </div>
+          <Card><CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Giáo viên</TableHead><TableHead>Vai trò</TableHead><TableHead className="text-right">Thao tác</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">Giáo viên chính (Bạn)</TableCell>
+                  <TableCell><Badge>Primary</Badge></TableCell>
+                  <TableCell className="text-right"></TableCell>
+                </TableRow>
+                {coTeachers.map(t => (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-medium">{t.profile?.full_name || '—'}</TableCell>
+                    <TableCell><Badge variant="outline">Co-Teacher</Badge></TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeTeacher(t.teacher_id)}><Trash2 className="w-4 h-4" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </CardContent></Card>
@@ -413,6 +491,36 @@ const TeacherClassDetail = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAddOpen(false)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add teacher dialog */}
+      <Dialog open={addTeacherOpen} onOpenChange={setAddTeacherOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Thêm giáo viên phụ trách</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input value={searchTeacher} onChange={(e) => setSearchTeacher(e.target.value)} placeholder="Tìm theo tên..." className="pl-9" />
+            </div>
+            <div className="max-h-80 overflow-y-auto space-y-2">
+              {availableTeachers.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-6">Không có giáo viên khả dụng</p>
+              ) : availableTeachers
+                .filter((u) => !searchTeacher || (u.full_name || '').toLowerCase().includes(searchTeacher.toLowerCase()))
+                .map((u) => (
+                  <div key={u.user_id} className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/40">
+                    <span className="text-sm">{u.full_name || 'Giáo viên'}</span>
+                    <Button size="sm" variant="outline" onClick={() => addTeacher(u.user_id)}>
+                      <Plus className="w-3 h-3 mr-1" />Thêm
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddTeacherOpen(false)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
