@@ -82,10 +82,21 @@ const TeacherDashboard = () => {
         .eq('teacher_id', user?.id);
 
       // Fetch classes stats
-      const { data: classes } = await supabase
-        .from('classes')
-        .select('id')
-        .eq('teacher_id', user?.id);
+      let coTeacherClassIds: string[] = [];
+      if (user?.id) {
+        const { data: ctData } = await supabase.from('class_teachers').select('class_id').eq('teacher_id', user.id);
+        if (ctData) {
+          coTeacherClassIds = ctData.map(ct => ct.class_id);
+        }
+      }
+
+      let classQuery = supabase.from('classes').select('id');
+      if (coTeacherClassIds.length > 0) {
+        classQuery = classQuery.or(`teacher_id.eq.${user?.id},id.in.(${coTeacherClassIds.join(',')})`);
+      } else {
+        classQuery = classQuery.eq('teacher_id', user?.id);
+      }
+      const { data: classes } = await classQuery;
 
       // Fetch students count
       let totalStudents = 0;
