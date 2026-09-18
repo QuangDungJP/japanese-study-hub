@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Search, Loader2, Flame, Zap, Users, TrendingUp, BookOpen, Eye,
   ChevronUp, ChevronDown, Shield, GraduationCap, Filter, X,
-  Crown, Star, MoreHorizontal
+  Crown, Star, MoreHorizontal, Plus
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,6 +61,9 @@ const AdminUsers = () => {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [selectedStudent, setSelectedStudent] = useState<UserWithProgress | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ email: '', password: '', full_name: '', role: 'user' });
+  const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { fetchUsers(); }, []);
@@ -121,6 +126,29 @@ const AdminUsers = () => {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!addForm.email || !addForm.password || !addForm.full_name) {
+      toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập đầy đủ email, mật khẩu và họ tên', variant: 'destructive' });
+      return;
+    }
+    setIsAdding(true);
+    try {
+      const res = await supabase.functions.invoke('create-user', {
+        body: addForm
+      });
+      if (res.error) throw res.error;
+      toast({ title: 'Thành công', description: 'Đã tạo người dùng mới' });
+      setAddUserOpen(false);
+      setAddForm({ email: '', password: '', full_name: '', role: 'user' });
+      fetchUsers();
+    } catch (error: any) {
+      console.error(error);
+      toast({ title: 'Lỗi', description: error.message || 'Không thể tạo người dùng', variant: 'destructive' });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   const getUserPrimaryRole = (roles: string[]): string => {
     const priority = ['admin', 'senior_teacher', 'teacher', 'moderator', 'user'];
     return priority.find(r => roles.includes(r)) || 'user';
@@ -178,6 +206,9 @@ const AdminUsers = () => {
           <p className="text-muted-foreground text-sm">Quản lý vai trò, tiến độ và thông tin chi tiết</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Button onClick={() => setAddUserOpen(true)} className="gap-2 h-8 text-xs sm:text-sm">
+            <Plus className="w-4 h-4" /> Thêm người dùng
+          </Button>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-xs sm:text-sm">
             <Users className="w-4 h-4" />
             {users.length} người dùng
@@ -391,6 +422,62 @@ const AdminUsers = () => {
       </Card>
 
       <StudentProgressModal open={modalOpen} onOpenChange={setModalOpen} student={selectedStudent} />
+
+      <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Thêm người dùng mới</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                placeholder="email@example.com"
+                value={addForm.email}
+                onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Mật khẩu</Label>
+              <Input
+                type="password"
+                placeholder="******"
+                value={addForm.password}
+                onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Họ và tên</Label>
+              <Input
+                placeholder="Nguyễn Văn A"
+                value={addForm.full_name}
+                onChange={(e) => setAddForm({ ...addForm, full_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Vai trò</Label>
+              <select
+                className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={addForm.role}
+                onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}
+              >
+                <option value="user">Học viên</option>
+                <option value="teacher">Giảng viên</option>
+                <option value="senior_teacher">GV Cao cấp</option>
+                <option value="moderator">Moderator</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddUserOpen(false)}>Hủy</Button>
+            <Button onClick={handleCreateUser} disabled={isAdding}>
+              {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isAdding ? 'Đang tạo...' : 'Tạo mới'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
