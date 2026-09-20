@@ -146,7 +146,7 @@ export function AdminScoringConfigModal({
           .update({
             passing_score: currentRule.passingTotal,
             duration_minutes: currentRule.durationMinutes,
-            questions: [...filteredQs, systemConfigQ],
+            questions: [...filteredQs, systemConfigQ] as any,
           })
           .eq('id', exam.id);
       }
