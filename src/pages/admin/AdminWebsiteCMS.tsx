@@ -255,10 +255,13 @@ const AdminWebsiteCMS = () => {
 
   const fetchSections = useCallback(async () => {
     try {
-      let { data, error } = await supabase
+      const response = await supabase
         .from('website_content')
         .select('*')
         .order('order_index', { ascending: true });
+      
+      let data = response.data;
+      const error = response.error;
 
       if (error) throw error;
       
