@@ -127,6 +127,7 @@ export default function PublicExamRunner() {
     // Simulate calculating points (same logic as authenticated exam, but no DB save)
     let vocabCorrect = 0, readingCorrect = 0, listeningCorrect = 0;
     let vocabTotal = 0, readingTotal = 0, listeningTotal = 0;
+    const wrongAnswers: any[] = [];
     
     const configQ = exam.questions.find((q: any) => q.type === 'system_config');
     const scoringConfig = configQ?.config || {
@@ -140,12 +141,24 @@ export default function PublicExamRunner() {
       const processQuestion = (question: any, answerKey: string | number) => {
         const isCorrect = answers[answerKey] !== undefined && answers[answerKey] === question.correct_index;
         const pts = question.points !== undefined ? Number(question.points) : 5;
+        let skillName = 'Từ vựng';
         if (sections.vocab.some(vq => vq.id === q.id || vq === q)) {
           vocabTotal += pts; if (isCorrect) vocabCorrect += pts;
         } else if (sections.reading.some(rq => rq.id === q.id || rq === q)) {
           readingTotal += pts; if (isCorrect) readingCorrect += pts;
+          skillName = 'Đọc hiểu';
         } else if (sections.listening.some(lq => lq.id === q.id || lq === q)) {
           listeningTotal += pts; if (isCorrect) listeningCorrect += pts;
+          skillName = 'Nghe hiểu';
+        }
+
+        if (!isCorrect) {
+          wrongAnswers.push({
+            questionText: question.text,
+            yourAnswer: answers[answerKey] !== undefined && question.options ? question.options[answers[answerKey]] : "Chưa chọn",
+            correctAnswer: question.options ? question.options[question.correct_index] : "",
+            skill: skillName
+          });
         }
       };
 
@@ -195,11 +208,17 @@ export default function PublicExamRunner() {
       };
     }
 
+    // Predict real score using a small random factor or scaling (±5 pts max, bounded)
+    const margin = Math.floor(Math.random() * 11) - 5; 
+    let predictedScore = Math.max(0, Math.min(exam.max_score || 180, totalScore + margin));
+
     setResult({
       score: totalScore,
       passed,
       breakdown: scoreBreakdown,
-      max: exam.max_score || 180
+      max: exam.max_score || 180,
+      wrongAnswers,
+      predictedScore
     });
     setSubmitting(false);
   };
