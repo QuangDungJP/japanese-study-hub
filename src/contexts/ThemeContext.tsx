@@ -16,6 +16,9 @@ interface ThemeContextType {
   setThemeFont: (font: ThemeFont) => void;
   setThemeScale: (scale: ThemeScale) => void;
   resolvedMode: 'light' | 'dark';
+  seasonalTheme: string | null;
+  enableSeasonalTheme: boolean;
+  setEnableSeasonalTheme: (enable: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -61,15 +64,27 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [themeScale, setThemeScaleState] = useState<ThemeScale>(() => getSaved('theme-scale', validScales, 'medium'));
   const [resolvedMode, setResolvedMode] = useState<'light' | 'dark'>('light');
   const [userId, setUserId] = useState<string | null>(null);
+  
+  const [globalSeason, setGlobalSeason] = useState<string | null>(null);
+  const [enableSeasonalTheme, setEnableSeasonalThemeState] = useState<boolean>(() => {
+    const saved = localStorage.getItem('enable-seasonal-theme');
+    return saved ? JSON.parse(saved) : true;
+  });
+  const [seasonalTheme, setSeasonalTheme] = useState<string | null>(null);
 
   // Load theme from database on auth
   useEffect(() => {
     const loadFromDb = async (uid: string) => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('theme_color, theme_mode, theme_font, theme_scale')
-        .eq('user_id', uid)
-        .single();
+      const [{ data }, { data: settings }] = await Promise.all([
+        supabase.from('profiles').select('theme_color, theme_mode, theme_font, theme_scale').eq('user_id', uid).single(),
+        supabase.from('page_settings').select('content').eq('section', 'active_season').single()
+      ]);
+
+      if (settings?.content?.season && settings.content.season !== 'none') {
+        setGlobalSeason(settings.content.season);
+      } else {
+        setGlobalSeason(null);
+      }
 
       if (data) {
         if (validColors.includes(data.theme_color as ThemeColor)) {
@@ -160,6 +175,29 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     return () => mediaQuery.removeEventListener('change', updateResolvedMode);
   }, [themeMode]);
 
+  // Handle Seasonal Theme applying class
+  useEffect(() => {
+    const root = document.documentElement;
+    // Remove all old season classes
+    const classes = Array.from(root.classList);
+    classes.forEach(c => {
+      if (c.startsWith('theme-')) {
+        root.classList.remove(c);
+      }
+    });
+
+    if (enableSeasonalTheme && globalSeason && globalSeason !== 'none') {
+      root.classList.add(`theme-${globalSeason}`);
+      setSeasonalTheme(globalSeason);
+    } else {
+      setSeasonalTheme(null);
+    }
+  }, [globalSeason, enableSeasonalTheme]);
+
+  const setEnableSeasonalTheme = (enable: boolean) => {
+    setEnableSeasonalThemeState(enable);
+  };
+
   const setThemeColor = (color: ThemeColor) => {
     setThemeColorState(color);
     saveToDb({ theme_color: color });
@@ -182,6 +220,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       themeColor, themeMode, themeFont, themeScale,
       setThemeColor, setThemeMode, setThemeFont, setThemeScale,
       resolvedMode,
+      seasonalTheme, enableSeasonalTheme, setEnableSeasonalTheme
     }}>
       {children}
     </ThemeContext.Provider>

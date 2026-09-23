@@ -96,8 +96,8 @@ const skillLabels: Record<string, string> = {
 };
 
 const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressModalProps) => {
-  const [completedLessons, setCompletedLessons] = useState<CompletedLesson[]>([]);
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
+  const [teachingClasses, setTeachingClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
 
@@ -178,13 +178,47 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
         setCompletedLessons([]);
       }
 
-      // 2. Fetch enrolled classes
+      // 2. Fetch enrolled classes (as a student)
       const { data: classStudents } = await supabase
         .from('class_students')
         .select('*, class:classes(*, courses(title_vi))')
         .eq('student_id', student.user_id);
 
       setEnrolledClasses((classStudents as any) || []);
+
+      // 3. Fetch teaching classes (if teacher)
+      if (student.roles?.includes('teacher') || student.roles?.includes('senior_teacher') || student.roles?.includes('admin')) {
+        // Fetch primary classes
+        const { data: primaryClasses } = await supabase
+          .from('classes')
+          .select('*, courses(title_vi)')
+          .eq('teacher_id', student.user_id);
+          
+        let allTeaching = [...(primaryClasses || [])].map(c => ({ class: c, role: 'Giáo viên chính' }));
+
+        // Fetch co-teaching classes (safely, as table might not exist yet)
+        try {
+          const { data: coClasses, error: coError } = await supabase
+            .from('class_teachers')
+            .select('class:classes(*, courses(title_vi))')
+            .eq('teacher_id', student.user_id);
+            
+          if (!coError && coClasses) {
+            const coTeaching = coClasses.map(c => ({ class: c.class, role: 'Trợ giảng (Co-teacher)' }));
+            // Filter duplicates if any
+            const existingIds = new Set(allTeaching.map(t => t.class.id));
+            coTeaching.forEach(t => {
+              if (t.class && !existingIds.has(t.class.id)) {
+                allTeaching.push(t);
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('class_teachers table might not exist yet');
+        }
+        
+        setTeachingClasses(allTeaching);
+      }
     } catch (error) {
       console.error('Error fetching student details:', error);
     } finally {
@@ -252,7 +286,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
                 <TrendingUp className="w-3.5 h-3.5" /> Chỉ số Tiến độ
               </TabsTrigger>
               <TabsTrigger value="classes" className="gap-2 text-xs font-semibold">
-                <Building className="w-3.5 h-3.5" /> Lớp học ({enrolledClasses.length})
+                <Building className="w-3.5 h-3.5" /> Lớp học ({enrolledClasses.length + teachingClasses.length})
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-2 text-xs font-semibold">
                 <BookOpen className="w-3.5 h-3.5" /> Bài học hoàn thành
@@ -369,28 +403,61 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
-              ) : enrolledClasses.length === 0 ? (
+              ) : enrolledClasses.length === 0 && teachingClasses.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <GraduationCap className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                  <p className="font-medium text-sm">Học viên chưa đăng ký lớp học trực tuyến nào.</p>
+                  <p className="font-medium text-sm">Người dùng này chưa tham gia lớp học trực tuyến nào.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {enrolledClasses.map((item) => (
-                    <div key={item.id} className="p-4 rounded-xl border border-border bg-card flex items-center justify-between hover:bg-muted/30 transition-colors">
-                      <div className="space-y-1">
-                        <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
-                          {item.class?.courses?.title_vi || 'Khóa học'}
-                        </Badge>
-                        <h4 className="font-bold text-sm text-foreground">{item.class?.name_vi || item.class?.name}</h4>
-                        <p className="text-xs text-muted-foreground">Mã lớp: {item.class?.code} • Tham gia ngày: {formatWithJST(item.joined_at, false)}</p>
-                      </div>
-                      <Badge variant="secondary" className="capitalize text-xs">
-                        <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-500" />
-                        {item.status || 'Active'}
-                      </Badge>
+                <div className="space-y-4">
+                  {/* Teaching Classes */}
+                  {teachingClasses.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-amber-500" />
+                        Lớp Đang Giảng Dạy ({teachingClasses.length})
+                      </h3>
+                      {teachingClasses.map((item, idx) => (
+                        <div key={`teach-${item.class?.id || idx}`} className="p-4 rounded-xl border border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-900/10 flex items-center justify-between hover:bg-amber-50/50 transition-colors">
+                          <div className="space-y-1">
+                            <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 bg-white dark:bg-transparent">
+                              {item.class?.courses?.title_vi || 'Khóa học'}
+                            </Badge>
+                            <h4 className="font-bold text-sm text-foreground">{item.class?.name_vi || item.class?.name}</h4>
+                            <p className="text-xs text-muted-foreground">Mã lớp: {item.class?.code}</p>
+                          </div>
+                          <Badge className="capitalize text-xs bg-amber-500 hover:bg-amber-600 text-white border-0">
+                            {item.role}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+
+                  {/* Enrolled Classes */}
+                  {enrolledClasses.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mt-2">
+                        <BookOpen className="w-4 h-4 text-primary" />
+                        Lớp Đang Học ({enrolledClasses.length})
+                      </h3>
+                      {enrolledClasses.map((item) => (
+                        <div key={item.id} className="p-4 rounded-xl border border-border bg-card flex items-center justify-between hover:bg-muted/30 transition-colors">
+                          <div className="space-y-1">
+                            <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                              {item.class?.courses?.title_vi || 'Khóa học'}
+                            </Badge>
+                            <h4 className="font-bold text-sm text-foreground">{item.class?.name_vi || item.class?.name}</h4>
+                            <p className="text-xs text-muted-foreground">Mã lớp: {item.class?.code} • Tham gia ngày: {formatWithJST(item.joined_at, false)}</p>
+                          </div>
+                          <Badge variant="secondary" className="capitalize text-xs">
+                            <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-500" />
+                            {item.status || 'Active'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>

@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatWithJST } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 import StudentProgressModal from '@/components/admin/StudentProgressModal';
+import AssignTeacherToClassModal from '@/components/admin/AssignTeacherToClassModal';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface UserWithProgress {
@@ -74,6 +75,7 @@ const AdminUsers = () => {
   const [selectedStudent, setSelectedStudent] = useState<UserWithProgress | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
+  const [assignClassModalOpen, setAssignClassModalOpen] = useState(false);
   const [addForm, setAddForm] = useState({ email: '', password: '', full_name: '', role: 'user' });
   const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
@@ -505,6 +507,14 @@ const AdminUsers = () => {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="my-2" />
                               <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground px-2">Nâng cấp quyền (Roles)</DropdownMenuLabel>
+                              {user.roles.includes('teacher') || user.roles.includes('senior_teacher') ? (
+                                <>
+                                  <DropdownMenuItem className="rounded-lg mt-1 cursor-pointer text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => { setSelectedStudent(user); setAssignClassModalOpen(true); }}>
+                                    <GraduationCap className="w-4 h-4 mr-2" /> Gán vào Lớp học (Giảng viên)
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className="my-2" />
+                                </>
+                              ) : null}
                               {(['user', 'teacher', 'senior_teacher', 'moderator'] as const).map(role => {
                                 const rc = ROLE_CONFIG[role];
                                 const Icon = rc.icon;
@@ -567,6 +577,12 @@ const AdminUsers = () => {
       </Card>
 
       <StudentProgressModal open={modalOpen} onOpenChange={setModalOpen} student={selectedStudent} />
+      <AssignTeacherToClassModal 
+        open={assignClassModalOpen} 
+        onOpenChange={setAssignClassModalOpen} 
+        teacherId={selectedStudent?.user_id || null}
+        teacherName={selectedStudent?.full_name || 'Giảng viên'}
+      />
 
       <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
         <DialogContent className="sm:max-w-[425px] rounded-2xl">

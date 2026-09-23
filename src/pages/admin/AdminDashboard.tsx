@@ -200,7 +200,19 @@ const AdminDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <Link
+              to="/admin/finance"
+              className="flex items-center gap-4 p-4 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all group"
+            >
+              <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-600">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-sm group-hover:text-emerald-600 transition-colors">Tài chính</p>
+                <p className="text-xs text-muted-foreground">Báo cáo doanh thu</p>
+              </div>
+            </Link>
             <Link
               to="/admin/badges"
               className="flex items-center gap-4 p-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all group"
@@ -244,12 +256,12 @@ const AdminDashboard = () => {
               to="/admin/orders"
               className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 hover:bg-primary/10 hover:border-primary/30 border border-transparent transition-all group"
             >
-              <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600">
-                <DollarSign className="w-5 h-5" />
+              <div className="p-3 rounded-xl bg-orange-500/10 text-orange-600">
+                <ShoppingCart className="w-5 h-5" />
               </div>
               <div>
                 <p className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">Đơn hàng</p>
-                <p className="text-xs text-muted-foreground">Xác nhận chuyển khoản</p>
+                <p className="text-xs text-muted-foreground">Duyệt & Hoàn tiền</p>
               </div>
             </Link>
           </div>

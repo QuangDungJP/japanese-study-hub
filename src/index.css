@@ -105,6 +105,57 @@
     --sidebar-border: 215 30% 15%;
     --sidebar-ring: 32 95% 52%;
   }
+
+  /* --- MÙA XUÂN (Spring) --- */
+  .theme-spring {
+    --primary: 346 77% 65%;
+    --ring: 346 77% 65%;
+    --gradient-primary: linear-gradient(135deg, hsl(346 77% 65%) 0%, hsl(340 70% 55%) 100%);
+    --background: 346 30% 98%;
+  }
+  .theme-spring.dark {
+    --primary: 346 77% 55%;
+    --background: 346 40% 10%;
+  }
+
+  /* --- TẾT (Lunar New Year) --- */
+  .theme-tet {
+    --primary: 0 84% 50%;
+    --accent: 45 93% 47%;
+    --ring: 0 84% 50%;
+    --gradient-primary: linear-gradient(135deg, hsl(0 84% 50%) 0%, hsl(10 80% 45%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(35 90% 40%) 100%);
+    --background: 45 20% 97%;
+  }
+  .theme-tet.dark {
+    --primary: 0 84% 55%;
+    --background: 0 40% 10%;
+  }
+
+  /* --- HALLOWEEN --- */
+  .theme-halloween {
+    --primary: 24 95% 53%;
+    --ring: 24 95% 53%;
+    --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(15 90% 45%) 100%);
+    --background: 280 20% 97%;
+  }
+  .theme-halloween.dark {
+    --primary: 24 95% 53%;
+    --background: 280 40% 8%;
+  }
+
+  /* --- NOEL (Christmas) --- */
+  .theme-noel {
+    --primary: 142 76% 36%;
+    --accent: 0 84% 50%;
+    --ring: 142 76% 36%;
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(150 70% 25%) 100%);
+    --background: 210 20% 97%;
+  }
+  .theme-noel.dark {
+    --primary: 142 76% 45%;
+    --background: 210 40% 10%;
+  }
 }
 
 @layer base {

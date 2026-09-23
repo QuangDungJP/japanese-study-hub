@@ -108,6 +108,7 @@ const AdminSettings = () => {
   const [pwaDocId, setPwaDocId] = useState<string | null>(null);
   const [forceUpdating, setForceUpdating] = useState(false);
   const [lastForceVersion, setLastForceVersion] = useState<string | null>(null);
+  const [activeSeason, setActiveSeason] = useState<string>('none');
 
   const visibility = localVisibility || pageVisibility;
 
@@ -183,7 +184,13 @@ const AdminSettings = () => {
       .select('*')
       .order('order_index', { ascending: true })
       .then(({ data }: { data: any[] | null }) => {
-        if (data) setPageSettingsList(data);
+        if (data) {
+          setPageSettingsList(data);
+          const seasonConfig = data.find(p => p.section === 'active_season');
+          if (seasonConfig?.content?.season) {
+            setActiveSeason(seasonConfig.content.season);
+          }
+        }
       });
   }, []);
 
@@ -204,6 +211,14 @@ const AdminSettings = () => {
           hero_subtitle_vi: p.hero_subtitle_vi,
         })
         .eq('id', p.id);
+    }
+    
+    // Save active season
+    const seasonConfig = pageSettingsList.find(p => p.section === 'active_season');
+    if (seasonConfig) {
+      await (supabase as any).from('page_settings').update({ content: { season: activeSeason } }).eq('id', seasonConfig.id);
+    } else {
+      await (supabase as any).from('page_settings').insert({ section: 'active_season', content: { season: activeSeason }, display_name: 'Active Season' });
     }
   };
 
@@ -624,7 +639,36 @@ const AdminSettings = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="theme">
+        <TabsContent value="theme" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Giao diện Theo Mùa (Seasonal Theme)</CardTitle>
+              <CardDescription>Bật giao diện Lễ hội để tự động thay đổi hiệu ứng toàn bộ trang web (Tuyết rơi, pháo hoa, hoa anh đào...).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {[
+                  { id: 'none', name: 'Mặc định (Tắt)' },
+                  { id: 'spring', name: 'Mùa Xuân' },
+                  { id: 'summer', name: 'Mùa Hạ' },
+                  { id: 'autumn', name: 'Mùa Thu' },
+                  { id: 'winter', name: 'Mùa Đông' },
+                  { id: 'tet', name: 'Tết Nguyên Đán' },
+                  { id: 'noel', name: 'Giáng Sinh (Noel)' },
+                  { id: 'halloween', name: 'Halloween' },
+                  { id: 'valentine', name: 'Lễ Tình Nhân' },
+                ].map((season) => (
+                  <div 
+                    key={season.id}
+                    onClick={() => setActiveSeason(season.id)}
+                    className={`cursor-pointer p-4 rounded-xl border-2 text-center transition-all ${activeSeason === season.id ? 'border-primary bg-primary/10 font-bold' : 'border-border hover:border-primary/50'}`}
+                  >
+                    {season.name}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Giao diện chung (Global Theme)</CardTitle>

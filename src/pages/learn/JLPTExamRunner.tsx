@@ -209,12 +209,13 @@ export default function JLPTExamRunner() {
         
         const processQuestion = (question: any, answerKey: string | number) => {
           const isCorrect = answers[answerKey] !== undefined && answers[answerKey] === question.correct_index;
+          const pts = question.points !== undefined ? Number(question.points) : 5;
           if (sections.vocab.some(vq => vq.id === q.id || vq === q)) {
-            vocabTotal++; if (isCorrect) vocabCorrect++;
+            vocabTotal += pts; if (isCorrect) vocabCorrect += pts;
           } else if (sections.reading.some(rq => rq.id === q.id || rq === q)) {
-            readingTotal++; if (isCorrect) readingCorrect++;
+            readingTotal += pts; if (isCorrect) readingCorrect += pts;
           } else if (sections.listening.some(lq => lq.id === q.id || lq === q)) {
-            listeningTotal++; if (isCorrect) listeningCorrect++;
+            listeningTotal += pts; if (isCorrect) listeningCorrect += pts;
           }
         };
 
