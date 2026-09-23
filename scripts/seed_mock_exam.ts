@@ -30,207 +30,92 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const mockExams = [
-  {
-    title: "JLPT N4 Mock Exam (Full test - Real Data Sim)",
-    title_vi: "Đề thi thử JLPT N4 - Đề chuẩn công khai",
-    description_vi: "Đề thi thử đầy đủ 3 kỹ năng (Từ vựng/Chữ Hán, Đọc hiểu/Ngữ pháp, Nghe hiểu) theo cấu trúc chuẩn. Bạn có 105 phút để hoàn thành bài thi này.",
-    exam_type: "jlpt_mock",
-    duration_minutes: 115,
-    exam_date: new Date().toISOString().split('T')[0],
-    start_time: "00:00",
-    end_time: "23:59",
-    max_score: 180,
-    passing_score: 90,
-    is_published: true,
-    is_public: true,
-    questions: [
-      // --- VOCABULARY & KANJI ---
-      {
-        id: "q_v1",
-        skill: "vocabulary",
-        text: "問題１：＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。\n\nきのう、**新しい**カメラを買いました。",
-        options: ["あたらし", "あだらしい", "あたらしい", "あたらちい"],
-        correct_index: 2,
-        points: 5
-      },
-      {
-        id: "q_v2",
-        skill: "vocabulary",
-        text: "問題２：＿の言葉を漢字で書くとき、最もよいものを一つ選びなさい。\n\n田中さんは**まいにち**運動しています。",
-        options: ["毎年", "毎月", "毎日", "毎目"],
-        correct_index: 2,
-        points: 5
-      },
-      {
-        id: "q_v3",
-        skill: "vocabulary",
-        text: "問題３：文の＿に入れるのに最もよいものを一つ選びなさい。\n\n風邪を引いたので、今日は早く＿＿＿。",
-        options: ["帰ります", "寝ます", "起きます", "食べます"],
-        correct_index: 1,
-        points: 5
-      },
-      // --- GRAMMAR & READING ---
-      {
-        id: "q_g1",
-        skill: "grammar",
-        text: "問題４：＿に何が入りますか。最もよいものを一つ選びなさい。\n\nわたしは　日曜日＿　勉強します。",
-        options: ["に", "を", "も", "で"],
-        correct_index: 2,
-        points: 5
-      },
-      {
-        id: "q_r1",
-        skill: "reading",
-        text: "問題５：つぎの文章を読んで、質問に答えなさい。\n\n（メールの文章）\nスミスさんへ\nあしたのパーティーですが、午後６時に駅の前で会いましょう。山田さんも来ますよ。\n佐藤より\n\n質問：あした、何時にどこで会いますか。",
-        options: [
-          "午前６時に駅の前で会う。",
-          "午後６時に駅の中で会う。",
-          "午後６時に駅の前で会う。",
-          "午後６時に学校の前で会う。"
-        ],
-        correct_index: 2,
-        points: 10
-      },
-      // --- LISTENING ---
-      {
-        id: "q_l1",
-        skill: "listening",
-        text: "問題６：音声をきいて、正しい答えを一つ選びなさい。",
-        audio_url: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg", // Dummy audio for testing
-        options: [
-          "男の人は図書館へ行く。",
-          "男の人は食堂へ行く。",
-          "男の人は帰る。",
-          "男の人は教室で待つ。"
-        ],
-        correct_index: 1,
-        points: 10
+function generateQuestions(level: string) {
+  return [
+    {
+      type: "system_config",
+      config: {
+        difficulty_factor: 1.0,
+        section_pass: { language: 19, reading: 19, listening: 19, combined: 38 }
       }
-    ]
-  },
-  {
-    title: "JLPT N3 Mock Exam (Public Challenge)",
-    title_vi: "Đề thi thử JLPT N3 - Đề chuẩn công khai",
-    description_vi: "Đề thi thử N3 chuẩn quốc tế giúp bạn kiểm tra trình độ trung cấp. Bạn có 140 phút để hoàn thành.",
-    exam_type: "jlpt_mock",
-    duration_minutes: 140,
-    exam_date: new Date().toISOString(),
-    start_time: "00:00",
-    end_time: "23:59",
-    max_score: 180,
-    passing_score: 95,
-    is_published: true,
-    is_public: true,
-    questions: [
-      {
-        id: "n3_q_v1",
-        skill: "vocabulary",
-        text: "問題１：＿の言葉の読み方として最もよいものを、一つ選びなさい。\n\n彼は**一生懸命**働いています。",
-        options: ["いっしょうけんめい", "いっしょけんめい", "いっしょうけんめん", "いしょけんめい"],
-        correct_index: 0,
-        points: 5
-      },
-      {
-        id: "n3_q_g1",
-        skill: "grammar",
-        text: "問題２：＿に何が入りますか。最もよいものを一つ選びなさい。\n\n雨が降っている＿＿＿、試合は中止になった。",
-        options: ["ために", "ように", "ばかりに", "みたいに"],
-        correct_index: 0,
-        points: 5
-      },
-      {
-        id: "n3_q_r1",
-        skill: "reading",
-        text: "問題３：つぎの文章を読んで、質問に答えなさい。\n\n最近、スマートフォンを使いすぎる若者が増えている。便利なツールであることは間違いないが、健康への影響も心配される。\n\n質問：筆者が心配していることは何か。",
-        options: [
-          "スマートフォンが便利すぎること",
-          "若者が増えていること",
-          "スマートフォンの使いすぎが健康に影響すること",
-          "ツールが間違っていること"
-        ],
-        correct_index: 2,
-        points: 10
-      },
-      {
-        id: "n3_q_l1",
-        skill: "listening",
-        text: "問題４：音声をきいて、正しい答えを一つ選びなさい。",
-        audio_url: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-        options: [
-          "明日の会議は３時からです。",
-          "明日の会議は４時からです。",
-          "明日の会議は中止です。",
-          "明日の会議はオンラインです。"
-        ],
-        correct_index: 0,
-        points: 10
-      }
-    ]
-  },
-  {
-    title: "JLPT N2 Mock Exam (Public Master)",
-    title_vi: "Đề thi thử JLPT N2 - Đề chuẩn công khai",
-    description_vi: "Đề thi thử N2 khó nhằn dành cho cao thủ. Bạn có 155 phút để hoàn thành.",
-    exam_type: "jlpt_mock",
-    duration_minutes: 155,
-    exam_date: new Date().toISOString(),
-    start_time: "00:00",
-    end_time: "23:59",
-    max_score: 180,
-    passing_score: 90,
-    is_published: true,
-    is_public: true,
-    questions: [
-      {
-        id: "n2_q_v1",
-        skill: "vocabulary",
-        text: "問題１：＿の言葉の読み方として最もよいものを、一つ選びなさい。\n\nこの計画は**矛盾**している。",
-        options: ["むとん", "むじゅん", "もうじゅん", "まじゅん"],
-        correct_index: 1,
-        points: 5
-      },
-      {
-        id: "n2_q_g1",
-        skill: "grammar",
-        text: "問題２：＿に何が入りますか。最もよいものを一つ選びなさい。\n\n忙しい＿＿＿、わざわざ来てくれてありがとう。",
-        options: ["ところを", "ばかりに", "からには", "ことだから"],
-        correct_index: 0,
-        points: 5
-      },
-      {
-        id: "n2_q_r1",
-        skill: "reading",
-        text: "問題３：つぎの文章を読んで、質問に答えなさい。\n\n現代社会において、情報リテラシーの重要性は日に日に高まっている。情報を単に受け取るだけでなく、その真偽を見極める力が求められるのだ。\n\n質問：筆者が最も言いたいことは何か。",
-        options: [
-          "情報を受け取るのは簡単だ",
-          "現代社会は情報が多すぎる",
-          "情報の真偽を見極める力が必要だ",
-          "情報リテラシーは高まっている"
-        ],
-        correct_index: 2,
-        points: 10
-      },
-      {
-        id: "n2_q_l1",
-        skill: "listening",
-        text: "問題４：音声をきいて、正しい答えを一つ選びなさい。",
-        audio_url: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-        options: [
-          "プロジェクトは成功した",
-          "プロジェクトは失敗した",
-          "プロジェクトは延期された",
-          "プロジェクトは中止された"
-        ],
-        correct_index: 2,
-        points: 10
-      }
-    ]
-  }
+    },
+    {
+      id: `${level.toLowerCase()}_q_v1`,
+      skill: "vocabulary",
+      text: `問題１：＿の言葉の読み方として最もよいものを、一つ選びなさい。\n\n彼の**能力**は素晴らしい。(${level})`,
+      options: ["のうりょく", "のうりき", "どうりょく", "どうりき"],
+      correct_index: 0,
+      points: 5
+    },
+    {
+      id: `${level.toLowerCase()}_q_g1`,
+      skill: "grammar",
+      text: `問題２：＿に何が入りますか。最もよいものを一つ選びなさい。\n\n雨が降っている＿＿＿、試合は中止になった。(${level})`,
+      options: ["ために", "ように", "ばかりに", "みたいに"],
+      correct_index: 0,
+      points: 5
+    },
+    {
+      id: `${level.toLowerCase()}_q_r1`,
+      skill: "reading",
+      text: `問題３：つぎの文章を読んで、質問に答えなさい。\n\n最近、スマートフォンを使いすぎる若者が増えている。便利なツールであることは間違いないが、健康への影響も心配される。\n\n質問：筆者が心配していることは何か。(${level})`,
+      options: [
+        "スマートフォンが便利すぎること",
+        "若者が増えていること",
+        "スマートフォンの使いすぎが健康に影響すること",
+        "ツールが間違っていること"
+      ],
+      correct_index: 2,
+      points: 10
+    },
+    {
+      id: `${level.toLowerCase()}_q_l1`,
+      skill: "listening",
+      text: `問題４：音声をきいて、正しい答えを一つ選びなさい。(${level})`,
+      audio_url: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
+      options: [
+        "明日の会議は３時からです。",
+        "明日の会議は４時からです。",
+        "明日の会議は中止です。",
+        "明日の会議はオンラインです。"
+      ],
+      correct_index: 0,
+      points: 10
+    }
+  ];
+}
+
+const examTemplates = [
+  { level: 'N1', title: 'Đề thi JLPT N1 Đạt Chuẩn Cao Cấp (Bộ 1)', duration: 170, maxScore: 180, passScore: 100 },
+  { level: 'N1', title: 'Đề thi JLPT N1 Thử Thách Cực Đại (Bộ 2)', duration: 170, maxScore: 180, passScore: 100 },
+  { level: 'N2', title: 'Đề thi JLPT N2 Chuẩn Quốc Tế (Bộ 1)', duration: 155, maxScore: 180, passScore: 90 },
+  { level: 'N2', title: 'Đề thi JLPT N2 Rèn Luyện Toàn Diện (Bộ 2)', duration: 155, maxScore: 180, passScore: 90 },
+  { level: 'N3', title: 'Đề thi JLPT N3 Trung Cấp Chuyên Sâu (Bộ 1)', duration: 140, maxScore: 180, passScore: 95 },
+  { level: 'N3', title: 'Đề thi JLPT N3 Mô Phỏng Thực Tế (Bộ 2)', duration: 140, maxScore: 180, passScore: 95 },
+  { level: 'N4', title: 'Đề thi JLPT N4 Vững Bước Sơ Cấp (Bộ 1)', duration: 115, maxScore: 180, passScore: 90 },
+  { level: 'N4', title: 'Đề thi JLPT N4 Nắm Chắc Kiến Thức (Bộ 2)', duration: 115, maxScore: 180, passScore: 90 },
+  { level: 'N5', title: 'Đề thi JLPT N5 Khởi Đầu Thành Công (Bộ 1)', duration: 105, maxScore: 180, passScore: 80 },
+  { level: 'N5', title: 'Đề thi JLPT N5 Cơ Bản Hoàn Hảo (Bộ 2)', duration: 105, maxScore: 180, passScore: 80 },
 ];
 
+const mockExams = examTemplates.map((template, i) => ({
+  title: `${template.level} Mock Exam ${i + 1}`,
+  title_vi: template.title,
+  description_vi: `Đề thi thử ${template.level} gồm đủ 3 kỹ năng: Kiến thức ngôn ngữ, Đọc hiểu và Nghe hiểu. Hệ thống tự động chấm điểm và liệt kê lỗi sai.`,
+  exam_type: "jlpt_mock",
+  duration_minutes: template.duration,
+  exam_date: new Date().toISOString().split('T')[0],
+  start_time: "00:00",
+  end_time: "23:59",
+  max_score: template.maxScore,
+  passing_score: template.passScore,
+  is_published: true,
+  is_public: true,
+  questions: generateQuestions(template.level)
+}));
+
 async function seedExam() {
-  console.log('Seeding mock exams...');
+  console.log('Seeding 10 mock exams...');
   
   // Fetch a teacher_id to satisfy the not-null constraint
   const { data: profiles, error: profileError } = await supabase
@@ -245,6 +130,9 @@ async function seedExam() {
 
   const teacher_id = profiles[0].id;
   const examsToInsert = mockExams.map(exam => ({ ...exam, teacher_id }));
+
+  // Xóa các đề cũ trước khi tạo 10 đề mới để tránh rác DB
+  await supabase.from('exams').delete().eq('exam_type', 'jlpt_mock').eq('is_public', true);
 
   const { data, error } = await supabase
     .from('exams')
