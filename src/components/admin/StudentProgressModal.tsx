@@ -98,6 +98,7 @@ const skillLabels: Record<string, string> = {
 const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressModalProps) => {
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<any[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<CompletedLesson[]>([]);
   const [loading, setLoading] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
 
