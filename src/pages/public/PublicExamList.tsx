@@ -25,7 +25,7 @@ export default function PublicExamList() {
     const fetchPublicExams = async () => {
       const { data, error } = await supabase
         .from('exams')
-        .select('id, title, title_vi, exam_category, level, duration_minutes, max_score, passing_score')
+        .select('id, title, title_vi, exam_category, duration_minutes, max_score, passing_score')
         .eq('exam_type', 'jlpt_mock')
         .eq('is_published', true)
         .eq('is_public', true)
