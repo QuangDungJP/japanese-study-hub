@@ -36,9 +36,10 @@ const mockExams = [
     title_vi: "Đề thi thử JLPT N4 - Đề chuẩn công khai",
     description_vi: "Đề thi thử đầy đủ 3 kỹ năng (Từ vựng/Chữ Hán, Đọc hiểu/Ngữ pháp, Nghe hiểu) theo cấu trúc chuẩn. Bạn có 105 phút để hoàn thành bài thi này.",
     exam_type: "jlpt_mock",
-    exam_category: "N4",
-    level: "N4",
     duration_minutes: 115,
+    exam_date: new Date().toISOString().split('T')[0],
+    start_time: "00:00",
+    end_time: "23:59",
     max_score: 180,
     passing_score: 90,
     is_published: true,
@@ -113,9 +114,10 @@ const mockExams = [
     title_vi: "Đề thi thử JLPT N3 - Đề chuẩn công khai",
     description_vi: "Đề thi thử N3 chuẩn quốc tế giúp bạn kiểm tra trình độ trung cấp. Bạn có 140 phút để hoàn thành.",
     exam_type: "jlpt_mock",
-    exam_category: "N3",
-    level: "N3",
     duration_minutes: 140,
+    exam_date: new Date().toISOString(),
+    start_time: "00:00",
+    end_time: "23:59",
     max_score: 180,
     passing_score: 95,
     is_published: true,
@@ -171,9 +173,10 @@ const mockExams = [
     title_vi: "Đề thi thử JLPT N2 - Đề chuẩn công khai",
     description_vi: "Đề thi thử N2 khó nhằn dành cho cao thủ. Bạn có 155 phút để hoàn thành.",
     exam_type: "jlpt_mock",
-    exam_category: "N2",
-    level: "N2",
     duration_minutes: 155,
+    exam_date: new Date().toISOString(),
+    start_time: "00:00",
+    end_time: "23:59",
     max_score: 180,
     passing_score: 90,
     is_published: true,
@@ -229,9 +232,23 @@ const mockExams = [
 async function seedExam() {
   console.log('Seeding mock exams...');
   
+  // Fetch a teacher_id to satisfy the not-null constraint
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .limit(1);
+
+  if (profileError || !profiles || profiles.length === 0) {
+    console.error('Error fetching a teacher_id from profiles:', profileError);
+    return;
+  }
+
+  const teacher_id = profiles[0].id;
+  const examsToInsert = mockExams.map(exam => ({ ...exam, teacher_id }));
+
   const { data, error } = await supabase
     .from('exams')
-    .insert(mockExams)
+    .insert(examsToInsert)
     .select('id, title_vi');
 
   if (error) {
