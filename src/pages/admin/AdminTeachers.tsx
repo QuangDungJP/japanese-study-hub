@@ -102,6 +102,11 @@ export default function AdminTeachers() {
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [featuredFilter, setFeaturedFilter] = useState("all");
+
   // Drag state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -160,6 +165,34 @@ export default function AdminTeachers() {
   };
 
   useEffect(() => { fetchTeachers(); }, []);
+
+  const exportToCSV = () => {
+    if (!teachers || teachers.length === 0) return toast({ title: "Không có dữ liệu để xuất" });
+    
+    const headers = ["ID", "Tên hiển thị", "Slug", "Kinh nghiệm (năm)", "Đánh giá", "Tổng học sinh", "Tổng bài giảng", "Giờ dạy", "Đang hiển thị", "Ghim trang chủ"];
+    const rows = teachers.map(t => [
+      t.id,
+      `"${t.display_name || ''}"`,
+      t.slug || '',
+      t.experience_years || 0,
+      t.rating || 0,
+      t.total_students || 0,
+      t.total_lessons || 0,
+      t.total_hours || 0,
+      t.is_available ? "Có" : "Không",
+      t.is_featured ? "Có" : "Không"
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `teachers_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Đã xuất file CSV ✓" });
+  };
 
   const parseJsonArray = (val: unknown): string[] => {
     if (Array.isArray(val)) return val.filter((v) => typeof v === "string");
@@ -319,6 +352,16 @@ export default function AdminTeachers() {
 
   const getDisplayName = (t: TeacherRow) => t.display_name || "Chưa đặt tên";
 
+  const filteredTeachers = teachers.filter((t) => {
+    const matchesSearch = 
+      t.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      t.headline?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.slug?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' ? true : (statusFilter === 'available' ? t.is_available : !t.is_available);
+    const matchesFeatured = featuredFilter === 'all' ? true : (featuredFilter === 'featured' ? t.is_featured : !t.is_featured);
+    return matchesSearch && matchesStatus && matchesFeatured;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -328,6 +371,9 @@ export default function AdminTeachers() {
           <p className="text-muted-foreground text-sm">Kéo thả để sắp xếp thứ tự • Toggle để hiện/ẩn</p>
         </div>
         <div className="flex gap-2 self-start">
+          <Button variant="outline" onClick={exportToCSV} className="hidden sm:flex">
+            <Save className="w-4 h-4 mr-2" /> Xuất CSV
+          </Button>
           {orderChanged && (
             <Button onClick={saveOrder} disabled={savingOrder} variant="default" className="bg-green-600 hover:bg-green-700">
               {savingOrder ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
@@ -344,9 +390,9 @@ export default function AdminTeachers() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Tổng giảng viên", value: teachers.length, icon: Users },
-          { label: "Đang hiển thị", value: teachers.filter((t) => t.is_available).length, icon: Eye },
-          { label: "Trang chủ", value: teachers.filter((t) => t.is_featured).length, icon: Star },
-          { label: "Đang ẩn", value: teachers.filter((t) => !t.is_available).length, icon: EyeOff },
+          { label: "Giảng viên nổi bật", value: teachers.filter((t) => t.is_featured).length, icon: Star },
+          { label: "Tổng học viên", value: teachers.reduce((acc, t) => acc + (t.total_students || 0), 0), icon: BookOpen },
+          { label: "Tổng bài giảng", value: teachers.reduce((acc, t) => acc + (t.total_lessons || 0), 0), icon: Video },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -360,16 +406,48 @@ export default function AdminTeachers() {
         ))}
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card p-3 rounded-lg border">
+        <div className="flex-1 w-full">
+          <Input 
+            placeholder="Tìm theo tên, email, slug..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full sm:max-w-xs"
+          />
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <select 
+            className="flex h-10 w-full sm:w-[150px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={statusFilter} 
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="available">Đang hiển thị</option>
+            <option value="hidden">Đang ẩn</option>
+          </select>
+          <select 
+            className="flex h-10 w-full sm:w-[150px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={featuredFilter} 
+            onChange={(e) => setFeaturedFilter(e.target.value)}
+          >
+            <option value="all">Tất cả (Ghim)</option>
+            <option value="featured">Đã ghim</option>
+            <option value="normal">Chưa ghim</option>
+          </select>
+        </div>
+      </div>
+
       {/* Table */}
       <Card>
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center py-20"><Loader2 className="animate-spin w-6 h-6" /></div>
-          ) : teachers.length === 0 ? (
+          ) : filteredTeachers.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Chưa có giảng viên nào</p>
-              <Button variant="link" onClick={openNew}>Thêm giảng viên đầu tiên</Button>
+              <p>{teachers.length === 0 ? "Chưa có giảng viên nào" : "Không tìm thấy giảng viên nào phù hợp"}</p>
+              {teachers.length === 0 && <Button variant="link" onClick={openNew}>Thêm giảng viên đầu tiên</Button>}
             </div>
           ) : (
             <Table>
@@ -384,7 +462,7 @@ export default function AdminTeachers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {teachers.map((teacher, index) => (
+                {filteredTeachers.map((teacher, index) => (
                   <TableRow
                     key={teacher.id}
                     draggable
@@ -428,6 +506,17 @@ export default function AdminTeachers() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        {teacher.slug && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-primary"
+                            onClick={() => window.open(`/teacher/${teacher.slug}`, "_blank")}
+                            title="Xem trang cá nhân"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
