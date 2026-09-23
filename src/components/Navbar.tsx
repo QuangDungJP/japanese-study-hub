@@ -24,6 +24,7 @@ import AvatarWithDecoration from "@/components/shared/AvatarWithDecoration";
 const defaultNavLinks = [
   { name: "Giới thiệu", href: "/gioi-thieu", key: "about" },
   { name: "Khóa học", href: "/khoa-hoc", key: "courses" },
+  { name: "Thi thử JLPT", href: "/thi-thu", key: "mock_exams" },
   { name: "Giáo viên", href: "/giao-vien", key: "teachers" },
   { name: "Google Meet", href: "/meeting", key: "zoom" },
   { name: "Blog", href: "/blog", key: "blog" },
