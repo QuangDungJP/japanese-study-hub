@@ -50,6 +50,8 @@ const navbarItemLabels: Record<string, string> = {
   blog: 'Blog',
   faq: 'Hỏi đáp',
   contact: 'Liên hệ',
+  mock_exams: 'Thi thử JLPT',
+  events: 'Sự kiện',
 };
 
 const sidebarItemLabels: Record<string, string> = {

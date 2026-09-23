@@ -158,8 +158,12 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />
-              <Route path="/dieu-khoan" element={<Terms />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
+
+              {/* Public Mock Exams */}
+              <Route path="/thi-thu" element={<PublicExamList />} />
+              <Route path="/thi-thu/:id" element={<PublicExamRunner />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogDetail />} />
               <Route path="/su-kien" element={<EventsPage />} />
@@ -171,9 +175,6 @@ const App = () => (
                 <Route path="my-classes/:id" element={<StudentClassDetail />} />
                 <Route path="lessons" element={<Lessons />} />
                 <Route path="lessons/:id" element={<LessonViewer />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/thi-thu" element={<PublicExamList />} />
-                <Route path="/thi-thu/:id" element={<PublicExamRunner />} />
                 <Route path="exams" element={<Exams />} />
                 <Route path="exams/:id" element={<ExamRunner />} />
                 <Route path="mock-exams" element={<VirtualExamRoom />} />
