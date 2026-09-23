@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, Loader2, BookOpen, Headphones, ShieldAlert, CheckCircle2, Mic, Play, Square, Trophy, UserPlus } from "lucide-react";
+import { Clock, Loader2, BookOpen, Headphones, ShieldAlert, CheckCircle2, Mic, Play, Square, Trophy, UserPlus, ChevronRight, XCircle, AlertCircle, ArrowRight, BrainCircuit, Target, Volume2 } from "lucide-react";
 import FormattedText from "@/components/shared/FormattedText";
 
 const SECTION_TIMERS: Record<string, number> = {
@@ -270,6 +270,87 @@ export default function PublicExamRunner() {
                 ))}
               </div>
             </div>
+
+            {/* PREDICTED SCORE & SUGGESTIONS */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center flex flex-col items-center justify-center">
+                <Target className="w-8 h-8 text-amber-500 mb-2" />
+                <h4 className="font-bold text-amber-700 dark:text-amber-500 text-sm mb-1">Dự đoán điểm thi thật</h4>
+                <div className="text-3xl font-black text-amber-600">
+                  {result.predictedScore} <span className="text-base font-semibold opacity-70">/ {result.max}</span>
+                </div>
+                <p className="text-xs text-amber-600/80 mt-2 px-4">
+                  Dựa trên độ khó của đề và sai số tâm lý phòng thi
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-3">
+                  <BrainCircuit className="w-5 h-5 text-blue-500" />
+                  <h4 className="font-bold text-blue-700 dark:text-blue-500 text-sm">Gợi ý ôn tập</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-blue-800/80 dark:text-blue-300">
+                  {Object.values(result.breakdown).some((d: any) => !d.passed) ? (
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                      <span>Bạn cần ưu tiên luyện tập ngay phần thi bị điểm liệt để không trượt oan.</span>
+                    </li>
+                  ) : null}
+                  {Object.values(result.breakdown).map((d: any, i: number) => {
+                    if (d.score / d.max < 0.6) {
+                      const Icon = d.name.includes("Nghe") ? Volume2 : BookOpen;
+                      return (
+                        <li key={i} className="flex items-start gap-2">
+                          <Icon className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                          <span>Kỹ năng <strong>{d.name}</strong> khá yếu ({Math.round(d.score/d.max*100)}%), cần luyện đề nhiều hơn.</span>
+                        </li>
+                      );
+                    }
+                    return null;
+                  })}
+                  {Object.values(result.breakdown).every((d: any) => d.score / d.max >= 0.6) && (
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                      <span>Các kỹ năng của bạn khá đồng đều, hãy duy trì phong độ này!</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+
+            {/* WRONG ANSWERS SUMMARY */}
+            {result.wrongAnswers && result.wrongAnswers.length > 0 && (
+              <div>
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-foreground">
+                  <XCircle className="w-5 h-5 text-rose-500" /> Phân tích lỗi sai ({result.wrongAnswers.length} câu)
+                </h3>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {result.wrongAnswers.slice(0, 5).map((wa: any, i: number) => (
+                    <div key={i} className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/10 text-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="text-xs bg-background border-rose-200 text-rose-600">{wa.skill}</Badge>
+                      </div>
+                      <p className="font-medium text-foreground mb-3 line-clamp-2">{wa.questionText}</p>
+                      <div className="grid sm:grid-cols-2 gap-2 text-xs">
+                        <div className="p-2 rounded-lg bg-background/50 border border-border">
+                          <span className="text-muted-foreground block mb-1">Bạn chọn:</span>
+                          <span className="text-rose-600 font-semibold line-clamp-1">{wa.yourAnswer}</span>
+                        </div>
+                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                          <span className="text-emerald-700 dark:text-emerald-500 block mb-1">Đáp án đúng:</span>
+                          <span className="text-emerald-700 dark:text-emerald-500 font-semibold line-clamp-1">{wa.correctAnswer}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {result.wrongAnswers.length > 5 && (
+                    <div className="p-3 text-center text-sm font-medium text-muted-foreground bg-muted/50 rounded-xl border border-dashed">
+                      Và {result.wrongAnswers.length - 5} lỗi sai khác... Đăng nhập để xem toàn bộ!
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* LEAD GENERATION CTA */}
             <div className="p-6 rounded-3xl bg-primary/10 border-2 border-primary/20 text-center space-y-4">
