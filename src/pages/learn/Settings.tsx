@@ -112,6 +112,34 @@ const Settings = () => {
         {/* Theme Settings */}
         <ThemeCustomizer />
 
+        {/* Seasonal Theme Toggle */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-xl">🎊</span>
+              Giao diện Lễ hội / Theo Mùa
+            </CardTitle>
+            <CardDescription>Bật/tắt các hiệu ứng lễ hội đặc biệt (do Admin cấu hình)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Hiệu ứng theo mùa</Label>
+                <p className="text-sm text-muted-foreground">
+                  Cho phép thay đổi giao diện và hiển thị hiệu ứng (Tuyết rơi, pháo hoa...) vào các dịp lễ
+                </p>
+              </div>
+              <Switch
+                checked={JSON.parse(localStorage.getItem('enable-seasonal-theme') || 'true')}
+                onCheckedChange={(checked) => {
+                  localStorage.setItem('enable-seasonal-theme', JSON.stringify(checked));
+                  window.location.reload(); // Reload to re-mount context and clear old classes easily
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Notification Settings */}
         <Card>
           <CardHeader>

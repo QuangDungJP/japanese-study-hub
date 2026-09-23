@@ -15,6 +15,8 @@ import Contact from "./pages/Contact";
 import CourseDetail from "./pages/CourseDetail";
 import TeacherDetail from "./pages/TeacherDetail";
 import InstallGuide from "./pages/InstallGuide";
+import PublicExamList from "./pages/public/PublicExamList";
+import PublicExamRunner from "./pages/public/PublicExamRunner";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -120,6 +122,7 @@ const queryClient = new QueryClient({
 
 import React, { Suspense } from "react";
 import PageLoadingScreen from "@/components/shared/PageLoadingScreen";
+import SeasonalEffects from "@/components/shared/SeasonalEffects";
 
 import { ReloadPrompt } from "./components/shared/ReloadPrompt";
 import { AppInit } from "./components/shared/AppInit";
@@ -129,6 +132,7 @@ import PWAInstallPrompt from "./components/shared/PWAInstallPrompt";
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+      <SeasonalEffects />
       <TooltipProvider>
         <AuthProvider>
           <LearningProvider>
@@ -167,6 +171,9 @@ const App = () => (
                 <Route path="my-classes/:id" element={<StudentClassDetail />} />
                 <Route path="lessons" element={<Lessons />} />
                 <Route path="lessons/:id" element={<LessonViewer />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/thi-thu" element={<PublicExamList />} />
+                <Route path="/thi-thu/:id" element={<PublicExamRunner />} />
                 <Route path="exams" element={<Exams />} />
                 <Route path="exams/:id" element={<ExamRunner />} />
                 <Route path="mock-exams" element={<VirtualExamRoom />} />

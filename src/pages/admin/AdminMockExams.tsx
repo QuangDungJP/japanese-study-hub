@@ -245,6 +245,26 @@ export default function AdminMockExams() {
     }
   };
 
+  // Toggle public status (for guests)
+  const handleTogglePublic = async (exam: any) => {
+    const nextStatus = !exam.is_public;
+    try {
+      const { error } = await supabase
+        .from('exams')
+        .update({ is_public: nextStatus })
+        .eq('id', exam.id);
+
+      if (error) throw error;
+      setExams(prev => prev.map(e => e.id === exam.id ? { ...e, is_public: nextStatus } : e));
+      toast({
+        title: nextStatus ? 'Đã bật Công khai' : 'Đã tắt Công khai',
+        description: nextStatus ? 'Khách vãng lai chưa đăng nhập có thể làm đề thi này.' : 'Đề thi đã ẩn khỏi khách vãng lai.',
+      });
+    } catch (err: any) {
+      toast({ title: 'Lỗi cập nhật trạng thái public', description: err.message, variant: 'destructive' });
+    }
+  };
+
   // Clone Exam
   const handleCloneExam = async (exam: any) => {
     try {
@@ -683,6 +703,11 @@ export default function AdminMockExams() {
                           <Sparkles className="w-3 h-3" /> Phòng thi ảo
                         </Badge>
                       )}
+                      {exam.is_public && (
+                        <Badge variant="outline" className="text-[11px] font-semibold text-rose-600 bg-rose-500/10 border-rose-200 gap-1">
+                          <Globe className="w-3 h-3" /> Khách vãng lai
+                        </Badge>
+                      )}
                     </div>
 
                     <button
@@ -789,6 +814,10 @@ export default function AdminMockExams() {
                       <DropdownMenuItem onClick={() => handleTogglePublish(exam)} className="gap-2 cursor-pointer font-medium text-xs">
                         <Send className="w-4 h-4 text-emerald-600" />
                         {exam.is_published ? 'Chuyển sang Bản nháp' : 'Xuất bản công khai'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleTogglePublic(exam)} className="gap-2 cursor-pointer font-medium text-xs">
+                        <Globe className="w-4 h-4 text-rose-600" />
+                        {exam.is_public ? 'Tắt chế độ Khách vãng lai' : 'Bật chế độ Khách vãng lai'}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleCloneExam(exam)} className="gap-2 cursor-pointer font-medium text-xs">
                         <Copy className="w-4 h-4 text-blue-600" /> Nhân bản đề thi này

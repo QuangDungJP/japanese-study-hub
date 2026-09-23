@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Plus, GripVertical, Save, FileAudio, BookOpen, MessageCircle, Info, Cpu, Sparkles, BrainCircuit } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Save, FileAudio, BookOpen, MessageCircle, Info, Cpu, Sparkles, BrainCircuit, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Slider } from '@/components/ui/slider';
 import AIGeneratorModal from './AIGeneratorModal';
+import QuestionBankModal from './QuestionBankModal';
 
 interface Question {
   id: string;
@@ -21,6 +22,7 @@ interface Question {
   options?: string[];
   correct_index?: number;
   points?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
   audio_url?: string;
   image_url?: string;
   is_passage?: boolean;
@@ -31,6 +33,7 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
   const [editingExam, setEditingExam] = useState<any>(JSON.parse(JSON.stringify(exam)));
   const [saving, setSaving] = useState(false);
   const [aiModalSkill, setAiModalSkill] = useState<string | null>(null);
+  const [bankModalOpen, setBankModalOpen] = useState(false);
   
   // Extract or initialize scoring config
   const configQ = (editingExam.questions || []).find((q: any) => q.type === 'system_config');
@@ -77,6 +80,7 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
       skill: skill,
       text: isPassage ? "Nội dung đoạn văn..." : "Nội dung câu hỏi mới...",
       points: 5,
+      difficulty: 'medium',
       is_passage: isPassage,
       sub_questions: isPassage ? [] : undefined
     };
@@ -102,6 +106,28 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
     });
   };
 
+  const saveToBank = async (q: Question) => {
+    try {
+      const { error } = await supabase.from('question_bank').insert({
+        type: q.type,
+        skill: q.skill,
+        text: q.text,
+        options: q.options || [],
+        correct_index: q.correct_index || 0,
+        points: q.points || 5,
+        difficulty: q.difficulty || 'medium',
+        is_passage: q.is_passage || false,
+        sub_questions: q.sub_questions || [],
+        audio_url: q.audio_url || '',
+        image_url: q.image_url || ''
+      });
+      if (error) throw error;
+      toast({ title: 'Đã lưu vào ngân hàng câu hỏi' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi lưu ngân hàng', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const appendGeneratedQuestions = (newQuestions: Question[]) => {
     setEditingExam({
       ...editingExam,
@@ -121,7 +147,8 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
       text: "Câu hỏi phụ...",
       options: ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"],
       correct_index: 0,
-      points: 5
+      points: 5,
+      difficulty: 'medium'
     };
     updateQuestion(qId, { sub_questions: [...(parent.sub_questions || []), newSub] });
   };
@@ -147,7 +174,29 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
         <CardContent className="p-4 space-y-4">
           <div className="flex justify-between items-start">
             <h4 className="font-bold text-sm">Câu {idx + 1} {q.is_passage ? '(Đoạn văn)' : ''}</h4>
-            <Button variant="ghost" size="sm" onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-4 h-4"/></Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => saveToBank(q)} className="text-blue-600 border-blue-200 hover:bg-blue-50"><Database className="w-4 h-4 mr-1"/> Lưu vào kho</Button>
+              <Button variant="ghost" size="sm" onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-4 h-4"/></Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Độ khó</Label>
+              <select 
+                className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={q.difficulty || 'medium'}
+                onChange={(e) => updateQuestion(q.id, { difficulty: e.target.value })}
+              >
+                <option value="easy">Dễ (Easy)</option>
+                <option value="medium">Trung bình (Medium)</option>
+                <option value="hard">Khó (Hard)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Điểm số (Points)</Label>
+              <Input type="number" value={q.points || 5} onChange={(e) => updateQuestion(q.id, { points: Number(e.target.value) })} />
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -191,6 +240,24 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
                         <Button variant="ghost" size="sm" onClick={() => deleteSubQuestion(q.id, sq.id)} className="h-6 w-6 p-0 text-red-500 hover:bg-red-100"><Trash2 className="w-3 h-3"/></Button>
                       </div>
                       <Input placeholder="Nội dung câu hỏi phụ..." value={sq.text} onChange={e => updateSubQuestion(q.id, sq.id, { text: e.target.value })} />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Độ khó</Label>
+                          <select 
+                            className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            value={sq.difficulty || 'medium'}
+                            onChange={(e) => updateSubQuestion(q.id, sq.id, { difficulty: e.target.value })}
+                          >
+                            <option value="easy">Dễ</option>
+                            <option value="medium">Trung bình</option>
+                            <option value="hard">Khó</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Điểm số</Label>
+                          <Input type="number" className="h-9" value={sq.points || 5} onChange={(e) => updateSubQuestion(q.id, sq.id, { points: Number(e.target.value) })} />
+                        </div>
+                      </div>
                       <div className="space-y-2">
                         {(sq.options || []).map((opt: string, oIdx: number) => (
                           <div key={oIdx} className="flex items-center gap-2">
@@ -373,6 +440,9 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
                   >
                     <BrainCircuit className="w-4 h-4 mr-1"/> AI Tạo tự động
                   </Button>
+                  <Button size="sm" variant="outline" className="border-green-200 text-green-600 hover:bg-green-50" onClick={() => setBankModalOpen(true)}>
+                    <Database className="w-4 h-4 mr-1"/> Ngân hàng
+                  </Button>
                   {(skill === 'reading' || skill === 'listening') && (
                     <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50" onClick={() => addQuestion(skill, true)}>
                       <BookOpen className="w-4 h-4 mr-1"/> Thêm đoạn văn
@@ -409,6 +479,11 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
           onGenerate={appendGeneratedQuestions}
         />
       )}
+      <QuestionBankModal
+        open={bankModalOpen}
+        onClose={() => setBankModalOpen(false)}
+        onSelect={appendGeneratedQuestions}
+      />
     </Dialog>
   );
 }
