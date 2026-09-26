@@ -195,7 +195,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
           .select('*, courses(title_vi)')
           .eq('teacher_id', student.user_id);
           
-        let allTeaching = [...(primaryClasses || [])].map(c => ({ class: c, role: 'Giáo viên chính' }));
+        const allTeaching = [...(primaryClasses || [])].map(c => ({ class: c, role: 'Giáo viên chính' }));
 
         // Fetch co-teaching classes (safely, as table might not exist yet)
         try {

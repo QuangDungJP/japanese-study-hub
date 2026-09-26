@@ -79,6 +79,7 @@ function generateQuestionsForLevel(level: string) {
       id: `q_g1_${Date.now()}`,
       skill: "grammar",
       type: "multiple_choice",
+      // eslint-disable-next-line no-irregular-whitespace
       text: `問題４：＿に何が入りますか。最もよいものを一つ選びなさい。\n\nわたしは　日曜日＿　勉強します。 (${level} Mẫu)`,
       options: ["に", "を", "も", "で"],
       correct_index: 2,

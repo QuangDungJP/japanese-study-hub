@@ -210,7 +210,7 @@ export default function PublicExamRunner() {
 
     // Predict real score using a small random factor or scaling (±5 pts max, bounded)
     const margin = Math.floor(Math.random() * 11) - 5; 
-    let predictedScore = Math.max(0, Math.min(exam.max_score || 180, totalScore + margin));
+    const predictedScore = Math.max(0, Math.min(exam.max_score || 180, totalScore + margin));
 
     setResult({
       score: totalScore,
