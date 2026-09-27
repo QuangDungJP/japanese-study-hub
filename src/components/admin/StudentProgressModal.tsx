@@ -439,7 +439,7 @@ const UserProfileModal = ({ open, onOpenChange, student }: StudentProgressModalP
                     </div>
                     {teacherProfile?.slug && (
                       <Button asChild size="sm" variant="outline" className="shrink-0 gap-2">
-                        <a href={`/teacher/${teacherProfile.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /> Hồ sơ công khai</a>
+                        <a href={`/giao-vien/${teacherProfile.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /> Hồ sơ công khai</a>
                       </Button>
                     )}
                   </div>

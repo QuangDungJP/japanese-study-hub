@@ -3200,7 +3200,7 @@ const TeacherClasses = () => {
                     </div>
                     {primaryTeacher?.public_slug && (
                       <Button asChild variant="ghost" size="icon" title="Xem hồ sơ giảng viên">
-                        <a href={`/teacher/${primaryTeacher.public_slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                        <a href={`/giao-vien/${primaryTeacher.public_slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
                       </Button>
                     )}
                   </div>
@@ -3232,7 +3232,7 @@ const TeacherClasses = () => {
                     <div className="flex shrink-0 items-center">
                       {teacher.profiles?.public_slug && (
                         <Button asChild variant="ghost" size="icon" title="Xem hồ sơ giảng viên">
-                          <a href={`/teacher/${teacher.profiles.public_slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                          <a href={`/giao-vien/${teacher.profiles.public_slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
                         </Button>
                       )}
                       {isAdmin && (

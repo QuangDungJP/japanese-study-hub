@@ -598,7 +598,7 @@ export default function AdminTeachers() {
                             size="icon"
                             variant="ghost"
                             className="text-muted-foreground hover:text-primary"
-                            onClick={() => window.open(`/teacher/${teacher.slug}`, "_blank")}
+                            onClick={() => window.open(`/giao-vien/${teacher.slug}`, "_blank")}
                             title="Xem trang cá nhân"
                           >
                             <ExternalLink className="w-4 h-4" />
