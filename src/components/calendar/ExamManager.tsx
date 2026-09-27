@@ -80,28 +80,31 @@ export const ExamManager = ({ classId }: { classId?: string }) => {
 
   const fetchData = async () => {
     try {
-      // Fetch exams
-      let query = supabase
-        .from('exams')
-        .select('*')
-        .eq('teacher_id', user?.id);
+      // RLS returns both classes owned by the teacher and classes where they are assigned.
+      const { data: classesData, error: classesError } = await supabase
+        .from('classes')
+        .select('id, name_vi');
+
+      if (classesError) throw classesError;
+
+      setClasses(classesData || []);
+
+      const classIds = (classesData || []).map((item) => item.id);
+      let query = supabase.from('exams').select('*');
 
       if (classId) {
         query = query.eq('class_id', classId);
+      } else if (classIds.length > 0) {
+        // Keep standalone exams created by this teacher alongside every exam in their classes.
+        query = query.or(`teacher_id.eq.${user?.id},class_id.in.(${classIds.join(',')})`);
+      } else {
+        query = query.eq('teacher_id', user?.id);
       }
 
       const { data: examsData, error } = await query.order('exam_date', { ascending: true });
 
       if (error) throw error;
       setExams(examsData || []);
-
-      // Fetch classes
-      const { data: classesData } = await supabase
-        .from('classes')
-        .select('id, name_vi')
-        .eq('teacher_id', user?.id);
-
-      setClasses(classesData || []);
 
       if (location.state?.editExamId && examsData) {
         const target = examsData.find(e => e.id === location.state.editExamId);

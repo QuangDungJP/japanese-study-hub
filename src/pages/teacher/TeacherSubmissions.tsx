@@ -364,7 +364,18 @@ const TeacherSubmissions = () => {
 
       let examQuery = supabase.from('exams').select('*');
       if (!isAdmin) {
-        examQuery = examQuery.eq('teacher_id', user.id);
+        // Assigned co-teachers must see and grade attempts for every class they teach,
+        // not only exams that they originally created.
+        const { data: teachingClasses, error: classesError } = await supabase
+          .from('classes')
+          .select('id');
+
+        if (classesError) throw classesError;
+
+        const classIds = (teachingClasses || []).map((classroom) => classroom.id);
+        examQuery = classIds.length > 0
+          ? examQuery.or(`teacher_id.eq.${user.id},class_id.in.(${classIds.join(',')})`)
+          : examQuery.eq('teacher_id', user.id);
       }
       const { data: examsData } = await examQuery;
 
