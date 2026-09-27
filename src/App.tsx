@@ -151,8 +151,9 @@ const App = () => (
                 <Route path="/meeting" element={<ZoomPage />} />
                 <Route path="/zoom" element={<ZoomPage />} />
                 <Route path="/lien-he" element={<Contact />} />
-                <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
+              <Route path="/khoa-hoc/:slug" element={<CourseDetail />} />
               <Route path="/giao-vien/:slug" element={<TeacherDetail />} />
+              <Route path="/teacher/:slug" element={<TeacherDetail />} />
                 <Route path="/faq" element={<About />} />
                 <Route path="/huong-dan-cai-dat" element={<InstallGuide />} />
                 <Route path="/auth" element={<Auth />} />
