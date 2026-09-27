@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Users, Plus, Edit, Eye, Calendar, UserPlus, Trash2, 
   BookOpen, Star, Trophy, TrendingUp, Search, X,
@@ -117,6 +118,15 @@ interface Course {
 interface AvailableUser {
   user_id: string;
   full_name: string | null;
+}
+
+interface TeacherDisplay {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  public_name?: string | null;
+  public_slug?: string | null;
+  roles?: string[];
 }
 
 interface Lesson {
@@ -283,8 +293,9 @@ const TeacherClasses = () => {
 
   // Add teacher dialog & state
   const [coTeachers, setCoTeachers] = useState<any[]>([]);
+  const [primaryTeacher, setPrimaryTeacher] = useState<TeacherDisplay | null>(null);
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
-  const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
+  const [availableTeachers, setAvailableTeachers] = useState<TeacherDisplay[]>([]);
   const [searchTeacherTerm, setSearchTeacherTerm] = useState('');
 
   const performSoftDelete = (subsToDelete: Submission[]) => {
@@ -657,51 +668,121 @@ const TeacherClasses = () => {
     }
   };
 
-  const fetchCoTeachers = async (classId: string) => {
+  const fetchCoTeachers = async (classId: string, primaryTeacherId?: string | null) => {
     try {
       const { data, error } = await supabase
         .from('class_teachers')
-        .select('*, profiles(full_name, avatar_url, email)')
+        .select('*')
         .eq('class_id', classId);
       if (error) throw error;
-      setCoTeachers(data || []);
+
+      const teacherIds = [...new Set([
+        ...(data || []).map((teacher) => teacher.teacher_id),
+        ...(primaryTeacherId ? [primaryTeacherId] : []),
+      ])];
+      const { data: profiles, error: profilesError } = teacherIds.length
+        ? await supabase
+            .from('profiles')
+            .select('user_id, full_name, avatar_url')
+            .in('user_id', teacherIds)
+        : { data: [], error: null };
+      if (profilesError) throw profilesError;
+
+      const [{ data: publicProfiles, error: publicProfilesError }, { data: roleRows, error: roleError }] = teacherIds.length
+        ? await Promise.all([
+            supabase.from('teacher_profiles').select('user_id, display_name, image_url, slug').in('user_id', teacherIds),
+            supabase.from('user_roles').select('user_id, role').in('user_id', teacherIds),
+          ])
+        : [{ data: [], error: null }, { data: [], error: null }];
+      if (publicProfilesError) throw publicProfilesError;
+      if (roleError) throw roleError;
+
+      const getTeacherDisplay = (teacherId: string): TeacherDisplay => {
+        const profile = profiles?.find((item) => item.user_id === teacherId);
+        const publicProfile = publicProfiles?.find((item) => item.user_id === teacherId);
+        return {
+          user_id: teacherId,
+          full_name: profile?.full_name || null,
+          avatar_url: publicProfile?.image_url || profile?.avatar_url || null,
+          public_name: publicProfile?.display_name || null,
+          public_slug: publicProfile?.slug || null,
+          roles: (roleRows || []).filter((row) => row.user_id === teacherId).map((row) => row.role),
+        };
+      };
+
+      setCoTeachers((data || []).map((teacher) => ({
+        ...teacher,
+        profiles: getTeacherDisplay(teacher.teacher_id),
+      })));
+      setPrimaryTeacher(primaryTeacherId ? getTeacherDisplay(primaryTeacherId) : null);
     } catch (error) {
       console.error('Error fetching co-teachers:', error);
+      setCoTeachers([]);
+      setPrimaryTeacher(null);
     }
   };
 
-  const fetchAvailableTeachers = async (classId: string) => {
+  const fetchAvailableTeachers = async (classId: string, primaryTeacherId?: string | null) => {
     try {
-      const { data: existingTeachers } = await supabase
+      const { data: existingTeachers, error: existingTeachersError } = await supabase
         .from('class_teachers')
         .select('teacher_id')
         .eq('class_id', classId);
+      if (existingTeachersError) throw existingTeachersError;
 
       const existingIds = existingTeachers?.map(t => t.teacher_id) || [];
       // Also exclude the primary teacher
-      if (selectedClass?.teacher_id) existingIds.push(selectedClass.teacher_id);
+      if (primaryTeacherId) existingIds.push(primaryTeacherId);
 
       // Get users who are teachers, senior teachers, or admins
-      const { data: userRoles } = await supabase
+      const { data: userRoles, error: userRolesError } = await supabase
         .from('user_roles')
         .select('user_id')
         .in('role', ['teacher', 'senior_teacher', 'admin']);
+      if (userRolesError) throw userRolesError;
 
-      const teacherIds = userRoles?.map(r => r.user_id).filter(id => !existingIds.includes(id)) || [];
+      const teacherIds = [...new Set(
+        userRoles?.map(r => r.user_id).filter(id => !existingIds.includes(id)) || []
+      )];
 
       if (teacherIds.length === 0) {
         setAvailableTeachers([]);
         return;
       }
 
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email, avatar_url')
+        .select('user_id, full_name, avatar_url')
         .in('user_id', teacherIds);
+      if (profilesError) throw profilesError;
 
-      setAvailableTeachers(profiles || []);
+      const [{ data: publicProfiles, error: publicProfilesError }, { data: teacherRoles, error: teacherRolesError }] = await Promise.all([
+        supabase.from('teacher_profiles').select('user_id, display_name, image_url, slug').in('user_id', teacherIds),
+        supabase.from('user_roles').select('user_id, role').in('user_id', teacherIds),
+      ]);
+      if (publicProfilesError) throw publicProfilesError;
+      if (teacherRolesError) throw teacherRolesError;
+
+      setAvailableTeachers(teacherIds.map((teacherId) => {
+        const profile = profiles?.find((item) => item.user_id === teacherId);
+        const publicProfile = publicProfiles?.find((item) => item.user_id === teacherId);
+        return {
+          user_id: teacherId,
+          full_name: profile?.full_name || null,
+          avatar_url: publicProfile?.image_url || profile?.avatar_url || null,
+          public_name: publicProfile?.display_name || null,
+          public_slug: publicProfile?.slug || null,
+          roles: (teacherRoles || []).filter((row) => row.user_id === teacherId).map((row) => row.role),
+        };
+      }));
     } catch (error) {
       console.error('Error fetching available teachers:', error);
+      setAvailableTeachers([]);
+      toast({
+        title: 'Lỗi tải danh sách giáo viên',
+        description: error instanceof Error ? error.message : 'Không thể tải danh sách giáo viên',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -750,8 +831,9 @@ const TeacherClasses = () => {
       fetchEmailSettings(clsId);
 
       // 7. Fetch co-teachers and available teachers
-      fetchCoTeachers(clsId);
-      fetchAvailableTeachers(clsId);
+      const primaryTeacherId = classes.find((item) => item.id === clsId)?.teacher_id || selectedClass?.teacher_id || null;
+      fetchCoTeachers(clsId, primaryTeacherId);
+      if (isAdmin) fetchAvailableTeachers(clsId, primaryTeacherId);
     } catch (err) {
       console.error('Error fetching classroom details:', err);
     }
@@ -1154,6 +1236,10 @@ const TeacherClasses = () => {
 
   const handleAddTeacher = async (teacherId: string) => {
     if (!selectedClass) return;
+    if (!isAdmin) {
+      toast({ title: 'Chỉ Admin được phân công giáo viên', variant: 'destructive' });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -1170,8 +1256,8 @@ const TeacherClasses = () => {
         description: 'Đã thêm giáo viên phụ trách vào lớp'
       });
 
-      fetchCoTeachers(selectedClass.id);
-      fetchAvailableTeachers(selectedClass.id);
+      fetchCoTeachers(selectedClass.id, selectedClass.teacher_id);
+      fetchAvailableTeachers(selectedClass.id, selectedClass.teacher_id);
       fetchClasses();
     } catch (error) {
       console.error('Error adding co-teacher:', error);
@@ -1185,6 +1271,10 @@ const TeacherClasses = () => {
 
   const handleRemoveTeacher = async (teacherId: string) => {
     if (!selectedClass) return;
+    if (!isAdmin) {
+      toast({ title: 'Chỉ Admin được gỡ giáo viên', variant: 'destructive' });
+      return;
+    }
     if (!confirm('Bạn có chắc muốn gỡ giáo viên phụ trách này khỏi lớp?')) return;
 
     try {
@@ -1201,7 +1291,8 @@ const TeacherClasses = () => {
         description: 'Đã gỡ giáo viên phụ trách khỏi lớp'
       });
 
-      fetchCoTeachers(selectedClass.id);
+      fetchCoTeachers(selectedClass.id, selectedClass.teacher_id);
+      fetchAvailableTeachers(selectedClass.id, selectedClass.teacher_id);
       fetchClasses();
     } catch (error) {
       console.error('Error removing co-teacher:', error);
@@ -2115,18 +2206,20 @@ const TeacherClasses = () => {
                     >
                       <UserPlus className="w-3.5 h-3.5 mr-1" /> Thêm HV
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-purple-500/30 text-purple-600 hover:bg-purple-50"
-                      onClick={() => {
-                        setSelectedClass(classItem);
-                        fetchClassroomDetails(classItem.id);
-                        setIsAddTeacherDialogOpen(true);
-                      }}
-                    >
-                      <Users className="w-3.5 h-3.5 mr-1" /> Thêm GV
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-purple-500/30 text-purple-600 hover:bg-purple-50"
+                        onClick={() => {
+                          setSelectedClass(classItem);
+                          fetchClassroomDetails(classItem.id);
+                          setIsAddTeacherDialogOpen(true);
+                        }}
+                      >
+                        <Users className="w-3.5 h-3.5 mr-1" /> Thêm GV
+                      </Button>
+                    )}
                   </div>
                   <Button size="sm" onClick={() => { setSelectedClass(classItem); fetchClassroomDetails(classItem.id); }}>
                     Vào lớp →
@@ -3065,55 +3158,97 @@ const TeacherClasses = () => {
 
         {/* Tab: Teachers (Giáo viên phụ trách) */}
         <TabsContent value="teachers" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Users className="w-5 h-5 text-purple-600" /> Giáo viên quản lý lớp
-            </h2>
-            <Button size="sm" onClick={() => setIsAddTeacherDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white gap-1">
-              <Plus className="w-4 h-4" /> Thêm Giáo viên
-            </Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-600" /> Đội ngũ phụ trách lớp
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Giáo viên được phân công có đầy đủ quyền giảng dạy trong lớp.
+              </p>
+            </div>
+            {isAdmin ? (
+              <Button size="sm" onClick={() => setIsAddTeacherDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white gap-1">
+                <Plus className="w-4 h-4" /> Thêm giáo viên
+              </Button>
+            ) : (
+              <Badge variant="outline" className="w-fit">Danh sách do Admin quản lý</Badge>
+            )}
           </div>
           
           <div className="grid gap-4 md:grid-cols-2">
             {/* Primary Teacher */}
             {selectedClass.teacher_id && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                      GV
+              <Card className="border-primary/30 bg-primary/5 shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar className="h-14 w-14 border-2 border-background shadow-sm">
+                        <AvatarImage src={primaryTeacher?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/15 font-bold text-primary">
+                          {(primaryTeacher?.public_name || primaryTeacher?.full_name || 'GV').slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate font-bold">{primaryTeacher?.public_name || primaryTeacher?.full_name || 'Giáo viên chính'}</p>
+                        <p className="text-xs text-muted-foreground">Tài khoản: {primaryTeacher?.full_name || selectedClass.teacher_id.slice(0, 8)}</p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <Badge>Giáo viên chính</Badge>
+                          {primaryTeacher?.roles?.includes('admin') && <Badge variant="secondary">Admin</Badge>}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold">Giáo viên chính (Người tạo)</p>
-                      <p className="text-xs text-muted-foreground">Quyền sở hữu cao nhất</p>
-                    </div>
+                    {primaryTeacher?.public_slug && (
+                      <Button asChild variant="ghost" size="icon" title="Xem hồ sơ giảng viên">
+                        <a href={`/teacher/${primaryTeacher.public_slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                      </Button>
+                    )}
                   </div>
-                  <Badge>Giáo viên chính</Badge>
                 </CardContent>
               </Card>
             )}
 
             {/* Co-teachers */}
             {coTeachers.map((teacher) => (
-              <Card key={teacher.teacher_id} className="border-border">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold">
-                      {teacher.profiles?.full_name?.charAt(0) || 'G'}
+              <Card key={teacher.teacher_id} className="border-border shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar className="h-14 w-14 border bg-muted">
+                        <AvatarImage src={teacher.profiles?.avatar_url || undefined} />
+                        <AvatarFallback className="font-bold">
+                          {(teacher.profiles?.public_name || teacher.profiles?.full_name || 'GV').slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate font-bold">{teacher.profiles?.public_name || teacher.profiles?.full_name || 'Giáo viên phụ trách'}</p>
+                        <p className="text-xs text-muted-foreground">Tài khoản: {teacher.profiles?.full_name || teacher.teacher_id.slice(0, 8)}</p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <Badge variant="secondary">Giáo viên phụ trách</Badge>
+                          {teacher.profiles?.roles?.includes('admin') && <Badge variant="outline">Admin</Badge>}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold">{teacher.profiles?.full_name || 'Giáo viên phụ trách'}</p>
-                      <p className="text-xs text-muted-foreground">{teacher.profiles?.email}</p>
+                    <div className="flex shrink-0 items-center">
+                      {teacher.profiles?.public_slug && (
+                        <Button asChild variant="ghost" size="icon" title="Xem hồ sơ giảng viên">
+                          <a href={`/teacher/${teacher.profiles.public_slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                        </Button>
+                      )}
+                      {isAdmin && (
+                        <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleRemoveTeacher(teacher.teacher_id)} title="Gỡ giáo viên">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleRemoveTeacher(teacher.teacher_id)} title="Gỡ giáo viên">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </CardContent>
               </Card>
             ))}
-            {coTeachers.length === 0 && !selectedClass.teacher_id && (
-              <p className="text-muted-foreground text-sm col-span-full">Lớp chưa có giáo viên phụ trách nào.</p>
+            {coTeachers.length === 0 && (
+              <div className="col-span-full rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                Chưa có giáo viên đồng phụ trách lớp này.
+              </div>
             )}
           </div>
         </TabsContent>
@@ -3697,7 +3832,7 @@ const TeacherClasses = () => {
       />
 
       {/* Add Teacher Dialog */}
-      <Dialog open={isAddTeacherDialogOpen} onOpenChange={setIsAddTeacherDialogOpen}>
+      <Dialog open={isAdmin && isAddTeacherDialogOpen} onOpenChange={setIsAddTeacherDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Thêm giáo viên phụ trách</DialogTitle>
@@ -3712,16 +3847,29 @@ const TeacherClasses = () => {
                 className="pl-9"
               />
             </div>
-            <div className="border rounded-xl p-2 max-h-64 overflow-y-auto space-y-1">
+            <div className="border rounded-lg p-2 max-h-72 overflow-y-auto space-y-1">
               {availableTeachers
-                .filter(u => !searchTeacherTerm || u.full_name?.toLowerCase().includes(searchTeacherTerm.toLowerCase()))
+                .filter(u => !searchTeacherTerm || [u.full_name, u.public_name].some((name) => name?.toLowerCase().includes(searchTeacherTerm.toLowerCase())))
                 .map(u => (
                   <div key={u.user_id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div>
-                      <p className="font-semibold text-sm">{u.full_name || 'Giáo viên'}</p>
-                      <p className="text-xs text-muted-foreground">{u.email || u.user_id.slice(0, 8)}</p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar className="h-10 w-10 border bg-muted">
+                        <AvatarImage src={u.avatar_url || undefined} />
+                        <AvatarFallback>{(u.public_name || u.full_name || 'GV').slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-sm">{u.public_name || u.full_name || 'Giáo viên'}</p>
+                        <p className="truncate text-xs text-muted-foreground">Tài khoản: {u.full_name || u.user_id.slice(0, 8)}</p>
+                        <div className="mt-1 flex gap-1">
+                          {u.roles?.map((role) => (
+                            <Badge key={role} variant={role === 'admin' ? 'default' : 'secondary'} className="text-[10px]">
+                              {role === 'admin' ? 'Admin + Giáo viên' : role === 'senior_teacher' ? 'Giáo viên cao cấp' : 'Giáo viên'}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => handleAddTeacher(u.user_id)}>
+                    <Button size="sm" className="ml-3 bg-purple-600 hover:bg-purple-700 text-white" onClick={() => handleAddTeacher(u.user_id)}>
                       Thêm
                     </Button>
                   </div>

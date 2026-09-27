@@ -24,10 +24,22 @@ import MediaUploader from "@/components/shared/MediaUploader";
 import ImageCropModal from "@/components/shared/ImageCropModal";
 import { Database } from "@/integrations/supabase/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type TeacherRow = Database["public"]["Tables"]["teacher_profiles"]["Row"];
 
+interface TeacherAccount {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  roles: string[];
+}
+
+type TeacherWithAccount = TeacherRow & { account?: TeacherAccount | null };
+
 interface FormData {
+  account_user_id: string;
   display_name: string;
   headline: string;
   bio: string;
@@ -54,6 +66,7 @@ interface FormData {
 }
 
 const emptyForm: FormData = {
+  account_user_id: "",
   display_name: "", headline: "", bio: "", bio_vi: "",
   image_url: "", cover_image_url: "", intro_video_url: "",
   experience_years: 0, rating: 0, total_reviews: 0, total_students: 0,
@@ -94,11 +107,12 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
 export default function AdminTeachers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [teachers, setTeachers] = useState<TeacherRow[]>([]);
+  const [teachers, setTeachers] = useState<TeacherWithAccount[]>([]);
+  const [teacherAccounts, setTeacherAccounts] = useState<TeacherAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [scheduleTeacher, setScheduleTeacher] = useState<TeacherRow | null>(null);
-  const [editingTeacher, setEditingTeacher] = useState<TeacherRow | null>(null);
+  const [scheduleTeacher, setScheduleTeacher] = useState<TeacherWithAccount | null>(null);
+  const [editingTeacher, setEditingTeacher] = useState<TeacherWithAccount | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [saving, setSaving] = useState(false);
 
@@ -151,13 +165,50 @@ export default function AdminTeachers() {
 
   const fetchTeachers = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("teacher_profiles")
-      .select("*")
-      .order("order_index", { ascending: true })
-      .order("created_at", { ascending: false });
-    if (error) toast({ title: "Không tải được giảng viên", variant: "destructive" });
-    setTeachers(data || []);
+    const [{ data, error }, { data: roleRows, error: roleError }] = await Promise.all([
+      supabase
+        .from("teacher_profiles")
+        .select("*")
+        .order("order_index", { ascending: true })
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["teacher", "senior_teacher", "admin"]),
+    ]);
+
+    if (error || roleError) {
+      toast({
+        title: "Không tải được danh sách giảng viên",
+        description: error?.message || roleError?.message,
+        variant: "destructive",
+      });
+    }
+
+    const accountIds = [...new Set((roleRows || []).map((row) => row.user_id))];
+    const { data: profiles, error: profileError } = accountIds.length
+      ? await supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", accountIds)
+      : { data: [], error: null };
+
+    if (profileError) {
+      toast({ title: "Không tải được thông tin tài khoản", description: profileError.message, variant: "destructive" });
+    }
+
+    const accounts: TeacherAccount[] = accountIds.map((userId) => {
+      const profile = profiles?.find((item) => item.user_id === userId);
+      return {
+        user_id: userId,
+        full_name: profile?.full_name || null,
+        avatar_url: profile?.avatar_url || null,
+        roles: (roleRows || []).filter((row) => row.user_id === userId).map((row) => row.role),
+      };
+    });
+
+    setTeacherAccounts(accounts);
+    setTeachers((data || []).map((teacher) => ({
+      ...teacher,
+      account: accounts.find((account) => account.user_id === teacher.user_id) || null,
+    })));
     setLoading(false);
     setOrderChanged(false);
     // Invalidate react-query cache so frontend updates immediately
@@ -247,9 +298,10 @@ export default function AdminTeachers() {
 
   const openNew = () => { setEditingTeacher(null); setFormData(emptyForm); setDialogOpen(true); };
 
-  const openEdit = (teacher: TeacherRow) => {
+  const openEdit = (teacher: TeacherWithAccount) => {
     setEditingTeacher(teacher);
     setFormData({
+      account_user_id: teacher.user_id || "",
       display_name: teacher.display_name || "",
       headline: teacher.headline || "",
       bio: teacher.bio || "",
@@ -300,6 +352,7 @@ export default function AdminTeachers() {
     formData.extra_fields.forEach((f) => { if (f.key.trim()) extraData[f.key.trim()] = f.value; });
 
     const payload: any = {
+      user_id: formData.account_user_id || null,
       display_name: formData.display_name,
       headline: formData.headline || null,
       bio: formData.bio || null,
@@ -352,11 +405,27 @@ export default function AdminTeachers() {
 
   const getDisplayName = (t: TeacherRow) => t.display_name || "Chưa đặt tên";
 
+  const getRoleLabel = (role: string) => ({
+    admin: "Admin + Giáo viên",
+    senior_teacher: "Giáo viên cao cấp",
+    teacher: "Giáo viên",
+  }[role] || role);
+
+  const linkedAccountIds = new Set(teachers
+    .filter((teacher) => teacher.id !== editingTeacher?.id && teacher.user_id)
+    .map((teacher) => teacher.user_id));
+
+  const selectableAccounts = teacherAccounts.filter((account) =>
+    !linkedAccountIds.has(account.user_id) || account.user_id === formData.account_user_id
+  );
+  const selectedAccount = teacherAccounts.find((account) => account.user_id === formData.account_user_id);
+
   const filteredTeachers = teachers.filter((t) => {
     const matchesSearch = 
       t.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
       t.headline?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.slug?.toLowerCase().includes(searchQuery.toLowerCase());
+      t.slug?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.account?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' ? true : (statusFilter === 'available' ? t.is_available : !t.is_available);
     const matchesFeatured = featuredFilter === 'all' ? true : (featuredFilter === 'featured' ? t.is_featured : !t.is_featured);
     return matchesSearch && matchesStatus && matchesFeatured;
@@ -455,6 +524,7 @@ export default function AdminTeachers() {
                 <TableRow>
                   <TableHead className="w-10"></TableHead>
                   <TableHead>Giảng viên</TableHead>
+                  <TableHead className="hidden lg:table-cell">Tài khoản liên kết</TableHead>
                   <TableHead className="hidden md:table-cell">Chuyên môn</TableHead>
                   <TableHead className="text-center">Website</TableHead>
                   <TableHead className="text-center">Trang chủ</TableHead>
@@ -476,11 +546,12 @@ export default function AdminTeachers() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-3 items-center">
-                        {teacher.image_url ? (
-                          <img src={teacher.image_url} className="w-10 h-10 rounded-full object-cover border" alt="" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-lg">👩‍🏫</div>
-                        )}
+                        <Avatar className="h-11 w-11 border bg-muted">
+                          <AvatarImage src={teacher.image_url || teacher.account?.avatar_url || undefined} alt={getDisplayName(teacher)} />
+                          <AvatarFallback className="font-semibold text-primary">
+                            {getDisplayName(teacher).slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="min-w-0">
                           <div className="font-medium truncate">{getDisplayName(teacher)}</div>
                           {teacher.headline && <div className="text-xs text-muted-foreground truncate">{teacher.headline}</div>}
@@ -490,6 +561,22 @@ export default function AdminTeachers() {
                           </div>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {teacher.account ? (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">{teacher.account.full_name || "Tài khoản chưa đặt tên"}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {teacher.account.roles.map((role) => (
+                              <Badge key={role} variant={role === "admin" ? "default" : "secondary"} className="text-[10px]">
+                                {getRoleLabel(role)}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="font-normal text-muted-foreground">Chưa liên kết</Badge>
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
@@ -561,6 +648,42 @@ export default function AdminTeachers() {
                 </TabsList>
 
                 <TabsContent value="basic" className="space-y-4">
+                  <div className="space-y-2 rounded-lg border bg-muted/20 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <Label>Tài khoản đăng nhập</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Liên kết hồ sơ giảng viên với tài khoản dùng để đăng nhập và quản lý lớp.
+                        </p>
+                      </div>
+                      {selectedAccount && (
+                        <Avatar className="h-10 w-10 border bg-background">
+                          <AvatarImage src={formData.image_url || selectedAccount.avatar_url || undefined} />
+                          <AvatarFallback>{(selectedAccount.full_name || "GV").slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                    <Select value={formData.account_user_id || "none"} onValueChange={(value) => set("account_user_id", value === "none" ? "" : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn tài khoản giáo viên" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Không liên kết tài khoản</SelectItem>
+                        {selectableAccounts.map((account) => (
+                          <SelectItem key={account.user_id} value={account.user_id}>
+                            {account.full_name || `Tài khoản ${account.user_id.slice(0, 8)}`} · {account.roles.map(getRoleLabel).join(", ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedAccount && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedAccount.roles.map((role) => (
+                          <Badge key={role} variant={role === "admin" ? "default" : "secondary"}>{getRoleLabel(role)}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Headline / Chức danh</Label>
@@ -749,7 +872,7 @@ function TeacherScheduleModal({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  teacher: TeacherRow | null;
+  teacher: TeacherWithAccount | null;
 }) {
   const [classes, setClasses] = useState<any[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
@@ -766,11 +889,22 @@ function TeacherScheduleModal({
     if (!teacher) return;
     setLoading(true);
     try {
-      // 1. Fetch classes taught by this teacher
-      const { data: classData } = await supabase
-        .from('classes')
-        .select('*, courses(title_vi)')
-        .or(`teacher_id.eq.${teacher.user_id || teacher.id}`);
+      // 1. Fetch both primary and assigned classes for the linked account.
+      const teacherAccountId = teacher.user_id;
+      const { data: assignedRows } = teacherAccountId
+        ? await supabase.from('class_teachers').select('class_id').eq('teacher_id', teacherAccountId)
+        : { data: [] };
+      const assignedIds = (assignedRows || []).map((row) => row.class_id);
+
+      let classQuery = supabase.from('classes').select('*, courses(title_vi)');
+      if (teacherAccountId && assignedIds.length > 0) {
+        classQuery = classQuery.or(`teacher_id.eq.${teacherAccountId},id.in.(${assignedIds.join(',')})`);
+      } else if (teacherAccountId) {
+        classQuery = classQuery.eq('teacher_id', teacherAccountId);
+      } else {
+        classQuery = classQuery.eq('id', '00000000-0000-0000-0000-000000000000');
+      }
+      const { data: classData } = await classQuery;
 
       setClasses(classData || []);
 
@@ -811,13 +945,10 @@ function TeacherScheduleModal({
       <DialogContent className="max-w-4xl max-h-[85vh] p-0">
         <DialogHeader className="p-6 pb-2 border-b">
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-              {teacher.image_url ? (
-                <img src={teacher.image_url} className="w-10 h-10 rounded-full object-cover" alt="" />
-              ) : (
-                '👩‍🏫'
-              )}
-            </div>
+            <Avatar className="h-10 w-10 border bg-primary/10">
+              <AvatarImage src={teacher.image_url || teacher.account?.avatar_url || undefined} alt={teacher.display_name} />
+              <AvatarFallback>{(teacher.display_name || "GV").slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
             <div>
               <p className="font-bold">{teacher.display_name}</p>
               <p className="text-xs text-muted-foreground font-normal">

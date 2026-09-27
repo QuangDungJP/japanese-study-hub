@@ -234,6 +234,15 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
   const level = Math.floor(localXp / 500) + 1;
   const currentLevelXp = localXp - ((level - 1) * 500);
   const levelPercent = Math.min((currentLevelXp / 500) * 100, 100);
+  const primaryRole = ['admin', 'senior_teacher', 'teacher', 'moderator', 'user']
+    .find((role) => student.roles?.includes(role)) || 'user';
+  const roleLabel: Record<string, string> = {
+    admin: 'Admin',
+    senior_teacher: 'Giáo viên cao cấp',
+    teacher: 'Giáo viên',
+    moderator: 'Moderator',
+    user: 'Học viên',
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -252,7 +261,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-extrabold">{student.full_name || 'Chưa đặt tên'}</h2>
                 <Badge className="bg-white/20 text-white border-white/30 text-xs">
-                  Lv.{level} Student
+                  Lv.{level} {roleLabel[primaryRole]}
                 </Badge>
               </div>
               <p className="text-xs text-white/80">
