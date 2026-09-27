@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { formatWithJST } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
-import StudentProgressModal from '@/components/admin/StudentProgressModal';
+import UserProfileModal from '@/components/admin/StudentProgressModal';
 import AssignTeacherToClassModal from '@/components/admin/AssignTeacherToClassModal';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -503,7 +503,7 @@ const AdminUsers = () => {
                             <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl shadow-xl border-border/50 bg-background/95 backdrop-blur-xl">
                               <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground px-2">Cài đặt tài khoản</DropdownMenuLabel>
                               <DropdownMenuItem className="rounded-lg mt-1 cursor-pointer" onClick={() => { setSelectedStudent(user); setModalOpen(true); }}>
-                                <Eye className="w-4 h-4 mr-2 text-primary" /> Tiến độ học tập
+                                <Eye className="w-4 h-4 mr-2 text-primary" /> Xem hồ sơ đầy đủ
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="my-2" />
                               <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground px-2">Nâng cấp quyền (Roles)</DropdownMenuLabel>
@@ -576,7 +576,7 @@ const AdminUsers = () => {
         )}
       </Card>
 
-      <StudentProgressModal open={modalOpen} onOpenChange={setModalOpen} student={selectedStudent} />
+      <UserProfileModal open={modalOpen} onOpenChange={setModalOpen} student={selectedStudent} />
       <AssignTeacherToClassModal 
         open={assignClassModalOpen} 
         onOpenChange={setAssignClassModalOpen} 

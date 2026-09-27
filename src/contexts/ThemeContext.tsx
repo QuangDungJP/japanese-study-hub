@@ -77,11 +77,11 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     const loadFromDb = async (uid: string) => {
       const [{ data }, { data: settings }] = await Promise.all([
         supabase.from('profiles').select('theme_color, theme_mode, theme_font, theme_scale').eq('user_id', uid).single(),
-        supabase.from('page_settings').select('content').eq('section', 'active_season').single()
+        supabase.from('page_settings').select('hero_badge_vi').eq('page_key', 'active_season').maybeSingle()
       ]);
 
-      if (settings?.content?.season && settings.content.season !== 'none') {
-        setGlobalSeason(settings.content.season);
+      if (settings?.hero_badge_vi && settings.hero_badge_vi !== 'none') {
+        setGlobalSeason(settings.hero_badge_vi);
       } else {
         setGlobalSeason(null);
       }

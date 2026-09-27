@@ -188,9 +188,9 @@ const AdminSettings = () => {
       .then(({ data }: { data: any[] | null }) => {
         if (data) {
           setPageSettingsList(data);
-          const seasonConfig = data.find(p => p.section === 'active_season');
-          if (seasonConfig?.content?.season) {
-            setActiveSeason(seasonConfig.content.season);
+          const seasonConfig = data.find(p => p.page_key === 'active_season');
+          if (seasonConfig?.hero_badge_vi) {
+            setActiveSeason(seasonConfig.hero_badge_vi);
           }
         }
       });
@@ -216,11 +216,20 @@ const AdminSettings = () => {
     }
     
     // Save active season
-    const seasonConfig = pageSettingsList.find(p => p.section === 'active_season');
+    const seasonConfig = pageSettingsList.find(p => p.page_key === 'active_season');
     if (seasonConfig) {
-      await (supabase as any).from('page_settings').update({ content: { season: activeSeason } }).eq('id', seasonConfig.id);
+      await (supabase as any).from('page_settings').update({ hero_badge_vi: activeSeason }).eq('id', seasonConfig.id);
     } else {
-      await (supabase as any).from('page_settings').insert({ section: 'active_season', content: { season: activeSeason }, display_name: 'Active Season' });
+      await (supabase as any).from('page_settings').insert({
+        page_key: 'active_season',
+        display_name: 'Active Season',
+        display_name_vi: 'Giao diện theo mùa',
+        route_path: '/admin/settings',
+        hero_badge_vi: activeSeason,
+        show_in_nav: false,
+        is_active: true,
+        order_index: 999,
+      });
     }
   };
 

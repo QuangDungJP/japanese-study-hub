@@ -27,7 +27,13 @@ import {
   Minus,
   RotateCcw,
   Sliders,
-  Check
+  Check,
+  UserRound,
+  Save,
+  ExternalLink,
+  BriefcaseBusiness,
+  Link2,
+  Shield
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatWithJST } from '@/lib/dateUtils';
@@ -85,6 +91,15 @@ interface EnrolledClass {
   };
 }
 
+interface TeacherProfileSummary {
+  display_name: string | null;
+  headline: string | null;
+  image_url: string | null;
+  slug: string | null;
+  specializations: unknown;
+  is_available: boolean | null;
+}
+
 const skillLabels: Record<string, string> = {
   reading: 'Đọc',
   speaking: 'Nói',
@@ -95,12 +110,15 @@ const skillLabels: Record<string, string> = {
   kanji: 'Kanji',
 };
 
-const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressModalProps) => {
+const UserProfileModal = ({ open, onOpenChange, student }: StudentProgressModalProps) => {
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<CompletedLesson[]>([]);
   const [loading, setLoading] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfileSummary | null>(null);
+  const [profileForm, setProfileForm] = useState({ full_name: '', avatar_url: '', current_language: '' });
 
   // Local interactive stats
   const [localXp, setLocalXp] = useState(0);
@@ -112,6 +130,11 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
     if (open && student) {
       setLocalXp(student.progress?.total_xp || 0);
       setLocalStreak(student.progress?.streak || 0);
+      setProfileForm({
+        full_name: student.full_name || '',
+        avatar_url: student.avatar_url || '',
+        current_language: student.current_language || '',
+      });
       fetchStudentDetails();
     }
   }, [open, student]);
@@ -151,11 +174,45 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
     setCustomStreakInput('');
   };
 
+  const handleSaveProfile = async () => {
+    if (!student || !profileForm.full_name.trim()) {
+      toast.error('Vui lòng nhập tên hiển thị');
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileForm.full_name.trim(),
+          avatar_url: profileForm.avatar_url.trim() || null,
+          current_language: profileForm.current_language.trim() || null,
+        })
+        .eq('user_id', student.user_id);
+      if (error) throw error;
+      toast.success('Đã cập nhật hồ sơ tài khoản');
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể cập nhật hồ sơ');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const fetchStudentDetails = async () => {
     if (!student) return;
     setLoading(true);
     try {
-      // 1. Fetch completed lessons
+      // 1. Fetch the public teacher profile when this account is linked to one.
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('teacher_profiles')
+        .select('display_name, headline, image_url, slug, specializations, is_available')
+        .eq('user_id', student.user_id)
+        .maybeSingle();
+      if (teacherError) throw teacherError;
+      setTeacherProfile(teacherData);
+
+      // 2. Fetch completed lessons
       const { data: completed } = await supabase
         .from('completed_lessons')
         .select('*')
@@ -179,7 +236,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
         setCompletedLessons([]);
       }
 
-      // 2. Fetch enrolled classes (as a student)
+      // 3. Fetch enrolled classes (as a student)
       const { data: classStudents } = await supabase
         .from('class_students')
         .select('*, class:classes(*, courses(title_vi))')
@@ -187,7 +244,7 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
 
       setEnrolledClasses((classStudents as any) || []);
 
-      // 3. Fetch teaching classes (if teacher)
+      // 4. Fetch teaching classes (if teacher)
       if (student.roles?.includes('teacher') || student.roles?.includes('senior_teacher') || student.roles?.includes('admin')) {
         // Fetch primary classes
         const { data: primaryClasses } = await supabase
@@ -243,6 +300,11 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
     moderator: 'Moderator',
     user: 'Học viên',
   };
+  const specializationList = Array.isArray(teacherProfile?.specializations)
+    ? teacherProfile.specializations.filter((item): item is string => typeof item === 'string')
+    : [];
+  const displayName = profileForm.full_name || student.full_name || 'Chưa đặt tên';
+  const avatarUrl = profileForm.avatar_url || teacherProfile?.image_url || student.avatar_url || undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -251,15 +313,15 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
         <div className="bg-gradient-to-r from-primary via-indigo-600 to-accent p-6 text-white relative">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-bold text-2xl shadow-xl overflow-hidden shrink-0">
-              {student.avatar_url ? (
-                <img src={student.avatar_url} className="w-full h-full object-cover" alt="" />
+              {avatarUrl ? (
+                <img src={avatarUrl} className="w-full h-full object-cover" alt="" />
               ) : (
-                student.full_name?.[0]?.toUpperCase() || '?'
+                displayName[0]?.toUpperCase() || '?'
               )}
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-extrabold">{student.full_name || 'Chưa đặt tên'}</h2>
+                <h2 className="text-2xl font-extrabold">{displayName}</h2>
                 <Badge className="bg-white/20 text-white border-white/30 text-xs">
                   Lv.{level} {roleLabel[primaryRole]}
                 </Badge>
@@ -290,9 +352,12 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
             </div>
           </div>
 
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="overview" className="gap-2 text-xs font-semibold">
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-4">
+              <TabsTrigger value="profile" className="gap-2 text-xs font-semibold">
+                <UserRound className="w-3.5 h-3.5" /> Hồ sơ
+              </TabsTrigger>
+              <TabsTrigger value="learning" className="gap-2 text-xs font-semibold">
                 <TrendingUp className="w-3.5 h-3.5" /> Chỉ số Tiến độ
               </TabsTrigger>
               <TabsTrigger value="classes" className="gap-2 text-xs font-semibold">
@@ -303,7 +368,97 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="profile" className="space-y-5">
+              <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <UserRound className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-bold">Thông tin tài khoản</h3>
+                      <p className="text-xs text-muted-foreground">Dữ liệu hiển thị trong toàn bộ hệ thống.</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-semibold text-muted-foreground">Tên hiển thị</label>
+                      <Input value={profileForm.full_name} onChange={(event) => setProfileForm((current) => ({ ...current, full_name: event.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-semibold text-muted-foreground">URL avatar</label>
+                      <Input value={profileForm.avatar_url} onChange={(event) => setProfileForm((current) => ({ ...current, avatar_url: event.target.value }))} placeholder="https://..." />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Ngôn ngữ học</label>
+                      <Input value={profileForm.current_language} onChange={(event) => setProfileForm((current) => ({ ...current, current_language: event.target.value }))} placeholder="Tiếng Nhật" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Ngày tham gia</label>
+                      <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm">{formatWithJST(student.created_at, false)}</div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end border-t pt-4">
+                    <Button size="sm" onClick={handleSaveProfile} disabled={savingProfile} className="gap-2">
+                      {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      Lưu hồ sơ
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border bg-muted/20 p-5 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-bold">Vai trò & nhận diện</h3>
+                      <p className="text-xs text-muted-foreground">Quyền và thiết lập của tài khoản.</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(student.roles?.length ? student.roles : ['user']).map((role) => (
+                      <Badge key={role} variant={role === 'admin' ? 'default' : 'secondary'}>{roleLabel[role] || role}</Badge>
+                    ))}
+                  </div>
+                  <dl className="space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-4"><dt className="text-muted-foreground">Mã tài khoản</dt><dd className="font-mono text-xs">{student.user_id.slice(0, 8)}...</dd></div>
+                    <div className="flex items-center justify-between gap-4"><dt className="text-muted-foreground">Ngôn ngữ</dt><dd className="font-medium">{profileForm.current_language || 'Chưa chọn'}</dd></div>
+                    <div className="flex items-center justify-between gap-4"><dt className="text-muted-foreground">Mức học tập</dt><dd className="font-bold">Level {level}</dd></div>
+                  </dl>
+                </div>
+              </div>
+
+              {(student.roles?.some((role) => ['admin', 'teacher', 'senior_teacher'].includes(role)) || teacherProfile) && (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 shadow-sm">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border bg-background">
+                        {teacherProfile?.image_url ? <img src={teacherProfile.image_url} className="h-full w-full object-cover" alt="" /> : <div className="flex h-full items-center justify-center"><BriefcaseBusiness className="h-5 w-5 text-primary" /></div>}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2"><h3 className="truncate font-bold">{teacherProfile?.display_name || 'Chưa liên kết hồ sơ giảng viên'}</h3>{teacherProfile && <Badge variant="secondary">Đã liên kết</Badge>}</div>
+                        <p className="mt-1 text-xs text-muted-foreground">{teacherProfile?.headline || (teacherProfile ? 'Hồ sơ công khai của giảng viên' : 'Tạo/liên kết ở Quản lý giảng viên để xuất hiện trên website.')}</p>
+                      </div>
+                    </div>
+                    {teacherProfile?.slug && (
+                      <Button asChild size="sm" variant="outline" className="shrink-0 gap-2">
+                        <a href={`/teacher/${teacherProfile.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /> Hồ sơ công khai</a>
+                      </Button>
+                    )}
+                  </div>
+                  {specializationList.length > 0 && <div className="mt-4 flex flex-wrap gap-1.5">{specializationList.map((item) => <Badge key={item} variant="outline">{item}</Badge>)}</div>}
+                  {!teacherProfile && <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><Link2 className="h-4 w-4" /> Liên kết tài khoản được thiết lập trong `/admin/teachers`.</div>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { label: 'XP tích lũy', value: localXp.toLocaleString(), icon: Zap, color: 'text-amber-500' },
+                  { label: 'Streak', value: `${localStreak} ngày`, icon: Flame, color: 'text-orange-500' },
+                  { label: 'Bài đã học', value: progress?.lessons_completed || 0, icon: BookOpen, color: 'text-primary' },
+                  { label: 'Lớp tham gia', value: enrolledClasses.length + teachingClasses.length, icon: Building, color: 'text-emerald-500' },
+                ].map(({ label, value, icon: Icon, color }) => <div key={label} className="rounded-lg border bg-card p-3"><Icon className={`mb-2 h-4 w-4 ${color}`} /><p className="font-bold">{value}</p><p className="text-xs text-muted-foreground">{label}</p></div>)}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="learning" className="space-y-6">
               {/* Key Stats Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-card rounded-2xl border border-border/80 p-4 text-center shadow-sm hover:shadow-md transition-shadow">
@@ -515,5 +670,5 @@ const StudentProgressModal = ({ open, onOpenChange, student }: StudentProgressMo
   );
 };
 
-export default StudentProgressModal;
+export default UserProfileModal;
 
