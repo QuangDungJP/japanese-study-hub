@@ -75,33 +75,19 @@ const TeacherDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch lessons stats
-      const { data: lessons } = await supabase
-        .from('lessons')
-        .select('id, is_published')
-        .eq('teacher_id', user?.id);
+      // RLS returns classes owned by this teacher and classes they co-teach.
+      const { data: classes } = await supabase.from('classes').select('id');
+      const classIds = (classes || []).map((classroom) => classroom.id);
 
-      // Fetch classes stats
-      let coTeacherClassIds: string[] = [];
-      if (user?.id) {
-        const { data: ctData } = await supabase.from('class_teachers').select('class_id').eq('teacher_id', user.id);
-        if (ctData) {
-          coTeacherClassIds = ctData.map(ct => ct.class_id);
-        }
-      }
-
-      let classQuery = supabase.from('classes').select('id');
-      if (coTeacherClassIds.length > 0) {
-        classQuery = classQuery.or(`teacher_id.eq.${user?.id},id.in.(${coTeacherClassIds.join(',')})`);
-      } else {
-        classQuery = classQuery.eq('teacher_id', user?.id);
-      }
-      const { data: classes } = await classQuery;
+      let lessonsQuery = supabase.from('lessons').select('id, is_published');
+      lessonsQuery = classIds.length > 0
+        ? lessonsQuery.or(`teacher_id.eq.${user?.id},class_id.in.(${classIds.join(',')})`)
+        : lessonsQuery.eq('teacher_id', user?.id);
+      const { data: lessons } = await lessonsQuery;
 
       // Fetch students count
       let totalStudents = 0;
       if (classes && classes.length > 0) {
-        const classIds = classes.map(c => c.id);
         const { count } = await supabase
           .from('class_students')
           .select('id', { count: 'exact' })

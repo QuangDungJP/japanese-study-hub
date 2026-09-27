@@ -22,11 +22,10 @@ const TeacherCalendarPage = () => {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
       
-      // Get teacher's classes
+      // RLS includes classes owned by this teacher and classes they co-teach.
       const { data: teacherClasses } = await supabase
         .from('classes')
-        .select('id')
-        .eq('teacher_id', user.id);
+        .select('id');
 
       const classIds = teacherClasses?.map(c => c.id) || [];
 
@@ -173,4 +172,3 @@ const TeacherCalendarPage = () => {
 };
 
 export default TeacherCalendarPage;
-

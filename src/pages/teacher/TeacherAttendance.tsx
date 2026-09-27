@@ -53,13 +53,9 @@ const TeacherAttendancePage = () => {
 
   const fetchClassOverview = async () => {
     try {
-      let query = supabase
+      const query = supabase
         .from('classes')
         .select('id, name_vi, is_active, start_date, end_date');
-
-      if (!isAdmin && user?.id) {
-        query = query.eq('teacher_id', user.id);
-      }
 
       const { data, error } = await query;
 

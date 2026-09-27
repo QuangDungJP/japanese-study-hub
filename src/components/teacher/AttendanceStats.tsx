@@ -87,14 +87,10 @@ const AttendanceStats = ({ initialStatusFilter = 'all' }: AttendanceStatsProps) 
   }, [selectedClass, dateRange]);
 
   const fetchClasses = async () => {
-    let query = supabase
+    const query = supabase
       .from('classes')
       .select('id, name_vi, is_active, start_date, end_date')
       .order('created_at', { ascending: false });
-
-    if (!isAdmin && user?.id) {
-      query = query.eq('teacher_id', user.id);
-    }
 
     const { data, error } = await query;
 

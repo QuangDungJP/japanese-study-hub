@@ -26,7 +26,7 @@ import ClassLessonOrganizer from '@/components/teacher/ClassLessonOrganizer';
 
 const TeacherClassDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [cls, setCls] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
@@ -146,6 +146,7 @@ const TeacherClassDetail = () => {
   };
 
   const openAddTeacher = async () => {
+    if (!isAdmin) return;
     setAddTeacherOpen(true);
     setSearchTeacher('');
     const existingIds = [cls?.teacher_id, ...coTeachers.map(t => t.teacher_id)].filter(Boolean);
@@ -157,6 +158,7 @@ const TeacherClassDetail = () => {
   };
 
   const addTeacher = async (uid: string) => {
+    if (!isAdmin) return;
     const { error } = await supabase.from('class_teachers').insert({ class_id: id, teacher_id: uid });
     if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     toast({ title: 'Đã thêm giáo viên phụ trách' });
@@ -165,6 +167,7 @@ const TeacherClassDetail = () => {
   };
 
   const removeTeacher = async (tid: string) => {
+    if (!isAdmin) return;
     if (!confirm('Xóa giáo viên này khỏi lớp?')) return;
     const { error } = await supabase.from('class_teachers').delete().eq('class_id', id!).eq('teacher_id', tid);
     if (error) return toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
@@ -297,9 +300,11 @@ const TeacherClassDetail = () => {
         <TabsContent value="teachers" className="mt-4">
           <div className="flex justify-between items-center mb-3">
             <p className="text-sm text-muted-foreground">Giáo viên phụ trách</p>
-            <Button size="sm" onClick={openAddTeacher}>
-              <UserPlus className="w-4 h-4 mr-1" />Thêm giáo viên
-            </Button>
+            {isAdmin && (
+              <Button size="sm" onClick={openAddTeacher}>
+                <UserPlus className="w-4 h-4 mr-1" />Thêm giáo viên
+              </Button>
+            )}
           </div>
           <Card><CardContent className="p-0">
             <Table>
@@ -317,7 +322,7 @@ const TeacherClassDetail = () => {
                     <TableCell className="font-medium">{t.profile?.full_name || '—'}</TableCell>
                     <TableCell><Badge variant="outline">Co-Teacher</Badge></TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeTeacher(t.teacher_id)}><Trash2 className="w-4 h-4" /></Button>
+                      {isAdmin && <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeTeacher(t.teacher_id)}><Trash2 className="w-4 h-4" /></Button>}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -496,7 +501,7 @@ const TeacherClassDetail = () => {
       </Dialog>
 
       {/* Add teacher dialog */}
-      <Dialog open={addTeacherOpen} onOpenChange={setAddTeacherOpen}>
+      <Dialog open={isAdmin && addTeacherOpen} onOpenChange={setAddTeacherOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Thêm giáo viên phụ trách</DialogTitle></DialogHeader>
           <div className="space-y-3">

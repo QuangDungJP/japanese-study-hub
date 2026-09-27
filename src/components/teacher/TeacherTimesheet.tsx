@@ -91,11 +91,14 @@ export const TeacherTimesheet = ({ teacherId, classId, isAdminView = false }: Pr
       }
       setPerSessionRate(rate);
 
-      // 2. Fetch classes taught by this teacher
+      // 2. For their own timesheet, include both owned and co-taught classes.
       let myClassesQuery = sb
         .from('classes')
-        .select('id, name_vi')
-        .eq('teacher_id', targetTeacherId);
+        .select('id, name_vi');
+
+      if (targetTeacherId !== user?.id) {
+        myClassesQuery = myClassesQuery.eq('teacher_id', targetTeacherId);
+      }
 
       if (classId) {
         myClassesQuery = myClassesQuery.eq('id', classId);

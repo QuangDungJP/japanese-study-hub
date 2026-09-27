@@ -260,7 +260,16 @@ const TeacherSubmissions = () => {
 
       let lessonQuery = supabase.from('lessons').select('id, title, title_vi');
       if (!isAdmin) {
-        lessonQuery = lessonQuery.eq('teacher_id', user.id);
+        const { data: teachingClasses, error: classesError } = await supabase
+          .from('classes')
+          .select('id');
+
+        if (classesError) throw classesError;
+
+        const classIds = (teachingClasses || []).map((classroom) => classroom.id);
+        lessonQuery = classIds.length > 0
+          ? lessonQuery.or(`teacher_id.eq.${user.id},class_id.in.(${classIds.join(',')})`)
+          : lessonQuery.eq('teacher_id', user.id);
       }
       const { data: lessons } = await lessonQuery;
 

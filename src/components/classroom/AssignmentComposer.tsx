@@ -78,12 +78,11 @@ const AssignmentComposer = ({ open, onOpenChange, classId, topics, initial, onSa
       setQuestions(Array.isArray(initQs) ? initQs : []);
       setLinkInput('');
       setExtraClassIds([]);
-      // fetch teacher's other classes
+      // RLS returns every class this teacher owns or co-teaches.
       if (user?.id && !initial?.id) {
         (supabase as any)
           .from('classes')
           .select('id, name, name_vi')
-          .or(`teacher_id.eq.${user.id},created_by.eq.${user.id}`)
           .neq('id', classId)
           .then(({ data }: any) => setMyClasses((data || []).map((c: any) => ({ id: c.id, name: c.name_vi || c.name }))));
       } else {

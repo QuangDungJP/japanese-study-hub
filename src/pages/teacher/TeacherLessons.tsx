@@ -78,11 +78,19 @@ const TeacherLessons = () => {
 
   const fetchLessons = async () => {
     try {
-      const { data, error } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('teacher_id', user?.id)
-        .order('created_at', { ascending: false });
+      const { data: teachingClasses, error: classesError } = await supabase
+        .from('classes')
+        .select('id');
+
+      if (classesError) throw classesError;
+
+      const classIds = (teachingClasses || []).map((classroom) => classroom.id);
+      let query = supabase.from('lessons').select('*');
+      query = classIds.length > 0
+        ? query.or(`teacher_id.eq.${user?.id},class_id.in.(${classIds.join(',')})`)
+        : query.eq('teacher_id', user?.id);
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setLessons(data || []);

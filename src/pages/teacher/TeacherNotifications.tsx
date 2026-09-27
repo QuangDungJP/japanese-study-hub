@@ -113,11 +113,10 @@ const TeacherNotifications = () => {
 
   const fetchClassesAndStudents = async () => {
     try {
-      // Fetch teacher's classes
+      // RLS returns both owned and co-taught classes.
       const { data: classesData } = await supabase
         .from('classes')
-        .select('id, name_vi')
-        .eq('teacher_id', user?.id);
+        .select('id, name_vi');
 
       setClasses(classesData || []);
 

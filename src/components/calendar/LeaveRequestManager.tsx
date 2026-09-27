@@ -57,8 +57,7 @@ export const LeaveRequestManager = () => {
         // Get class students first
         const { data: classes } = await supabase
           .from('classes')
-          .select('id')
-          .eq('teacher_id', user?.id);
+          .select('id');
 
         if (classes && classes.length > 0) {
           const classIds = classes.map(c => c.id);

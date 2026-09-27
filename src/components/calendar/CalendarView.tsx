@@ -91,11 +91,11 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
 
       if (error) throw error;
 
-      // Fetch class_sessions for enrolled classes or classes taught by teacher
+      // Fetch sessions for enrolled classes and every class the current teacher can access.
       let classSessions: any[] = [];
       const [{ data: enrollments }, { data: taughtClasses }] = await Promise.all([
         supabase.from('class_students').select('class_id').eq('student_id', user?.id).eq('status', 'active'),
-        supabase.from('classes').select('id').eq('teacher_id', user?.id),
+        supabase.from('classes').select('id'),
       ]);
 
       const classIds = Array.from(new Set([
