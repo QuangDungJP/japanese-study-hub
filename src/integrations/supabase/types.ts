@@ -951,6 +951,35 @@ export type Database = {
           },
         ]
       }
+      class_teachers: {
+        Row: {
+          class_id: string
+          created_at: string | null
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string | null
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string | null
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_teachers_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_topics: {
         Row: {
           class_id: string
@@ -1761,6 +1790,7 @@ export type Database = {
           exam_type: string
           id: string
           instructions: string | null
+          is_public: boolean | null
           is_published: boolean | null
           location: string | null
           lock_after_end: boolean
@@ -1802,6 +1832,7 @@ export type Database = {
           exam_type?: string
           id?: string
           instructions?: string | null
+          is_public?: boolean | null
           is_published?: boolean | null
           location?: string | null
           lock_after_end?: boolean
@@ -1843,6 +1874,7 @@ export type Database = {
           exam_type?: string
           id?: string
           instructions?: string | null
+          is_public?: boolean | null
           is_published?: boolean | null
           location?: string | null
           lock_after_end?: boolean
