@@ -50,7 +50,7 @@ import {
   BookOpen, Star, Trophy, TrendingUp, Search, X,
   GraduationCap, Target, Flame, ArrowLeft, Video, Clock,
   FileText, CheckCircle2, XCircle, MessageSquare, Play, Upload, Sparkles,
-  Mail, Send, Loader2, Save, RotateCcw, CheckSquare, Award, List, LayoutGrid, ExternalLink
+  Mail, Send, Loader2, Save, RotateCcw, CheckSquare, Award, List, LayoutGrid, ExternalLink, Image
 } from 'lucide-react';
 import ClassroomChat from '@/components/classroom/ClassroomChat';
 import { sendGradingNotification } from '@/lib/emailService';
