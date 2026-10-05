@@ -3256,7 +3256,7 @@ const TeacherClasses = () => {
 
       {/* Student Course Evaluation & Graduation Dialog */}
       <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
               <GraduationCap className="w-5 h-5" />
@@ -3334,7 +3334,7 @@ const TeacherClasses = () => {
 
       {/* Dialogue Link Lesson */}
       <Dialog open={isLinkLessonOpen} onOpenChange={setIsLinkLessonOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Gán bài giảng có sẵn vào lớp</DialogTitle>
           </DialogHeader>
@@ -3367,14 +3367,14 @@ const TeacherClasses = () => {
 
       {/* Create/edit session/schedule dialogue */}
       <Dialog open={isSessionDialogOpen} onOpenChange={(open) => { setIsSessionDialogOpen(open); if (!open) setEditingSession(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-xl max-h-[85vh] flex flex-col p-0 overflow-hidden shadow-2xl border-purple-500/20">
+          <DialogHeader className="p-5 pb-3 border-b shrink-0 bg-background">
+            <DialogTitle className="flex items-center gap-2 text-lg">
               <Calendar className="w-5 h-5 text-primary" />
               {editingSession ? 'Chỉnh sửa buổi học' : 'Thêm / Lên lịch buổi học mới'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-3">
+          <div className="space-y-4 p-5 overflow-y-auto flex-1">
             <div className="space-y-1">
               <Label className="font-semibold">Chủ đề / Tên buổi học</Label>
               <Input
@@ -3472,7 +3472,7 @@ const TeacherClasses = () => {
             </div>
           </div>
 
-          <DialogFooter className="flex items-center justify-between gap-2">
+          <DialogFooter className="p-4 border-t bg-muted/30 shrink-0 flex items-center justify-between gap-2">
             {editingSession ? (
               <Button
                 type="button"
@@ -3606,7 +3606,7 @@ const TeacherClasses = () => {
       {/* Student Progress Dialog */}
 
       <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
