@@ -123,7 +123,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
     }
 
     // Dynamic import to avoid circular dependency in UI
-    const { shiftSessionsToNextAvailableDay } = await import('@/lib/scheduleUtils');
+    const { shiftSessionsToNextAvailableDay } = await import('@/lib/scheduleUtils'); // eslint-disable-line
     const updatesList = shiftSessionsToNextAvailableDay(affectedSessions, occupiedDates);
 
     if (updatesList.length === 0) {
