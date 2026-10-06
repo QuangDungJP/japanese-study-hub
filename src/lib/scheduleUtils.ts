@@ -6,58 +6,52 @@ export interface SessionData {
   start_time: string;
   end_time: string | null;
   topic: string | null;
+  status?: string;
 }
 
+/** Parse 'yyyy-MM-dd' as a LOCAL date (new Date('yyyy-MM-dd') is UTC and shifts days). */
+export const parseLocalDate = (s: string): Date => {
+  const [y, m, d] = (s || '').slice(0, 10).split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+};
+
+export const todayStr = () => format(new Date(), 'yyyy-MM-dd');
+
 /**
- * Shifts an array of sessions so that each session takes the date of the next session.
- * The last session will be shifted based on the weekday pattern of the existing sessions.
+ * Shifts sessions so each takes the date of the next one; the last moves to the
+ * next weekday in the class pattern (avoiding dates already used by other sessions).
  */
-export const shiftSessionsToNextAvailableDay = (sessions: SessionData[]): { id: string, newDate: string }[] => {
+export const shiftSessionsToNextAvailableDay = (
+  sessions: SessionData[],
+  occupiedDates: string[] = [],
+): { id: string; newDate: string }[] => {
   if (!sessions || sessions.length === 0) return [];
 
-  // Sort sessions by date just to be sure
-  const sorted = [...sessions].sort((a, b) => 
-    new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
+  const sorted = [...sessions].sort((a, b) =>
+    a.session_date === b.session_date
+      ? (a.start_time || '').localeCompare(b.start_time || '')
+      : a.session_date.localeCompare(b.session_date),
   );
 
-  const updates: { id: string, newDate: string }[] = [];
-
-  // Determine the weekdays pattern used in these sessions
   const weekdays = new Set<number>();
-  sorted.forEach(s => {
-    weekdays.add(new Date(s.session_date).getDay());
-  });
+  sorted.filter(s => s.status !== 'makeup').forEach(s => weekdays.add(parseLocalDate(s.session_date).getDay()));
+  if (weekdays.size === 0) sorted.forEach(s => weekdays.add(parseLocalDate(s.session_date).getDay()));
 
-  const availableWeekdays = Array.from(weekdays).sort();
-  if (availableWeekdays.length === 0) return []; // Fallback
+  const occupied = new Set(occupiedDates);
+  const updates: { id: string; newDate: string }[] = [];
 
   for (let i = 0; i < sorted.length; i++) {
-    const currentSession = sorted[i];
-    
     if (i < sorted.length - 1) {
-      // Shift to the exact date of the next session
-      updates.push({
-        id: currentSession.id,
-        newDate: sorted[i + 1].session_date
-      });
+      updates.push({ id: sorted[i].id, newDate: sorted[i + 1].session_date });
     } else {
-      // For the last session, we need to calculate the next available day 
-      // based on the schedule pattern
-      let nextDate = new Date(currentSession.session_date);
-      let safetyCounter = 0;
-      
-      // Keep adding days until we hit a weekday that exists in our schedule
+      let next = parseLocalDate(sorted[i].session_date);
+      let guard = 0;
       do {
-        nextDate = addDays(nextDate, 1);
-        safetyCounter++;
-      } while (!availableWeekdays.includes(nextDate.getDay()) && safetyCounter < 14);
-
-      updates.push({
-        id: currentSession.id,
-        newDate: format(nextDate, 'yyyy-MM-dd')
-      });
+        next = addDays(next, 1);
+        guard++;
+      } while ((!weekdays.has(next.getDay()) || occupied.has(format(next, 'yyyy-MM-dd'))) && guard < 60);
+      updates.push({ id: sorted[i].id, newDate: format(next, 'yyyy-MM-dd') });
     }
   }
-
   return updates;
 };
