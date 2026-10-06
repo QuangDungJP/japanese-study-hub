@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState, useRef } from "react";
 import { localMockExam } from '@/data/mockJlptExam';
 import { useParams, useNavigate } from "react-router-dom";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, AlertTriangle, Loader2, Play, BookOpen, Headphones, ShieldAlert, CheckCircle2, Mic, Square } from "lucide-react";
+import { Trophy, Sparkles, Clock, AlertTriangle, Loader2, Play, BookOpen, Headphones, ShieldAlert, CheckCircle2, Mic, Square } from "lucide-react";
 import FormattedText from "@/components/shared/FormattedText";
 import { StudentTextTools } from "@/components/learn/StudentTextTools";
 

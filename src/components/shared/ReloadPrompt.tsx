@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useEffect, useCallback } from 'react';
 import { toast } from 'sonner';

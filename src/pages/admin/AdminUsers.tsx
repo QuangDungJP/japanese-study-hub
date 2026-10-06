@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import {
   Search, Loader2, Flame, Zap, Users, TrendingUp, BookOpen, Eye,

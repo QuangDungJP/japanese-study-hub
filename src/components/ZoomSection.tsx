@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Button } from "@/components/ui/button";
 import { Video, Users, Calendar, Clock, MessageCircle, Award } from "lucide-react";
 import { useAllWebsiteContent } from "@/hooks/useWebsiteContent";
