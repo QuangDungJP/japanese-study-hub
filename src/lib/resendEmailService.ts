@@ -160,3 +160,9 @@ export function buildHTMLNotificationEmail(params: {
   </html>
   `;
 }
+
+export async function sendEmailNotification(p: { to: string; subject: string; title: string; message: string; recipientName?: string; actionUrl?: string; actionText?: string }) {
+  const esc = (s: string) => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+  const html = `<div style="font-family:sans-serif;max-width:560px;margin:auto"><h2>${esc(p.title)}</h2><p>Xin chào ${esc(p.recipientName || '')},</p><p style="white-space:pre-line">${esc(p.message)}</p>${p.actionUrl ? `<p><a href="${esc(p.actionUrl)}">${esc(p.actionText || 'Xem chi tiết')}</a></p>` : ''}</div>`;
+  return sendEmailViaResend({ to: p.to, subject: p.subject, html });
+}

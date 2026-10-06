@@ -56,6 +56,7 @@ const VirtualExamRoom = () => {
   const [poolsModalOpen, setPoolsModalOpen] = useState(false);
   const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
   const [aiPoolId, setAiPoolId] = useState('pool-1');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -113,7 +114,7 @@ const VirtualExamRoom = () => {
     };
 
     fetchExams();
-  }, [user]);
+  }, [user, reloadKey]);
 
   // List of exam IDs the student has submitted/completed
   const completedExamIds = useState<string[]>([]);
@@ -348,13 +349,13 @@ const VirtualExamRoom = () => {
       <AdminScoringConfigModal
         open={scoringModalOpen}
         onOpenChange={setScoringModalOpen}
-        onApplied={() => fetchExams()}
+        onApplied={() => setReloadKey(k => k + 1)}
       />
       <AdminExamPoolsModal
         open={poolsModalOpen}
         onOpenChange={setPoolsModalOpen}
         exams={exams}
-        onPoolsUpdated={() => fetchExams()}
+        onPoolsUpdated={() => setReloadKey(k => k + 1)}
         onOpenAIGenerator={(poolId) => {
           setAiPoolId(poolId);
           setAiGeneratorOpen(true);
@@ -364,7 +365,7 @@ const VirtualExamRoom = () => {
         open={aiGeneratorOpen}
         onOpenChange={setAiGeneratorOpen}
         defaultPoolId={aiPoolId}
-        onExamCreated={() => fetchExams()}
+        onExamCreated={() => setReloadKey(k => k + 1)}
       />
     </div>
   );

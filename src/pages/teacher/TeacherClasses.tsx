@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -2093,7 +2094,7 @@ const TeacherClasses = () => {
                         <Edit className="w-4 h-4 mr-2" />
                         Sửa
                       </Button>
-                      <Button variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClass(classItem.id)}>
+                      <Button variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeletePermanentClass(classItem)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

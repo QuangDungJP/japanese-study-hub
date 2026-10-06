@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { parseLocalDate, todayStr } from '@/lib/scheduleUtils';
 import { formatWithJST, formatTimeWithJST } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,16 +113,18 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
     if (!targetSession) return;
 
     const affectedSessions = sessions.filter(
-      s => s.session_date >= targetSession.session_date && s.status !== 'completed'
+      s => s.session_date >= targetSession.session_date && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'makeup'
     );
+    const affectedIds = new Set(affectedSessions.map(s => s.id));
+    const occupiedDates = sessions.filter(s => !affectedIds.has(s.id) && s.status !== 'cancelled').map(s => s.session_date);
 
     if (affectedSessions.length === 0) {
       return toast({ title: 'Thông báo', description: 'Không có buổi học nào bị ảnh hưởng', variant: 'destructive' });
     }
 
     // Dynamic import to avoid circular dependency in UI
-    const { shiftSessionsToNextAvailableDay } = await import('@/lib/scheduleUtils');
-    const updatesList = shiftSessionsToNextAvailableDay(affectedSessions);
+    const { shiftSessionsToNextAvailableDay } = await import('@/lib/scheduleUtils'); // eslint-disable-line
+    const updatesList = shiftSessionsToNextAvailableDay(affectedSessions, occupiedDates);
 
     if (updatesList.length === 0) {
        return toast({ title: 'Thông báo', description: 'Không thể tính toán lịch mới', variant: 'destructive' });
@@ -135,10 +138,11 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
     });
 
     const results = await Promise.all(updates);
-    const hasError = results.some((r: any) => r.error);
+    const firstErr = results.find((r: any) => r.error)?.error;
 
-    if (hasError) {
-      return toast({ title: 'Lỗi', description: 'Một số buổi học chưa được dời lịch', variant: 'destructive' });
+    if (firstErr) {
+      load();
+      return toast({ title: 'Lỗi', description: 'Một số buổi học chưa được dời lịch: ' + firstErr.message, variant: 'destructive' });
     }
 
     toast({ 
@@ -189,7 +193,11 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
       return toast({ title: 'Thiếu thông tin', description: 'Cần ngày và giờ bắt đầu', variant: 'destructive' });
     }
     const payload: any = { ...editing, class_id: classId };
-    delete payload.id;
+    delete payload.id; delete payload.created_at; delete payload.updated_at;
+    Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
+    if (payload.end_time && payload.end_time <= payload.start_time) {
+      return toast({ title: 'Giờ không hợp lệ', description: 'Giờ kết thúc phải sau giờ bắt đầu', variant: 'destructive' });
+    }
     const op = editing.id
       ? (supabase as any).from('class_sessions').update(payload).eq('id', editing.id)
       : (supabase as any).from('class_sessions').insert(payload);
@@ -235,7 +243,8 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
     const updates: any = {};
     if (bulkEditData.updateTime) {
       updates.start_time = bulkEditData.start_time;
-      updates.end_time = bulkEditData.end_time;
+      updates.end_time = bulkEditData.end_time || null;
+      if (!updates.start_time) return toast({ title: 'Thiếu giờ bắt đầu', variant: 'destructive' });
     }
     if (bulkEditData.updateLocation) {
       updates.location = bulkEditData.location;
@@ -270,15 +279,17 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
       return toast({ title: 'Thiếu thông tin', description: 'Chọn khoảng ngày và thứ trong tuần', variant: 'destructive' });
     }
     const rows: any[] = [];
-    const start = new Date(bulk.start_date);
-    const end = new Date(bulk.end_date);
+    const start = parseLocalDate(bulk.start_date);
+    const end = parseLocalDate(bulk.end_date);
+    if (start > end) return toast({ title: 'Khoảng ngày không hợp lệ', description: 'Ngày bắt đầu phải trước ngày kết thúc', variant: 'destructive' });
+    const existing = new Set(sessions.map(s => `${s.session_date}|${(s.start_time || '').slice(0, 5)}`));
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      if (bulk.weekdays.includes(d.getDay())) {
+      if (bulk.weekdays.includes(d.getDay()) && !existing.has(`${format(d, 'yyyy-MM-dd')}|${(bulk.start_time || '').slice(0, 5)}`)) {
         rows.push({
           class_id: classId,
           session_date: format(d, 'yyyy-MM-dd'),
           start_time: bulk.start_time,
-          end_time: bulk.end_time,
+          end_time: bulk.end_time || null,
           location: bulk.location || null,
           meet_link: bulk.meet_link || null,
           topic: bulk.topic || null,
@@ -298,6 +309,9 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
   const saveMakeupSession = async () => {
     if (!makeupData.session_date || !makeupData.start_time) {
       return toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập ngày và giờ học bù', variant: 'destructive' });
+    }
+    if (makeupData.end_time && makeupData.end_time <= makeupData.start_time) {
+      return toast({ title: 'Giờ không hợp lệ', description: 'Giờ kết thúc phải sau giờ bắt đầu', variant: 'destructive' });
     }
 
     let notesText = makeupData.notes || '';
@@ -322,6 +336,12 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
 
     const { error } = await (supabase as any).from('class_sessions').insert(payload);
     if (error) return toast({ title: 'Lỗi tạo buổi học bù', description: error.message, variant: 'destructive' });
+    if (makeupData.replaced_session_id) {
+      const rep = sessions.find(s => s.id === makeupData.replaced_session_id);
+      if (rep && rep.status === 'scheduled') {
+        await (supabase as any).from('class_sessions').update({ status: 'cancelled' }).eq('id', rep.id);
+      }
+    }
     
     toast({ title: 'Đã tạo buổi học bù thành công!' });
     setMakeupOpen(false);
@@ -445,7 +465,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
                   </div>
                 )}
                 <div className="text-center min-w-[56px] bg-muted/40 p-1.5 rounded">
-                  <div className="text-xs text-muted-foreground">{format(new Date(s.session_date), 'EEE')}</div>
+                  <div className="text-xs text-muted-foreground">{format(parseLocalDate(s.session_date), 'EEE')}</div>
                   <div className="font-bold text-sm">{formatWithJST(s.session_date, false)}</div>
                 </div>
 
@@ -723,7 +743,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
             </div>
 
             {/* Optional linkage to cancelled session */}
-            {sessions.filter(s => s.status === 'cancelled' || new Date(s.session_date) < new Date()).length > 0 && (
+            {sessions.filter(s => s.status === 'cancelled' || s.session_date < todayStr()).length > 0 && (
               <div className="p-2.5 rounded-lg border bg-purple-50/50 dark:bg-purple-950/20 text-xs space-y-1">
                 <Label className="text-xs font-semibold flex items-center gap-1 text-purple-800 dark:text-purple-300">
                   <AlertCircle className="w-3.5 h-3.5" /> Học bù cho buổi học nào? (Tùy chọn)
@@ -735,7 +755,7 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
                 >
                   <option value="">-- Không chọn (Tạo buổi bù độc lập) --</option>
                   {sessions
-                    .filter(s => s.status === 'cancelled' || new Date(s.session_date) < new Date())
+                    .filter(s => s.status === 'cancelled' || s.session_date < todayStr())
                     .map(s => (
                       <option key={s.id} value={s.id}>
                         {s.session_date} ({s.start_time}) - {s.topic || 'Buổi học'} {s.status === 'cancelled' ? '[Đã hủy]' : ''}
