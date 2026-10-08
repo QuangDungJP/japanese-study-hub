@@ -1,8 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Public meeting page: photographs stay separate from meeting-room behavior. */
+.meeting-page {
+  --meeting-photo-surface: 220 30% 12%;
+  --meeting-photo-text: 0 0% 100%;
+  letter-spacing: 0;
+}
+.meeting-photo-caption {
+  background: hsl(var(--meeting-photo-surface) / .88);
+  color: hsl(var(--meeting-photo-text));
+}
+.meeting-heading { letter-spacing: 0; }
 
 
 
