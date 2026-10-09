@@ -3352,6 +3352,11 @@ export type Database = {
         Args: { p_user_id: string; p_xp_amount?: number }
         Returns: Json
       }
+      create_class_makeup: {
+        Args: { p_class_id: string; p_replaced_id?: string; p_session: Json }
+        Returns: string
+      }
+      equip_owned_avatar_frame: { Args: { p_code: string }; Returns: undefined }
       generate_slug: { Args: { input_text: string }; Returns: string }
       get_exercise_answers: {
         Args: { _exercise_id: string }
@@ -3410,6 +3415,19 @@ export type Database = {
       }
       is_senior_teacher: { Args: { user_uuid: string }; Returns: boolean }
       is_teacher: { Args: { user_uuid: string }; Returns: boolean }
+      join_class_by_code: { Args: { p_code: string }; Returns: string }
+      purchase_store_item_xp: {
+        Args: { p_equip?: boolean; p_item_id: string }
+        Returns: Json
+      }
+      send_class_announcement: {
+        Args: { p_class_id: string; p_message: string; p_title: string }
+        Returns: number
+      }
+      shift_class_sessions: {
+        Args: { p_class_id: string; p_updates: Json }
+        Returns: undefined
+      }
       teacher_has_student: {
         Args: { _student_id: string; _teacher_id: string }
         Returns: boolean
