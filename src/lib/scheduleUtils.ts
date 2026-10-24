@@ -18,8 +18,33 @@ export const parseLocalDate = (s: string): Date => {
 export const todayStr = () => format(new Date(), 'yyyy-MM-dd');
 
 /**
- * Shifts sessions so each takes the date of the next one; the last moves to the
- * next weekday in the class pattern (avoiding dates already used by other sessions).
+ * Find the next date (after `fromDate`) that falls on one of the given weekdays
+ * and is not in the occupied set.
+ */
+const nextAvailableDate = (
+  fromDate: Date,
+  weekdays: Set<number>,
+  occupied: Set<string>,
+): Date => {
+  let d = addDays(fromDate, 1);
+  for (let guard = 0; guard < 180; guard++) {
+    if (weekdays.has(d.getDay()) && !occupied.has(format(d, 'yyyy-MM-dd'))) return d;
+    d = addDays(d, 1);
+  }
+  return d; // fallback (should not hit)
+};
+
+/**
+ * Shifts ALL `sessions` (the affected subset) forward by one slot each in the
+ * class's weekday pattern.
+ *
+ * Rules:
+ * - Weekday pattern is inferred from non-makeup, non-cancelled scheduled sessions.
+ * - Makeup sessions passed in the list are NOT shifted (excluded from output).
+ * - Dates already taken by non-affected sessions (occupiedDates) are skipped.
+ * - Each session is shifted to the next available weekday slot AFTER its own current date.
+ *   This prevents the "chain swap" bug where session i got session i+1's date, causing
+ *   cascading collisions.
  */
 export const shiftSessionsToNextAvailableDay = (
   sessions: SessionData[],
@@ -27,31 +52,34 @@ export const shiftSessionsToNextAvailableDay = (
 ): { id: string; newDate: string }[] => {
   if (!sessions || sessions.length === 0) return [];
 
-  const sorted = [...sessions].sort((a, b) =>
-    a.session_date === b.session_date
-      ? (a.start_time || '').localeCompare(b.start_time || '')
-      : a.session_date.localeCompare(b.session_date),
-  );
+  // Only shift non-makeup sessions
+  const toShift = [...sessions]
+    .filter(s => s.status !== 'makeup')
+    .sort((a, b) =>
+      a.session_date === b.session_date
+        ? (a.start_time || '').localeCompare(b.start_time || '')
+        : a.session_date.localeCompare(b.session_date),
+    );
 
-  const weekdays = new Set<number>();
-  sorted.filter(s => s.status !== 'makeup').forEach(s => weekdays.add(parseLocalDate(s.session_date).getDay()));
-  if (weekdays.size === 0) sorted.forEach(s => weekdays.add(parseLocalDate(s.session_date).getDay()));
+  if (toShift.length === 0) return [];
 
-  const occupied = new Set(occupiedDates);
+  // Detect weekday pattern from the sessions being shifted (non-makeup)
+  const weekdays = new Set<number>(toShift.map(s => parseLocalDate(s.session_date).getDay()));
+
+  // Build occupied set: starts with externally occupied dates
+  // We will add newly assigned dates as we go to prevent intra-shift collisions
+  const occupied = new Set<string>(occupiedDates);
+
   const updates: { id: string; newDate: string }[] = [];
 
-  for (let i = 0; i < sorted.length; i++) {
-    if (i < sorted.length - 1) {
-      updates.push({ id: sorted[i].id, newDate: sorted[i + 1].session_date });
-    } else {
-      let next = parseLocalDate(sorted[i].session_date);
-      let guard = 0;
-      do {
-        next = addDays(next, 1);
-        guard++;
-      } while ((!weekdays.has(next.getDay()) || occupied.has(format(next, 'yyyy-MM-dd'))) && guard < 60);
-      updates.push({ id: sorted[i].id, newDate: format(next, 'yyyy-MM-dd') });
-    }
+  for (const session of toShift) {
+    const currentDate = parseLocalDate(session.session_date);
+    const newDate = nextAvailableDate(currentDate, weekdays, occupied);
+    const newDateStr = format(newDate, 'yyyy-MM-dd');
+    // Mark this newly assigned date as occupied so the next session won't land on it
+    occupied.add(newDateStr);
+    updates.push({ id: session.id, newDate: newDateStr });
   }
+
   return updates;
 };

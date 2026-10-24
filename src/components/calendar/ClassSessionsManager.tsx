@@ -112,11 +112,19 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
     const targetSession = sessions.find(s => s.id === shiftData.fromSessionId);
     if (!targetSession) return;
 
+    // Only shift non-makeup, non-completed, non-cancelled sessions from the target date onward
     const affectedSessions = sessions.filter(
-      s => s.session_date >= targetSession.session_date && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'makeup'
+      s => s.session_date >= targetSession.session_date
+        && s.status !== 'completed'
+        && s.status !== 'cancelled'
+        && s.status !== 'makeup'
     );
     const affectedIds = new Set(affectedSessions.map(s => s.id));
-    const occupiedDates = sessions.filter(s => !affectedIds.has(s.id) && s.status !== 'cancelled').map(s => s.session_date);
+
+    // Occupied dates = sessions NOT being shifted (including makeup sessions — don't overwrite them)
+    const occupiedDates = sessions
+      .filter(s => !affectedIds.has(s.id) && s.status !== 'cancelled')
+      .map(s => s.session_date);
 
     if (affectedSessions.length === 0) {
       return toast({ title: 'Thông báo', description: 'Không có buổi học nào bị ảnh hưởng', variant: 'destructive' });
@@ -130,25 +138,26 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
        return toast({ title: 'Thông báo', description: 'Không thể tính toán lịch mới', variant: 'destructive' });
     }
 
-    const updates = updatesList.map(u => {
-      return (supabase as any)
+    // Run updates sequentially to avoid race conditions in DB
+    let hadError = false;
+    for (const u of updatesList) {
+      const { error } = await (supabase as any)
         .from('class_sessions')
         .update({ session_date: u.newDate })
         .eq('id', u.id);
-    });
-
-    const results = await Promise.all(updates);
-    const firstErr = results.find((r: any) => r.error)?.error;
-
-    if (firstErr) {
-      load();
-      return toast({ title: 'Lỗi', description: 'Một số buổi học chưa được dời lịch: ' + firstErr.message, variant: 'destructive' });
+      if (error) {
+        hadError = true;
+        toast({ title: 'Lỗi', description: 'Một số buổi học chưa được dời lịch: ' + error.message, variant: 'destructive' });
+        break;
+      }
     }
 
-    toast({ 
-      title: 'Đẩy lịch tịnh tiến thành công!', 
-      description: `Đã lùi ${affectedSessions.length} buổi học sang các ngày học tiếp theo của lớp.` 
-    });
+    if (!hadError) {
+      toast({ 
+        title: 'Đẩy lịch tịnh tiến thành công!', 
+        description: `Đã lùi ${affectedSessions.length} buổi học sang các ngày học tiếp theo của lớp.` 
+      });
+    }
     setShiftOpen(false);
     load();
   };
@@ -316,9 +325,14 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
 
     let notesText = makeupData.notes || '';
     if (makeupData.replaced_session_id) {
-      const repSession = sessions.find(s => s.id === makeupData.replaced_session_id);
-      if (repSession) {
-        notesText = `[Học bù cho buổi ngày ${formatWithJST(repSession.session_date, false)}${repSession.topic ? `: ${repSession.topic}` : ''}] ${notesText}`.trim();
+      // Use DB lookup to avoid stale-state issue
+      const { data: repData } = await (supabase as any)
+        .from('class_sessions')
+        .select('session_date, topic, status')
+        .eq('id', makeupData.replaced_session_id)
+        .single();
+      if (repData) {
+        notesText = `[Học bù cho buổi ngày ${formatWithJST(repData.session_date, false)}${repData.topic ? `: ${repData.topic}` : ''}] ${notesText}`.trim();
       }
     }
 
@@ -334,16 +348,33 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
       status: 'makeup',
     };
 
-    const { error } = await (supabase as any).from('class_sessions').insert(payload);
-    if (error) return toast({ title: 'Lỗi tạo buổi học bù', description: error.message, variant: 'destructive' });
+    const { error: insertErr } = await (supabase as any).from('class_sessions').insert(payload);
+    if (insertErr) return toast({ title: 'Lỗi tạo buổi học bù', description: insertErr.message, variant: 'destructive' });
+
+    // Cancel the original session (from DB lookup, not stale state)
     if (makeupData.replaced_session_id) {
-      const rep = sessions.find(s => s.id === makeupData.replaced_session_id);
-      if (rep && rep.status === 'scheduled') {
-        await (supabase as any).from('class_sessions').update({ status: 'cancelled' }).eq('id', rep.id);
+      const { error: cancelErr } = await (supabase as any)
+        .from('class_sessions')
+        .update({ status: 'cancelled' })
+        .eq('id', makeupData.replaced_session_id)
+        .neq('status', 'cancelled'); // idempotent: skip if already cancelled
+      if (cancelErr) {
+        console.warn('[Makeup] Could not cancel original session:', cancelErr.message);
       }
     }
     
     toast({ title: 'Đã tạo buổi học bù thành công!' });
+    // Reset makeup form
+    setMakeupData({
+      session_date: format(new Date(), 'yyyy-MM-dd'),
+      start_time: '19:00',
+      end_time: '20:30',
+      topic: 'Buổi học bù',
+      notes: '',
+      location: '',
+      meet_link: '',
+      replaced_session_id: '',
+    });
     setMakeupOpen(false);
     load();
   };
@@ -861,16 +892,25 @@ export const ClassSessionsManager = ({ classId, className, canEdit = false }: Pr
               </select>
             </div>
 
-            {shiftData.fromSessionId && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg text-xs space-y-1">
-                <p className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" /> Số buổi bị ảnh hưởng:
-                </p>
-                <p className="text-muted-foreground">
-                  Có {sessions.filter(s => s.session_date >= (sessions.find(x => x.id === shiftData.fromSessionId)?.session_date || '') && s.status !== 'completed').length} buổi học từ ngày này trở đi sẽ được dời sang các ngày học kế tiếp. Tổng số buổi của khóa học được giữ nguyên.
-                </p>
-              </div>
-            )}
+            {shiftData.fromSessionId && (() => {
+              const targetDate = sessions.find(x => x.id === shiftData.fromSessionId)?.session_date || '';
+              const affectedCount = sessions.filter(
+                s => s.session_date >= targetDate
+                  && s.status !== 'completed'
+                  && s.status !== 'cancelled'
+                  && s.status !== 'makeup'
+              ).length;
+              return (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg text-xs space-y-1">
+                  <p className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" /> Số buổi bị ảnh hưởng:
+                  </p>
+                  <p className="text-muted-foreground">
+                    Có <span className="font-bold text-amber-700 dark:text-amber-300">{affectedCount}</span> buổi học (không tính buổi học bù và đã huỷ) từ ngày này trở đi sẽ được dời sang các ngày học kế tiếp. Tổng số buổi của khóa học được giữ nguyên.
+                  </p>
+                </div>
+              );
+            })()}
           </div>
 
           <DialogFooter>
