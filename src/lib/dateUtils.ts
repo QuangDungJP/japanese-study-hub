@@ -10,14 +10,15 @@ import { vi } from 'date-fns/locale';
  */
 export function formatWithJST(dateInput: string | Date | null | undefined, includeTime = true): string {
   if (!dateInput) return '';
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  if (isNaN(date.getTime())) return '';
 
-  // If it's a date-only string like "2026-07-27"
+  // Fast path: date-only string like "2026-07-27" — avoid UTC parsing issue
   if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
     const parts = dateInput.split('-');
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
+
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (isNaN(date.getTime())) return '';
 
   // Format Vietnam Time
   const vnDateStr = date.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -73,13 +74,12 @@ export function formatTimeWithJST(timeStr: string | null | undefined): string {
   const minutes = parseInt(parts[1], 10);
   if (isNaN(hours) || isNaN(minutes)) return timeStr;
 
-  const displayHoursVN = hours === 0 ? 24 : hours;
+  // Display hours as-is (00-23); do NOT map 0 → 24
   const jpHours = (hours + 2) % 24;
-  const displayHoursJP = jpHours === 0 ? 24 : jpHours;
   
   const minStr = minutes.toString().padStart(2, '0');
-  const formattedVN = `${displayHoursVN.toString().padStart(2, '0')}h${minStr}`;
-  const formattedJP = `${displayHoursJP.toString().padStart(2, '0')}h${minStr}`;
+  const formattedVN = `${hours.toString().padStart(2, '0')}h${minStr}`;
+  const formattedJP = `${jpHours.toString().padStart(2, '0')}h${minStr}`;
   
   return `${formattedVN} (Nhật: ${formattedJP})`;
 }

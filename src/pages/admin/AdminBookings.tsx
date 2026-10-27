@@ -76,13 +76,13 @@ const AdminBookings = () => {
       if (userIds.length > 0) {
         const { data: pData } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', userIds);
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', userIds);
         profiles = pData || [];
       }
       
       return data.map(booking => {
-        const p = profiles.find((p: any) => p.id === booking.user_id);
+        const p = profiles.find((p: any) => p.user_id === booking.user_id);
         return {
           ...booking,
           profiles: p || null

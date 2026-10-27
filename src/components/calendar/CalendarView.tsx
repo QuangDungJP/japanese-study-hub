@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatTimeWithJST } from '@/lib/dateUtils';
@@ -55,27 +55,7 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-  useEffect(() => {
-    if (user) {
-      fetchEvents();
-      const channel = supabase
-        .channel('public:calendar-view-live')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchEvents)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions' }, fetchEvents)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, fetchEvents)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, fetchEvents)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'exams' }, fetchEvents)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_attempts' }, fetchEvents)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'student_submissions' }, fetchEvents)
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user, currentDate]);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
       const startDate = format(monthStart, 'yyyy-MM-dd');
@@ -140,12 +120,14 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
         .in('status', ['submitted', 'pending'])
         .limit(20);
 
-      // Fetch leave requests
+      // Fetch leave requests that overlap with the current month window
+      // Overlap condition: start_date <= endDate AND end_date >= startDate
       const { data: leaveRequests } = await supabase
         .from('leave_requests')
         .select('*')
         .eq('user_id', user?.id)
-        .or(`start_date.gte.${startDate},end_date.lte.${endDate}`);
+        .lte('start_date', endDate)
+        .gte('end_date', startDate);
 
       const allEvents: CalendarEvent[] = [];
 
