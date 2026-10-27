@@ -252,7 +252,27 @@ export const CalendarView = ({ onEventClick, showEventTypes = ['booking', 'exam'
     } finally {
       setLoading(false);
     }
-  };
+    // monthStart/monthEnd are derived from currentDate; showEventTypes compared by value
+  },[user?.id, currentDate, showEventTypes.join(',')]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchEvents();
+    const channel = supabase
+      .channel(`calendar-view-live-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exams' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_attempts' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_submissions' }, fetchEvents)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchEvents]);
 
   const getEventsForDay = (day: Date) => {
     return events.filter(event => {

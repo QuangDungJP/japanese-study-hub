@@ -297,14 +297,20 @@ export default function JLPTExamRunner() {
         });
         localStorage.setItem(`mock_attempts_${user.id}`, JSON.stringify(updatedAtts));
       } else {
-        await supabase.from("exam_attempts").update({
+        const payload: any = {
           answers: answersArr,
           status: "submitted",
           score: totalScore,
           total: exam.max_score || 180,
           metadata: { scoreBreakdown, predicted_real: predictedScore },
           submitted_at: new Date().toISOString()
-        }).eq("id", attemptId);
+        };
+        let { error } = await supabase.from("exam_attempts").update(payload).eq("id", attemptId);
+        if (error && error.message?.includes('metadata')) {
+          delete payload.metadata;
+          ({ error } = await supabase.from("exam_attempts").update(payload).eq("id", attemptId));
+        }
+        if (error) throw error;
       }
       
       setResult({ score: totalScore, total: exam.max_score || 180, passed, breakdown: scoreBreakdown, level, predicted_real: predictedScore });

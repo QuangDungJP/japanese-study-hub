@@ -95,12 +95,10 @@ export default function AdminStore() {
 
     setGiftSending(true);
     try {
-      // Find user by email from profiles
-      const { data: prof, error: profError } = await (supabase as any)
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('email', giftUserEmail.trim().toLowerCase())
-        .maybeSingle();
+      // profiles has no email column — look the account up in auth.users via an admin-only RPC
+      const { data: matches, error: profError } = await (supabase as any)
+        .rpc('admin_find_user_by_email', { p_email: giftUserEmail.trim() });
+      const prof = matches?.[0] as { user_id: string; full_name: string | null } | undefined;
 
       if (profError) {
         console.error("Profile query error:", profError);
@@ -117,7 +115,7 @@ export default function AdminStore() {
 
       // Insert into user_inventory
       const { error } = await (supabase as any).from('user_inventory').insert({
-        user_id: prof.id,
+        user_id: prof.user_id,
         item_id: itemObj?.id,
         item_code: giftItemCode,
         purchased_with: 'system_gift',

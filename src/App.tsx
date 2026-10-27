@@ -174,6 +174,9 @@ const App = () => (
                 <Route index element={<Dashboard />} />
                 <Route path="my-classes" element={<MyClasses />} />
                 <Route path="my-classes/:id" element={<StudentClassDetail />} />
+                {/* Notification links from send_class_announcement use /learn/classes/:id */}
+                <Route path="classes" element={<MyClasses />} />
+                <Route path="classes/:id" element={<StudentClassDetail />} />
                 <Route path="lessons" element={<Lessons />} />
                 <Route path="lessons/:id" element={<LessonViewer />} />
                 <Route path="exams" element={<Exams />} />

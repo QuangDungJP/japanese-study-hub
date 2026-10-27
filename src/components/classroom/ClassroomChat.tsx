@@ -74,8 +74,8 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
       if (senderIds.length > 0) {
         const { data: profs, error: profsError } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url, equipped_frame_code')
-          .in('id', senderIds);
+          .select('user_id, full_name, avatar_url, equipped_frame_code')
+          .in('user_id', senderIds);
 
         if (profsError) console.error("Error fetching profiles:", profsError);
 
@@ -83,8 +83,8 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
         const names: Record<string, string> = {};
         
         finalProfs.forEach(p => {
-          profileMap.set(p.id, p);
-          names[p.id] = p.full_name || 'Thành viên';
+          profileMap.set(p.user_id, p);
+          names[p.user_id] = p.full_name || 'Thành viên';
         });
         setNameMap(names);
       }
@@ -134,7 +134,7 @@ export const ClassroomChat = ({ classId }: { classId: string }) => {
       return;
     }
     const fetchProfile = async () => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', selectedUserId).single();
+      const { data } = await supabase.from('profiles').select('*').eq('user_id', selectedUserId).maybeSingle();
       setSelectedUserProfile(data);
     };
     fetchProfile();

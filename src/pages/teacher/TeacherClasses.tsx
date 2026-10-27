@@ -70,6 +70,7 @@ import TeacherTimesheet from '@/components/teacher/TeacherTimesheet';
 import SessionVideoPlayer from '@/components/shared/SessionVideoPlayer';
 import MediaUploader from '@/components/shared/MediaUploader';
 import StudentSubmissionAnalysisModal, { StudentSubmissionAnalysisData } from '@/components/classroom/StudentSubmissionAnalysisModal';
+import { copyClass } from '@/lib/classCopy';
 
 interface ClassData {
   id: string;
@@ -488,7 +489,7 @@ const TeacherClasses = () => {
         onSaveGrading: async (newScore: number, feedback: string) => {
           const { error } = await supabase
             .from('exam_attempts')
-            .update({ score: newScore, feedback: feedback.trim() || null, status: 'graded' } as any)
+            .update({ score: newScore, teacher_feedback: feedback.trim() || null, status: 'graded', graded_at: new Date().toISOString() } as any)
             .eq('id', sub.id);
           if (error) throw error;
 
@@ -1011,7 +1012,7 @@ const TeacherClasses = () => {
           passing_score: passingScore,
           duration_str: durationStr,
           status: att.status === 'graded' ? 'graded' : 'pending',
-          feedback: att.feedback,
+          feedback: att.teacher_feedback,
           submitted_at: att.submitted_at,
           answers: att.answers || {},
           questions: questions,
@@ -1397,86 +1398,27 @@ const TeacherClasses = () => {
     const newClassName = window.prompt(`Sao chép toàn bộ tài liệu & bài giảng từ lớp:\n"${sourceClass.name_vi}"\n\nNhập tên lớp mới:`, `${sourceClass.name_vi} (Bản sao)`);
     if (!newClassName || !newClassName.trim()) return;
 
+    if (!user?.id) return;
+
     try {
-      toast({ title: '⏳ Đang sao chép lớp học...', description: 'Đang sao chép toàn bộ bài học và lịch trình...' });
+      toast({ title: '⏳ Đang sao chép lớp học...', description: 'Đang sao chép bài học, tài liệu, quiz và lịch học...' });
 
-      // 1. Insert new class
-      const newClassPayload = {
-        name: newClassName.trim(),
-        name_vi: newClassName.trim(),
-        description: sourceClass.description,
-        description_vi: sourceClass.description_vi,
-        teacher_id: user?.id || sourceClass.teacher_id,
-        course_id: sourceClass.course_id,
-        max_students: sourceClass.max_students || 30,
-        start_date: new Date().toISOString().slice(0, 10),
-        end_date: sourceClass.end_date,
-        cover_image_url: sourceClass.cover_image_url,
-        thumbnail_url: sourceClass.thumbnail_url,
-        google_meet_url: sourceClass.google_meet_url,
-        is_active: true,
-      };
+      const { counts, warnings } = await copyClass(sourceClass.id, newClassName.trim(), user.id);
+      const summary = Object.entries(counts).map(([k, v]) => `${k}: ${v}`).join(' · ');
 
-      const { data: createdClasses, error: createError } = await supabase
-        .from('classes')
-        .insert(newClassPayload as any)
-        .select('*');
-
-      if (createError || !createdClasses?.[0]) throw createError;
-      const targetClassId = createdClasses[0].id;
-
-      // 2. Copy lessons from source class
-      const { data: sourceLessons } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('class_id', sourceClass.id);
-
-      if (sourceLessons && sourceLessons.length > 0) {
-        const copiedLessons = sourceLessons.map(l => ({
-          title: l.title,
-          title_vi: `${l.title_vi}`,
-          description_vi: l.description_vi,
-          skill: l.skill,
-          level: l.level,
-          duration_minutes: l.duration_minutes,
-          xp_reward: l.xp_reward,
-          is_published: l.is_published,
-          class_id: targetClassId,
-          course_id: l.course_id,
-          content_html: l.content_html,
-          video_url: l.video_url,
-          audio_url: l.audio_url,
-          slide_url: l.slide_url,
-          document_url: l.document_url,
-          thumbnail_url: l.thumbnail_url,
-        }));
-        await supabase.from('lessons').insert(copiedLessons as any);
+      if (warnings.length) {
+        console.warn('Copy class warnings:', warnings);
+        toast({
+          title: '⚠️ Đã tạo lớp nhưng một phần nội dung chưa sao chép được',
+          description: `${summary}\n${warnings.join('\n')}`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: '🎉 Sao chép lớp học thành công!',
+          description: `"${newClassName.trim()}" — ${summary || 'lớp nguồn chưa có nội dung'}. Đề kiểm tra được để ở trạng thái nháp.`,
+        });
       }
-
-      // 3. Copy sessions structure
-      const { data: sourceSessions } = await supabase
-        .from('class_sessions')
-        .select('*')
-        .eq('class_id', sourceClass.id);
-
-      if (sourceSessions && sourceSessions.length > 0) {
-        const copiedSessions = sourceSessions.map(s => ({
-          class_id: targetClassId,
-          session_date: new Date().toISOString().slice(0, 10),
-          start_time: s.start_time || '18:00',
-          end_time: s.end_time,
-          topic: s.topic,
-          meet_link: s.meet_link || sourceClass.google_meet_url,
-          status: 'upcoming',
-          notes: s.notes,
-        }));
-        await supabase.from('class_sessions').insert(copiedSessions as any);
-      }
-
-      toast({
-        title: '🎉 Sao chép lớp học thành công!',
-        description: `Đã nhân bản "${sourceClass.name_vi}" thành "${newClassName}" kèm đầy đủ bài học & tài liệu!`,
-      });
 
       fetchClasses();
     } catch (err: any) {
@@ -1692,8 +1634,9 @@ const TeacherClasses = () => {
           .from('exam_attempts')
           .update({
             score: scoreNum,
-            feedback: gradingFeedback.trim() || null,
+            teacher_feedback: gradingFeedback.trim() || null,
             status: 'graded',
+            graded_at: new Date().toISOString(),
           } as any)
           .eq('id', selectedSubmission.id);
         if (error) throw error;

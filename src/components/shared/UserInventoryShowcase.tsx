@@ -54,7 +54,7 @@ export const UserInventoryShowcase = ({ userId }: { userId?: string }) => {
         const { data: prof } = await supabase
           .from('profiles')
           .select('equipped_frame_code')
-          .eq('id', targetUserId)
+          .eq('user_id', targetUserId)
           .maybeSingle();
 
         if (prof?.equipped_frame_code) {
@@ -76,10 +76,11 @@ export const UserInventoryShowcase = ({ userId }: { userId?: string }) => {
     setEquippingCode(itemCode);
     try {
       const newFrame = equippedFrame === itemCode ? null : itemCode;
-      await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({ equipped_frame_code: newFrame, updated_at: new Date().toISOString() })
-        .eq('id', targetUserId);
+        .eq('user_id', targetUserId);
+      if (error) throw error;
 
       setEquippedFrame(newFrame);
       toast({

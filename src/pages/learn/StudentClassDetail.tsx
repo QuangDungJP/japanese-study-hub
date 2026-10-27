@@ -138,7 +138,7 @@ const StudentClassDetail = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild className="shrink-0"><Link to="/learn/classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
+        <Button variant="ghost" size="icon" asChild className="shrink-0"><Link to="/learn/my-classes"><ArrowLeft className="w-4 h-4" /></Link></Button>
         <span className="text-sm text-muted-foreground">Quay lại danh sách lớp</span>
       </div>
       <ClassBanner cls={cls} onUpdated={fetchAll} />
