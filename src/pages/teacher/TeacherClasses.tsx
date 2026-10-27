@@ -1416,7 +1416,7 @@ const TeacherClasses = () => {
       } else {
         toast({
           title: '🎉 Sao chép lớp học thành công!',
-          description: `"${newClassName.trim()}" — ${summary || 'lớp nguồn chưa có nội dung'}. Đề kiểm tra được để ở trạng thái nháp.`,
+          description: `"${newClassName.trim()}" — ${summary || 'lớp nguồn chưa có nội dung'}.`,
         });
       }
 

@@ -156,13 +156,12 @@ export async function copyClass(sourceClassId: string, newName: string, userId: 
     due_date: shiftTs(a.due_date),
   })), 'Bài tập');
 
-  // 8. Đề kiểm tra / quiz của lớp — để ở trạng thái nháp cho giáo viên kiểm tra lại lịch trước khi mở
+  // 8. Đề kiểm tra / quiz của lớp — giữ trạng thái xuất bản, lịch đã được dời theo lớp mới
   const { data: exams } = await sb.from('exams').select('*').eq('class_id', sourceClassId).order('exam_date');
   await insertMany('exams', (exams || []).map((e: any) => ({
     ...strip(e),
     class_id: classId,
     teacher_id: userId,
-    is_published: false,
     exam_date: shiftDate(e.exam_date),
     starts_at: shiftTs(e.starts_at),
     ends_at: shiftTs(e.ends_at),
