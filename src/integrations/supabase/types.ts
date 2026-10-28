@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -923,6 +923,11 @@ export type Database = {
         Row: {
           class_id: string
           enrolled_at: string
+          evaluated_at: string | null
+          evaluated_by: string | null
+          evaluation_comment: string | null
+          evaluation_grade: string | null
+          evaluation_result: string | null
           id: string
           status: string
           student_id: string
@@ -930,6 +935,11 @@ export type Database = {
         Insert: {
           class_id: string
           enrolled_at?: string
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          evaluation_comment?: string | null
+          evaluation_grade?: string | null
+          evaluation_result?: string | null
           id?: string
           status?: string
           student_id: string
@@ -937,6 +947,11 @@ export type Database = {
         Update: {
           class_id?: string
           enrolled_at?: string
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          evaluation_comment?: string | null
+          evaluation_grade?: string | null
+          evaluation_result?: string | null
           id?: string
           status?: string
           student_id?: string
@@ -1654,7 +1669,9 @@ export type Database = {
           attachment_url: string | null
           created_at: string
           exam_id: string
+          graded_at: string | null
           id: string
+          metadata: Json | null
           proctoring_logs: Json | null
           raw_score: number | null
           raw_total: number | null
@@ -1680,7 +1697,9 @@ export type Database = {
           attachment_url?: string | null
           created_at?: string
           exam_id: string
+          graded_at?: string | null
           id?: string
+          metadata?: Json | null
           proctoring_logs?: Json | null
           raw_score?: number | null
           raw_total?: number | null
@@ -1706,7 +1725,9 @@ export type Database = {
           attachment_url?: string | null
           created_at?: string
           exam_id?: string
+          graded_at?: string | null
           id?: string
+          metadata?: Json | null
           proctoring_logs?: Json | null
           raw_score?: number | null
           raw_total?: number | null
@@ -2135,6 +2156,7 @@ export type Database = {
           description: string | null
           description_vi: string | null
           difficulty: string | null
+          document_url: string | null
           duration_minutes: number | null
           end_at: string | null
           estimated_minutes: number | null
@@ -2148,6 +2170,7 @@ export type Database = {
           session_id: string | null
           session_number: number | null
           skill: string | null
+          slide_url: string | null
           start_at: string | null
           tags: string[] | null
           teacher_id: string | null
@@ -2170,6 +2193,7 @@ export type Database = {
           description?: string | null
           description_vi?: string | null
           difficulty?: string | null
+          document_url?: string | null
           duration_minutes?: number | null
           end_at?: string | null
           estimated_minutes?: number | null
@@ -2183,6 +2207,7 @@ export type Database = {
           session_id?: string | null
           session_number?: number | null
           skill?: string | null
+          slide_url?: string | null
           start_at?: string | null
           tags?: string[] | null
           teacher_id?: string | null
@@ -2205,6 +2230,7 @@ export type Database = {
           description?: string | null
           description_vi?: string | null
           difficulty?: string | null
+          document_url?: string | null
           duration_minutes?: number | null
           end_at?: string | null
           estimated_minutes?: number | null
@@ -2218,6 +2244,7 @@ export type Database = {
           session_id?: string | null
           session_number?: number | null
           skill?: string | null
+          slide_url?: string | null
           start_at?: string | null
           tags?: string[] | null
           teacher_id?: string | null
@@ -3347,6 +3374,13 @@ export type Database = {
           p_xp_delta?: number
         }
         Returns: Json
+      }
+      admin_find_user_by_email: {
+        Args: { p_email: string }
+        Returns: {
+          full_name: string
+          user_id: string
+        }[]
       }
       award_user_xp_and_streak: {
         Args: { p_user_id: string; p_xp_amount?: number }
