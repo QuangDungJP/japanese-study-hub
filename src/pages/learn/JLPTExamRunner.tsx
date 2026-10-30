@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { localMockExam } from '@/data/mockJlptExam';
 import { getPracticePaper } from '@/data/practicePapers';
 import { recordAnswers, computeMastery, loadAnswers, predictExam } from '@/lib/jlptMastery';
-import { grantReward } from '@/lib/rewards';
+import { grantReward, addCoins } from '@/lib/rewards';
 const isLocalExamId = (x?: string) => x === 'mock-local-1' || !!x?.startsWith('practice-');
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -322,6 +322,7 @@ export default function JLPTExamRunner() {
       let reward: any = null;
       if (user) {
         recordAnswers(user.id, masteryItems);
+        addCoins(user.id, masteryItems.filter((x: any) => x.correct).length * 5);
         const mm = computeMastery(loadAnswers(user.id));
         reward = grantReward(user.id, predictExam(mm.theta, (level as any) || mm.level).probability);
         if (reward) toast({ title: `🎁 Phần thưởng hạng ${reward.tier}: ${reward.icon} ${reward.name}`, description: 'Đã thêm vào tủ đồ ở trang chủ.' });

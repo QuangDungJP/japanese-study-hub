@@ -50,3 +50,16 @@ export function grantReward(u: string, passPct: number): Item | null {
 }
 export function equip(u: string, code: string) { const w = loadWardrobe(u); const it = CATALOG.find(i => i.code === code); if (it && w.owned.includes(code)) { w.equipped[it.slot] = w.equipped[it.slot] === code ? undefined : code; save(u, w); } return loadWardrobe(u); }
 export const itemByCode = (c?: string) => CATALOG.find(i => i.code === c);
+
+// Mon coins (local) + shop
+export const PRICE: Record<Tier, number> = { A: 100, S: 250, SS: 600, SSR: 1500 };
+const ck = (u: string) => `qd_mon_${u}`;
+export const loadCoins = (u: string) => Number(localStorage.getItem(ck(u)) || 0);
+export const addCoins = (u: string, n: number) => localStorage.setItem(ck(u), String(Math.max(0, loadCoins(u) + Math.round(n))));
+export function buyItem(u: string, code: string): { ok: boolean; item?: Item; error?: string } {
+  const it = itemByCode(code); if (!it) return { ok: false, error: 'Không tìm thấy vật phẩm' };
+  const w = loadWardrobe(u); if (w.owned.includes(code)) return { ok: true, item: it };
+  if (loadCoins(u) < PRICE[it.tier]) return { ok: false, error: `Cần ${PRICE[it.tier]} Mon — làm thêm đề luyện nhé!` };
+  addCoins(u, -PRICE[it.tier]); w.owned.push(code); if (!w.equipped[it.slot]) w.equipped[it.slot] = code; save(u, w);
+  return { ok: true, item: it };
+}

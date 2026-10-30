@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import ArmoryShop from '@/components/home/ArmoryShop';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -177,6 +178,7 @@ export function StoreContent() {
 
   return (
     <div className="pb-10 space-y-6">
+      <ArmoryShop />
 
       {/* ── Hero Banner ── */}
       <div className="rounded-3xl bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-500 text-white p-7 md:p-10 shadow-2xl relative overflow-hidden">
