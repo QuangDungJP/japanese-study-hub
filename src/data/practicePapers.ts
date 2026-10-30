@@ -40,11 +40,11 @@ export function getPracticePaper(id: string) {
     const base = kind === 0 ? mc(`「${w[0]}」の読み方は？`, w[1], words.map(x => x[1]), r)
       : kind === 1 ? mc(`「${w[1]}」を漢字で書くと？`, w[0], words.map(x => x[0]), r)
       : mc(`「${w[0]}」の意味は？`, w[2], words.map(x => x[2]), r);
-    qs.push({ id: `${id}_v${i}`, skill: kind === 1 ? 'kanji' : 'vocabulary', jlpt_level: lvl, points: 5, ...base });
+    qs.push({ id: `${id}_v${i}`, skill: kind === 1 ? 'kanji' : 'vocabulary', jlpt_level: lvl, points: 5, kind: ['reading', 'write', 'meaning'][kind], word: w, ...base });
   }
   shuffle(GRAMMAR[level], r).concat(shuffle(GRAMMAR[harder], r).slice(0, 2)).slice(0, 8).forEach((g, i) => {
     const correct = g[1][g[2]]; const opts = shuffle(g[1], r);
-    qs.push({ id: `${id}_g${i}`, skill: 'grammar', jlpt_level: i >= 6 ? harder : level, points: 5, text: `（　）に入るものは？\n${g[0].replace('＿','（　）')}`, options: opts, correct_index: opts.indexOf(correct) });
+    qs.push({ id: `${id}_g${i}`, skill: 'grammar', jlpt_level: i >= 6 ? harder : level, points: 5, kind: 'grammar', sentence: g[0], text: `（　）に入るものは？\n${g[0].replace('＿','（　）')}`, options: opts, correct_index: opts.indexOf(correct) });
   });
   return {
     id, title: `JLPT ${level} Practice #${n}`, title_vi: `Đề luyện JLPT ${level} số ${n}`,
@@ -75,3 +75,34 @@ const MORE_GRAMMAR: Record<JlptLevel, G[]> = {
 };
 (Object.keys(MORE_WORDS) as JlptLevel[]).forEach(l => { WORDS[l].push(...MORE_WORDS[l]); GRAMMAR[l].push(...MORE_GRAMMAR[l]); });
 export const BANK_SIZE = Object.fromEntries((Object.keys(WORDS) as JlptLevel[]).map(l => [l, { words: WORDS[l].length, grammar: GRAMMAR[l].length }]));
+
+// ── Explanations: why each option is right / wrong (built from the same banks, on-site) ──
+import { GRAMMAR_NOTES } from './grammarNotes';
+export type Explain = { why: string; notes: string[] };
+const ALL_WORDS = (): W[] => (Object.values(WORDS) as W[][]).flat();
+const findWord = (idx: 0 | 1 | 2, v: string) => ALL_WORDS().find(w => w[idx] === v);
+export function explainQuestion(q: any): Explain | null {
+  const correct: string = q.options?.[q.correct_index];
+  if (!q || correct === undefined) return null;
+  const w: W | undefined = q.word;
+  if (q.kind === 'reading' && w) return {
+    why: `「${w[0]}」 đọc là ${w[1]} — nghĩa là “${w[2]}”.`,
+    notes: q.options.map((o: string) => o === correct ? `Đúng: ${w[0]} = ${w[1]}` : (x => x ? `${o} là cách đọc của 「${x[0]}」 (${x[2]})` : 'Không phải cách đọc của từ này')(findWord(1, o))),
+  };
+  if (q.kind === 'write' && w) return {
+    why: `${w[1]} viết bằng chữ Hán là 「${w[0]}」 — nghĩa là “${w[2]}”.`,
+    notes: q.options.map((o: string) => o === correct ? `Đúng: ${w[1]} = ${w[0]}` : (x => x ? `「${o}」 đọc là ${x[1]}, nghĩa “${x[2]}”` : 'Chữ Hán khác, không đọc là ' + w[1])(findWord(0, o))),
+  };
+  if (q.kind === 'meaning' && w) return {
+    why: `「${w[0]}」 (${w[1]}) có nghĩa là “${w[2]}”.`,
+    notes: q.options.map((o: string) => o === correct ? `Đúng: ${w[0]} = “${w[2]}”` : (x => x ? `“${o}” là nghĩa của 「${x[0]}」 (${x[1]})` : 'Không phải nghĩa của từ này')(findWord(2, o))),
+  };
+  if (q.kind === 'grammar' && q.sentence) {
+    const note = GRAMMAR_NOTES[correct];
+    return {
+      why: `Câu hoàn chỉnh: ${q.sentence.replace('＿', `【${correct}】`)}\n「${correct}」${note ? `: ${note}` : ' là lựa chọn duy nhất đúng ngữ pháp và nghĩa.'}`,
+      notes: q.options.map((o: string) => o === correct ? 'Đúng ngữ pháp và đúng nghĩa câu' : `${GRAMMAR_NOTES[o] ? GRAMMAR_NOTES[o] + ' — ' : ''}không hợp với ngữ cảnh câu này`),
+    };
+  }
+  return null;
+}
