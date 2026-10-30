@@ -1,3 +1,4 @@
+import RoleBanner from "@/components/home/RoleBanner";
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, BookText, Users, Settings,
@@ -225,7 +226,8 @@ const AdminLayout = () => {
       </header>
 
       <main className="flex-1 w-full max-w-full min-w-0 lg:ml-60 p-3 sm:p-4 pt-18 lg:pt-6 lg:p-6 xl:p-8 overflow-x-hidden">
-        <Outlet />
+        <RoleBanner role="admin" />
+          <Outlet />
       </main>
     </div>
   );
