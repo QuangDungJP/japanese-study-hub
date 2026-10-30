@@ -20,7 +20,7 @@ const GRAMMAR: Record<JlptLevel, G[]> = {
 function rng(seed: number) { return () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296); }
 function shuffle<T>(a: T[], r: () => number) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 const LV: JlptLevel[] = ['N5','N4','N3','N2','N1'];
-export const PAPERS_PER_LEVEL = 200;
+export const PAPERS_PER_LEVEL = 400;
 export const PRACTICE_PAPER_COUNT = PAPERS_PER_LEVEL * LV.length; // 1000
 
 function mc(text: string, correct: string, pool: string[], r: () => number) {

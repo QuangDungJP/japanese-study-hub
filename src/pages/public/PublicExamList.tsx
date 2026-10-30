@@ -8,6 +8,7 @@ import { Sparkles, Clock, Trophy, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PracticeGallery from '@/components/thithu/PracticeGallery';
 
 const LEVEL_DEFAULTS: Record<string, { duration: number; maxScore: number; passingScore: number; color: string; bgGradient: string; shadowColor: string; }> = {
   N1: { duration: 165, maxScore: 180, passingScore: 100, color: 'text-rose-600 bg-rose-500/10 border-rose-200', bgGradient: 'from-rose-500 via-pink-600 to-rose-700', shadowColor: 'hover:shadow-rose-500/25' },
@@ -44,6 +45,7 @@ export default function PublicExamList() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
+      <div className="pt-20"><PracticeGallery /></div>
       
       <main className="flex-1 container mx-auto px-4 pt-28 pb-20">
         {/* Hero Section */}

@@ -43,6 +43,7 @@ import Exams from "./pages/learn/Exams";
 import ExamRunner from "./pages/learn/ExamRunner";
 import VirtualExamRoom from "./pages/learn/VirtualExamRoom";
 import JLPTExamRunner from "./pages/learn/JLPTExamRunner";
+import { ThiThuRunner } from "./components/thithu/PracticeRunner";
 import StudentNotifications from "./pages/learn/StudentNotifications";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -164,7 +165,7 @@ const App = () => (
 
               {/* Public Mock Exams */}
               <Route path="/thi-thu" element={<PublicExamList />} />
-              <Route path="/thi-thu/:id" element={<PublicExamRunner />} />
+              <Route path="/thi-thu/:id" element={<ThiThuRunner />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogDetail />} />
               <Route path="/su-kien" element={<EventsPage />} />
