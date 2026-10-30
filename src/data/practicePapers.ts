@@ -1,6 +1,7 @@
-// ~1000 JLPT practice papers (200 per level N5–N1), generated deterministically ON-SITE.
+// 2000 JLPT practice papers (400 per level N5–N1), full 3-section JLPT-like layout, generated deterministically ON-SITE.
 // Nothing here is uploaded to Supabase. Paper id: practice-N3-0042 (1..200).
 import type { JlptLevel } from '@/lib/jlptMastery';
+import { EXTRA_WORDS, PARAPHRASE, ORDER, READING, LISTENING, JLPT_SPEC } from './jlpt/banks';
 type W = [string, string, string]; // kanji, reading, nghĩa
 const WORDS: Record<JlptLevel, W[]> = {
   N5: [['学校','がっこう','trường học'],['先生','せんせい','giáo viên'],['電車','でんしゃ','tàu điện'],['天気','てんき','thời tiết'],['友達','ともだち','bạn bè'],['時間','じかん','thời gian'],['名前','なまえ','tên'],['毎日','まいにち','mỗi ngày'],['食べ物','たべもの','đồ ăn'],['山','やま','núi'],['川','かわ','sông'],['花','はな','hoa'],['水','みず','nước'],['今日','きょう','hôm nay'],['来年','らいねん','năm sau'],['駅','えき','nhà ga']],
@@ -24,34 +25,8 @@ export const PAPERS_PER_LEVEL = 400;
 export const PRACTICE_PAPER_COUNT = PAPERS_PER_LEVEL * LV.length; // 1000
 
 function mc(text: string, correct: string, pool: string[], r: () => number) {
-  const opts = shuffle([correct, ...shuffle(pool.filter(p => p !== correct), r).slice(0, 3)], r);
+  const opts = shuffle([correct, ...shuffle([...new Set(pool)].filter(p => p !== correct), r).slice(0, 3)], r);
   return { text, options: opts, correct_index: opts.indexOf(correct) };
-}
-export function getPracticePaper(id: string) {
-  const m = /^practice-(N[1-5])-(\d{4})$/.exec(id); if (!m) return null;
-  const level = m[1] as JlptLevel, n = Number(m[2]); if (n < 1 || n > PAPERS_PER_LEVEL) return null;
-  const r = rng(LV.indexOf(level) * 100000 + n * 7919);
-  // mix ~15% items from the next-harder level so IRT asymmetric scoring has signal
-  const harder = LV[Math.min(4, LV.indexOf(level) + 1)];
-  const qs: any[] = [];
-  for (let i = 0; i < 12; i++) {
-    const lvl = r() < 0.15 ? harder : level; const words = WORDS[lvl];
-    const w = words[Math.floor(r() * words.length)]; const kind = i % 3;
-    const base = kind === 0 ? mc(`「${w[0]}」の読み方は？`, w[1], words.map(x => x[1]), r)
-      : kind === 1 ? mc(`「${w[1]}」を漢字で書くと？`, w[0], words.map(x => x[0]), r)
-      : mc(`「${w[0]}」の意味は？`, w[2], words.map(x => x[2]), r);
-    qs.push({ id: `${id}_v${i}`, skill: kind === 1 ? 'kanji' : 'vocabulary', jlpt_level: lvl, points: 5, kind: ['reading', 'write', 'meaning'][kind], word: w, ...base });
-  }
-  shuffle(GRAMMAR[level], r).concat(shuffle(GRAMMAR[harder], r).slice(0, 2)).slice(0, 8).forEach((g, i) => {
-    const correct = g[1][g[2]]; const opts = shuffle(g[1], r);
-    qs.push({ id: `${id}_g${i}`, skill: 'grammar', jlpt_level: i >= 6 ? harder : level, points: 5, kind: 'grammar', sentence: g[0], text: `（　）に入るものは？\n${g[0].replace('＿','（　）')}`, options: opts, correct_index: opts.indexOf(correct) });
-  });
-  return {
-    id, title: `JLPT ${level} Practice #${n}`, title_vi: `Đề luyện JLPT ${level} số ${n}`,
-    description_vi: 'Đề luyện tạo tự động trên site (không lưu Supabase). 20 câu: từ vựng, chữ Hán, ngữ pháp.',
-    exam_type: 'jlpt_practice', level, exam_category: level, duration_minutes: 25, max_score: 180,
-    passing_score: { N1: 100, N2: 90, N3: 95, N4: 90, N5: 80 }[level], max_attempts: 99, is_published: true, questions: qs,
-  };
 }
 export function listPracticePapers(level?: JlptLevel) {
   return (level ? [level] : LV).flatMap(l => Array.from({ length: PAPERS_PER_LEVEL }, (_, i) => ({ id: `practice-${l}-${String(i + 1).padStart(4, '0')}`, level: l, title_vi: `Đề luyện JLPT ${l} số ${i + 1}` })));
@@ -73,8 +48,10 @@ const MORE_GRAMMAR: Record<JlptLevel, G[]> = {
   N2: [['彼の態度＿、怒るのも無理はない。',['からすると','に反して','に先立ち','のもとで'],0],['雨＿、試合は行われた。',['にもかかわらず','に伴って','につれて','に応じて'],0],['社会の変化＿、法律も変わる。',['に伴って','に反して','にかけては','をこめて'],0],['この店は味＿、値段も安い。',['はもとより','にしては','とはいえ','どころか'],0],['できる＿、手伝いたい。',['ものなら','ことだから','わけだから','ところで'],0],['考え＿、結論が出ない。',['抜いても','抜いたら','ばかりで','ながら'],0],['子供の＿、大人顔負けだ。',['わりに','くせに','ために','ように'],0],['一度約束した＿、守らなければならない。',['からには','ものの','とたん','ついでに'],0],['新製品の発売＿、記者会見を開く。',['に先立ち','に沿って','に基づき','を通じて'],0],['彼は才能がある＿、努力家でもある。',['うえに','わりに','くせに','かわりに'],0]],
   N1: [['彼の発言は無責任＿。',['極まりない','に足る','を禁じ得ない','までだ'],0],['優勝＿、喜びもひとしおだ。',['とあって','ならでは','ともなると','とばかりに'],0],['この地方＿料理を味わう。',['ならではの','ばかりの','かぎりの','なりの'],0],['涙＿聞いた話だった。',['なしには','ながらに','ずくめで','まみれで'],0],['失敗を恐れる＿、挑戦を続ける。',['ことなく','までもなく','ともなく','が早いか'],0],['言わんと＿ことはわかる。',['する','した','しよう','させる'],0],['彼の努力＿、成功はなかった。',['なくして','をもって','にあって','をおいて'],0],['事故の知らせを聞く＿、駆けつけた。',['や否や','とはいえ','にかかわらず','となると'],0],['この仕事は彼＿ほかに任せられる人はいない。',['をおいて','をもって','にして','ならでは'],0],['一流選手＿、練習量が違う。',['ともなると','とあれば','ときたら','となれば'],0]],
 };
-(Object.keys(MORE_WORDS) as JlptLevel[]).forEach(l => { WORDS[l].push(...MORE_WORDS[l]); GRAMMAR[l].push(...MORE_GRAMMAR[l]); });
-export const BANK_SIZE = Object.fromEntries((Object.keys(WORDS) as JlptLevel[]).map(l => [l, { words: WORDS[l].length, grammar: GRAMMAR[l].length }]));
+(Object.keys(MORE_WORDS) as JlptLevel[]).forEach(l => { WORDS[l].push(...MORE_WORDS[l], ...EXTRA_WORDS[l]); GRAMMAR[l].push(...MORE_GRAMMAR[l]); });
+// de-duplicate words by kanji (banks overlap) so options/questions never repeat
+LV.forEach(l => { const seen = new Set<string>(); WORDS[l] = WORDS[l].filter(w => !seen.has(w[0]) && !!seen.add(w[0])); });
+export const BANK_SIZE = Object.fromEntries((Object.keys(WORDS) as JlptLevel[]).map(l => [l, { words: WORDS[l].length, grammar: GRAMMAR[l].length, paraphrase: PARAPHRASE[l].length, order: ORDER[l].length, reading: READING[l].reduce((n, p) => n + p.qs.length, 0), listening: LISTENING[l].length }]));
 
 // ── Explanations: why each option is right / wrong (built from the same banks, on-site) ──
 import { GRAMMAR_NOTES } from './grammarNotes';
@@ -97,6 +74,10 @@ export function explainQuestion(q: any): Explain | null {
     why: `「${w[0]}」 (${w[1]}) có nghĩa là “${w[2]}”.`,
     notes: q.options.map((o: string) => o === correct ? `Đúng: ${w[0]} = “${w[2]}”` : (x => x ? `“${o}” là nghĩa của 「${x[0]}」 (${x[1]})` : 'Không phải nghĩa của từ này')(findWord(2, o))),
   };
+  if (q.explain_vi && q.kind !== 'grammar') return {
+    why: q.explain_vi + (q.script ? `\n\nScript:\n${q.script}` : ''),
+    notes: q.options.map((o: string) => o === correct ? 'Đúng' : 'Không khớp nội dung'),
+  };
   if (q.kind === 'grammar' && q.sentence) {
     const note = GRAMMAR_NOTES[correct];
     return {
@@ -106,3 +87,88 @@ export function explainQuestion(q: any): Explain | null {
   }
   return null;
 }
+
+// ── Full JLPT-like paper builder: 3 sections (文字語彙 / 文法・読解 / 聴解) ──
+const COUNTS: Record<JlptLevel, { yomi: number; hyouki: number; imi: number; ii: number; gram: number; order: number; passages: number; genListen: number }> = {
+  N5: { yomi: 7, hyouki: 5, imi: 6, ii: 3, gram: 10, order: 3, passages: 2, genListen: 7 },
+  N4: { yomi: 7, hyouki: 5, imi: 7, ii: 3, gram: 11, order: 3, passages: 2, genListen: 7 },
+  N3: { yomi: 8, hyouki: 6, imi: 8, ii: 4, gram: 12, order: 4, passages: 3, genListen: 7 },
+  N2: { yomi: 8, hyouki: 6, imi: 8, ii: 4, gram: 12, order: 4, passages: 3, genListen: 6 },
+  N1: { yomi: 8, hyouki: 6, imi: 8, ii: 4, gram: 12, order: 4, passages: 3, genListen: 6 },
+};
+const pickN = <T,>(a: T[], n: number, r: () => number) => shuffle(a, r).slice(0, Math.min(n, a.length));
+function shuffledMc(correct: string, wrong: string[], r: () => number) { const o = shuffle([correct, ...wrong], r); return { options: o, correct_index: o.indexOf(correct) }; }
+const KANA_NUM = ['ゼロ','いち','に','さん','よん','ご','ろく','なな','はち','きゅう','じゅう','じゅういち','じゅうに'];
+
+export function getPracticePaper(id: string) {
+  const m = /^practice-(N[1-5])-(\d{4})$/.exec(id); if (!m) return null;
+  const level = m[1] as JlptLevel, n = Number(m[2]); if (n < 1 || n > PAPERS_PER_LEVEL) return null;
+  const r = rng(LV.indexOf(level) * 100000 + n * 7919);
+  const harder = LV[Math.min(4, LV.indexOf(level) + 1)]; // ~15% next-level items → IRT signal
+  const C = COUNTS[level], spec = JLPT_SPEC[level];
+  const qs: any[] = []; let k = 0;
+  const push = (section: string, q: any) => qs.push({ id: `${id}_${k++}`, section, points: 1, jlpt_level: level, ...q });
+
+  // 1) 文字・語彙 — distinct words per paper
+  const own = shuffle(WORDS[level], r), hard = shuffle(WORDS[harder], r);
+  const take = (() => { let i = 0, j = 0; return () => (r() < 0.15 && harder !== level ? [hard[j++ % hard.length], harder] : [own[i++ % own.length], level]) as [W, JlptLevel]; })();
+  const vocab = (kind: 'reading' | 'write' | 'meaning', count: number, label: string) => { for (let i = 0; i < count; i++) {
+    const [w, lvl] = take(); const words = WORDS[lvl];
+    const base = kind === 'reading' ? mc(`【${label}】\n「${w[0]}」の読み方として最もよいものは？`, w[1], words.map(x => x[1]), r)
+      : kind === 'write' ? mc(`【${label}】\n「${w[1]}」を漢字で書くと？`, w[0], words.map(x => x[0]), r)
+      : mc(`【${label}】\n「${w[0]}」の意味（nghĩa）は？`, w[2], words.map(x => x[2]), r);
+    push('moji', { skill: kind === 'write' ? 'kanji' : 'vocabulary', jlpt_level: lvl, kind, word: w, ...base });
+  } };
+  vocab('reading', C.yomi, '漢字読み'); vocab('write', C.hyouki, '表記'); vocab('meaning', C.imi, '語彙の意味');
+  pickN(PARAPHRASE[level], C.ii, r).forEach(p => push('moji', { skill: 'vocabulary', kind: 'paraphrase', text: `【言い換え類義】\n${p.s}\n【\u3000】の文とだいたい同じ意味の文は？`, explain_vi: p.vi, ...shuffledMc(p.ok, p.bad, r) }));
+
+  // 2) 文法 ・ 読解
+  const hg = harder !== level ? 2 : 0;
+  shuffle(GRAMMAR[level], r).slice(0, C.gram - hg).map(g => [g, level] as const).concat(shuffle(GRAMMAR[harder], r).slice(0, hg).map(g => [g, harder] as const)).forEach(([g, lvl]) => {
+    const correct = g[1][g[2]]; const opts = shuffle(g[1], r);
+    push('bunpou', { skill: 'grammar', jlpt_level: lvl, kind: 'grammar', sentence: g[0], text: `【文法形式の判断】\n（\u3000）に入るものは？\n${g[0].replace('＿', '（\u3000）')}`, options: opts, correct_index: opts.indexOf(correct) });
+  });
+  pickN(ORDER[level], C.order, r).forEach(o => {
+    const slots = o.pieces.map((_, i) => (i === o.star ? '★' : '＿＿')).join(' ');
+    const opts = shuffle(o.pieces, r);
+    push('bunpou', { skill: 'grammar', kind: 'order', text: `【文の組み立て】\n${o.pre} ${slots} ${o.post}\n★に入るものは？`, explain_vi: `Câu đúng: ${o.vi}`, options: opts, correct_index: opts.indexOf(o.pieces[o.star]) });
+  });
+  pickN(READING[level], C.passages, r).forEach(p => p.qs.forEach(q => {
+    push('bunpou', { skill: 'reading', kind: 'reading', passage_title: p.title, passage: p.text, text: q.q, explain_vi: q.vi, ...shuffledMc(q.options[q.a], q.options.filter((_, i) => i !== q.a), r) });
+  }));
+
+  // 3) 聴解 — scripted bank + generated items (audio_url when recorded; otherwise browser TTS ja-JP)
+  const LT: Record<string, string> = { task: '課題理解', point: 'ポイント理解', utterance: '発話表現', response: '即時応答' };
+  shuffle(LISTENING[level], r).forEach(l => push('choukai', { skill: 'listening', kind: 'listening', listen_type: l.type, script: l.script, audio_url: l.audio_url ?? null, text: `【${LT[l.type]}】\n${l.q}`, explain_vi: l.vi, ...shuffledMc(l.options[l.a], l.options.filter((_, i) => i !== l.a), r) }));
+  for (let i = 0; i < C.genListen; i++) {
+    const t = i % 3;
+    if (t === 0) { // time
+      const h = 1 + Math.floor(r() * 12), mm = [0, 15, 30, 45][Math.floor(r() * 4)];
+      const f = (H: number, M: number) => `${H}時${M ? (M === 30 ? '半' : `${M}分`) : ''}`;
+      const ans = f(h, mm), wrong = [f(h % 12 + 1, mm), f(h, (mm + 15) % 60), f((h + 10) % 12 + 1, mm)].filter(x => x !== ans);
+      push('choukai', { skill: 'listening', kind: 'listening', listen_type: 'point', script: `女：すみません、会議は何時からですか。\n男：${ans}からです。`, text: '【ポイント理解】\n会議は何時からですか。', explain_vi: `Nghe được: ${ans}.`, ...shuffledMc(ans, [...new Set(wrong)].slice(0, 3), r) });
+    } else if (t === 1) { // price
+      const p = (1 + Math.floor(r() * 9)) * 100 + [0, 50][Math.floor(r() * 2)];
+      const opts = [...new Set([p, p + 100, p > 200 ? p - 100 : p + 200, p + 1000, p * 2])].slice(0, 4).map(x => `${x}円`);
+      push('choukai', { skill: 'listening', kind: 'listening', listen_type: 'point', script: `男：このノートはいくらですか。\n女：${p}円です。`, text: '【ポイント理解】\nノートはいくらですか。', explain_vi: `Nghe được: ${p}円.`, ...shuffledMc(opts[0], [...new Set(opts.slice(1))], r) });
+    } else { // word recognition
+      const [w, lvl] = take();
+      push('choukai', { skill: 'listening', kind: 'listening', listen_type: 'point', jlpt_level: lvl, script: `「${w[1]}」`, explain_vi: `${w[1]} = 「${w[0]}」 (${w[2]}).`, ...shuffledMc(w[0], shuffle(WORDS[lvl].map(x => x[0]).filter(x => x !== w[0]), r).slice(0, 3), r), text: '【語の聞き取り】\n聞いた言葉はどれですか。' });
+    }
+  }
+  // drop accidental duplicates (same prompt + same answer)
+  const uniq = new Set<string>(); for (let i = qs.length - 1; i >= 0; i--) { const key = qs[i].text + qs[i].options[qs[i].correct_index] + (qs[i].script ?? ''); if (uniq.has(key)) qs.splice(i, 1); else uniq.add(key); }
+  // scale points so each section ≈ 60 (JLPT 180-point scale)
+  const secs = spec.sections.map(s => s.key);
+  secs.forEach(key => { const list = qs.filter(q => q.section === key); list.forEach(q => (q.points = Math.round((60 / list.length) * 100) / 100)); });
+  const minutes = spec.sections.reduce((a, s) => a + s.minutes, 0);
+  return {
+    id, title: `JLPT ${level} Practice #${n}`, title_vi: `Đề luyện JLPT ${level} số ${n}`,
+    description_vi: `Đề thi thử đủ 3 phần như JLPT: ${spec.sections.map(s => `${s.name_vi} ${s.minutes}′`).join(' · ')}. ${qs.length} câu (đề thật ${spec.officialItems} câu).`,
+    exam_type: 'jlpt_practice', level, exam_category: level, duration_minutes: minutes, max_score: 180,
+    passing_score: spec.pass, section_min: spec.sectionMin, sections: spec.sections.map(s => ({ ...s, count: qs.filter(q => q.section === s.key).length })),
+    max_attempts: 99, is_published: true, questions: qs,
+  };
+}
+const SUM: Record<string, { count: number; minutes: number }> = {};
+export const paperSummary = (level: JlptLevel) => SUM[level] ??= (() => { const p = getPracticePaper(`practice-${level}-0001`)!; return { count: p.questions.length, minutes: p.duration_minutes }; })();

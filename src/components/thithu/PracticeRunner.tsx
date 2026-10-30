@@ -1,10 +1,10 @@
 // Public practice runner: instant per-question grading + "why" explanations + IRT predicted JLPT score. No login needed.
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PublicExamRunner from '@/pages/public/PublicExamRunner';
-import { getPracticePaper, explainQuestion } from '@/data/practicePapers';
+import { getPracticePaper, explainQuestion, PAPERS_PER_LEVEL } from '@/data/practicePapers';
 import { estimateTheta, predictExam, recordAnswers, computeMastery, loadAnswers, type JlptLevel } from '@/lib/jlptMastery';
 import { grantReward, addCoins } from '@/lib/rewards';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +15,26 @@ export function ThiThuRunner() {
   return id?.startsWith('practice-') ? <PracticeRunner key={id} id={id} /> : <PublicExamRunner />;
 }
 
-const SKILL_VI: Record<string, string> = { vocabulary: 'Từ vựng', kanji: 'Chữ Hán', grammar: 'Ngữ pháp' };
+const SKILL_VI: Record<string, string> = { vocabulary: 'Từ vựng', kanji: 'Chữ Hán', grammar: 'Ngữ pháp', reading: 'Đọc hiểu', listening: 'Nghe hiểu' };
+
+/** Plays recorded audio when available; otherwise reads the script with the browser's Japanese voice (TTS placeholder). */
+function ListenButton({ q, reveal }: { q: any; reveal: boolean }) {
+  const [plays, setPlays] = useState(0);
+  const play = () => {
+    setPlays(p => p + 1);
+    if (q.audio_url) { new Audio(q.audio_url).play(); return; }
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const text = String(q.script).replace(/^(男|女|先生|評論家)：/gm, '').replace(/\n/g, '。');
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 0.9; window.speechSynthesis.speak(u);
+  };
+  return (
+    <div className="mb-3 rounded-2xl bg-sky-50 p-3 dark:bg-sky-950/30">
+      <button onClick={play} className="rounded-full bg-sky-600 px-4 py-1.5 text-sm font-bold text-white hover:bg-sky-500">🔊 Nghe {plays ? `(lần ${plays + 1})` : ''}</button>
+      <span className="ml-2 text-xs text-muted-foreground">{q.audio_url ? 'Audio thu sẵn' : 'Giọng đọc máy (ja-JP) — tạm thay audio thu âm'}</span>
+      {reveal && <p className="mt-2 whitespace-pre-line text-sm" lang="ja">{q.script}</p>}
+    </div>);
+}
 const LETTERS = ['A', 'B', 'C', 'D'];
 type Filter = 'all' | 'wrong' | 'right';
 
@@ -47,7 +66,7 @@ function PracticeRunner({ id }: { id: string }) {
   const answered = Object.keys(ans).length;
   const liveCorrect = qs.filter((q, i) => ans[i] === q.correct_index).length;
   const n = Number(id.slice(-4));
-  const nextId = `practice-${level}-${String(n % 400 + 1).padStart(4, '0')}`;
+  const nextId = `practice-${level}-${String(n % PAPERS_PER_LEVEL + 1).padStart(4, '0')}`;
   const mmss = `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
 
   const pick = (i: number, k: number) => {
@@ -76,7 +95,8 @@ function PracticeRunner({ id }: { id: string }) {
           <div className="aspect-[16/6]"><ExamThumb level={level} n={n} /></div>
         </div>
         <h1 className="font-serif text-3xl font-bold tracking-tight">{paper.title_vi}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">20 câu · Từ vựng, chữ Hán, ngữ pháp · Chấm ngay & giải thích từng câu · Dự đoán điểm JLPT theo IRT</p>
+        <p className="mt-1 text-sm text-muted-foreground">{qs.length} câu · {paper.duration_minutes} phút · Chấm ngay & giải thích từng câu · Dự đoán điểm JLPT theo IRT</p>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">{(paper as any).sections?.map((s: any) => <a key={s.key} href={`#sec-${s.key}`} className="rounded-full border bg-card px-3 py-1"><b lang="ja">{s.name_ja}</b> · {s.count} câu · {s.minutes}′</a>)}</div>
 
         {/* sticky progress bar */}
         <div className="sticky top-16 z-20 -mx-4 mt-5 border-b bg-background/85 px-4 py-3 backdrop-blur">
@@ -132,7 +152,12 @@ function PracticeRunner({ id }: { id: string }) {
             if (!visible(i)) return null;
             const picked = ans[i]; const graded = picked !== undefined || !!done; const ok = picked === q.correct_index; const ex = explains[i];
             const harder = q.jlpt_level !== level;
-            return (
+            const sec = (paper as any).sections?.find((s: any) => s.key === q.section);
+            const firstOfSec = sec && qs.findIndex(x => x.section === q.section) === i;
+            const newPassage = q.passage && (i === 0 || qs[i - 1].passage !== q.passage);
+            return (<Fragment key={q.id}>
+              {firstOfSec && filter === 'all' && <h2 id={`sec-${sec.key}`} className="scroll-mt-28 pt-4 font-serif text-2xl font-bold"><span lang="ja">{sec.name_ja}</span> <span className="text-base font-normal text-muted-foreground">— {sec.name_vi} · {sec.minutes} phút</span></h2>}
+              {newPassage && <article className="rounded-3xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-5 dark:bg-amber-950/20"><p className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-700">読解 · {q.passage_title}</p><p className="whitespace-pre-line text-lg leading-loose" lang="ja">{q.passage}</p></article>}
               <li key={q.id} id={`q${i + 1}`} className={`scroll-mt-40 rounded-3xl border-2 bg-card p-5 shadow-sm transition ${!graded ? 'border-border' : ok ? 'border-emerald-300 dark:border-emerald-800' : 'border-rose-300 dark:border-rose-800'}`}>
                 <div className="mb-3 flex items-center gap-2 text-xs">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-[#2a1f3d] text-sm font-black text-amber-200">{i + 1}</span>
@@ -140,6 +165,7 @@ function PracticeRunner({ id }: { id: string }) {
                   <span className={`rounded-full px-2.5 py-0.5 font-semibold ${harder ? 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200' : 'bg-muted text-muted-foreground'}`}>{q.jlpt_level}{harder ? ' · nâng cao' : ''}</span>
                   {graded && <span className={`ml-auto font-bold ${ok ? 'text-emerald-600' : 'text-rose-600'}`}>{picked === undefined ? 'Chưa trả lời' : ok ? '✓ Chính xác' : '✗ Chưa đúng'}</span>}
                 </div>
+                {q.skill === 'listening' && <ListenButton q={q} reveal={graded} />}
                 <p className="mb-4 whitespace-pre-line text-xl font-medium leading-relaxed" lang="ja">{q.text}</p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   {q.options.map((o: string, k: number) => {
@@ -164,7 +190,7 @@ function PracticeRunner({ id }: { id: string }) {
                     <p className="whitespace-pre-line leading-relaxed" lang="vi">{ex.why}</p>
                     {!ok && picked !== undefined && <p className="mt-1 text-rose-700 dark:text-rose-300">Bạn chọn 「{q.options[picked]}」: {ex.notes[picked]}</p>}
                   </div>)}
-              </li>);
+              </li></Fragment>);
           })}
         </ol>
         {done && filter !== 'all' && qs.every((_, i) => !visible(i)) && <p className="mt-6 text-center text-muted-foreground">Không có câu nào trong mục này 🎉</p>}

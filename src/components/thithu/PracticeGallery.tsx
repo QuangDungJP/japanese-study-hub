@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ExamThumb from './ExamThumb';
-import { PAPERS_PER_LEVEL, PRACTICE_PAPER_COUNT, BANK_SIZE } from '@/data/practicePapers';
+import { PAPERS_PER_LEVEL, PRACTICE_PAPER_COUNT, BANK_SIZE, paperSummary } from '@/data/practicePapers';
 const LEVELS = ['N5', 'N4', 'N3', 'N2', 'N1'] as const;
 const PER_PAGE = 24;
 export default function PracticeGallery() {
@@ -14,7 +14,7 @@ export default function PracticeGallery() {
       <div className="relative mb-6 overflow-hidden rounded-[2rem] border-4 border-[#3b2a1e] bg-gradient-to-r from-[#140f22] via-[#2a1f3d] to-[#3b2a1e] p-6 text-amber-50 shadow-2xl">
         <p className="text-xs tracking-[0.35em] text-amber-300/80">道場 · 模擬試験</p>
         <h2 className="font-serif text-3xl font-bold">Kho {PRACTICE_PAPER_COUNT.toLocaleString('vi-VN')} đề luyện JLPT — chấm điểm ngay</h2>
-        <p className="mt-1 text-sm text-amber-100/70">{PAPERS_PER_LEVEL} đề mỗi cấp N5–N1 · chấm từng câu tức thì · dự đoán điểm thi thật bằng IRT. Miễn phí, không cần đăng nhập.</p>
+        <p className="mt-1 text-sm text-amber-100/70">{PAPERS_PER_LEVEL} đề mỗi cấp N5–N1 · đủ 3 phần Từ vựng · Ngữ pháp–Đọc hiểu · Nghe hiểu · chấm từng câu tức thì · dự đoán điểm thi thật bằng IRT. Miễn phí, không cần đăng nhập.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {LEVELS.map(l => <button key={l} onClick={() => { setLv(l); setPage(0); }} className={`rounded-full px-5 py-2 font-bold transition ${lv === l ? 'bg-amber-400 text-[#2a1f3d] shadow-[0_0_20px_rgba(251,191,36,.5)]' : 'bg-white/10 hover:bg-white/20'}`}>{l}<span className="ml-1 text-xs opacity-70">({BANK_SIZE[l]?.words} từ)</span></button>)}
         </div>
@@ -23,7 +23,7 @@ export default function PracticeGallery() {
         {nums.map(n => { const id = `practice-${lv}-${String(n).padStart(4, '0')}`; return (
           <Link key={id} to={`/thi-thu/${id}`} className="group overflow-hidden rounded-2xl border border-[#3b2a1e]/40 bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
             <div className="aspect-video overflow-hidden"><div className="h-full w-full transition duration-300 group-hover:scale-105"><ExamThumb level={lv} n={n} /></div></div>
-            <div className="flex items-center justify-between px-3 py-2 text-sm"><span className="font-semibold">Đề {lv} #{n}</span><span className="text-xs text-muted-foreground">20 câu · 25′</span></div>
+            <div className="flex items-center justify-between px-3 py-2 text-sm"><span className="font-semibold">Đề {lv} #{n}</span><span className="text-xs text-muted-foreground">{paperSummary(lv).count} câu · {paperSummary(lv).minutes}′</span></div>
           </Link>); })}
       </div>
       <div className="mt-6 flex items-center justify-center gap-2">
