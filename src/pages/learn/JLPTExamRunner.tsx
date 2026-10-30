@@ -1,6 +1,9 @@
 // @ts-nocheck
 import { useEffect, useState, useRef } from "react";
 import { localMockExam } from '@/data/mockJlptExam';
+import { getPracticePaper } from '@/data/practicePapers';
+import { recordAnswers } from '@/lib/jlptMastery';
+const isLocalExamId = (x?: string) => x === 'mock-local-1' || !!x?.startsWith('practice-');
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,8 +64,8 @@ export default function JLPTExamRunner() {
         let data: any = null;
         let attempts: any[] = [];
         
-        if (id === 'mock-local-1') {
-          data = localMockExam;
+        if (isLocalExamId(id)) {
+          data = id === 'mock-local-1' ? localMockExam : getPracticePaper(id);
           const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
           if (localStr) {
              try { attempts = JSON.parse(localStr).filter((a: any) => a.exam_id === id); } catch(e) { console.error(e); }
@@ -121,7 +124,7 @@ export default function JLPTExamRunner() {
           }
         } else {
           const newAttempt = { id: `attempt_${Date.now()}`, exam_id: id, student_id: user.id, status: "in_progress", started_at: new Date().toISOString() };
-          if (id === 'mock-local-1') {
+          if (isLocalExamId(id)) {
             const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
             let allAtts = [];
             if (localStr) try { allAtts = JSON.parse(localStr); } catch(e) { console.error(e); }
@@ -205,11 +208,13 @@ export default function JLPTExamRunner() {
         section_pass: { language: 19, reading: 19, listening: 19, combined: 38 }
       };
 
+      const masteryItems: any[] = [];
       exam.questions.forEach((q: any, i: number) => {
         if (q.type === 'system_config') return;
         
         const processQuestion = (question: any, answerKey: string | number) => {
           const isCorrect = answers[answerKey] !== undefined && answers[answerKey] === question.correct_index;
+          masteryItems.push({ level: question.jlpt_level || q.jlpt_level || exam.level || 'N4', skill: question.skill || q.skill, correct: isCorrect });
           const pts = question.points !== undefined ? Number(question.points) : 5;
           if (sections.vocab.some(vq => vq.id === q.id || vq === q)) {
             vocabTotal += pts; if (isCorrect) vocabCorrect += pts;
@@ -238,7 +243,7 @@ export default function JLPTExamRunner() {
       if (level === 'N4' || level === 'N5') {
         // N4/N5: Knowledge (Vocab+Reading) 120pts, Listening 60pts
         const knowledgePts = Math.round(((vocabCorrect + readingCorrect) / Math.max(1, vocabTotal + readingTotal)) * 120);
-        const listeningPts = Math.round((listeningCorrect / Math.max(1, listeningTotal)) * 60);
+        const listeningPts = Math.round((listeningTotal ? listeningCorrect / listeningTotal : (vocabCorrect + readingCorrect) / Math.max(1, vocabTotal + readingTotal)) * 60);
         totalScore = knowledgePts + listeningPts;
         
         const passKnowledge = knowledgePts >= (scoringConfig.section_pass.combined || 38);
@@ -253,7 +258,7 @@ export default function JLPTExamRunner() {
         // N1/N2/N3: Vocab 60, Reading 60, Listening 60
         const vocabPts = Math.round((vocabCorrect / Math.max(1, vocabTotal)) * 60);
         const readingPts = Math.round((readingCorrect / Math.max(1, readingTotal)) * 60);
-        const listeningPts = Math.round((listeningCorrect / Math.max(1, listeningTotal)) * 60);
+        const listeningPts = Math.round((listeningTotal ? listeningCorrect / listeningTotal : (vocabCorrect + readingCorrect) / Math.max(1, vocabTotal + readingTotal)) * 60);
         totalScore = vocabPts + readingPts + listeningPts;
         
         const passV = vocabPts >= (scoringConfig.section_pass.language || 19);
@@ -277,7 +282,7 @@ export default function JLPTExamRunner() {
       // Calculate predicted real score
       const predictedScore = Math.min(180, Math.max(0, Math.round(totalScore * (scoringConfig.difficulty_factor || 1.0))));
       
-      if (id === 'mock-local-1') {
+      if (isLocalExamId(id)) {
         const localStr = localStorage.getItem(`mock_attempts_${user.id}`);
         let allAtts = [];
         if (localStr) try { allAtts = JSON.parse(localStr); } catch(e) { console.error(e); }
@@ -313,6 +318,7 @@ export default function JLPTExamRunner() {
         if (error) throw error;
       }
       
+      if (user) recordAnswers(user.id, masteryItems);
       setResult({ score: totalScore, total: exam.max_score || 180, passed, breakdown: scoreBreakdown, level, predicted_real: predictedScore });
     } catch (err) {
       toast({ title: "Lỗi nộp bài", variant: "destructive" });

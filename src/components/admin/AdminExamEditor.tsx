@@ -24,6 +24,7 @@ interface Question {
   correct_index?: number;
   points?: number;
   difficulty?: 'easy' | 'medium' | 'hard';
+  jlpt_level?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
   audio_url?: string;
   image_url?: string;
   is_passage?: boolean;
@@ -192,6 +193,12 @@ export default function AdminExamEditor({ exam, onClose, onSaved }: { exam: any,
                 <option value="easy">Dễ (Easy)</option>
                 <option value="medium">Trung bình (Medium)</option>
                 <option value="hard">Khó (Hard)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Cấp độ JLPT của câu (IRT)</Label>
+              <select className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm" value={q.jlpt_level || editingExam.level || 'N4'} onChange={(e) => updateQuestion(q.id, { jlpt_level: e.target.value })}>
+                {['N5','N4','N3','N2','N1'].map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div className="space-y-2">

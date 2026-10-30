@@ -19,6 +19,7 @@ import HeroSection from "@/components/HeroSection";
 import TestimonialsSection from "@/components/about/TestimonialsSection";
 import PartnersSection from "@/components/PartnersSection";
 import ZoomSection from "@/components/ZoomSection";
+import MasteryLofiCard from "@/components/home/MasteryLofiCard";
 
 const Index = () => {
   const { data: teachers, isLoading: isTeachersLoading } = useTeacherProfiles();
@@ -57,7 +58,7 @@ const Index = () => {
     if (!sectionOrder) return ['hero', 'skills', 'courses', 'features', 'zoom', 'teachers', 'cta'];
     return sectionOrder.filter(s => s.visible).map(s => s.id);
   }, [sectionOrder]);
-  const heroSection = <HeroSection key="hero" />;
+  const heroSection = <><HeroSection key="hero" /><MasteryLofiCard /></>;
 
   const skillsSection = (
     <section key="skills" className="py-24 bg-background relative">
