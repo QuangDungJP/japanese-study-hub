@@ -211,7 +211,7 @@ const AttendanceManager = ({ initialStatusFilter = 'all' }: AttendanceManagerPro
         
         return {
           student_id: student.student_id,
-          student_name: profile?.full_name || 'N/A',
+          student_name: profile?.full_name || `Học viên #${String(student.student_id).slice(0, 6)}`,
           status: (existing?.status === 'excused_absence' ? 'excused' : existing?.status as AttendanceRecord['status']) || 'absent',
           notes: existing?.notes || '',
           existing_id: existing?.id,

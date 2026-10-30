@@ -177,7 +177,7 @@ const AttendanceStats = ({ initialStatusFilter = 'all' }: AttendanceStatsProps) 
 
         statsMap.set(studentId, {
           student_id: studentId,
-          student_name: profile?.full_name || 'N/A',
+          student_name: profile?.full_name || `Học viên #${String(studentId).slice(0, 6)}`,
           present_count,
           absent_count,
           late_count,

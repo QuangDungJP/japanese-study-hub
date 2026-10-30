@@ -619,7 +619,7 @@ const TeacherClasses = () => {
 
           return {
             ...student,
-            profiles: profileRes.data || { full_name: 'N/A', avatar_url: null },
+            profiles: profileRes.data?.full_name ? profileRes.data : { full_name: `Học viên #${String(student.student_id).slice(0, 6)}`, avatar_url: profileRes.data?.avatar_url ?? null },
             progress: progressRes.data || {
               total_xp: 0,
               streak: 0,
@@ -2787,7 +2787,7 @@ const TeacherClasses = () => {
                     <SelectItem value="all">Tất cả học viên ({students.length})</SelectItem>
                     {students.map(s => (
                       <SelectItem key={s.student_id} value={s.student_id}>
-                        {s.profiles?.full_name || 'Học viên'}
+                        {s.profiles?.full_name || `Học viên #${String(s.student_id).slice(0, 6)}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -2990,7 +2990,7 @@ const TeacherClasses = () => {
                     if (!selectedClass) return;
                     const headers = ['Họ và tên học viên', 'Ngày tham gia', 'Tổng XP', 'Streak', 'Bài học đã xong', 'Từ vựng đã thuộc'];
                     const rows = students.map(s => [
-                      s.profiles?.full_name || 'N/A',
+                      s.profiles?.full_name || `Học viên #${String(s.student_id).slice(0, 6)}`,
                       formatWithJST(s.enrolled_at, false),
                       s.progress?.total_xp || 0,
                       s.progress?.streak || 0,

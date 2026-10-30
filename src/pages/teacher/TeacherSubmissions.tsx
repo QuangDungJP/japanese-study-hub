@@ -170,7 +170,7 @@ const TeacherSubmissions = () => {
     const scoreVal = sub.score || 0;
     
     setAnalysisModalData({
-      student_name: sub.profile?.full_name || 'Học viên',
+      student_name: sub.profile?.full_name || `Học viên #${String(sub.user_id).slice(0, 6)}`,
       avatar_url: sub.profile?.avatar_url || undefined,
       title: sub.exercise?.title_vi || sub.exercise?.title || 'Bài tập bài học',
       submitted_at: sub.submitted_at,
@@ -222,7 +222,7 @@ const TeacherSubmissions = () => {
     });
 
     setAnalysisModalData({
-      student_name: att.profile?.full_name || 'Học viên',
+      student_name: att.profile?.full_name || `Học viên #${String(att.student_id).slice(0, 6)}`,
       avatar_url: att.profile?.avatar_url || undefined,
       title: att.exam?.title_vi || att.exam?.title || 'Bài kiểm tra',
       submitted_at: att.submitted_at,
