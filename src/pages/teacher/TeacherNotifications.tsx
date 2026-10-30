@@ -243,10 +243,10 @@ const TeacherNotifications = () => {
       // Đồng thời gửi thông báo qua Email Resend tới các học viên nhận tin
       (async () => {
         try {
-          const { data: userEmails } = await (supabase as any)
-            .from('profiles')
-            .select('user_id, full_name, email')
-            .in('user_id', targetStudentIds);
+          // profiles has no email column; server-side RPC reads auth emails for class members only
+          const { data: userEmails, error: emailErr } = await (supabase as any)
+            .rpc('get_class_member_emails', { _user_ids: targetStudentIds });
+          if (emailErr) throw emailErr;
 
           if (userEmails && userEmails.length > 0) {
             const { sendEmailNotification } = await import('@/lib/resendEmailService');
