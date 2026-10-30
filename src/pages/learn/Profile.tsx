@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import WardrobeAvatar from '@/components/home/WardrobeAvatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -333,6 +334,7 @@ const ProfilePage = () => {
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
+      {user && <section className="rounded-3xl border-4 border-[#3b2a1e] bg-gradient-to-br from-[#1b1530] via-[#2a1f3d] to-[#3b2a1e] p-6 text-amber-50 shadow-2xl"><h2 className="mb-4 font-serif text-2xl font-bold">🎒 Tủ đồ võ đường</h2><WardrobeAvatar userId={user.id} /></section>}
       {/* Top Banner & Profile Overview */}
       <div className="relative rounded-3xl bg-gradient-to-r from-primary via-indigo-600 to-accent text-white shadow-2xl overflow-hidden border border-white/20">
         <div className="h-32 md:h-40 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent pointer-events-none" />

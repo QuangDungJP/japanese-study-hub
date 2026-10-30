@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { computeMastery, loadAnswers, resetMastery, predictExam, LEVELS } from '@/lib/jlptMastery';
 import { randomPracticeId, PRACTICE_PAPER_COUNT } from '@/data/practicePapers';
+import WardrobeAvatar from './WardrobeAvatar';
 import { claimEduAccount, getMyEduAccount, type EduGameAccount } from '@/lib/eduAccount';
 
 /** Original procedural lofi (Web Audio, generated in-browser) — no third-party recording, no licence needed. */
@@ -50,6 +51,7 @@ export default function MasteryLofiCard() {
         <div className="mt-3 h-1.5 w-44 -rotate-6 rounded-full bg-gradient-to-r from-zinc-300 via-zinc-100 to-[#7f1d1d]" />
         <div className="mt-2 h-3 w-56 rounded bg-[#5a3e2b]" />
       </div>
+      {user && <div className="relative z-10 mb-6 md:absolute md:right-10 md:top-52 md:mb-0"><WardrobeAvatar userId={user.id} /><p className="mt-2 text-center text-xs text-amber-200/70">Dự đoán đỗ ≥60% → A · 70% S · 80% SS · 90% SSR</p></div>}
       <div className="relative z-10 max-w-3xl">
         <p className="text-sm tracking-[0.3em] text-amber-300/80">道場 · 勉強机 · LOFI</p>
         <h2 className="mt-1 font-serif text-3xl font-bold md:text-4xl">Bàn học võ đường của bạn</h2>

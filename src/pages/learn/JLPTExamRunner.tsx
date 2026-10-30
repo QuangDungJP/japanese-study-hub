@@ -2,7 +2,8 @@
 import { useEffect, useState, useRef } from "react";
 import { localMockExam } from '@/data/mockJlptExam';
 import { getPracticePaper } from '@/data/practicePapers';
-import { recordAnswers } from '@/lib/jlptMastery';
+import { recordAnswers, computeMastery, loadAnswers, predictExam } from '@/lib/jlptMastery';
+import { grantReward } from '@/lib/rewards';
 const isLocalExamId = (x?: string) => x === 'mock-local-1' || !!x?.startsWith('practice-');
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -318,7 +319,13 @@ export default function JLPTExamRunner() {
         if (error) throw error;
       }
       
-      if (user) recordAnswers(user.id, masteryItems);
+      let reward: any = null;
+      if (user) {
+        recordAnswers(user.id, masteryItems);
+        const mm = computeMastery(loadAnswers(user.id));
+        reward = grantReward(user.id, predictExam(mm.theta, (level as any) || mm.level).probability);
+        if (reward) toast({ title: `🎁 Phần thưởng hạng ${reward.tier}: ${reward.icon} ${reward.name}`, description: 'Đã thêm vào tủ đồ ở trang chủ.' });
+      }
       setResult({ score: totalScore, total: exam.max_score || 180, passed, breakdown: scoreBreakdown, level, predicted_real: predictedScore });
     } catch (err) {
       toast({ title: "Lỗi nộp bài", variant: "destructive" });
